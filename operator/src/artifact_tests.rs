@@ -1,5 +1,8 @@
 use super::*;
-use std::{io::Write, net::TcpListener};
+use std::{
+    io::{BufRead, BufReader, Write},
+    net::{SocketAddr, TcpListener},
+};
 
 pub(super) const CONTROLLER: &str = r#"
 import { Controller } from './src/controller.ts';
@@ -39,10 +42,14 @@ return controller;
 #[test]
 fn sse_heartbeats_survive_the_response_header_deadline() {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-    let url = format!("http://{}/v1/events", listener.local_addr().unwrap());
+    let SocketAddr::V4(address) = listener.local_addr().unwrap() else {
+        unreachable!()
+    };
     let server = thread::spawn(move || {
         let (mut stream, _) = listener.accept().unwrap();
-        stream.set_read_timeout(Some(Duration::from_secs(2))).unwrap();
+        stream
+            .set_read_timeout(Some(Duration::from_secs(2)))
+            .unwrap();
         let mut request = BufReader::new(stream.try_clone().unwrap());
         loop {
             let mut line = String::new();
@@ -59,13 +66,10 @@ fn sse_heartbeats_survive_the_response_header_deadline() {
             thread::sleep(Duration::from_secs(1));
         }
     });
-    let response = agent(true).get(url).call().unwrap();
-    let mut reader = BufReader::new(response.into_body().into_reader());
-    let result = (|| -> std::io::Result<usize> {
+    let mut reader = SseConnection::open_test(address).unwrap();
+    let result = (|| -> Result<usize, ()> {
         for _ in 0..5 {
-            let mut line = String::new();
-            reader.read_line(&mut line)?;
-            assert_eq!(line, ": heartbeat\n");
+            assert_eq!(reader.read_line(&|| true)?, ": heartbeat");
         }
         Ok(5)
     })();
@@ -245,7 +249,7 @@ fn response(a: &Artifact, status: &str, headers: &str, body: &[u8]) -> Result<Ar
         let _ = stream.write_all(&wire);
         let _ = stream.write_all(&body);
     });
-    let result = fetch_artifact(&agent(false), &c, a);
+    let result = fetch_artifact(&agent(), &c, a);
     server.join().unwrap();
     result
 }
@@ -323,7 +327,7 @@ fn artifact_http_validates_exact_route_bearer_bytes_hash_status_type_and_length(
             url: "http://127.0.0.1:1".into(),
             capability: "f".repeat(64),
         };
-        assert!(fetch_artifact(&agent(false), &c, &large).is_err());
+        assert!(fetch_artifact(&agent(), &c, &large).is_err());
     }
     let target = TcpListener::bind("127.0.0.1:0").unwrap();
     target.set_nonblocking(true).unwrap();
@@ -365,7 +369,7 @@ fn artifact_body_timeout_does_not_wait_for_connection_close() {
             "body timeout did not return while socket was open"
         );
     });
-    let result = fetch_artifact(&agent(false), &c, &metadata(ArtifactMime::Text, b"hello\n"));
+    let result = fetch_artifact(&agent(), &c, &metadata(ArtifactMime::Text, b"hello\n"));
     let _ = release.send(());
     server.join().unwrap();
     assert!(result.is_err());
@@ -478,6 +482,166 @@ pub(super) fn real_artifacts(client: &Client, selected: &Selected, delayed_first
             thread::sleep(Duration::from_millis(10));
         }
     }
+    if delayed_first_read {
+        let revision = client.update.lock().unwrap().artifact_revision;
+        thread::sleep(Duration::from_secs(4));
+        let u = client.update.lock().unwrap();
+        assert_eq!(u.status, "Connected · scripted");
+        assert_eq!(
+            u.artifact_revision, revision,
+            "healthy SSE invalidated cached bytes"
+        );
+        assert_eq!(
+            u.context.as_ref().unwrap().selected.case.id,
+            selected.case.id
+        );
+        assert!(
+            matches!(&u.artifact_view.as_ref().unwrap().state, ArtifactState::Png(image) if image.bytes() == PNG)
+        );
+    }
     client.select(Some(selected.case.id.clone()));
     assert!(client.update.lock().unwrap().artifact_view.is_none());
+}
+
+fn sse_frame(sequence: u64, late: bool) -> Value {
+    json!({
+        "protocol": 1, "bootId": "boot", "sequence": sequence,
+        "snapshot": { "protocol": 1, "bootId": "boot", "mode": "scripted",
+            "cases": if late { vec![json!({"id":"late", "phase":"", "status":"", "version":0,
+                "remainingMs":0, "reason":"", "warning":null, "native":"", "issue":{}})] } else { vec![] },
+            "selected": null }
+    })
+}
+fn sse_server(frames: Vec<Value>) -> (SseConnection, thread::JoinHandle<()>) {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let SocketAddr::V4(address) = listener.local_addr().unwrap() else {
+        unreachable!()
+    };
+    let server = thread::spawn(move || {
+        let (mut stream, _) = listener.accept().unwrap();
+        stream
+            .set_read_timeout(Some(Duration::from_secs(2)))
+            .unwrap();
+        let mut request = BufReader::new(stream.try_clone().unwrap());
+        loop {
+            let mut line = String::new();
+            assert_ne!(request.read_line(&mut line).unwrap(), 0);
+            if line == "\r\n" {
+                break;
+            }
+        }
+        stream
+            .write_all(b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\n\r\n")
+            .unwrap();
+        for frame in frames {
+            if writeln!(stream, "data: {frame}").is_err() {
+                break;
+            }
+        }
+    });
+    (SseConnection::open_test(address).unwrap(), server)
+}
+fn sse_connection() -> Connection {
+    Connection {
+        protocol: 1,
+        boot_id: "boot".into(),
+        url: "http://127.0.0.1:43127".into(),
+        capability: "f".repeat(64),
+    }
+}
+
+#[test]
+fn sse_frames_reject_protocol_boot_snapshot_and_sequence_changes_before_applying() {
+    for mutation in 0..7 {
+        let mut frame = sse_frame(1, true);
+        match mutation {
+            0 => frame["protocol"] = json!(2),
+            1 => frame["bootId"] = json!("restarted"),
+            2 => frame["snapshot"]["protocol"] = json!(2),
+            3 => frame["snapshot"]["bootId"] = json!("restarted"),
+            4 => frame["snapshot"]["mode"] = json!("live"),
+            5 => frame["sequence"] = json!(0),
+            _ => (),
+        }
+        let frames = if mutation == 6 {
+            vec![sse_frame(1, false), frame]
+        } else {
+            vec![frame]
+        };
+        let (mut stream, server) = sse_server(frames);
+        let update = Mutex::new(Update::default());
+        assert_eq!(
+            receive_events(
+                &mut stream,
+                &sse_connection(),
+                7,
+                &Mutex::new(None),
+                &AtomicU64::new(7),
+                &AtomicBool::new(false),
+                &update
+            ),
+            Err(())
+        );
+        let u = update.lock().unwrap();
+        if mutation == 6 {
+            assert_eq!(u.status, "Connected · scripted");
+            assert!(
+                u.snapshot.as_ref().unwrap().cases.is_empty(),
+                "duplicate sequence applied"
+            );
+        } else {
+            assert!(u.snapshot.is_none(), "invalid frame {mutation} applied");
+        }
+        server.join().unwrap();
+    }
+}
+
+#[test]
+fn sse_generation_and_stop_checks_prevent_buffered_late_frames_from_applying() {
+    for stop in [false, true] {
+        let (mut stream, server) = sse_server(vec![sse_frame(1, true)]);
+        let a = metadata(ArtifactMime::Text, b"hello\n");
+        let selection = Arc::new(Mutex::new(Some(a.case_id.clone())));
+        let update = Arc::new(Mutex::new(Update::default()));
+        let generation = Arc::new(AtomicU64::new(7));
+        let stopped = Arc::new(AtomicBool::new(false));
+        let mut u = update.lock().unwrap();
+        u.apply_snapshot(projection(&a), 7, &Some(a.case_id.clone()));
+        let job = loading(&mut u, &a);
+        let worker = {
+            let (update, selection, generation, stopped) = (
+                update.clone(),
+                selection.clone(),
+                generation.clone(),
+                stopped.clone(),
+            );
+            thread::spawn(move || {
+                receive_events(
+                    &mut stream,
+                    &sse_connection(),
+                    7,
+                    &selection,
+                    &generation,
+                    &stopped,
+                    &update,
+                )
+            })
+        };
+        thread::sleep(Duration::from_millis(50));
+        if stop {
+            stopped.store(true, Ordering::Relaxed);
+        } else {
+            generation.store(8, Ordering::Relaxed);
+        }
+        drop(u);
+        assert_eq!(worker.join().unwrap(), Ok(()));
+        let u = update.lock().unwrap();
+        assert!(u.snapshot.as_ref().unwrap().cases.is_empty());
+        assert_eq!(u.context.as_ref().unwrap().selected.case.id, a.case_id);
+        assert!(
+            u.accepts_artifact(&job),
+            "late frame changed artifact context"
+        );
+        server.join().unwrap();
+    }
 }

@@ -1,10 +1,13 @@
+#[path = "sse.rs"]
+mod sse;
+
 use gpui::{Image, ImageFormat};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
+use sse::SseConnection;
 use std::{
     fs,
-    io::{BufRead, BufReader, Read},
     os::unix::fs::PermissionsExt,
     path::PathBuf,
     sync::{
@@ -276,19 +279,15 @@ fn connection(path: &PathBuf) -> Result<Connection, ()> {
     }
     Ok(c)
 }
-fn agent(stream: bool) -> ureq::Agent {
+fn agent() -> ureq::Agent {
     ureq::Agent::config_builder()
         .max_redirects(0)
         .proxy(None)
         .http_status_as_error(false)
-        .timeout_global(if stream {
-            None
-        } else {
-            Some(Duration::from_secs(5))
-        })
+        .timeout_global(Some(Duration::from_secs(5)))
         .timeout_connect(Some(Duration::from_secs(2)))
         .timeout_recv_response(Some(Duration::from_secs(3)))
-        .timeout_recv_body(Some(Duration::from_secs(if stream { 15 } else { 3 })))
+        .timeout_recv_body(Some(Duration::from_secs(3)))
         .build()
         .into()
 }
@@ -392,6 +391,41 @@ fn selected_path(selection: &Arc<Mutex<Option<String>>>, route: &str) -> String 
         .map(|id| format!("{route}?selected={id}"))
         .unwrap_or_else(|| route.to_owned())
 }
+fn receive_events(
+    reader: &mut SseConnection,
+    c: &Connection,
+    g: u64,
+    selection: &Mutex<Option<String>>,
+    generation: &AtomicU64,
+    stopped: &AtomicBool,
+    update: &Mutex<Update>,
+) -> Result<(), ()> {
+    let active = || !stopped.load(Ordering::Relaxed) && generation.load(Ordering::Relaxed) == g;
+    let mut sequence = 0;
+    while active() {
+        let line = match reader.read_line(&active) {
+            Ok(line) => line,
+            Err(_) if !active() => return Ok(()),
+            Err(_) => return Err(()),
+        };
+        if let Some(data) = line.strip_prefix("data: ") {
+            let frame: Frame = serde_json::from_str(data).map_err(|_| ())?;
+            if frame.protocol != 1
+                || frame.boot_id != c.boot_id
+                || frame.sequence <= sequence
+                || !valid(&frame.snapshot, c)
+            {
+                return Err(());
+            }
+            sequence = frame.sequence;
+            let mut u = update.lock().unwrap();
+            if active() {
+                u.apply_snapshot(frame.snapshot, g, &selection.lock().unwrap());
+            }
+        }
+    }
+    Ok(())
+}
 impl Client {
     pub fn new(path: PathBuf) -> Self {
         let (send, receive) = mpsc::sync_channel(32);
@@ -409,7 +443,7 @@ impl Client {
                 stopped.clone(),
             );
             thread::spawn(move || {
-                let agent = agent(false);
+                let agent = agent();
                 while let Ok(job) = receive.recv() {
                     if stopped.load(Ordering::Relaxed) {
                         break;
@@ -496,7 +530,7 @@ impl Client {
         {
             let (path, update, stopped) = (path.clone(), update.clone(), stopped.clone());
             thread::spawn(move || {
-                let agent = agent(false);
+                let agent = agent();
                 while let Ok(job) = artifact_receive.recv() {
                     if stopped.load(Ordering::Relaxed) {
                         break;
@@ -532,57 +566,32 @@ impl Client {
                 stopped.clone(),
             );
             thread::spawn(move || {
-                let agent = agent(true);
                 while !stopped.load(Ordering::Relaxed) {
                     let g = generation.load(Ordering::Relaxed);
+                    let active = || {
+                        !stopped.load(Ordering::Relaxed) && generation.load(Ordering::Relaxed) == g
+                    };
                     let result = (|| {
                         let c = connection(&path)?;
-                        let url = format!("{}{}", c.url, selected_path(&selection, "/v1/events"));
-                        let response = agent
-                            .get(url)
-                            .header("authorization", format!("Bearer {}", c.capability))
-                            .call()
-                            .map_err(|_| ())?;
-                        if response.status() != 200 {
-                            return Err(());
-                        }
-                        let mut reader = BufReader::new(response.into_body().into_reader());
-                        let mut sequence = 0;
-                        loop {
-                            if stopped.load(Ordering::Relaxed)
-                                || generation.load(Ordering::Relaxed) != g
-                            {
-                                return Ok(());
-                            }
-                            let mut line = String::new();
-                            let n = (&mut reader)
-                                .take(512001)
-                                .read_line(&mut line)
-                                .map_err(|_| ())?;
-                            if n == 0 || n > 512000 {
-                                return Err(());
-                            }
-                            if let Some(data) = line.strip_prefix("data: ") {
-                                let frame: Frame = serde_json::from_str(data).map_err(|_| ())?;
-                                if frame.protocol != 1
-                                    || frame.boot_id != c.boot_id
-                                    || frame.sequence <= sequence
-                                    || !valid(&frame.snapshot, &c)
-                                {
-                                    return Err(());
-                                }
-                                sequence = frame.sequence;
-                                let mut u = update.lock().unwrap();
-                                if generation.load(Ordering::Relaxed) == g {
-                                    u.apply_snapshot(frame.snapshot, g, &selection.lock().unwrap());
-                                }
-                            }
-                        }
+                        let selected = selection.lock().unwrap().clone();
+                        let mut reader =
+                            SseConnection::open(&c.capability, selected.as_deref(), &active)?;
+                        receive_events(
+                            &mut reader,
+                            &c,
+                            g,
+                            &selection,
+                            &generation,
+                            &stopped,
+                            &update,
+                        )
                     })();
                     if result.is_err() {
                         {
                             let mut u = update.lock().unwrap();
-                            if generation.load(Ordering::Relaxed) == g {
+                            if !stopped.load(Ordering::Relaxed)
+                                && generation.load(Ordering::Relaxed) == g
+                            {
                                 u.disconnect();
                             }
                         }
@@ -798,7 +807,7 @@ mod tests {
         assert!(reopened.view_artifact(&selected.artifacts[0].id).is_err());
         assert!(
             fetch_artifact(
-                &agent(false),
+                &agent(),
                 &connection(&directory.join("connection.json")).unwrap(),
                 &selected.artifacts[0]
             )
