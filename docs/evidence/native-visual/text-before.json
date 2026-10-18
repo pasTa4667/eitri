@@ -1,0 +1,15 @@
+{
+  "image" : "\/Users\/felix.langbein\/projects\/eitri\/docs\/evidence\/native-visual\/text-before.png",
+  "missing" : [
+    "Check now",
+    "Choose an investigation"
+  ],
+  "passed" : false,
+  "recognized" : [
+    "• •• Eitri - scripted operator"
+  ],
+  "required" : [
+    "Check now",
+    "Choose an investigation"
+  ]
+}
