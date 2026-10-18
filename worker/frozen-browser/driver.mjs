@@ -147,12 +147,12 @@ const event = (kind, value) => {
     throw new Error('page-event-overflow');
   events.push({ kind, text });
 };
-let eventFailure = false;
+let eventFailure;
 const record = (kind, value) => {
   try {
     event(kind, value);
   } catch {
-    eventFailure = true;
+    eventFailure = 'page-event-overflow';
   }
 };
 try {
@@ -196,6 +196,7 @@ try {
       'content-length': file.bytes.length,
       'x-content-type-options': 'nosniff',
       'cache-control': 'no-store',
+      'content-security-policy': "worker-src 'none'",
     });
     response.end(file.bytes);
   });
@@ -214,6 +215,16 @@ try {
     viewport: { width: 640, height: 480 },
     serviceWorkers: 'block',
   });
+  context.on('console', (message) =>
+    record(message.type() === 'error' ? 'console-error' : 'console', message.text()),
+  );
+  context.on('weberror', (error) => record('page-error', error.error().message));
+  context.on('page', (page) => {
+    page.on('crash', () => record('page-error', 'page-crash'));
+    page.on('worker', () => {
+      eventFailure = 'unexpected-worker';
+    });
+  });
   const sandbox = await context.newPage();
   await sandbox.goto('chrome://sandbox');
   const sandboxText = await sandbox.locator('body').innerText();
@@ -223,11 +234,6 @@ try {
     return route.abort('blockedbyclient');
   });
   const page = await context.newPage();
-  page.on('console', (message) =>
-    record(message.type() === 'error' ? 'console-error' : 'console', message.text()),
-  );
-  page.on('pageerror', (error) => record('page-error', error.message));
-  page.on('crash', () => record('page-error', 'page-crash'));
   let stage = 'startup-failed';
   let literal = null;
   try {
@@ -251,7 +257,7 @@ try {
   } catch {
     literal = null;
   }
-  if (eventFailure) throw new Error('page-event-overflow');
+  if (eventFailure) throw new Error(eventFailure);
   const png = await page.screenshot({ type: 'png', timeout: 5000 });
   if (png.length > 4 * 1024 * 1024) throw new Error('png-limit');
   const observations = {
@@ -275,6 +281,7 @@ try {
   browser = undefined;
   await new Promise((resolve) => server.close(resolve));
   server = undefined;
+  if (eventFailure) throw new Error(eventFailure);
   const frame = (kind, data) => JSON.stringify({ version: 1, kind, nonce, requestDigest, data });
   const control = frame('observations', observations);
   if (Buffer.byteLength(control) > 256 * 1024) throw new Error('control-limit');

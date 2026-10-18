@@ -75,6 +75,10 @@ async function fixture(t: TestContext, initial = html('A')) {
         ),
       },
       {
+        virtualPath: virtualPath('src/worker.js'),
+        bytes: Buffer.from('console.error("worker-error"); throw Error("worker-unhandled")'),
+      },
+      {
         virtualPath: virtualPath('playwright.config.js'),
         bytes: Buffer.from('throw Error("source config executed")'),
       },
@@ -205,6 +209,128 @@ test(
       ).toString(),
       html('B', 'console.log("x".repeat(9000))'),
     );
+  },
+);
+
+const screenshotPreparation = (payload = '') => `
+const observer = new MutationObserver(records => {
+  if (records.some(record => [...record.addedNodes].some(node =>
+    node.nodeName === 'STYLE' && node.textContent.includes('caret-color')))) {
+    observer.disconnect();
+    console.log('screenshot-preparation-observed');
+    ${payload}
+  }
+});
+observer.observe(document.documentElement, {childList:true, subtree:true});
+`;
+
+test(
+  'actual Docker screenshot preparation is observed before late overflow rejects candidate B',
+  { timeout: 150000 },
+  async (t) => {
+    const f = await fixture(t);
+    const control = await f.validator.validate(
+      await f.revise(html('B', screenshotPreparation()), 'candidate'),
+      signal(),
+    );
+    assert.equal(control.outcome.kind, 'candidate-passed');
+    assert.equal(control.evidence?.observations.literal, 'B');
+    assert.deepEqual(control.evidence?.observations.events, [
+      { kind: 'console', text: 'screenshot-preparation-observed' },
+    ]);
+    const overflow = await f.validator.validate(
+      await f.revise(
+        html('B', screenshotPreparation('console.log("x".repeat(9000));')),
+        'candidate',
+      ),
+      signal(),
+    );
+    assert.equal(overflow.outcome.kind, 'infrastructure-failed');
+    assert.equal(overflow.evidence, null);
+    assert.deepEqual(overflow.cleanup, { kind: 'owned-removed', cache: 'retained' });
+  },
+);
+
+test(
+  'actual Docker popup console, errors and overflow cannot disappear before candidate B',
+  { timeout: 300000 },
+  async (t) => {
+    const f = await fixture(t);
+    for (const [name, payload, outcome, event] of [
+      ['bounded console', '', 'candidate-passed', { kind: 'console', text: 'popup-before-B' }],
+      [
+        'console error',
+        'console.error("popup-console-error")',
+        'unrelated-failure',
+        { kind: 'console-error', text: 'popup-console-error' },
+      ],
+      [
+        'page error',
+        'throw Error("popup-page-error")',
+        'unrelated-failure',
+        { kind: 'page-error', text: 'popup-page-error' },
+      ],
+      ['overflow', 'console.log("x".repeat(9000))', 'infrastructure-failed', null],
+    ] as const)
+      await t.test(name, async () => {
+        const popupHtml = `<script>console.log("popup-before-B");${payload}</script>`;
+        const popupLiteral = JSON.stringify(popupHtml).replaceAll('<', '\\u003c');
+        const extra = `run.addEventListener('click', () => {
+          const popup = window.open('about:blank');
+          if (!popup) throw Error('popup-not-opened');
+          popup.document.write(${popupLiteral});
+          popup.document.close();
+        })`;
+        const report = await f.validator.validate(
+          await f.revise(html('B', extra), 'candidate'),
+          signal(),
+        );
+        assert.equal(report.outcome.kind, outcome);
+        assert.deepEqual(report.cleanup, { kind: 'owned-removed', cache: 'retained' });
+        if (event) {
+          assert.ok(report.evidence);
+          assert.deepEqual(
+            report.evidence.observations.events,
+            event.kind === 'console'
+              ? [event]
+              : [{ kind: 'console', text: 'popup-before-B' }, event],
+          );
+        } else assert.equal(report.evidence, null);
+      });
+  },
+);
+
+test(
+  'actual Docker dedicated and shared worker attempts cannot yield candidate success',
+  { timeout: 150000 },
+  async (t) => {
+    const f = await fixture(t);
+    for (const constructor of ['Worker', 'SharedWorker'])
+      await t.test(constructor, async () => {
+        const extra = `run.addEventListener('click', () => {
+          try { new ${constructor}('worker.js'); } catch {}
+        })`;
+        const report = await f.validator.validate(
+          await f.revise(html('B', extra), 'candidate'),
+          signal(),
+        );
+        assert.equal(report.outcome.kind, 'unrelated-failure');
+        assert.ok(report.evidence);
+        const events = report.evidence.observations.events;
+        assert.ok(Array.isArray(events));
+        assert.ok(
+          events.some(
+            (value) =>
+              value !== null &&
+              typeof value === 'object' &&
+              !Array.isArray(value) &&
+              value.kind === 'console-error' &&
+              typeof value.text === 'string' &&
+              value.text.includes('worker-src'),
+          ),
+        );
+        assert.deepEqual(report.cleanup, { kind: 'owned-removed', cache: 'retained' });
+      });
   },
 );
 

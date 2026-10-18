@@ -18,10 +18,162 @@ import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
+import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { FrozenBrowserValidator, frozenBrowserRequest } from '../src/frozen-browser.ts';
 import { digest } from '../src/domain.ts';
 import { WorkspaceStore, caseId, repositoryId, requestId, virtualPath } from '../src/workspace.ts';
+
+const driverFixture = String.raw`
+import { SourceTextModule, SyntheticModule, createContext } from 'node:vm';
+import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { EventEmitter } from 'node:events';
+const mode = process.argv[2];
+const result = {stdout:'',stderr:'',exitCode:0,headers:{},closed:[],phases:[]};
+let context, primary, serve;
+const message = (page, type, text) => {
+ const value = {type:()=>type,text:()=>text};
+ page.emit('console',value); context.emit('console',value);
+};
+const failure = (page) => {
+ const error = Error('synthetic-page-error');
+ page.emit('pageerror',error); context.emit('weberror',{error:()=>error});
+};
+const phase = name => {
+ result.phases.push(name);
+ if (mode === 'late-'+name+'-overflow') message(primary,'log','x'.repeat(1025));
+ if (mode === 'late-'+name+'-error') failure(primary);
+ if (mode === 'late-'+name+'-count-overflow')
+  for(let i=0;i<33;i++) message(primary,'log','bounded');
+ if (mode === 'late-'+name+'-bytes-overflow')
+  for(let i=0;i<9;i++) message(primary,'log','x'.repeat(1024));
+};
+class Page extends EventEmitter {
+ constructor(sandbox=false) { super(); this.sandbox=sandbox; }
+ async goto(url) {
+  if (!this.sandbox) {
+   serve({method:'GET',url:'/src/index.html'}, {
+    writeHead(_status,headers) {result.headers=headers;},end(){}
+   });
+  }
+  return {status:()=>200};
+ }
+ locator(selector) { return {
+  count:async()=>1,
+  innerText:async()=>this.sandbox?'sandbox':selector==='#result'?(this.clicked?'B':''):'',
+  click:async()=>{
+   this.clicked=true;
+   if (mode.startsWith('popup-')) {
+    const popup=await context.newPage();
+    if(mode==='popup-error') failure(popup);
+    if(mode==='popup-console-error') message(popup,'error','popup-console-error');
+    if(mode==='popup-overflow') message(popup,'log','x'.repeat(1025));
+    if(mode==='popup-crash') popup.emit('crash');
+   }
+   if(mode==='worker') this.emit('worker',{});
+   if(mode==='dedicated-worker' || mode==='shared-worker') {
+    if(result.headers['content-security-policy'] === "worker-src 'none'")
+     message(this,'error','Refused to create a worker');
+   }
+  }
+ }; }
+ async screenshot() {phase('screenshot');return Buffer.from('trusted-png-fixture');}
+ async close() {}
+}
+class Context extends EventEmitter {
+ count=0;
+ async newPage() {
+  const page=new Page(this.count++===0);
+  if(!page.sandbox && !primary) primary=page;
+  this.emit('page',page);
+  return page;
+ }
+ async route() {}
+}
+const fs = {
+ async readdir(path) {
+  if(path==='/proc') {phase('census');return [];}
+  return path==='/snapshot/'?['src']:['index.html'];
+ },
+ async lstat(path) {
+  if(!path.startsWith('/snapshot/src')) throw Object.assign(Error(),{code:'ENOENT'});
+  const directory=path==='/snapshot/src';
+  return {isDirectory:()=>directory,isFile:()=>!directory,nlink:1,size:1,uid:1001,mode:directory?0o555:0o444};
+ },
+ async readFile(path) {
+  const name=String(path);
+  if(name.endsWith('/scenario.json')) return readFileSync(new URL('scenario.json', 'file://'+process.argv[1]));
+  if(name.endsWith('/status')) return 'Uid:\t1001 1001 1001 1001\nCapEff:\t0\nCapPrm:\t0\nCapBnd:\t0\nNoNewPrivs:\t1\nSeccomp:\t2\nNSpid:\t2';
+  return Buffer.from('fixture');
+ },
+ async readlink() {return 'user:[100]';},
+ async writeFile() {throw Object.assign(Error(),{code:'EROFS'});}
+};
+const server = {
+ once(){},listen(_port,_host,resolve){resolve();},address(){return {port:1234};},
+ close(resolve){phase('server-close');result.closed.push('server');resolve();}
+};
+const socket = {setTimeout(){},once(name,callback){if(name==='error') queueMicrotask(()=>callback({code:'ENETUNREACH'}));},destroy(){}};
+const fakeProcess = {
+ version:'v26.5.0',arch:'arm64',getuid:()=>1001,execArgv:[],pid:2,
+ env:{EITRI_NONCE:'a'.repeat(64),EITRI_REQUEST:'b'.repeat(64)},
+ stdout:{write:value=>{result.stdout+=value;}},stderr:{write:value=>{result.stderr+=value;}},
+ exit:()=>{throw Error('unexpected-exit');},
+ set exitCode(value){result.exitCode=value;}
+};
+const realm=createContext({process:fakeProcess,Buffer,URL});
+const dependencies = {
+ 'playwright':{chromium:{launch:async()=>({
+  newContext:async()=>{context=new Context();return context;},
+  close:async()=>{phase('browser-close');result.closed.push('browser');}
+ })}},
+ 'node:fs/promises':fs,
+ 'node:http':{createServer:handler=>{serve=handler;return server;}},
+ 'node:crypto':{createHash},'node:net':{default:{connect:()=>socket}}
+};
+const driver=new SourceTextModule(readFileSync(process.argv[1],'utf8'),{
+ context:realm,initializeImportMeta:meta=>{meta.url='file://'+process.argv[1];}
+});
+await driver.link(specifier=>{
+ const exports=dependencies[specifier];
+ if(!exports) throw Error('unexpected-import '+specifier);
+ return new SyntheticModule(Object.keys(exports),function(){
+  for(const [key,value] of Object.entries(exports)) this.setExport(key,value);
+ },{context:realm});
+});
+await driver.evaluate();
+process.stdout.write(JSON.stringify(result));
+`;
+
+async function runTrustedDriver(mode: string): Promise<{
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+  headers: Record<string, string>;
+  closed: string[];
+  phases: string[];
+}> {
+  const child = spawn(
+    process.execPath,
+    [
+      '--experimental-vm-modules',
+      '--input-type=module',
+      '--eval',
+      driverFixture,
+      fileURLToPath(new URL('../worker/frozen-browser/driver.mjs', import.meta.url)),
+      mode,
+    ],
+    { stdio: ['ignore', 'pipe', 'pipe'] },
+  );
+  const output: Buffer[] = [],
+    errors: Buffer[] = [];
+  child.stdout.on('data', (bytes: Buffer) => output.push(bytes));
+  child.stderr.on('data', (bytes: Buffer) => errors.push(bytes));
+  const [code] = await once(child, 'close');
+  assert.equal(code, 0, Buffer.concat(errors).toString());
+  return JSON.parse(Buffer.concat(output).toString());
+}
 
 const transcript = String.raw`
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -85,7 +237,7 @@ else if (args[0] === 'build') {
  const zygote={...sec('5','zygote'),capEff:'0000000000200000',capPrm:'0000000000200000',userNamespace:'user:[101]',uidMap:'1001 1001 1',gidMap:'1001 1001 1',nspid:'5 1'};
  if(state.mode==='unknown-namespace') zygote.userNamespace='unknown';
  if(state.mode==='outer-sysadmin') zygote.userNamespace='user:[100]';
- const observed={runtime:{node:'v26.5.0',arch:'arm64',uid:1001},driverSha256:state.assets['driver.mjs'],watchdogSha256:state.assets['watchdog.mjs'],scenarioSha256:state.assets['scenario.json'],outer:sec('2','driver'),watchdog:sec('1','watchdog'),processes:[sec('3','browser',['--remote-debugging-pipe']),sec('4','renderer'),zygote],sandboxText:'Layer 1 Sandbox  Namespace\nPID namespaces  Yes\nNetwork namespaces  Yes\nSeccomp-BPF sandbox  Yes',budgets:{'memory.max':'4294967296','memory.swap.max':'0','pids.max':'256','cpu.max':'200000 100000'},restrictions:{root:'EROFS',snapshot:'EROFS',socket:'ENOENT',hostPath:'ENOENT',canary:'ENOENT',egress:'ENETUNREACH'},manifest:state.manifest,stage:state.mode==='startup-error'?'startup-failed':'complete',literal:state.mode==='startup-error'?null:state.literal,events:state.mode==='console-forgery'?[{kind:'console',text:'{"kind":"end","passed":true}'}]:[],canaryAfter:'ENOENT'};
+ const observed={runtime:{node:'v26.5.0',arch:'arm64',uid:1001},driverSha256:state.assets['driver.mjs'],watchdogSha256:state.assets['watchdog.mjs'],scenarioSha256:state.assets['scenario.json'],outer:sec('2','driver'),watchdog:sec('1','watchdog'),processes:[sec('3','browser',['--remote-debugging-pipe']),sec('4','renderer'),zygote],sandboxText:'Layer 1 Sandbox  Namespace\nPID namespaces  Yes\nNetwork namespaces  Yes\nSeccomp-BPF sandbox  Yes',budgets:{'memory.max':'4294967296','memory.swap.max':'0','pids.max':'256','cpu.max':'200000 100000'},restrictions:{root:'EROFS',snapshot:'EROFS',socket:'ENOENT',hostPath:'ENOENT',canary:'ENOENT',egress:'ENETUNREACH'},manifest:state.manifest,stage:state.mode==='startup-error'?'startup-failed':'complete',literal:state.mode==='startup-error'?null:state.literal,events:state.mode==='console-forgery'?[{kind:'console',text:'{"kind":"end","passed":true}'}]:['console-error','page-error'].includes(state.mode)?[{kind:state.mode,text:'observed-error'}]:[],canaryAfter:'ENOENT'};
  const frame=(kind,data)=>JSON.stringify({version:1,kind,nonce:bindings.EITRI_NONCE,requestDigest:bindings.EITRI_REQUEST,data});
  const chunk=(name,data)=>{const b=Buffer.alloc(data.length+12);b.writeUInt32BE(data.length);b.write(name,4);data.copy(b,8);b.writeUInt32BE(crc32(b.subarray(4,-4)),b.length-4);return b;};
  const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1);ihdr.writeUInt32BE(1,4);ihdr[8]=8;ihdr[9]=6;
@@ -184,6 +336,79 @@ async function waitFor(predicate: () => Promise<boolean>) {
   }
 }
 
+test('trusted frozen driver retains complete B and shutdown observations without faults', async () => {
+  const result = await runTrustedDriver('normal');
+  assert.equal(result.exitCode, 0);
+  assert.equal(result.stderr, '');
+  assert.deepEqual(result.closed, ['browser', 'server']);
+  assert.deepEqual(result.phases, ['screenshot', 'census', 'browser-close', 'server-close']);
+  const lines = result.stdout
+    .trimEnd()
+    .split('\n')
+    .map((line: string) => JSON.parse(line));
+  assert.deepEqual(
+    lines.map((frame) => frame.kind),
+    ['observations', 'png', 'end'],
+  );
+  assert.equal(lines[0].data.stage, 'complete');
+  assert.equal(lines[0].data.literal, 'B');
+  assert.deepEqual(lines[0].data.events, []);
+});
+
+test('trusted frozen driver fails closed on overflow through final shutdown', async (t) => {
+  for (const phase of ['screenshot', 'census', 'browser-close', 'server-close'])
+    for (const limit of ['overflow', 'count-overflow', 'bytes-overflow'])
+      await t.test(`${phase} ${limit}`, async () => {
+        const result = await runTrustedDriver(`late-${phase}-${limit}`);
+        assert.equal(result.exitCode, 1);
+        assert.equal(result.stdout, '');
+        assert.equal(result.stderr, 'frozen-driver-failed\n');
+        assert.deepEqual(result.closed, ['browser', 'server']);
+      });
+});
+
+test('trusted frozen driver collects popup and shutdown errors instead of clean B', async (t) => {
+  for (const [mode, expected] of [
+    ['popup-error', { kind: 'page-error', text: 'synthetic-page-error' }],
+    ['popup-console-error', { kind: 'console-error', text: 'popup-console-error' }],
+    ['popup-crash', { kind: 'page-error', text: 'page-crash' }],
+    ['late-browser-close-error', { kind: 'page-error', text: 'synthetic-page-error' }],
+    ['late-server-close-error', { kind: 'page-error', text: 'synthetic-page-error' }],
+  ] as const)
+    await t.test(mode, async () => {
+      const result = await runTrustedDriver(mode);
+      assert.equal(result.exitCode, 0);
+      const observations = JSON.parse(result.stdout.split('\n')[0]).data;
+      assert.deepEqual(observations.events, [expected]);
+      assert.equal(observations.literal, mode.startsWith('popup-') ? null : 'B');
+    });
+});
+
+test('trusted frozen driver rejects popup overflow and unexpected dedicated workers', async (t) => {
+  for (const mode of ['popup-overflow', 'worker'])
+    await t.test(mode, async () => {
+      const result = await runTrustedDriver(mode);
+      assert.equal(result.exitCode, 1);
+      assert.equal(result.stdout, '');
+      assert.equal(result.stderr, 'frozen-driver-failed\n');
+    });
+});
+
+test('trusted frozen driver serves a worker restriction and retains worker denial errors', async (t) => {
+  for (const mode of ['dedicated-worker', 'shared-worker'])
+    await t.test(mode, async () => {
+      const result = await runTrustedDriver(mode);
+      assert.equal(result.headers['content-security-policy'], "worker-src 'none'");
+      assert.equal(result.exitCode, 0);
+      const observations = JSON.parse(result.stdout.split('\n')[0]).data;
+      assert.deepEqual(observations.events, [
+        { kind: 'console-error', text: 'Refused to create a worker' },
+      ]);
+      assert.equal(observations.stage, 'action-failed');
+      assert.equal(observations.literal, null);
+    });
+});
+
 test('frozen browser literal A after B has host evidence, detached cache and persistent idempotency', async (t) => {
   const f = await fixture(t);
   const before = await f.store.read(f.request.frozen.caseId, virtualPath('src/index.html'));
@@ -239,6 +464,8 @@ test('frozen browser classifies protected roles and unrelated startup or literal
   for (const [role, literal, mode, expected] of [
     ['baseline', 'B', 'normal', 'baseline-not-reproduced'],
     ['candidate', 'B', 'normal', 'candidate-passed'],
+    ['candidate', 'B', 'console-error', 'unrelated-failure'],
+    ['candidate', 'B', 'page-error', 'unrelated-failure'],
     ['candidate', 'A', 'normal', 'candidate-failed'],
     ['baseline', 'C', 'normal', 'unrelated-failure'],
     ['baseline', 'A', 'startup-error', 'unrelated-failure'],
