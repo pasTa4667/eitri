@@ -1,6 +1,6 @@
 # eitri
 
-Local Sentry investigation and fix-PR pilot. M0's durable TypeScript controller is implemented and verified with scripted adapters. The GPUI native operator builds and passes input/client tests. Visual acceptance, sandboxed execution, and live integrations remain staged by the [build plan](docs/build-plan.md).
+Local Sentry investigation and fix-PR pilot. The durable controller and scripted native operator are verified within their recorded scope. Sandboxed execution and live integrations remain gated by the [build plan](docs/build-plan.md). The [work log](docs/work-log.md) owns current acceptance status.
 
 ## Check this checkout
 
@@ -49,7 +49,7 @@ The pinned GPUI 0.2.2 build uses process-local Xcode selection, not a toolchain 
 
 ## Containment gate
 
-The standalone ARM64 Chromium probe currently fails with `No usable sandbox!` under the recorded restrictions. No privileged, `SYS_ADMIN`, host IPC/network, or no-sandbox workaround was used. See [the containment review](docs/containment-review.md). Generated execution and live integrations remain disabled.
+The default ARM64 Chromium probe fails with `No usable sandbox!`. The reviewed namespace candidate passes USER namespace controls but stops at `chroot`. No privileged, `SYS_ADMIN`, host IPC/network, or no-sandbox workaround was used. See [the containment review](docs/containment-review.md). Generated execution and live integrations remain disabled.
 
 ## Review the setup and progress
 
@@ -57,5 +57,3 @@ The standalone ARM64 Chromium probe currently fails with `No usable sandbox!` un
 - [SDK review](docs/sdk-review.md) describes the observed API differences and the recommended dependency decision.
 - [Work log](docs/work-log.md) records the workflow, milestone checklist, and continuation checkpoint.
 - [Decision trail](decisions.tsv) records choices and evidence.
-
-No provider credentials, containers, live inference, repository push, or live remediation have been created by this implementation run.

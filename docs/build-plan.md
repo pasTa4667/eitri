@@ -1,8 +1,8 @@
 # eitri: implementation blueprint and build plan
 
-**Status: ready for review; application implementation is not yet approved.**
+Current implementation authorization and milestone acceptance are recorded in the [work log](work-log.md). The scope limits and gates below remain binding.
 
-This consolidates the completed interview. The [decision record and evidence](implementation-plan.md), [domain glossary](../CONTEXT.md), and [storage ADR](adr/0004-catalogue-and-session-stores.md) explain the choices. Concrete defaults below are proposals for this sign-off, not claims that the integrations have been built or tested.
+This consolidates the completed interview. The [decision record and evidence](implementation-plan.md), [domain glossary](../CONTEXT.md), and [storage ADR](adr/0004-catalogue-and-session-stores.md) explain the choices. Defaults below describe the planned pilot, not completed or tested integrations.
 
 ## 1. Approval scope and limits
 

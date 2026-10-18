@@ -1,6 +1,6 @@
 # Implementation design
 
-Status: **interview complete; consolidated build plan awaiting approval; application coding is not approved**. The [implementation blueprint and staged build plan](build-plan.md) is the sign-off document. This record preserves decisions, alternatives, and evidence; older proposals are not accepted merely because they appear here. Research and toolchain readiness remain in the [research handoff](research/local-first-pilot.md).
+Historical interview and design record. Current authorization and acceptance are recorded in the [work log](work-log.md); the [build plan](build-plan.md) defines scope limits and stage gates. This record preserves decisions, alternatives, and evidence; older proposals are not accepted merely because they appear here. Research and toolchain readiness remain in the [research handoff](research/local-first-pilot.md).
 
 ## Accepted in implementation rounds 1–9
 
