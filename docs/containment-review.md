@@ -4,7 +4,7 @@
 
 The standalone M2 feasibility probe remains blocked after a reviewed namespace-policy experiment. USER namespace controls now pass, but Chromium stops at `sys_chroot("/proc/self/fdinfo/")`. This is a failed gate, not successful browser validation. Generated execution, fixture editing, Sentry installation, subscription inference, and publication have not been enabled.
 
-M0 is implemented and verified. The native GPUI build, input handlers, and real controller connection pass their tests. M1 still needs its visual/operator walkthrough and actual artifact screenshot surface; it is not marked fully accepted. The probe below uses only a trusted fixed script, not an agent-generated command or a repository mount.
+M0 is implemented and verified. The native GPUI build, input handlers, and real controller connection pass their tests. M1's artifact resources and native cards are implemented and tested. Its visual/operator walkthrough remains unverified, so it is not fully accepted. The probe below uses only a trusted fixed script, not an agent-generated command or a repository mount.
 
 ## Reproduce
 

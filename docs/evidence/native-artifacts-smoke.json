@@ -1,0 +1,23 @@
+{
+  "checkedAt": "2026-10-18T10:46:54Z",
+  "operatorCommit": "1141a89",
+  "sourceCommit": "7c6cafe80e393926310d9a3323222cc337d16df6",
+  "mode": "synthetic",
+  "scope": "Native launch and owned-window capture attempt. No live model, browser, fixture edit, or permission change.",
+  "visualAcceptance": "not-verified",
+  "controllerBootstrapCreated": true,
+  "operatorAliveAfterLaunch": true,
+  "operatorExitCode": null,
+  "windowQueryExitCode": 0,
+  "windowQueryError": "",
+  "ownedWindowIds": [
+    459,
+    458
+  ],
+  "captureExitCode": 1,
+  "captureError": "could not create image from window\n",
+  "captureCreated": false,
+  "operatorStopped": true,
+  "controllerStopped": true,
+  "temporaryDataRetained": ".audit/native-smoke-2d10f7ab-6e6d-44a7-a62c-977d4bda91aa"
+}
