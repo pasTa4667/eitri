@@ -1,0 +1,43 @@
+{
+  "scope": "Unwired offline workspace/file-broker preparation only. Not M2 acceptance.",
+  "integratedCommit": "7f28bf3",
+  "sourceCommit": "c7e23baba7d3f52ef5a1486b2e33fc53cecb8b1f",
+  "parentVerification": {
+    "command": "npm run verify:all",
+    "exitCode": 0,
+    "nodePassed": 88,
+    "rustPassed": 30,
+    "output": "tests.txt"
+  },
+  "reviews": [
+    {
+      "kind": "security and correctness",
+      "runId": "226b9b50-491a-44d1-ae12-8dd9dc125c4e",
+      "runtimeModel": "openai-codex/gpt-6.1-sol:high",
+      "verdict": "No actionable findings for the unwired library",
+      "output": "security-review.md"
+    },
+    {
+      "kind": "comments and suppressions",
+      "runId": "c4674a87-7718-49ec-9b1e-b1606f02be44",
+      "runtimeModel": "openai-codex/gpt-6.1-sol:high",
+      "verdict": "No deletions or reshape flags. Public API contract retained.",
+      "output": "comment-review.md"
+    }
+  ],
+  "crossModelFamilyReview": false,
+  "productionEntryPointsUnchanged": true,
+  "realFixtureInspectedOrModified": false,
+  "generatedExecutionEnabled": false,
+  "chrootExperimentApproved": false,
+  "limitations": [
+    "One trusted store owner and no untrusted host writers are required.",
+    "Initial store-creation crashes fail closed.",
+    "Pending intents conservatively park other ready workspaces on reopen.",
+    "Lifetime quotas have no reclamation API yet.",
+    "SIGKILL tests do not establish power-loss durability.",
+    "Export permissions do not establish container containment.",
+    "Native/controller receipt and immutable validation-driver integration remain unimplemented.",
+    "Credential, sign-in, publication, and live-remediation gates remain pending."
+  ]
+}

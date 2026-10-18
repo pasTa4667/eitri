@@ -14,7 +14,7 @@ npm run check:sdk
 npm run probe:sdk
 ```
 
-`verify` lints and checks formatting for TypeScript/JavaScript, type-checks, and runs the native-SQLite, control, recovery, and HTTP tests. `verify:all` also checks Rust linting/formatting and runs the operator tests. `doctor` reports local prerequisites without reading secrets; installer Bash remains missing until M3. `check:sdk` accepts only the operator-reviewed package/source hashes and fails on unreviewed differences.
+`verify` lints and checks formatting for TypeScript/JavaScript, type-checks, and runs the native-SQLite, control, recovery, HTTP, and temporary-Git workspace tests. `verify:all` also checks Rust linting/formatting and runs the operator tests. `doctor` reports local prerequisites without reading secrets; installer Bash remains missing until M3. `check:sdk` accepts only the operator-reviewed package/source hashes and fails on unreviewed differences.
 
 `probe:sdk` runs a throwaway faux-model experiment against a temporary real Pi SQLite store. It is not a live inference or the M0 controller.
 
@@ -46,6 +46,10 @@ npm run operator
 ```
 
 The pinned GPUI 0.2.2 build uses process-local Xcode selection, not a toolchain upgrade. `npm run test:operator` exercises GPUI input handlers and the Rust client against a real scripted controller. The operator has typed check cards and on-demand text/PNG artifact viewing. Its client verifies provenance, byte limits, and checksums off the render thread. Tests include real-controller artifact retrieval and native PNG decoding. Screen capture now works. The [forge-style overview](docs/evidence/native-visual/forge-overview.png) and [constrained editor](docs/evidence/native-visual/constrained-after.png) have actual native captures. The missing-text production feature was fixed without upgrading GPUI. The scripted pilot's native acceptance includes a stable text/PNG viewer and observed image-handle release. Live integration gates remain closed. See [rendering verification and its limits](docs/native-rendering.md).
+
+## Offline workspace preparation
+
+The [workspace library](docs/workspace.md) adds managed Git, guarded one-file edits, durable crash receipts, and immutable exports. It remains disconnected from controller routes and agent tools. Its tests use synthetic temporary repositories, not the demonstration fixture.
 
 ## Containment gate
 
