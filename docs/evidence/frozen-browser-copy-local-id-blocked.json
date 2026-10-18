@@ -1,0 +1,162 @@
+{
+  "protocol": 1,
+  "runId": "93da7005-fa8d-4585-8efa-033e7eadc425",
+  "checkedAt": "2026-10-18T15:12:44.270Z",
+  "scope": "Pure throwaway COPY instrument with synthetic bytes. Not a production validator or receipt.",
+  "status": "blocked",
+  "observationOutcome": "blocked",
+  "resources": {
+    "containerName": "eitri-frozen-browser-copy-93da7005-fa8d-4585-8efa-033e7eadc425",
+    "imageTag": "eitri-frozen-browser-copy:93da7005-fa8d-4585-8efa-033e7eadc425",
+    "privateRoot": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-copy-cHgEws"
+  },
+  "cleanup": {
+    "container": "not-created",
+    "image": "not-created",
+    "store": "closed",
+    "scratch": "removed",
+    "buildCache": "Not pruned. Docker may retain synthetic COPY bytes and trusted driver in build cache."
+  },
+  "exportBefore": {
+    "directories": [
+      {
+        "path": "",
+        "mode": 320
+      },
+      {
+        "path": "src",
+        "mode": 320
+      }
+    ],
+    "files": [
+      {
+        "path": "src/index.html",
+        "literal": "<button id=\"run\">Run</button><output id=\"result\"></output><script>run.onclick=()=>result.textContent=\"A\"</script>\n",
+        "sha256": "adb761859f7364fac2b2db7cba60b84e2e23752ab4b46a3dc0a3a009ea26ecac",
+        "size": 114,
+        "mode": 256
+      },
+      {
+        "path": "package.json",
+        "literal": "{\"private\":true,\"scripts\":{\"preinstall\":\"node poison.cjs\",\"install\":\"node poison.cjs\",\"postinstall\":\"node poison.cjs\"}}\n",
+        "sha256": "a97cbe5510fb1f70ae3356370b59d30eda6487b0694cb261d16051295b802d9c",
+        "size": 120,
+        "mode": 256
+      },
+      {
+        "path": "poison.cjs",
+        "literal": "require(\"node:fs\").writeFileSync(\"/tmp/project-node-executed\", \"project Node executed\\n\");\n",
+        "sha256": "f0fb69b8541163d64b881c0799d9a036f88f89ef75db9c725771231dd5d820ce",
+        "size": 91,
+        "mode": 256
+      }
+    ]
+  },
+  "workspaceB": {
+    "revision": "05594a71319d678ca37c7835c098a1c5f6b56eba",
+    "literal": "<button id=\"run\">Run</button><output id=\"result\"></output><script>run.onclick=()=>result.textContent=\"B\"</script>\n",
+    "sha256": "5d61c69d5d1643f6d9c6ebe89fdb7b96e58cfd8c683686504e4f12dd3607fb4a"
+  },
+  "provenance": {
+    "frozen": {
+      "caseId": "f8f1d502-13cb-4c86-b1b4-2d9e226e3ceb",
+      "revision": "6fb1d2a259643a67516ef7f6cb48b1129bcfc124",
+      "manifestDigest": "e5790764ef87f3bc867490773c2f93b11a91531e397581125126bc1cb4841be2"
+    },
+    "exported": {
+      "exportId": "b6ef1b7d-23dc-4808-baf7-503fe2481de7",
+      "revision": "6fb1d2a259643a67516ef7f6cb48b1129bcfc124",
+      "manifestDigest": "e5790764ef87f3bc867490773c2f93b11a91531e397581125126bc1cb4841be2"
+    },
+    "transferredBytesSha256": "c7264eb51adb289dbe838727a12f1a2890fa99f4c792a7163c912491a84a2ad8",
+    "driverSha256": "401fb788b2f4bbdbf981da965f6df1f4e9a0a6ce0b6f9e7f082a78070a4a6373",
+    "dockerfileSha256": "cfdc9c21df0679a7c28758ae3ff2ea342c545bb083d7154eb0e4b81c8647a7af",
+    "contextFiles": [
+      "Dockerfile",
+      "driver.mjs",
+      "rootfs/snapshot/src/index.html",
+      "rootfs/snapshot/package.json",
+      "rootfs/snapshot/poison.cjs"
+    ]
+  },
+  "daemon": {
+    "version": "29.4.0",
+    "gitCommit": "daa0cb7f",
+    "architecture": "arm64"
+  },
+  "daemonSecurity": [
+    "name=seccomp,profile=builtin",
+    "name=cgroupns"
+  ],
+  "policy": {
+    "engineCommit": "daa0cb7f23594cdbcce5002e370027d3fd36ffd7",
+    "baselineSha256": "01536f1d1df938ae611eba20d6349e0de7a99b6ecdee1549427a0b01b8301e28",
+    "sha256": "c85c2b40abc8ca15cace108b94f91e337b73313c8288b03c41d1ca51fe239bd7",
+    "addedRules": 7
+  },
+  "baseBefore": {
+    "id": "sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff",
+    "architecture": "arm64",
+    "os": "linux"
+  },
+  "build": {
+    "exitCode": 1,
+    "stdout": "",
+    "stderr": "#0 building with \"orbstack\" instance using docker driver\n\n#1 [internal] load build definition from Dockerfile\n#1 transferring dockerfile: 324B done\n#1 DONE 0.1s\n\n#2 [internal] load metadata for docker.io/library/sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff\n#2 ERROR: failed to do request: Head \"https://[configured-registry-mirror]/v2/library/sha256/manifests/57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff?ns=docker.io\": Bad Gateway\n------\n > [internal] load metadata for docker.io/library/sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff:\n------\nDockerfile:1\n--------------------\n   1 | >>> FROM sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff\n   2 |     COPY --chown=0:0 --chmod=0444 driver.mjs /opt/eitri/frozen-driver.mjs\n   3 |     COPY --chown=1001:1001 rootfs/ /\n--------------------\nERROR: failed to build: failed to solve: sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff: failed to resolve source metadata for docker.io/library/sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff: failed to do request: Head \"https://[configured-registry-mirror]/v2/library/sha256/manifests/57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff?ns=docker.io\": Bad Gateway\n",
+    "offlineGuarantee": false
+  },
+  "baseAfterBuild": {
+    "id": "sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff",
+    "architecture": "arm64",
+    "os": "linux"
+  },
+  "error": "Fixed local-ID COPY build failed. No fallback attempted\n\n1 !== 0\n",
+  "exportAfter": {
+    "directories": [
+      {
+        "path": "",
+        "mode": 320
+      },
+      {
+        "path": "src",
+        "mode": 320
+      }
+    ],
+    "files": [
+      {
+        "path": "src/index.html",
+        "literal": "<button id=\"run\">Run</button><output id=\"result\"></output><script>run.onclick=()=>result.textContent=\"A\"</script>\n",
+        "sha256": "adb761859f7364fac2b2db7cba60b84e2e23752ab4b46a3dc0a3a009ea26ecac",
+        "size": 114,
+        "mode": 256
+      },
+      {
+        "path": "package.json",
+        "literal": "{\"private\":true,\"scripts\":{\"preinstall\":\"node poison.cjs\",\"install\":\"node poison.cjs\",\"postinstall\":\"node poison.cjs\"}}\n",
+        "sha256": "a97cbe5510fb1f70ae3356370b59d30eda6487b0694cb261d16051295b802d9c",
+        "size": 120,
+        "mode": 256
+      },
+      {
+        "path": "poison.cjs",
+        "literal": "require(\"node:fs\").writeFileSync(\"/tmp/project-node-executed\", \"project Node executed\\n\");\n",
+        "sha256": "f0fb69b8541163d64b881c0799d9a036f88f89ef75db9c725771231dd5d820ce",
+        "size": 91,
+        "mode": 256
+      }
+    ]
+  },
+  "exportPreserved": true,
+  "workspaceAfter": {
+    "literal": "<button id=\"run\">Run</button><output id=\"result\"></output><script>run.onclick=()=>result.textContent=\"B\"</script>\n",
+    "sha256": "5d61c69d5d1643f6d9c6ebe89fdb7b96e58cfd8c683686504e4f12dd3607fb4a"
+  },
+  "baseFinally": {
+    "id": "sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff",
+    "architecture": "arm64",
+    "os": "linux"
+  },
+  "evidenceRedactions": [
+    "Configured registry-mirror hostname masked in build stderr. Original bounded report retained locally in .audit/frozen-browser-copy-first.json."
+  ]
+}
