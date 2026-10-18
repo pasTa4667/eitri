@@ -1,0 +1,31 @@
+[
+  {
+    "operation": "passive-note",
+    "dispatches": 0,
+    "toolExecutions": 0,
+    "marker": "native-document"
+  },
+  {
+    "operation": "tool-turn-with-throwing-hook",
+    "status": "done",
+    "dispatches": 2,
+    "toolExecutions": 1
+  },
+  {
+    "operation": "denied-result",
+    "status": "unanswered",
+    "reason": "model_error"
+  },
+  {
+    "operation": "denied-dispatch",
+    "dispatches": 2,
+    "toolExecutions": 1
+  },
+  {
+    "operation": "reopen-without-resume",
+    "marker": "native-document",
+    "noteCount": 1,
+    "dispatches": 2,
+    "toolExecutions": 1
+  }
+]

@@ -1,0 +1,6 @@
+ts	phase	decision	why	evidence	result
+2026-10-18T08:03:56Z	prerequisites	Started local implementation and preserved existing fixture work	The user approved implementation while the plan retains human setup gates	docs/work-log.md	open
+2026-10-18T08:10:19Z	sdk-review	Paused application implementation at the planned SDK review gate	Published public types differ from the inspected commit; do not silently change the dependency contract	docs/evidence/sdk-compatibility.json	review-required
+2026-10-18T08:10:19Z	prototype	Probed fixed-model provider gating with real temporary native SQLite and a faux provider	Determine whether the published API is feasible before recommending a dependency decision	docs/evidence/sdk-probe.json	Limited observations support retaining 1.3.0; M0 remains unverified
+2026-10-18T08:10:19Z	checkpoint	Recorded setup guidance and a continuation checkpoint without reading secrets	Human setup gates must remain explicit while preserving the existing fixture	docs/setup.md	Waiting for SDK review; no independent model reviewer available
+2026-10-18T08:10:55Z	verification	Reinstalled from the lockfile and reran syntax and native SQLite prototype checks	Verify the retained artifact rather than relying on the first run	docs/evidence/sdk-probe.json	Reproduced observations; prerequisite and SDK gates remain blocked

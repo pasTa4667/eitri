@@ -1,0 +1,69 @@
+{
+  "checkedAt": "2026-10-18T08:09:31.263Z",
+  "scope": "Read-only prerequisites. Does not read secrets or authenticate provider accounts.",
+  "checks": [
+    {
+      "name": "node",
+      "status": "observed",
+      "output": "v26.5.0"
+    },
+    {
+      "name": "rust",
+      "status": "observed",
+      "output": "rustc 1.97.1 (8bab26f4f 2026-07-14)"
+    },
+    {
+      "name": "xcode",
+      "status": "observed",
+      "output": "Xcode 27.1\nBuild version 27A9275"
+    },
+    {
+      "name": "onepassword-cli",
+      "status": "observed",
+      "output": "2.30.3"
+    },
+    {
+      "name": "orbstack",
+      "status": "observed",
+      "output": "\"aarch64\" 12 33671933952"
+    },
+    {
+      "name": "sentry-installer-bash",
+      "status": "needs-attention",
+      "output": "",
+      "error": "ENOENT"
+    },
+    {
+      "name": "fixture-git",
+      "status": "observed",
+      "output": "## No commits yet on master\n?? .env\n?? .gitignore\n?? README.md\n?? e2e/\n?? index.html\n?? package-lock.json\n?? package.json\n?? playwright.config.js\n?? src/\n?? vite.config.js"
+    },
+    {
+      "name": "fixture-environment-file",
+      "status": "present-unread",
+      "output": "Not inspected. Preserve this file and do not commit it."
+    },
+    {
+      "name": "pi-durable",
+      "status": "observed",
+      "output": "1.3.0"
+    },
+    {
+      "name": "pi-ai",
+      "status": "observed",
+      "output": "1.3.0"
+    },
+    {
+      "name": "chord",
+      "status": "observed",
+      "output": "1.3.0"
+    }
+  ],
+  "manualGates": [
+    "Explicit company-account selection and vault permissions approval before vault or item creation.",
+    "GitHub repository-restricted token and local Sentry API token stored directly in 1Password.",
+    "GitHub privacy and baseline branch confirmation before the first push.",
+    "Supported OpenAI sign-in and approval of the first real tool-using inference.",
+    "Explicit live-remediation enablement after readiness checks."
+  ]
+}

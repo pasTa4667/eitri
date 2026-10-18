@@ -1,0 +1,10 @@
+node_modules/
+dist/
+operator/target/
+.env
+.env.*
+!.env.example
+*.sqlite
+*.sqlite-*
+.audit/
+.DS_Store
