@@ -25,3 +25,13 @@ export function namespacePolicy(baseline) {
   policy.syscalls.push(...structuredClone(namespaceRules));
   return `${JSON.stringify(policy, null, 2)}\n`;
 }
+
+export function namespaceChrootPolicy(baseline) {
+  const policy = JSON.parse(namespacePolicy(baseline));
+  policy.syscalls.push({
+    names: ['chroot'],
+    action: 'SCMP_ACT_ALLOW',
+    includes: { arches: ['arm64'] },
+  });
+  return `${JSON.stringify(policy, null, 2)}\n`;
+}

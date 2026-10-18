@@ -2,12 +2,19 @@ import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile, unlink } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { engineCommit, baselineSha256, namespacePolicy, sha256 } from './policy.mjs';
+import {
+  engineCommit,
+  baselineSha256,
+  namespacePolicy,
+  namespaceChrootPolicy,
+  sha256,
+} from './policy.mjs';
 
 const modes = new Map([
   ['', 'builtin'],
   ['--pinned-policy', 'pinned'],
   ['--namespace-policy', 'namespaces'],
+  ['--namespace-chroot-policy', 'namespaces-chroot'],
 ]);
 const mode = modes.get(process.argv[2] ?? '');
 if (!mode || process.argv.length > 3) throw new Error('Unknown containment probe mode');
@@ -51,14 +58,19 @@ try {
     report.daemonVersion = server;
     const baseline = await readFile(new URL('seccomp/docker-29.4.0.json', import.meta.url));
     if (sha256(baseline) !== baselineSha256) throw new Error('Unreviewed seccomp baseline');
-    policy = mode === 'namespaces' ? namespacePolicy(baseline) : baseline.toString('utf8');
+    policy =
+      mode === 'namespaces-chroot'
+        ? namespaceChrootPolicy(baseline)
+        : mode === 'namespaces'
+          ? namespacePolicy(baseline)
+          : baseline.toString('utf8');
     policyFile = new URL(`.audit/seccomp-${randomUUID()}.json`, root);
     await writeFile(policyFile, policy, { mode: 0o600, flag: 'wx' });
     report.policy = {
       engineCommit,
       baselineSha256,
       sha256: sha256(policy),
-      addedRules: mode === 'namespaces' ? 6 : 0,
+      addedRules: mode === 'namespaces-chroot' ? 7 : mode === 'namespaces' ? 6 : 0,
     };
     securityOptions.push('--security-opt', `seccomp=${fileURLToPath(policyFile)}`);
   }

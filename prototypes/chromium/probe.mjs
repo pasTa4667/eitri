@@ -76,7 +76,7 @@ try {
     : { error: namespaces.error?.message, stderr: namespaces.stderr };
   if (namespaces.status !== 0) throw new Error('Namespace syscall controls failed');
   if (
-    process.env.EITRI_POLICY_MODE === 'namespaces' &&
+    ['namespaces', 'namespaces-chroot'].includes(process.env.EITRI_POLICY_MODE) &&
     !observations.namespaceProbe.userNamespacesUsable
   )
     throw new Error('User namespaces remain unavailable under the reviewed policy');
