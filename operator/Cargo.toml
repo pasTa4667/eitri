@@ -5,7 +5,7 @@ edition = "2024"
 publish = false
 
 [dependencies]
-gpui = { version = "=0.2.2", default-features = false }
+gpui = { version = "=0.2.2", default-features = false, features = ["font-kit"] }
 serde = { version = "=1.0.228", features = ["derive"] }
 serde_json = "=1.0.145"
 sha2 = "=0.10.9"
