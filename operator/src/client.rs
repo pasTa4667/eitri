@@ -1,5 +1,7 @@
+use gpui::{Image, ImageFormat};
 use serde::Deserialize;
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use std::{
     fs,
     io::{BufRead, BufReader, Read},
@@ -33,11 +35,137 @@ pub struct Message {
     pub kind: String,
     pub data: Value,
 }
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct Check {
+    pub id: String,
+    pub case_id: String,
+    pub action_id: String,
+    pub kind: String,
+    pub candidate: String,
+    pub configuration: String,
+    pub passed: bool,
+    pub simulated: bool,
+    pub artifacts: Vec<String>,
+}
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
+pub enum ArtifactMime {
+    #[serde(rename = "text/plain")]
+    Text,
+    #[serde(rename = "image/png")]
+    Png,
+}
+impl ArtifactMime {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Text => "text/plain",
+            Self::Png => "image/png",
+        }
+    }
+    fn limit(self) -> usize {
+        match self {
+            Self::Text => 256 * 1024,
+            Self::Png => 4 * 1024 * 1024,
+        }
+    }
+}
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct Artifact {
+    pub id: String,
+    pub case_id: String,
+    pub action_id: String,
+    pub check_id: String,
+    pub revision: String,
+    pub configuration: String,
+    pub simulated: bool,
+    pub created_at: u64,
+    pub label: String,
+    pub mime: ArtifactMime,
+    pub size: usize,
+    pub sha256: String,
+}
 #[derive(Clone, Deserialize)]
 pub struct Selected {
     pub case: Session,
     pub messages: Vec<Message>,
     pub more: bool,
+    pub checks: Vec<Check>,
+    pub artifacts: Vec<Artifact>,
+}
+fn route_id(id: &str) -> bool {
+    id.len() == 36 && uuid::Uuid::parse_str(id).is_ok()
+}
+fn hex(value: &str, min: usize, max: usize) -> bool {
+    (min..=max).contains(&value.len())
+        && value
+            .bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+}
+impl Selected {
+    pub fn linked_artifact(&self, id: &str) -> Option<&Artifact> {
+        if self.case.native != "ready" || self.checks.len() > 256 || self.artifacts.len() > 128 {
+            return None;
+        }
+        let mut artifacts = self.artifacts.iter().filter(|a| a.id == id);
+        let a = artifacts.next()?;
+        if artifacts.next().is_some()
+            || a.case_id != self.case.id
+            || ![&a.id, &a.case_id, &a.action_id, &a.check_id]
+                .into_iter()
+                .all(|id| route_id(id))
+            || !hex(&a.revision, 40, 64)
+            || !hex(&a.configuration, 64, 64)
+            || !hex(&a.sha256, 64, 64)
+            || a.size == 0
+            || a.size > a.mime.limit()
+            || a.label.is_empty()
+            || a.label.len() > 128
+            || a.label.chars().any(char::is_control)
+        {
+            return None;
+        }
+        let mut checks = self.checks.iter().filter(|c| c.id == a.check_id);
+        let c = checks.next()?;
+        (checks.next().is_none()
+            && c.case_id == a.case_id
+            && c.action_id == a.action_id
+            && c.candidate == a.revision
+            && c.configuration == a.configuration
+            && c.simulated == a.simulated
+            && c.artifacts.iter().filter(|id| **id == a.id).count() == 1)
+            .then_some(a)
+    }
+}
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ArtifactKey {
+    pub boot_id: String,
+    pub generation: u64,
+    pub case_id: String,
+    pub artifact_id: String,
+}
+#[derive(Clone)]
+pub enum ArtifactState {
+    Loading,
+    Text(Arc<str>),
+    Png(Arc<Image>),
+    Unavailable,
+}
+#[derive(Clone)]
+pub struct ArtifactView {
+    pub key: ArtifactKey,
+    pub artifact: Artifact,
+    pub state: ArtifactState,
+}
+struct ArtifactJob {
+    key: ArtifactKey,
+    artifact: Artifact,
+    revision: u64,
+}
+struct ArtifactContext {
+    boot_id: String,
+    generation: u64,
+    selected: Selected,
 }
 #[derive(Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -69,6 +197,57 @@ pub struct Update {
     pub snapshot: Option<Snapshot>,
     pub status: String,
     pub acknowledgments: Vec<(String, bool)>,
+    pub artifact_view: Option<ArtifactView>,
+    pub artifact_revision: u64,
+    context: Option<ArtifactContext>,
+}
+impl Update {
+    fn clear_artifact(&mut self) {
+        self.artifact_view = None;
+        self.artifact_revision += 1;
+    }
+    fn disconnect(&mut self) {
+        self.context = None;
+        self.clear_artifact();
+        self.status = "Disconnected · retrying".into();
+    }
+    fn apply_snapshot(&mut self, view: Snapshot, generation: u64, selected: &Option<String>) {
+        self.context = view
+            .selected
+            .as_ref()
+            .filter(|s| Some(&s.case.id) == selected.as_ref() && s.case.native == "ready")
+            .map(|s| ArtifactContext {
+                boot_id: view.boot_id.clone(),
+                generation,
+                selected: s.clone(),
+            });
+        if let Some(loaded) = &self.artifact_view
+            && !self.context.as_ref().is_some_and(|context| {
+                context.boot_id == loaded.key.boot_id
+                    && context.generation == loaded.key.generation
+                    && context.selected.case.id == loaded.key.case_id
+                    && context.selected.linked_artifact(&loaded.key.artifact_id)
+                        == Some(&loaded.artifact)
+            })
+        {
+            self.clear_artifact();
+        }
+        self.snapshot = Some(view);
+        self.status = "Connected · scripted".into();
+    }
+    fn accepts_artifact(&self, job: &ArtifactJob) -> bool {
+        self.artifact_revision == job.revision
+            && self
+                .artifact_view
+                .as_ref()
+                .is_some_and(|v| v.key == job.key && v.artifact == job.artifact)
+            && self.context.as_ref().is_some_and(|context| {
+                context.boot_id == job.key.boot_id
+                    && context.generation == job.key.generation
+                    && context.selected.case.id == job.key.case_id
+                    && context.selected.linked_artifact(&job.key.artifact_id) == Some(&job.artifact)
+            })
+    }
 }
 enum Job {
     Refresh(u64),
@@ -76,6 +255,7 @@ enum Job {
 }
 pub struct Client {
     jobs: mpsc::SyncSender<Job>,
+    artifact_jobs: mpsc::SyncSender<ArtifactJob>,
     pub update: Arc<Mutex<Update>>,
     selection: Arc<Mutex<Option<String>>>,
     generation: Arc<AtomicU64>,
@@ -101,11 +281,106 @@ fn agent(stream: bool) -> ureq::Agent {
         .max_redirects(0)
         .proxy(None)
         .http_status_as_error(false)
+        .timeout_global(if stream {
+            None
+        } else {
+            Some(Duration::from_secs(5))
+        })
         .timeout_connect(Some(Duration::from_secs(2)))
         .timeout_recv_response(Some(Duration::from_secs(3)))
         .timeout_recv_body(Some(Duration::from_secs(if stream { 15 } else { 3 })))
         .build()
         .into()
+}
+fn png_bounds(bytes: &[u8]) -> Result<(), ()> {
+    if bytes.get(..8) != Some(b"\x89PNG\r\n\x1a\n") {
+        return Err(());
+    }
+    let mut offset = 8;
+    let mut data = false;
+    while offset + 12 <= bytes.len() {
+        let length = u32::from_be_bytes(bytes[offset..offset + 4].try_into().unwrap()) as usize;
+        let end = offset
+            .checked_add(length)
+            .and_then(|n| n.checked_add(12))
+            .ok_or(())?;
+        if end > bytes.len() {
+            return Err(());
+        }
+        match &bytes[offset + 4..offset + 8] {
+            b"IHDR" if offset == 8 && length == 13 => {
+                let width = u32::from_be_bytes(bytes[offset + 8..offset + 12].try_into().unwrap());
+                let height =
+                    u32::from_be_bytes(bytes[offset + 12..offset + 16].try_into().unwrap());
+                if width == 0
+                    || height == 0
+                    || width > 4096
+                    || height > 4096
+                    || u64::from(width) * u64::from(height) > 16_000_000
+                {
+                    return Err(());
+                }
+            }
+            b"IDAT" if offset > 8 => data = true,
+            b"PLTE" | b"tRNS" if offset > 8 => (),
+            b"sRGB" if offset > 8 && length == 1 => (),
+            b"gAMA" if offset > 8 && length == 4 => (),
+            b"cHRM" if offset > 8 && length == 32 => (),
+            b"pHYs" if offset > 8 && length == 9 => (),
+            b"IEND" if data && length == 0 && end == bytes.len() => return Ok(()),
+            // Compressed metadata can expand independently of dimensions in the native decoder.
+            _ => return Err(()),
+        }
+        offset = end;
+    }
+    Err(())
+}
+fn fetch_artifact(agent: &ureq::Agent, c: &Connection, a: &Artifact) -> Result<ArtifactState, ()> {
+    if !route_id(&a.case_id) || !route_id(&a.id) || a.size == 0 || a.size > a.mime.limit() {
+        return Err(());
+    }
+    let mut response = agent
+        .get(format!(
+            "{}/v1/cases/{}/artifacts/{}",
+            c.url, a.case_id, a.id
+        ))
+        .header("authorization", format!("Bearer {}", c.capability))
+        .call()
+        .map_err(|_| ())?;
+    let headers = response.headers();
+    if response.status() != 200
+        || headers.get_all("content-type").iter().count() != 1
+        || headers.get("content-type").and_then(|v| v.to_str().ok()) != Some(a.mime.as_str())
+        || headers.get_all("content-length").iter().count() != 1
+        || headers
+            .get("content-length")
+            .and_then(|v| v.to_str().ok())
+            .and_then(|s| s.parse::<usize>().ok())
+            != Some(a.size)
+        || headers.contains_key("content-encoding")
+        || headers.contains_key("transfer-encoding")
+    {
+        return Err(());
+    }
+    let bytes = response
+        .body_mut()
+        .with_config()
+        .limit((a.size + 1) as u64)
+        .read_to_vec()
+        .map_err(|_| ())?;
+    if bytes.len() != a.size || format!("{:x}", Sha256::digest(&bytes)) != a.sha256 {
+        return Err(());
+    }
+    match a.mime {
+        ArtifactMime::Text => Ok(ArtifactState::Text(
+            String::from_utf8(bytes).map_err(|_| ())?.into(),
+        )),
+        ArtifactMime::Png => {
+            png_bounds(&bytes)?;
+            let image = Arc::new(Image::from_bytes(ImageFormat::Png, bytes));
+            Ok(ArtifactState::Png(image))
+        }
+    }
 }
 fn valid(snapshot: &Snapshot, c: &Connection) -> bool {
     snapshot.protocol == 1 && snapshot.boot_id == c.boot_id && snapshot.mode == "scripted"
@@ -120,6 +395,7 @@ fn selected_path(selection: &Arc<Mutex<Option<String>>>, route: &str) -> String 
 impl Client {
     pub fn new(path: PathBuf) -> Self {
         let (send, receive) = mpsc::sync_channel(32);
+        let (artifact_send, artifact_receive) = mpsc::sync_channel::<ArtifactJob>(1);
         let update = Arc::new(Mutex::new(Update::default()));
         let selection = Arc::new(Mutex::new(None));
         let generation = Arc::new(AtomicU64::new(1));
@@ -167,14 +443,13 @@ impl Client {
                                 }
                                 Ok(view)
                             })();
+                            let mut u = update.lock().unwrap();
                             if generation.load(Ordering::Relaxed) == g {
-                                let mut u = update.lock().unwrap();
                                 match result {
                                     Ok(view) => {
-                                        u.snapshot = Some(view);
-                                        u.status = "Connected · scripted".into();
+                                        u.apply_snapshot(view, g, &selection.lock().unwrap())
                                     }
-                                    Err(_) => u.status = "Disconnected · retrying".into(),
+                                    Err(_) => u.disconnect(),
                                 }
                             }
                         }
@@ -208,11 +483,43 @@ impl Client {
                             let mut u = update.lock().unwrap();
                             u.acknowledgments.push((id, result));
                             if !result {
+                                u.disconnect();
                                 u.status =
                                     "Command not confirmed · draft retained; refresh before retry"
                                         .into();
                             }
                         }
+                    }
+                }
+            });
+        }
+        {
+            let (path, update, stopped) = (path.clone(), update.clone(), stopped.clone());
+            thread::spawn(move || {
+                let agent = agent(false);
+                while let Ok(job) = artifact_receive.recv() {
+                    if stopped.load(Ordering::Relaxed) {
+                        break;
+                    }
+                    if !update.lock().unwrap().accepts_artifact(&job) {
+                        continue;
+                    }
+                    let result = (|| {
+                        let c = connection(&path)?;
+                        if c.boot_id != job.key.boot_id {
+                            return Err(());
+                        }
+                        let content = fetch_artifact(&agent, &c, &job.artifact)?;
+                        if connection(&path)?.boot_id != job.key.boot_id {
+                            return Err(());
+                        }
+                        Ok(content)
+                    })();
+                    let mut u = update.lock().unwrap();
+                    if u.accepts_artifact(&job) {
+                        u.artifact_view.as_mut().unwrap().state =
+                            result.unwrap_or(ArtifactState::Unavailable);
+                        u.artifact_revision += 1;
                     }
                 }
             });
@@ -265,16 +572,20 @@ impl Client {
                                     return Err(());
                                 }
                                 sequence = frame.sequence;
+                                let mut u = update.lock().unwrap();
                                 if generation.load(Ordering::Relaxed) == g {
-                                    let mut u = update.lock().unwrap();
-                                    u.snapshot = Some(frame.snapshot);
-                                    u.status = "Connected · scripted".into();
+                                    u.apply_snapshot(frame.snapshot, g, &selection.lock().unwrap());
                                 }
                             }
                         }
                     })();
                     if result.is_err() {
-                        update.lock().unwrap().status = "Disconnected · retrying".into();
+                        {
+                            let mut u = update.lock().unwrap();
+                            if generation.load(Ordering::Relaxed) == g {
+                                u.disconnect();
+                            }
+                        }
                         thread::sleep(Duration::from_millis(500));
                     }
                 }
@@ -282,6 +593,7 @@ impl Client {
         }
         Self {
             jobs: send,
+            artifact_jobs: artifact_send,
             update,
             selection,
             generation,
@@ -289,9 +601,43 @@ impl Client {
         }
     }
     pub fn select(&self, id: Option<String>) {
-        *self.selection.lock().unwrap() = id;
+        let mut u = self.update.lock().unwrap();
+        u.context = None;
+        u.snapshot = None;
+        u.clear_artifact();
+        *self.selection.lock().unwrap() = id.filter(|id| route_id(id));
         let generation = self.generation.fetch_add(1, Ordering::Relaxed) + 1;
         let _ = self.jobs.try_send(Job::Refresh(generation));
+    }
+    pub fn view_artifact(&self, artifact_id: &str) -> Result<(), ()> {
+        let mut u = self.update.lock().unwrap();
+        let context = u.context.as_ref().ok_or(())?;
+        let artifact = context
+            .selected
+            .linked_artifact(artifact_id)
+            .ok_or(())?
+            .clone();
+        let key = ArtifactKey {
+            boot_id: context.boot_id.clone(),
+            generation: context.generation,
+            case_id: context.selected.case.id.clone(),
+            artifact_id: artifact.id.clone(),
+        };
+        let revision = u.artifact_revision + 1;
+        self.artifact_jobs
+            .try_send(ArtifactJob {
+                key: key.clone(),
+                artifact: artifact.clone(),
+                revision,
+            })
+            .map_err(|_| ())?;
+        u.artifact_revision = revision;
+        u.artifact_view = Some(ArtifactView {
+            key,
+            artifact,
+            state: ArtifactState::Loading,
+        });
+        Ok(())
     }
     pub fn command(&self, intent: Value, version: Option<u64>) -> Result<String, ()> {
         let id = uuid::Uuid::new_v4().to_string();
@@ -306,8 +652,13 @@ impl Client {
 impl Drop for Client {
     fn drop(&mut self) {
         self.stopped.store(true, Ordering::Relaxed);
+        self.update.lock().unwrap().disconnect();
     }
 }
+
+#[cfg(test)]
+#[path = "artifact_tests.rs"]
+mod artifact_tests;
 
 #[cfg(test)]
 mod tests {
@@ -350,7 +701,7 @@ mod tests {
         fs::create_dir(&directory).unwrap();
         let directory = fs::canonicalize(directory).unwrap();
         let child = Command::new("node")
-            .arg("src/main.ts")
+            .args(["--input-type=module", "-e", artifact_tests::CONTROLLER])
             .current_dir(PathBuf::from(env!("CARGO_MANIFEST_DIR")).parent().unwrap())
             .env_clear()
             .env("PATH", std::env::var_os("PATH").unwrap())
@@ -372,6 +723,12 @@ mod tests {
         });
         let case = view.cases[0].clone();
         client.select(Some(case.id.clone()));
+        let view = snapshot(&client, |v| {
+            v.selected
+                .as_ref()
+                .is_some_and(|s| s.case.id == case.id && s.artifacts.len() == 2)
+        });
+        artifact_tests::real_artifacts(&client, view.selected.as_ref().unwrap(), true);
         snapshot(&client, |v| {
             v.selected.as_ref().is_some_and(|s| s.case.id == case.id)
         });
@@ -418,7 +775,13 @@ mod tests {
                 .as_ref()
                 .is_some_and(|s| s.case.status == "terminal")
         });
-        let version = view.selected.unwrap().case.version;
+        let selected = view.selected.unwrap();
+        artifact_tests::real_artifacts(&reopened, &selected, false);
+        snapshot(&reopened, |v| {
+            v.selected.as_ref().is_some_and(|s| s.case.id == case.id)
+        });
+        reopened.view_artifact(&selected.artifacts[0].id).unwrap();
+        let version = selected.case.version;
         reopened
             .command(
                 json!({"type":"details-cleanup","caseId":case.id,"confirmed":true}),
@@ -431,6 +794,16 @@ mod tests {
                 .is_some_and(|s| s.case.native == "expired")
         });
         assert!(view.selected.unwrap().messages.is_empty());
+        assert!(reopened.update.lock().unwrap().artifact_view.is_none());
+        assert!(reopened.view_artifact(&selected.artifacts[0].id).is_err());
+        assert!(
+            fetch_artifact(
+                &agent(false),
+                &connection(&directory.join("connection.json")).unwrap(),
+                &selected.artifacts[0]
+            )
+            .is_err()
+        );
         drop(reopened);
         drop(running);
     }

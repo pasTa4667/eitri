@@ -1,7 +1,7 @@
 mod client;
 mod input;
 
-use client::{Client, Snapshot};
+use client::{Artifact, ArtifactState, ArtifactView, Client, Selected, Snapshot};
 use gpui::{prelude::*, *};
 use input::NoteInput;
 use serde_json::{Value, json};
@@ -19,6 +19,8 @@ struct Operator {
     pending_note: Option<(String, String, String)>,
     drafts: HashMap<String, String>,
     confirm_cleanup: bool,
+    artifact_view: Option<ArtifactView>,
+    artifact_revision: u64,
 }
 impl Operator {
     fn new(cx: &mut Context<Self>) -> Self {
@@ -48,18 +50,30 @@ impl Operator {
             pending_note: None,
             drafts: HashMap::new(),
             confirm_cleanup: false,
+            artifact_view: None,
+            artifact_revision: 0,
         }
     }
     fn pump(&mut self, cx: &mut Context<Self>) {
-        let (snapshot, status, acknowledgments) = {
+        let (snapshot, status, acknowledgments, artifact_view, artifact_revision) = {
             let mut update = self.client.update.lock().unwrap();
             (
                 update.snapshot.take(),
                 update.status.clone(),
                 std::mem::take(&mut update.acknowledgments),
+                update.artifact_view.clone(),
+                update.artifact_revision,
             )
         };
-        let changed = snapshot.is_some() || self.status != status || !acknowledgments.is_empty();
+        let changed = snapshot.is_some()
+            || self.status != status
+            || !acknowledgments.is_empty()
+            || self.artifact_revision != artifact_revision;
+        if self.artifact_revision != artifact_revision {
+            self.clear_artifact(cx);
+            self.artifact_view = artifact_view;
+            self.artifact_revision = artifact_revision;
+        }
         if let Some(snapshot) = snapshot {
             self.view = Some(snapshot);
         }
@@ -91,6 +105,102 @@ impl Operator {
         if changed {
             cx.notify();
         }
+    }
+    fn clear_artifact(&mut self, cx: &mut Context<Self>) {
+        if let Some(ArtifactView {
+            state: ArtifactState::Png(image),
+            ..
+        }) = self.artifact_view.take()
+        {
+            cx.defer(move |cx| {
+                for window in cx.windows() {
+                    let _ = window.update(cx, |_, window, cx| {
+                        if let Some(rendered) = image.clone().get_render_image(window, cx) {
+                            cx.drop_image(rendered, Some(window));
+                        }
+                    });
+                }
+                image.remove_asset(cx);
+            });
+        }
+    }
+    fn artifact_card(
+        &self,
+        selected: &Selected,
+        artifact: &Artifact,
+        cx: &mut Context<Self>,
+    ) -> Div {
+        let mut card = div()
+            .p_3()
+            .rounded_md()
+            .bg(rgb(0x202f38))
+            .flex()
+            .flex_col()
+            .gap_2()
+            .child(artifact.label.clone())
+            .child(
+                div()
+                    .text_size(px(11.0))
+                    .text_color(rgb(0x91a7b4))
+                    .child(format!(
+                        "{} · {} bytes · SHA-256 {}",
+                        artifact.mime.as_str(),
+                        artifact.size,
+                        artifact.sha256
+                    )),
+            );
+        if selected.linked_artifact(&artifact.id).is_none() {
+            return card.child("Unavailable or incomplete provenance. Not check evidence.");
+        }
+        if !self.status.starts_with("Connected") {
+            return card
+                .child("Artifact unavailable while disconnected. Reconnect before viewing.");
+        }
+        let id = artifact.id.clone();
+        card = card.child(
+            div()
+                .id(SharedString::from(format!("view-{id}")))
+                .px_3()
+                .py_2()
+                .rounded_md()
+                .bg(rgb(0x26363e))
+                .cursor_pointer()
+                .child("View")
+                .on_click(cx.listener(move |this, _, _, cx| {
+                    if this.client.view_artifact(&id).is_err() {
+                        this.notice =
+                            "Artifact unavailable or viewer busy. Nothing was started.".into();
+                    }
+                    this.pump(cx);
+                    cx.notify();
+                })),
+        );
+        if artifact.mime == client::ArtifactMime::Png {
+            card = card.child("Screenshot records appearance. It is not correctness proof.");
+        }
+        if let Some(view) = &self.artifact_view
+            && view.key.case_id == selected.case.id
+            && view.key.artifact_id == artifact.id
+            && view.artifact == *artifact
+        {
+            card = match &view.state {
+                ArtifactState::Loading => card.child("Loading one artifact…"),
+                ArtifactState::Unavailable => card.child(
+                    "Artifact unavailable, invalid, or unsupported. No validation inferred.",
+                ),
+                ArtifactState::Text(text) => {
+                    card.child(div().text_size(px(12.0)).child(text.to_string()))
+                }
+                ArtifactState::Png(image) => {
+                    card.child(img(image.clone()).w_full().h(px(360.0)).with_fallback(|| {
+                        div()
+                            .child("PNG could not be displayed.")
+                            .into_any_element()
+                    }))
+                }
+            };
+        }
+        card
     }
     fn send(&mut self, intent: Value, version: Option<u64>, cx: &mut Context<Self>) {
         match self.client.command(intent, version) {
@@ -133,7 +243,7 @@ impl Render for Operator {
             .filter(|s| Some(&s.case.id) == self.selected.as_ref());
         let mut detail = div().flex().flex_col().flex_1().min_w_0().p_6().gap_4();
         if let Some(selected) = selected {
-            let c = selected.case;
+            let c = selected.case.clone();
             detail = detail
                 .child(
                     div().text_xl().child(
@@ -263,6 +373,57 @@ impl Render for Operator {
                     .flex_1()
                     .min_h_0()
                     .overflow_y_scroll();
+                history =
+                    history.child(div().text_color(rgb(0x91a7b4)).child(
+                        "Recorded checks · observed results, not complete correctness proof",
+                    ));
+                if selected.checks.is_empty() {
+                    history = history.child(
+                        "No recorded checks. Artifact manifests alone are not validation evidence.",
+                    );
+                }
+                for check in &selected.checks {
+                    let mut card =
+                        div()
+                            .p_3()
+                            .rounded_md()
+                            .bg(rgb(0x1d272e))
+                            .flex()
+                            .flex_col()
+                            .gap_2()
+                            .child(format!(
+                                "{} · observed outcome {} · {}",
+                                check.kind,
+                                if check.passed { "passed" } else { "failed" },
+                                if check.simulated {
+                                    "simulated"
+                                } else {
+                                    "not simulated"
+                                }
+                            ))
+                            .child(div().text_size(px(11.0)).text_color(rgb(0x91a7b4)).child(
+                                format!(
+                                    "Revision {}\nConfiguration {}\nCheck {} · action {}",
+                                    check.candidate, check.configuration, check.id, check.action_id
+                                ),
+                            ));
+                    for id in &check.artifacts {
+                        if let Some(artifact) = selected
+                            .linked_artifact(id)
+                            .filter(|a| a.check_id == check.id)
+                        {
+                            card = card.child(self.artifact_card(&selected, artifact, cx));
+                        } else {
+                            card = card.child("Linked artifact unavailable or incomplete. Not validation evidence.");
+                        }
+                    }
+                    history = history.child(card);
+                }
+                for artifact in &selected.artifacts {
+                    if selected.linked_artifact(&artifact.id).is_none() {
+                        history = history.child(self.artifact_card(&selected, artifact, cx));
+                    }
+                }
                 if selected.more {
                     history = history.child(
                         "Showing the latest page. Earlier details are retained by the controller.",
@@ -417,6 +578,7 @@ impl Render for Operator {
                         this.selected = Some(id.clone());
                         this.confirm_cleanup = false;
                         this.client.select(Some(id.clone()));
+                        this.clear_artifact(cx);
                         cx.notify();
                     })),
             );
