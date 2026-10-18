@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-10-18T14:15:26.602Z",
+  "checkedAt": "2026-10-18T14:41:43.801Z",
   "simulatedAgent": true,
   "scope": "Standalone trusted containment probe. No repository or credential mounts; not a generated-code worker.",
   "verdict": "blocked",
@@ -71,7 +71,7 @@
     "name=cgroupns"
   ],
   "applied": {
-    "imageId": "sha256:46d73461ffd52db2357cdf0bd6b17d22b68460d080d53b4345c0d136e6b04924",
+    "imageId": "sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff",
     "user": "pwuser",
     "mounts": [],
     "network": "none",
@@ -95,7 +95,7 @@
     }
   },
   "exitCode": 1,
-  "stderr": "2026-10-18T14:15:27.185Z pw:browser <launching> /ms-playwright/chromium-1248/chrome-linux-arm64/chrome --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,AvoidCorsURLLoaderRestartOnRedirect,Translate,AutoDeElevate,OptimizationHints,NetworkTimeServiceQuerying,AimEnabled,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --user-data-dir=/tmp/playwright_chromiumdev_profile-VwwkHl --remote-debugging-pipe --no-startup-window\n2026-10-18T14:15:27.192Z pw:browser <launched> pid=38\n2026-10-18T14:15:27.260Z pw:browser [pid=38][err] [38:59:1018/141527.259818:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory\n2026-10-18T14:15:27.260Z pw:browser [pid=38][err] [38:59:1018/141527.259865:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n2026-10-18T14:15:27.328Z pw:browser [pid=38][err] [38:59:1018/141527.327955:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory\n2026-10-18T14:15:27.328Z pw:browser [pid=38][err] [38:59:1018/141527.327974:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory\n2026-10-18T14:15:27.328Z pw:browser [pid=38][err] [38:59:1018/141527.327983:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory\n2026-10-18T14:15:27.328Z pw:browser [pid=38][err] [38:59:1018/141527.327987:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n2026-10-18T14:15:27.328Z pw:browser [pid=38][err] [38:59:1018/141527.327990:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n2026-10-18T14:15:27.347Z pw:browser [pid=38][err] [38:59:1018/141527.347216:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n2026-10-18T14:15:27.356Z pw:browser [pid=38][err] [38:38:1018/141527.355658:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n2026-10-18T14:15:27.356Z pw:browser [pid=38][err] [38:38:1018/141527.355771:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n2026-10-18T14:15:27.356Z pw:browser [pid=38][err] [38:59:1018/141527.356314:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n2026-10-18T14:15:27.356Z pw:browser [pid=38][err] [38:59:1018/141527.356324:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n2026-10-18T14:15:27.360Z pw:browser [pid=38][err] [38:38:1018/141527.360691:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n2026-10-18T14:15:27.361Z pw:browser [pid=38][err] [38:59:1018/141527.360864:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n2026-10-18T14:15:27.362Z pw:browser [pid=38][err] [38:59:1018/141527.361870:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory\n2026-10-18T14:15:27.362Z pw:browser [pid=38][err] [38:59:1018/141527.361883:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory\n2026-10-18T14:15:27.362Z pw:browser [pid=38][err] [38:38:1018/141527.361884:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n2026-10-18T14:15:27.362Z pw:browser [pid=38][err] [38:38:1018/141527.361890:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n2026-10-18T14:15:27.362Z pw:browser [pid=38][err] [38:59:1018/141527.361928:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n2026-10-18T14:15:27.362Z pw:browser [pid=38][err] [38:38:1018/141527.362677:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n2026-10-18T14:15:27.362Z pw:browser [pid=38][err] [38:38:1018/141527.362879:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.Properties.GetAll: object_path= /org/freedesktop/UPower/devices/DisplayDevice: unknown error type: \n2026-10-18T14:15:27.363Z pw:browser [pid=38][err] [38:38:1018/141527.362891:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n2026-10-18T14:15:27.363Z pw:browser [pid=38][err] [38:59:1018/141527.362918:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n2026-10-18T14:15:27.364Z pw:browser [pid=38][err] [38:38:1018/141527.364094:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n2026-10-18T14:15:27.364Z pw:browser [pid=38][err] [38:59:1018/141527.364146:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n2026-10-18T14:15:27.364Z pw:browser [pid=38][err] [38:38:1018/141527.364344:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n2026-10-18T14:15:27.412Z pw:browser [pid=38][err] [148:1:1018/141527.411920:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)\n2026-10-18T14:15:27.414Z pw:browser [pid=38][err] [72:72:1018/141527.414782:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)\n2026-10-18T14:15:27.434Z pw:browser [pid=38] <gracefully close start>\n2026-10-18T14:15:27.452Z pw:browser [pid=38] <process did exit: exitCode=0, signal=null>\n2026-10-18T14:15:27.453Z pw:browser [pid=38] starting temporary directories cleanup\n2026-10-18T14:15:27.455Z pw:browser [pid=38] finished temporary directories cleanup\n2026-10-18T14:15:27.455Z pw:browser [pid=38] <gracefully close end>\n",
+  "stderr": "2026-10-18T14:41:44.429Z pw:browser <launching> /ms-playwright/chromium-1248/chrome-linux-arm64/chrome --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,AvoidCorsURLLoaderRestartOnRedirect,Translate,AutoDeElevate,OptimizationHints,NetworkTimeServiceQuerying,AimEnabled,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --user-data-dir=/tmp/playwright_chromiumdev_profile-rLtwBg --remote-debugging-pipe --no-startup-window\n2026-10-18T14:41:44.432Z pw:browser <launched> pid=38\n2026-10-18T14:41:44.494Z pw:browser [pid=38][err] [38:60:1018/144144.494176:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory\n2026-10-18T14:41:44.494Z pw:browser [pid=38][err] [38:60:1018/144144.494220:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n2026-10-18T14:41:44.552Z pw:browser [pid=38][err] [38:60:1018/144144.552588:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory\n2026-10-18T14:41:44.552Z pw:browser [pid=38][err] [38:60:1018/144144.552607:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory\n2026-10-18T14:41:44.552Z pw:browser [pid=38][err] [38:60:1018/144144.552886:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory\n2026-10-18T14:41:44.552Z pw:browser [pid=38][err] [38:60:1018/144144.552893:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n2026-10-18T14:41:44.552Z pw:browser [pid=38][err] [38:60:1018/144144.552896:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n2026-10-18T14:41:44.572Z pw:browser [pid=38][err] [38:60:1018/144144.572504:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n2026-10-18T14:41:44.583Z pw:browser [pid=38][err] [38:38:1018/144144.582993:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n2026-10-18T14:41:44.583Z pw:browser [pid=38][err] [38:38:1018/144144.583150:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n2026-10-18T14:41:44.583Z pw:browser [pid=38][err] [38:60:1018/144144.583325:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n2026-10-18T14:41:44.583Z pw:browser [pid=38][err] [38:60:1018/144144.583333:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n2026-10-18T14:41:44.586Z pw:browser [pid=38][err] [38:38:1018/144144.586867:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n2026-10-18T14:41:44.587Z pw:browser [pid=38][err] [38:60:1018/144144.587080:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n2026-10-18T14:41:44.588Z pw:browser [pid=38][err] [38:38:1018/144144.587949:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n2026-10-18T14:41:44.588Z pw:browser [pid=38][err] [38:38:1018/144144.588057:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n2026-10-18T14:41:44.588Z pw:browser [pid=38][err] [38:60:1018/144144.588067:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory\n2026-10-18T14:41:44.588Z pw:browser [pid=38][err] [38:60:1018/144144.588080:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory\n2026-10-18T14:41:44.588Z pw:browser [pid=38][err] [38:60:1018/144144.588083:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n2026-10-18T14:41:44.588Z pw:browser [pid=38][err] [38:38:1018/144144.588794:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n2026-10-18T14:41:44.589Z pw:browser [pid=38][err] [38:38:1018/144144.589023:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.Properties.GetAll: object_path= /org/freedesktop/UPower/devices/DisplayDevice: unknown error type: \n2026-10-18T14:41:44.589Z pw:browser [pid=38][err] [38:38:1018/144144.589517:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n2026-10-18T14:41:44.589Z pw:browser [pid=38][err] [38:60:1018/144144.589553:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n2026-10-18T14:41:44.591Z pw:browser [pid=38][err] [38:38:1018/144144.591063:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n2026-10-18T14:41:44.591Z pw:browser [pid=38][err] [38:60:1018/144144.591095:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n2026-10-18T14:41:44.591Z pw:browser [pid=38][err] [38:38:1018/144144.591309:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n2026-10-18T14:41:44.649Z pw:browser [pid=38][err] [142:1:1018/144144.648932:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)\n2026-10-18T14:41:44.649Z pw:browser [pid=38][err] [142:1:1018/144144.649090:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)\n2026-10-18T14:41:44.650Z pw:browser [pid=38][err] [71:71:1018/144144.650639:ERROR:base/threading/platform_thread_posix.cc:162] pthread_create: Resource temporarily unavailable (11)\n2026-10-18T14:41:44.668Z pw:browser [pid=38] <gracefully close start>\n2026-10-18T14:41:44.689Z pw:browser [pid=38] <process did exit: exitCode=0, signal=null>\n2026-10-18T14:41:44.689Z pw:browser [pid=38] starting temporary directories cleanup\n2026-10-18T14:41:44.693Z pw:browser [pid=38] finished temporary directories cleanup\n2026-10-18T14:41:44.693Z pw:browser [pid=38] <gracefully close end>\n",
   "observation": {
     "node": "v26.5.0",
     "architecture": "arm64",
@@ -133,7 +133,7 @@
         {
           "stage": "afterLaunch",
           "cgroups": {
-            "pids.current": "95",
+            "pids.current": "94",
             "pids.events": "max 0",
             "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0"
           },
@@ -153,7 +153,7 @@
               "pid": "38",
               "name": "chrome",
               "role": "untyped",
-              "threads": "32",
+              "threads": "31",
               "uid": "1001\t1001\t1001\t1001",
               "noNewPrivileges": "1",
               "seccomp": "2"
@@ -204,7 +204,7 @@
               "seccomp": "2"
             },
             {
-              "pid": "72",
+              "pid": "71",
               "name": "chrome",
               "role": "untyped",
               "threads": "23",
@@ -213,7 +213,7 @@
               "seccomp": "2"
             },
             {
-              "pid": "74",
+              "pid": "73",
               "name": "chrome",
               "role": "untyped",
               "threads": "13",
@@ -222,7 +222,7 @@
               "seccomp": "2"
             },
             {
-              "pid": "104",
+              "pid": "107",
               "name": "chrome",
               "role": "untyped",
               "threads": "10",
@@ -235,8 +235,8 @@
         {
           "stage": "failure",
           "cgroups": {
-            "pids.current": "125",
-            "pids.events": "max 2",
+            "pids.current": "124",
+            "pids.events": "max 3",
             "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0"
           },
           "processCount": 12,
@@ -255,7 +255,7 @@
               "pid": "38",
               "name": "chrome",
               "role": "untyped",
-              "threads": "35",
+              "threads": "34",
               "uid": "1001\t1001\t1001\t1001",
               "noNewPrivileges": "1",
               "seccomp": "2"
@@ -306,7 +306,7 @@
               "seccomp": "2"
             },
             {
-              "pid": "72",
+              "pid": "71",
               "name": "chrome",
               "role": "untyped",
               "threads": "23",
@@ -315,7 +315,7 @@
               "seccomp": "2"
             },
             {
-              "pid": "74",
+              "pid": "73",
               "name": "chrome",
               "role": "untyped",
               "threads": "13",
@@ -324,7 +324,7 @@
               "seccomp": "2"
             },
             {
-              "pid": "104",
+              "pid": "107",
               "name": "chrome",
               "role": "untyped",
               "threads": "10",
@@ -333,7 +333,7 @@
               "seccomp": "2"
             },
             {
-              "pid": "130",
+              "pid": "129",
               "name": "chrome",
               "role": "untyped",
               "threads": "16",
@@ -342,7 +342,7 @@
               "seccomp": "2"
             },
             {
-              "pid": "141",
+              "pid": "140",
               "name": "chrome",
               "role": "untyped",
               "threads": "11",
@@ -356,7 +356,7 @@
       "events": [
         {
           "event": "browserDisconnected",
-          "elapsedMs": 289,
+          "elapsedMs": 283,
           "teardown": true
         }
       ],

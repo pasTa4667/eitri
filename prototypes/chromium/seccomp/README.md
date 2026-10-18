@@ -19,10 +19,11 @@ node --test test/containment-policy.test.mjs
 node prototypes/chromium/run.mjs --pinned-policy
 node prototypes/chromium/run.mjs --namespace-policy
 node prototypes/chromium/run.mjs --namespace-chroot-policy
+node prototypes/chromium/run.mjs --namespace-chroot-pids256-policy
 ```
 
-The runs use the unchanged pinned policy, the six-rule candidate, and the separately approved seven-rule candidate. All retain the original non-root, capability-drop, no-new-privileges, no-network, no-mount, read-only, private-IPC, and resource limits. The runner checks the applied custom policy before starting its container. Policy files are controller inputs, not container mounts.
+The runs use the unchanged pinned policy, the six-rule candidate, and the separately approved seven-rule candidate at 128 and 256 tasks. All retain non-root, capability-drop, no-new-privileges, no-network, no-mount, read-only, private-IPC, two CPUs, 4 GiB memory, and the original scratch limits. Only the last opt-in mode raises the task ceiling. The runner checks the applied custom policy before starting its container. Policy files are controller inputs, not container mounts.
 
 The fixed Python probe tests USER namespace operations and negative syscall controls before browser launch. Kernel permission checks and seccomp can both deny an operation. A negative control alone does not identify which mechanism denied it. The browser must still positively report its own namespace and seccomp-BPF sandbox and complete the page assertion.
 
-Each report records the policy hash, applied restrictions, actual outcomes, and specific-container removal. The probe selects the bundled full Chromium headless channel so it can attempt the internal diagnostic page rather than relying on headless-shell support. Bounded process/cgroup snapshots and browser logs record failures. Neither a namespace success nor `Seccomp: 2` alone counts as browser support. Any failure stays blocked. There is no broader-policy fallback.
+Each report records the policy hash, applied restrictions, actual outcomes, and specific-container removal. The probe selects the bundled full Chromium headless channel so it can attempt the internal diagnostic page rather than relying on headless-shell support. Bounded process/cgroup snapshots and browser logs record failures. Neither a namespace success nor `Seccomp: 2` alone counts as browser support. Any failure stays blocked. There is no broader-policy fallback. The approved 256-task candidate now passes the trusted fixed-browser probe; the 128-task control still fails. This does not accept a generated-code worker or full M2. See [the current review](../../../docs/containment-review.md).

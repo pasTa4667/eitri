@@ -1,0 +1,56 @@
+{
+  "scope": "Paired trusted diagnostic before parser correction; full probe not accepted",
+  "imageId": "sha256:9672e4d80f3609f77d6942f9df501d12aca812088a34e748b48000ca377b7c5e",
+  "onlyAppliedContractDifference": "task ceiling 128 to 256",
+  "sameSeccompPolicy": true,
+  "containersRemoved": true,
+  "control": [
+    {
+      "stage": "beforeLaunch",
+      "pids.current": "11",
+      "pids.events": "max 0",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0"
+    },
+    {
+      "stage": "afterLaunch",
+      "pids.current": "94",
+      "pids.events": "max 0",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0"
+    },
+    {
+      "stage": "failure",
+      "pids.current": "123",
+      "pids.events": "max 3",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0"
+    }
+  ],
+  "candidate": [
+    {
+      "stage": "beforeLaunch",
+      "pids.current": "11",
+      "pids.events": "max 0",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0"
+    },
+    {
+      "stage": "afterLaunch",
+      "pids.current": "96",
+      "pids.events": "max 0",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0"
+    },
+    {
+      "stage": "afterNewPage",
+      "pids.current": "137",
+      "pids.events": "max 0",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0"
+    },
+    {
+      "stage": "failure",
+      "pids.current": "147",
+      "pids.events": "max 0",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0"
+    }
+  ],
+  "sandboxPage": "Sandbox Status\nLayer 1 Sandbox\tNamespace\nPID namespaces\tYes\nNetwork namespaces\tYes\nSeccomp-BPF sandbox\tYes\nSeccomp-BPF sandbox supports TSYNC\tYes\nPtrace Protection with Yama LSM (Broker)\tNo\nPtrace Protection with Yama LSM (Non-broker)\tNo\n\nYou are adequately sandboxed.",
+  "remainingFailure": "Sandbox status is not positively verified",
+  "interpretation": "256 tasks avoids observed quota denials and reaches the sandbox page. The probe expects an obsolete label and still reports blocked. Action assertion has not run."
+}

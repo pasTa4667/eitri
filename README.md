@@ -53,7 +53,7 @@ The [workspace library](docs/workspace.md) adds managed Git, guarded one-file ed
 
 ## Containment gate
 
-The trusted ARM64 Chromium probe has not passed its required positive browser verification. See [the containment review](docs/containment-review.md) for the current evidence and proposed restriction changes. No privileged, `SYS_ADMIN`, host IPC/network, or no-sandbox workaround was used. Generated execution and live integrations remain disabled.
+The trusted fixed-browser ARM64 Chromium probe passes with the explicitly approved syscall policy and 256-task limit. Managed worker and validation integration remain incomplete. See [the containment review](docs/containment-review.md) for scope and evidence. No privileged, `SYS_ADMIN`, host IPC/network, or no-sandbox workaround was used. Generated execution and live integrations remain disabled.
 
 ## Review the setup and progress
 

@@ -1,0 +1,23 @@
+{
+  "scope": "Trusted fixed Chromium feasibility only. Not generated-code worker or M2 acceptance.",
+  "sourceCommit": "c314b4d",
+  "imageId": "sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff",
+  "browserVersion": "156.0.8078.4",
+  "policySha256": "c85c2b40abc8ca15cace108b94f91e337b73313c8288b03c41d1ca51fe239bd7",
+  "onlyAppliedContractDifference": "128 versus 256 tasks",
+  "controlVerdict": "blocked",
+  "candidateVerdict": "supported",
+  "namespaceSandboxVerified": true,
+  "pidAndNetworkNamespacesVerified": true,
+  "chromiumSeccompBpfVerified": true,
+  "browserAction": "passed",
+  "negativeControlsPassed": true,
+  "taskDenialsObservedInCapturedSnapshots": false,
+  "containersRemoved": true,
+  "parentChecks": {
+    "command": "npm run verify:all",
+    "nodePassed": 114,
+    "rustPassed": 30
+  },
+  "remaining": "Managed snapshot worker, immutable validation driver, protected scenario, controller/native integration, fixture work, and all later live gates remain incomplete."
+}
