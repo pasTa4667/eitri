@@ -452,7 +452,9 @@ impl Render for Operator {
                     .gap_3()
                     .flex_1()
                     .min_h(px(120.0))
-                    .overflow_y_scroll();
+                    .overflow_y_scroll()
+                    // GPUI runs this div's built-in scroller before its wheel listeners.
+                    .on_scroll_wheel(|_, _, cx| cx.stop_propagation());
                 history =
                     history.child(div().text_color(rgb(THEME.muted)).child(
                         "Recorded checks · observed results, not complete correctness proof",

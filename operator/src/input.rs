@@ -546,6 +546,8 @@ impl Render for NoteInput {
             .max_h(px(154.0))
             .flex_shrink_0()
             .overflow_scroll()
+            // GPUI runs this div's built-in scroller before its wheel listeners.
+            .on_scroll_wheel(|_, _, cx| cx.stop_propagation())
             .p_3()
             .bg(rgb(THEME.input))
             .border_1()
