@@ -125,7 +125,7 @@ The operator-approved task experiment is integrated as `e86e52a`, with the 128-t
 
 Fresh same-family review found no acceptance gaming. Parent then ran both modes against the same pinned image. The 128-task control fails; the 256-task candidate reports supported, verifies namespace/PID/network/BPF protection, and completes the literal click/result assertion. All negative syscall controls and other applied restrictions remain intact. Both owned containers are removed. Parent `npm run verify:all` passes 114 Node and 30 Rust tests.
 
-Only the trusted fixed-browser feasibility gate is accepted. Full M2, arbitrary generated commands, managed worker/validation integration, and all later live gates remain incomplete. A fresh read-only delegate is grounding the smallest next unit in the existing code and whitelisted fixture files without reading environment values or modifying the original checkout.
+Only the trusted fixed-browser feasibility gate is accepted. Full M2, arbitrary generated commands, managed worker/validation integration, and all later live gates remain incomplete. The read-only design report recommends a browser-only frozen-export validator before any project Node/build execution or controller wiring. It identified a host UID 501 versus container UID 1001 export-permission issue. A throwaway controlled-COPY instrument is being prepared in `../eitri-frozen-browser-copy` on `prototype/frozen-browser-copy` to settle that empirical question using synthetic frozen A after workspace B. It runs no containers until parent review. No original fixture edit, host mount, project Node execution, production API, or new restriction change is authorized by that prototype.
 
 ## Checkpoint policy
 
