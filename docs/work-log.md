@@ -55,7 +55,7 @@ M0 evidence is `docs/evidence/m0-tests.txt`: `npm run verify` passes TypeScript 
 
 `npm run check:sdk` now returns `approved-differences` for exactly the approved hashes. `npm run doctor` still exits 1 for missing installer Bash, which is deferred to M3.
 
-The scripted TypeScript controller is implemented in `src/`, with Node HTTP/SSE and tests in `test/`. `npm start` binds the fixed loopback port before opening application storage, creates a private per-run connection capability, and runs only the faux provider. Live model routes and publication are denied. Tests remove only their own temporary data. No account, vault, item, token, OAuth state, worker container, push, or PR has been created. The existing fixture remains unchanged.
+The scripted TypeScript controller is implemented in `src/`, with Node HTTP/SSE and tests in `test/`. `npm start` binds the fixed loopback port before opening application storage, creates a private per-run connection capability, and runs only the faux provider. Live model routes and publication are denied. Tests remove only their own temporary data. No external account, vault, item, service token, OAuth state, GitHub push, or PR was created. Only the explicitly labeled trusted probe containers described below were created and removed. The existing fixture remains unchanged.
 
 M1 compiles with published GPUI 0.2.2, installed Rust 1.97.1, and process-local Xcode/Metal. Its artifact resource and on-demand native cards are now implemented. `docs/evidence/artifact-resources-tests.txt` records the integrated `npm run verify:all` result, with 42 Node tests and nine Rust tests passing. These include artifact provenance, immutable reads, corruption and link rejection, crash ordering, native PNG decoding, stale response rejection, HTTP validation, body timeout, Unicode/input handlers, and real-controller reconnect/expiry behavior. Network work is off the render thread; redirects and ambient proxies are disabled. Drafts are case-scoped and clear only on matching acknowledgments.
 
@@ -65,7 +65,7 @@ A standalone, trusted Chromium containment probe was built and run with no repos
 
 The earlier stop was the failed containment gate. The continuation tested a reviewed six-rule namespace/seccomp candidate under the unchanged remaining restrictions. All positive USER namespace controls pass, and negative controls retain their expected denials. Chromium now stops at `sys_chroot("/proc/self/fdinfo/")`. `docs/containment-review.md` records paired reports and requests approval for a separate `chroot` syscall experiment. No such addition has been applied. Both owned containers were removed.
 
-No security bypass, global configuration change, fixture edit, Sentry service, live model, token read, push, or PR was performed. M1 visual/artifact acceptance and all of M2 through M6 remain incomplete. Do not request token values in chat.
+No security bypass, global configuration change, fixture edit, Sentry service, live application inference, existing service-token read, GitHub push, or PR was performed. M1 visual/artifact acceptance and all of M2 through M6 remain incomplete. Do not request token values in chat.
 
 The earlier run had no subagent or compaction tool. Its design comparison and comment review were sequential self-review. The continuation now has subagents and uses independent exploration and review.
 
@@ -76,6 +76,18 @@ Resume from `77bb89a`, which includes `d11c927` plus lint and format setup. The 
 The definition of done remains M0 through M6 acceptance on real artifacts. Security-sensitive rigor remains high. Operator-presence gates cannot be completed by local implementation alone. Local code and mocked integration tests may proceed, but they do not enable live remediation.
 
 Policy provenance and existing resource seams were independently reviewed. The smallest contained experiment was run and remains blocked. Authenticated case-scoped artifacts were implemented in an isolated worktree and integrated as `0925818` after independent static review. Native-case manifests own provenance and reference immutable private bytes. The controller rechecks artifact integrity during evidence admission. ID-only authenticated HTTP reads are passive and serialized against expiry. Focused parent verification passed 26 artifact, evidence, and crash-recovery tests; TypeScript, lint, and format checks pass. The native card/client unit was independently reviewed and integrated as `1141a89`. Final parent verification passed `npm run verify:all`, with 42 Node tests and nine Rust tests, including real HTTP artifact retrieval. The native binary also builds and launches; its visual capture failed as recorded above. Independent source reviews found no actionable defects in either unit, but do not replace runtime or visual evidence. Each finished unit receives its own verification and commit. M2 generated execution remains blocked until positive sandbox verification. The remaining M3, M4, and M6 gates stay explicit. `.audit/resume-todos.md` tracks this run's checklist. `decisions.tsv` remains the committed decision trail.
+
+## Resume point after artifact implementation
+
+- The implementation plan is unfinished. M1 has passing implementation tests, but still needs the native visual/operator walkthrough and observed GPU-cache cleanup.
+- M2 is blocked at Chromium's `chroot` call. A separately reviewed syscall-admission experiment was requested and is not approved or applied. Retain all existing restrictions and keep generated execution disabled.
+- The managed workspace, file broker, immutable validation driver, and fixture integration remain unimplemented. The original fixture is untouched.
+- M3 through M6 remain pending, including operator-reviewed vault permissions, direct token setup, repository privacy/default-branch confirmation, supported OpenAI sign-in and first-inference approval, and deliberate live remediation activation.
+- The artifact implementation worktrees remain available at `../eitri-artifact-resources` and `../eitri-native-artifacts`. Their committed changes are integrated on `main`; do not replay their commits. Temporary native-smoke data is retained under `.audit/` and contains synthetic cases only.
+
+## Continuation audit
+
+A read-only evidence audit by `openai-codex/gpt-6.1-sol` found no material discrepancies between this run's decision trail, transcript, and committed evidence. It confirmed the namespace approval was an interpretation, not a separate affirmative approval, and that no `chroot` addition was applied. The reviews used the configured model family, so cross-model-family review is not satisfied. Visual/operator acceptance, observed GPU-cache cleanup, positive browser containment, and the remaining live gates are still open.
 
 ## Checkpoint policy
 
