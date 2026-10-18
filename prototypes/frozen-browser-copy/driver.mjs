@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFile, readdir, lstat, writeFile } from 'node:fs/promises';
+import { readFile, readdir, readlink, lstat, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import net from 'node:net';
 import { chromium } from 'playwright';
@@ -54,6 +54,16 @@ function restricted(status) {
 
 try {
   observations.runtime = { node: process.version, arch: process.arch, uid: process.getuid() };
+  observations.initialUserNamespace = await readlink('/proc/self/ns/user').then(
+    (identity) => ({ identity: identity.slice(0, 64) }),
+    (error) => ({ unavailable: true, errno: String(error.code ?? 'UNKNOWN').slice(0, 64) }),
+  );
+  observations.initialIdMaps = {};
+  for (const name of ['uid_map', 'gid_map'])
+    observations.initialIdMaps[name] = await readFile(`/proc/self/${name}`, 'utf8').then(
+      (text) => ({ text: text.slice(0, 256), truncated: text.length > 256 }),
+      (error) => ({ unavailable: true, errno: String(error.code ?? 'UNKNOWN').slice(0, 64) }),
+    );
   assert.deepEqual(observations.runtime, { node: 'v26.5.0', arch: 'arm64', uid: 1001 });
   observations.nodeExecArgv = process.execArgv;
   assert.deepEqual(observations.nodeExecArgv, []);
@@ -173,15 +183,57 @@ try {
     const flags = command.split('\0').filter((value) => value.startsWith('--'));
     assert.ok(!flags.some((flag) => /^(--no-sandbox|--disable-.*sandbox)(=|$)/.test(flag)));
     assert.ok(!flags.some((flag) => flag.startsWith('--remote-debugging-port')));
-    const status = security(await readFile(`/proc/${pid}/status`, 'utf8'));
-    restricted(status);
+    const rawStatus = await readFile(`/proc/${pid}/status`, 'utf8');
+    const status = security(rawStatus);
+    const userNamespace = await readlink(`/proc/${pid}/ns/user`).then(
+      (identity) => ({ identity: identity.slice(0, 64) }),
+      (error) => ({ unavailable: true, errno: String(error.code ?? 'UNKNOWN').slice(0, 64) }),
+    );
+    const idMaps = {};
+    for (const name of ['uid_map', 'gid_map'])
+      idMaps[name] = await readFile(`/proc/${pid}/${name}`, 'utf8').then(
+        (text) => ({ text: text.slice(0, 256), truncated: text.length > 256 }),
+        (error) => ({ unavailable: true, errno: String(error.code ?? 'UNKNOWN').slice(0, 64) }),
+      );
+    const role = (
+      command.match(/(?:^|[\s\0])--type=([^\s\0]+)/)?.[1] ??
+      (/crashpad_handler/.test(command) ? 'crashpad-handler' : 'browser')
+    ).slice(0, 64);
     const sandboxAndDebuggingFlags = flags.filter((flag) => /sandbox|remote-debugging/.test(flag));
     assert.ok(
       sandboxAndDebuggingFlags.length <= 16 &&
         sandboxAndDebuggingFlags.every((flag) => flag.length <= 256),
     );
-    observations.processes.push({ pid, ...status, sandboxAndDebuggingFlags });
+    observations.processes.push({
+      pid,
+      ppid:
+        rawStatus
+          .match(/^PPid:\s*(.+)$/m)?.[1]
+          .trim()
+          .slice(0, 64) ?? null,
+      nspid:
+        rawStatus
+          .match(/^NSpid:\s*(.+)$/m)?.[1]
+          .trim()
+          .slice(0, 64) ?? null,
+      role,
+      userNamespace,
+      idMaps,
+      capBnd:
+        rawStatus
+          .match(/^CapBnd:\s*(.+)$/m)?.[1]
+          .trim()
+          .slice(0, 64) ?? null,
+      capPrm:
+        rawStatus
+          .match(/^CapPrm:\s*(.+)$/m)?.[1]
+          .trim()
+          .slice(0, 64) ?? null,
+      ...status,
+      sandboxAndDebuggingFlags,
+    });
     assert.ok(observations.processes.length <= 64);
+    restricted(status);
   }
   assert.ok(
     observations.processes.length > 0 &&
