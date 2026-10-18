@@ -2,7 +2,7 @@
 
 ## Status
 
-The standalone M2 feasibility gate remains blocked pending positive browser verification. The approved `chroot` candidate gets past launch. Bounded diagnostics now directly observe the container's 128-task PID/thread ceiling denying Chromium thread creation. A single 256-task experiment is proposed, not approved or applied. Browser launch alone is not successful sandbox validation. Generated execution, fixture editing, Sentry installation, subscription inference, and publication have not been enabled.
+The standalone M2 feasibility gate remains blocked pending positive browser verification. The approved `chroot` candidate gets past launch. Bounded diagnostics now directly observe the container's 128-task PID/thread ceiling denying Chromium thread creation. The operator has explicitly approved one 256-task experiment. Its opt-in candidate is being prepared; it has not yet been applied. Browser launch alone is not successful sandbox validation. Generated execution, fixture editing, Sentry installation, subscription inference, and publication have not been enabled.
 
 M0 is implemented and verified. The native GPUI build, input handlers, and real controller connection pass their tests. M1's scripted native input, transport, visual, and artifact checks are accepted with evidence in `docs/native-rendering.md`. This does not establish browser containment or live remediation readiness. The probe below uses only a trusted fixed script, not an agent-generated command or a repository mount.
 
@@ -83,7 +83,7 @@ Diagnostic commit `d4f7938` adds bounded counters and browser logs without chang
 
 `docs/evidence/chromium-chroot-resource-diagnosis.json` records the parent assertions. Thread-quota denial is directly observed in this run. It does not prove the sole cause of the earlier navigation failures.
 
-Propose one trusted experiment raising only the task ceiling from 128 to 256. Keep the two-CPU and 4 GiB memory limits, sandbox checks, seven-rule seccomp policy, and every other restriction unchanged. This doubles the bounded task capacity and increases resource-abuse headroom, but adds no syscall admission or privilege. Operator approval is required before applying it. No unlimited PID setting or automatic resource escalation is proposed.
+Propose one trusted experiment raising only the task ceiling from 128 to 256. Keep the two-CPU and 4 GiB memory limits, sandbox checks, seven-rule seccomp policy, and every other restriction unchanged. This doubles the bounded task capacity and increases resource-abuse headroom, but adds no syscall admission or privilege. The operator has now explicitly approved this one experiment with every other restriction unchanged. No unlimited PID setting or automatic resource escalation is authorized.
 
 Parent `npm run verify:all` passes 89 Node and 30 Rust tests. Those checks do not replace the still-failing runtime gate. The candidate source review is preserved in `docs/evidence/chromium-chroot-review.md` and uses the configured model family, not cross-family assurance.
 
