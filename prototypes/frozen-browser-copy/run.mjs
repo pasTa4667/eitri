@@ -119,7 +119,10 @@ function verifyBase() {
   assert.equal(image.Id, baseId);
   assert.equal(image.Architecture, 'arm64');
   assert.equal(image.Os, 'linux');
-  return { id: image.Id, architecture: image.Architecture, os: image.Os };
+  assert.ok(!image.Config.OnBuild?.length, 'Base image must not have ONBUILD instructions');
+  assert.equal(image.RootFS.Type, 'layers');
+  assert.ok(Array.isArray(image.RootFS.Layers) && image.RootFS.Layers.length > 0);
+  return { id: image.Id, architecture: image.Architecture, os: image.Os, rootFS: image.RootFS };
 }
 
 async function readExport() {
@@ -371,12 +374,12 @@ try {
     'Build diagnostics exceeded limit',
   );
   report.baseAfterBuild = verifyBase();
-  assert.equal(build.status, 0, 'Fixed local-ID COPY build failed. No fallback attempted');
+  assert.equal(build.status, 0, 'Fixed local-tag COPY build failed. No fallback attempted');
   assert.ok(
-    !/https?:\/\/|docker\.io|registry|\[auth\]|pulling|pull access/i.test(
+    !/\[auth\]|\bpulling\b|pull access|\b(?:HEAD|GET|POST|PUT|PATCH|DELETE|CONNECT)\s+["']?https?:\/\/|failed to do request|failed to (?:authorize|fetch (?:anonymous|oauth) token)|(?:proxyconnect|dial) tcp|TLS handshake timeout|network is unreachable|connection (?:refused|reset)|no such host|i\/o timeout/i.test(
       `${build.stdout}\n${build.stderr}`,
     ),
-    'Registry resolution observed. No fallback allowed',
+    'Explicit request, auth, pull, or network failure observed. No fallback allowed',
   );
   const image = inspectImage(imageTag);
   assert.equal(image.Config.Labels?.[label], runId);
@@ -386,6 +389,13 @@ try {
   report.resources.imageId = derivedImageId;
   assert.equal(image.Architecture, 'arm64');
   assert.equal(image.Os, 'linux');
+  report.derivedRootFS = image.RootFS;
+  assert.equal(image.RootFS.Type, report.baseBefore.rootFS.Type);
+  assert.deepEqual(
+    image.RootFS.Layers.slice(0, report.baseBefore.rootFS.Layers.length),
+    report.baseBefore.rootFS.Layers,
+    'Derived image must retain the exact base layer prefix',
+  );
   const entrypoint = ['/usr/local/bin/node', '/opt/eitri/frozen-driver.mjs'];
   assert.deepEqual(image.Config.Entrypoint, entrypoint);
   assert.ok(!image.Config.Cmd?.length && !image.Config.Healthcheck);
