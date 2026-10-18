@@ -1,0 +1,57 @@
+{
+  "scope": "Namespace observation only. Browser action remains unverified.",
+  "sourceCommit": "08b2599",
+  "initialUserNamespace": {
+    "identity": "user:[4026531837]"
+  },
+  "initialSecurity": {
+    "uid": [
+      1001,
+      1001,
+      1001,
+      1001
+    ],
+    "capEff": "0000000000000000",
+    "noNewPrivileges": "1",
+    "seccomp": "2"
+  },
+  "nestedZygote": {
+    "pid": "28",
+    "ppid": "26",
+    "nspid": "28\t3",
+    "role": "zygote",
+    "userNamespace": {
+      "identity": "user:[4026533453]"
+    },
+    "idMaps": {
+      "uid_map": {
+        "text": "      1001       1001          1\n",
+        "truncated": false
+      },
+      "gid_map": {
+        "text": "      1001       1001          1\n",
+        "truncated": false
+      }
+    },
+    "capBnd": "000001ffffffffff",
+    "capPrm": "0000000000200000",
+    "uid": [
+      1001,
+      1001,
+      1001,
+      1001
+    ],
+    "capEff": "0000000000200000",
+    "noNewPrivileges": "1",
+    "seccomp": "2",
+    "sandboxAndDebuggingFlags": []
+  },
+  "outerNamespaceEffectiveCapabilitiesZero": true,
+  "distinctNamespaceAndSingleUnprivilegedMappingVerified": true,
+  "containerCapabilitiesAdded": false,
+  "policyChanged": false,
+  "resourcesRemoved": true,
+  "pinnedSource": "https://raw.githubusercontent.com/chromium/chromium/156.0.8078.4/sandbox/policy/linux/sandbox_linux.cc",
+  "sourceFunction": "SandboxLinux::EngageNamespaceSandboxInternal",
+  "interpretation": "Pinned Chromium deliberately retains only CAP_SYS_ADMIN in a new user-namespace zygote for child PID namespaces. The observed zygote has that exact mask in a different namespace, not the outer container namespace."
+}
