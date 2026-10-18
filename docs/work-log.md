@@ -18,7 +18,7 @@ The user's implementation request authorizes local implementation under the exis
 ### Throughput checkpoint
 
 - [x] **Blocking first steps.** Gates run before fan-out. Inspect installed tools, existing fixture, exact SDK exports, and required operator setup. Verify real native SQLite and last-dispatch gating before M1.
-- [ ] **Independent workstreams.** n/a: This harness exposes no subagent tool. Perform SDK, fixture, and environment exploration sequentially. Preserve the fixture's uncommitted work.
+- [x] **Independent workstreams.** The continuation harness exposes subagents. Two read-only explorers cover controller/resource ownership and containment-policy provenance. The parent owns this checkout. Any later implementation delegate uses a separate worktree. Preserve the fixture's uncommitted work.
 - [ ] **Shared mutable state.** One controller owns the catalogue. Separate native files and artifact directories by session UUID. Bind the singleton port before opening production storage. No shared generated source or worker scratch.
 - [ ] **Smallest safe decomposition.** One implementation owner with separate design and review passes. Complete each milestone's checks before enabling the next integration.
 
@@ -65,7 +65,15 @@ A standalone, trusted Chromium containment probe was built and run with no repos
 
 Current stop is the failed containment gate. `docs/containment-review.md` requests review before any user-namespace/seccomp-policy adjustment. No security bypass, global configuration change, fixture edit, Sentry service, live model, token read, push, or PR was performed. M1 visual/artifact acceptance and all of M2–M6 remain incomplete. Do not request token values in chat.
 
-No subagent or compaction tool is exposed. No independent model review was performed. The design comparison and comment review were sequential self-review.
+The earlier run had no subagent or compaction tool. Its design comparison and comment review were sequential self-review. The continuation now has subagents and uses independent exploration and review.
+
+## Continuation framing
+
+Resume from `77bb89a`, which includes `d11c927` plus lint and format setup. The inherited checkpoint remains authoritative. The operator requested continued implementation and commits for finished units. This is interpreted as approval for the narrow local namespace/seccomp experiment described in `docs/containment-review.md`, not broader privileges or disabled sandboxing.
+
+The definition of done remains M0 through M6 acceptance on real artifacts. Security-sensitive rigor remains high. Operator-presence gates cannot be completed by local implementation alone. Local code and mocked integration tests may proceed, but they do not enable live remediation.
+
+First review policy provenance and the existing resource seams. Then run the smallest contained experiment, add authenticated case-scoped artifacts, and complete independently verifiable implementation units. M2 generated execution remains blocked until positive sandbox verification. The remaining M3, M4, and M6 gates stay explicit. `.audit/resume-todos.md` tracks this run's checklist. `decisions.tsv` remains the committed decision trail.
 
 ## Checkpoint policy
 
