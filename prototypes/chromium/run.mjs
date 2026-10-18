@@ -1,7 +1,16 @@
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, unlink } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import { engineCommit, baselineSha256, namespacePolicy, sha256 } from './policy.mjs';
+
+const modes = new Map([
+  ['', 'builtin'],
+  ['--pinned-policy', 'pinned'],
+  ['--namespace-policy', 'namespaces'],
+]);
+const mode = modes.get(process.argv[2] ?? '');
+if (!mode || process.argv.length > 3) throw new Error('Unknown containment probe mode');
 
 const root = new URL('../../', import.meta.url);
 const sentinel = new URL('.audit/containment-sentinel.txt', root);
@@ -20,9 +29,39 @@ const report = {
   scope:
     'Standalone trusted containment probe. No repository or credential mounts; not a generated-code worker.',
   verdict: 'blocked',
+  policyMode: mode,
 };
 let id;
+let policyFile;
+let policy;
+const securityOptions = [];
 try {
+  if (mode !== 'builtin') {
+    const version = docker(['version', '--format', '{{json .Server}}']);
+    if (version.status !== 0) throw new Error('Could not inspect daemon version');
+    const server = JSON.parse(version.stdout);
+    if (
+      server.Version !== '29.4.0' ||
+      typeof server.GitCommit !== 'string' ||
+      !/^[0-9a-f]{8,40}$/.test(server.GitCommit) ||
+      !engineCommit.startsWith(server.GitCommit) ||
+      server.Arch !== 'arm64'
+    )
+      throw new Error('Daemon differs from the reviewed seccomp baseline');
+    report.daemonVersion = server;
+    const baseline = await readFile(new URL('seccomp/docker-29.4.0.json', import.meta.url));
+    if (sha256(baseline) !== baselineSha256) throw new Error('Unreviewed seccomp baseline');
+    policy = mode === 'namespaces' ? namespacePolicy(baseline) : baseline.toString('utf8');
+    policyFile = new URL(`.audit/seccomp-${randomUUID()}.json`, root);
+    await writeFile(policyFile, policy, { mode: 0o600, flag: 'wx' });
+    report.policy = {
+      engineCommit,
+      baselineSha256,
+      sha256: sha256(policy),
+      addedRules: mode === 'namespaces' ? 6 : 0,
+    };
+    securityOptions.push('--security-opt', `seccomp=${fileURLToPath(policyFile)}`);
+  }
   const security = docker(['info', '--format', '{{json .SecurityOptions}}']);
   if (security.status !== 0) throw new Error('Could not inspect daemon security');
   report.daemonSecurity = JSON.parse(security.stdout);
@@ -43,6 +82,7 @@ try {
     'ALL',
     '--security-opt',
     'no-new-privileges',
+    ...securityOptions,
     '--cpus',
     '2',
     '--memory',
@@ -59,6 +99,8 @@ try {
     '/tmp:rw,exec,nosuid,size=256m,uid=1001,gid=1001',
     '--ulimit',
     'core=0',
+    '--env',
+    `EITRI_POLICY_MODE=${mode}`,
     '--env',
     `EITRI_HOST_SENTINEL=${fileURLToPath(sentinel)}`,
     '--env',
@@ -89,6 +131,17 @@ try {
     shmBytes: config.ShmSize,
     scratch: config.Tmpfs,
   };
+  if (policy) {
+    const applied = config.SecurityOpt.filter((value) => value.startsWith('seccomp='));
+    if (
+      applied.length !== 1 ||
+      JSON.stringify(JSON.parse(applied[0].slice(8))) !== JSON.stringify(JSON.parse(policy))
+    )
+      throw new Error('Applied seccomp policy differs from the reviewed candidate');
+    report.policy.appliedVerified = true;
+  } else if (config.SecurityOpt.some((value) => value.startsWith('seccomp='))) {
+    throw new Error('Unexpected custom seccomp policy');
+  }
   if (
     container.Config.User !== 'pwuser' ||
     container.Mounts.length !== 0 ||
@@ -97,11 +150,16 @@ try {
     config.Privileged ||
     config.CapAdd?.length ||
     !config.CapDrop.includes('ALL') ||
-    !config.SecurityOpt.some((v) => v.startsWith('no-new-privileges')) ||
+    !config.SecurityOpt.some((v) => v === 'no-new-privileges' || v === 'no-new-privileges=true') ||
+    config.SecurityOpt.length !== (policy ? 2 : 1) ||
     config.Memory !== 4 * 1024 ** 3 ||
+    config.MemorySwap !== 4 * 1024 ** 3 ||
     config.NanoCpus !== 2e9 ||
     config.PidsLimit !== 128 ||
-    config.IpcMode !== 'private'
+    config.IpcMode !== 'private' ||
+    config.ShmSize !== 256 * 1024 ** 2 ||
+    JSON.stringify(config.Tmpfs) !==
+      JSON.stringify({ '/tmp': 'rw,exec,nosuid,size=256m,uid=1001,gid=1001' })
   )
     throw new Error('Applied containment differs from the requested contract');
   const run = docker(['start', '-a', id]);
@@ -117,8 +175,11 @@ try {
     report.containerRemoved = cleanup.status === 0;
     if (cleanup.status !== 0) report.verdict = 'blocked';
   }
-  const destination = new URL('docs/evidence/chromium-containment.json', root);
+  if (policyFile) await unlink(policyFile);
+  const evidence =
+    mode === 'builtin' ? 'chromium-containment.json' : `chromium-containment-${mode}.json`;
+  const destination = new URL(`docs/evidence/${evidence}`, root);
   await writeFile(destination, `${JSON.stringify(report, null, 2)}\n`, { mode: 0o600 });
-  console.log(`${report.verdict}. Evidence: docs/evidence/chromium-containment.json`);
+  console.log(`${report.verdict}. Evidence: docs/evidence/${evidence}`);
   if (report.verdict !== 'supported') process.exitCode = 1;
 }

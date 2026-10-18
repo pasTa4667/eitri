@@ -1,6 +1,7 @@
 import { chromium } from 'playwright';
 import { readFile, readdir, writeFile } from 'node:fs/promises';
 import net from 'node:net';
+import { spawnSync } from 'node:child_process';
 
 const lifetime = setTimeout(() => process.exit(124), 120000);
 const observations = {
@@ -65,6 +66,20 @@ try {
       resolve();
     });
   });
+  const namespaces = spawnSync('python3', ['/opt/eitri/namespace_probe.py'], {
+    encoding: 'utf8',
+    timeout: 10000,
+    maxBuffer: 16000,
+  });
+  observations.namespaceProbe = namespaces.stdout
+    ? JSON.parse(namespaces.stdout)
+    : { error: namespaces.error?.message, stderr: namespaces.stderr };
+  if (namespaces.status !== 0) throw new Error('Namespace syscall controls failed');
+  if (
+    process.env.EITRI_POLICY_MODE === 'namespaces' &&
+    !observations.namespaceProbe.userNamespacesUsable
+  )
+    throw new Error('User namespaces remain unavailable under the reviewed policy');
   browser = await chromium.launch({ headless: true, chromiumSandbox: true, timeout: 20000 });
   const page = await browser.newPage();
   await page.goto('chrome://sandbox');

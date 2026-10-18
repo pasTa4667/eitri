@@ -63,7 +63,9 @@ Desktop screenshot capture returned `could not create image from display`; Apple
 
 A standalone, trusted Chromium containment probe was built and run with no repository/credential mounts or live agent. Its final result is **blocked**: sandbox-enabled ARM64 Chromium exits with `No usable sandbox!`. Applied and effective isolation/resource settings are recorded in `docs/evidence/chromium-containment.json`. Read-only root, unavailable host/socket paths, denied egress, non-root UID, dropped capabilities, seccomp, no-new-privileges, and cgroup limits were observed. No page action or screenshot succeeded. The owned probe container was removed; the pinned local image remains for reproduction.
 
-Current stop is the failed containment gate. `docs/containment-review.md` requests review before any user-namespace/seccomp-policy adjustment. No security bypass, global configuration change, fixture edit, Sentry service, live model, token read, push, or PR was performed. M1 visual/artifact acceptance and all of M2–M6 remain incomplete. Do not request token values in chat.
+The earlier stop was the failed containment gate. The continuation tested a reviewed six-rule namespace/seccomp candidate under the unchanged remaining restrictions. All positive USER namespace controls pass, and negative controls retain their expected denials. Chromium now stops at `sys_chroot("/proc/self/fdinfo/")`. `docs/containment-review.md` records paired reports and requests approval for a separate `chroot` syscall experiment. No such addition has been applied. Both owned containers were removed.
+
+No security bypass, global configuration change, fixture edit, Sentry service, live model, token read, push, or PR was performed. M1 visual/artifact acceptance and all of M2 through M6 remain incomplete. Do not request token values in chat.
 
 The earlier run had no subagent or compaction tool. Its design comparison and comment review were sequential self-review. The continuation now has subagents and uses independent exploration and review.
 
@@ -73,7 +75,7 @@ Resume from `77bb89a`, which includes `d11c927` plus lint and format setup. The 
 
 The definition of done remains M0 through M6 acceptance on real artifacts. Security-sensitive rigor remains high. Operator-presence gates cannot be completed by local implementation alone. Local code and mocked integration tests may proceed, but they do not enable live remediation.
 
-First review policy provenance and the existing resource seams. Then run the smallest contained experiment, add authenticated case-scoped artifacts, and complete independently verifiable implementation units. M2 generated execution remains blocked until positive sandbox verification. The remaining M3, M4, and M6 gates stay explicit. `.audit/resume-todos.md` tracks this run's checklist. `decisions.tsv` remains the committed decision trail.
+Policy provenance and existing resource seams were independently reviewed. The smallest contained experiment was run and remains blocked. Authenticated case-scoped artifacts are being implemented in a separate worktree, with native-case manifest ownership and immutable private bytes. Each finished unit receives its own verification and commit. M2 generated execution remains blocked until positive sandbox verification. The remaining M3, M4, and M6 gates stay explicit. `.audit/resume-todos.md` tracks this run's checklist. `decisions.tsv` remains the committed decision trail.
 
 ## Checkpoint policy
 
