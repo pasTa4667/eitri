@@ -4,6 +4,7 @@ import { resolve, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { Provider } from '@earendil-works/pi-ai/models';
 import { NativeCase } from './native.ts';
+import { ArtifactStore } from './artifacts.ts';
 import {
   ControlError,
   digest,
@@ -21,6 +22,7 @@ import type {
   Assessment,
   Case,
   Check,
+  CheckResult,
   Issue,
   Receipt,
   Selection,
@@ -35,7 +37,7 @@ type Options = {
   capacity?: number;
   allowanceMs?: number;
   probe?: (id: string, signal: AbortSignal) => Promise<string>;
-  check?: (id: string, kind: Check['kind'], signal: AbortSignal) => Promise<Omit<Check, 'id'>>;
+  check?: (id: string, kind: Check['kind'], signal: AbortSignal) => Promise<CheckResult>;
   issues?: () => Promise<Issue[]>;
   fault?: (point: string, caseId: string) => void;
 };
@@ -406,21 +408,30 @@ export class Controller {
           if (c.native !== 'provisioning') fail('native-file-missing');
           await (await open(path, 'wx', 0o600)).close();
         }
-        return NativeCase.open(path, c, this.options.providerForCase(id), {
-          current: () => this.get(id),
-          admit: (kind, limit) => this.admitAction(id, kind, limit),
-          permit: (action) => this.permitAction(id, action),
-          finish: (action, uncertain, failed) => this.finishAction(action, uncertain, failed),
-          assess: (assessment, checks) => this.assess(id, assessment, checks),
-          checkpoint: (check) => this.checkpoint(id, check),
-          probe: (signal) =>
-            this.options.probe?.(id, signal) ??
-            Promise.resolve('Scripted probe; no external effect.'),
-          check: (kind, signal) =>
-            this.options.check?.(id, kind, signal) ??
-            Promise.reject(new ControlError('validation-not-configured')),
-          changed: this.changed,
-        });
+        const store = await ArtifactStore.open(this.directory, id);
+        return NativeCase.open(
+          path,
+          c,
+          this.options.providerForCase(id),
+          {
+            current: () => this.get(id),
+            admit: (kind, limit) => this.admitAction(id, kind, limit),
+            permit: (action) => this.permitAction(id, action),
+            finish: (action, uncertain, failed) => this.finishAction(action, uncertain, failed),
+            assess: (assessment, checks) => this.assess(id, assessment, checks),
+            checkpoint: (check) => this.checkpoint(id, check),
+            probe: (signal) =>
+              this.options.probe?.(id, signal) ??
+              Promise.resolve('Scripted probe; no external effect.'),
+            check: (kind, signal) =>
+              this.options.check?.(id, kind, signal) ??
+              Promise.reject(new ControlError('validation-not-configured')),
+            validateCheckAction: (action) => this.validateCheckAction(id, action),
+            fault: (point) => this.options.fault?.(point, id),
+            changed: this.changed,
+          },
+          store,
+        );
       })();
       this.runtimes.set(id, pending);
       void pending.catch(() => {
@@ -499,6 +510,20 @@ export class Controller {
         fail('dispatch-denied');
     });
   }
+  private validateCheckAction(id: string, action: Action) {
+    const c = this.get(id);
+    if (
+      this.closing ||
+      this.starting ||
+      action.caseId !== id ||
+      action.kind !== 'tool' ||
+      !['running', 'pause-requested'].includes(c.status) ||
+      c.native !== 'ready' ||
+      c.epoch !== action.epoch ||
+      !this.db.prepare('SELECT id FROM actions WHERE id=? AND case_id=?').get(action.id, id)
+    )
+      fail('dispatch-denied');
+  }
   private finishAction(action: Action, uncertain: boolean, failed = false) {
     this.transaction(() => {
       if (!this.db.prepare('SELECT id FROM actions WHERE id=?').get(action.id)) return;
@@ -515,7 +540,7 @@ export class Controller {
   private checkpoint(id: string, check: Check) {
     this.transaction(() => {
       const c = this.get(id);
-      if (c.status !== 'running') fail('checkpoint-control-changed');
+      if (!['running', 'pause-requested'].includes(c.status)) fail('checkpoint-control-changed');
       if (check.kind === 'baseline') {
         if (check.passed && (!c.base || c.base === check.candidate)) c.base = check.candidate;
         else this.attention(c, 'baseline-not-reproduced-or-changed');
@@ -542,6 +567,11 @@ export class Controller {
     });
   }
   private async assess(id: string, a: Assessment, checks: Check[]) {
+    if (a.conclusion === 'progress') {
+      const native = (await this.runtimes.get(id)) ?? fail('details-unavailable');
+      for (const check of checks.filter((check) => a.evidenceIds.includes(check.id)))
+        await native.verifyArtifacts(check);
+    }
     this.transaction(() => {
       const c = this.get(id);
       this.charge(c);
@@ -844,6 +874,24 @@ export class Controller {
       this.polling = false;
     }
   }
+  async artifact(caseId: string, artifactId: string) {
+    if (!uuid(caseId) || !uuid(artifactId)) fail('invalid-artifact-id');
+    return this.serial(async () => {
+      const c = this.get(caseId);
+      if (c.native !== 'ready') fail('details-unavailable');
+      const pending = this.runtimes.get(caseId) ?? fail('details-unavailable');
+      const path = join(this.directory, 'cases', caseId, 'session.sqlite');
+      try {
+        const stat = await lstat(path);
+        if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1)
+          fail('details-unavailable');
+        return await (await pending).readArtifact(artifactId);
+      } catch (error) {
+        if (error instanceof ControlError) throw error;
+        return fail('artifact-unavailable');
+      }
+    });
+  }
   async snapshot(selection: Selection = {}): Promise<Snapshot> {
     if (selection.selected !== undefined && !uuid(selection.selected)) fail('invalid-selection');
     if (
@@ -860,7 +908,11 @@ export class Controller {
         c.native === 'ready'
           ? await (await this.runtime(c.id)).messages(selection.limit ?? 100, selection.before)
           : { messages: [], more: false };
-      selected = { case: c, ...page };
+      const metadata =
+        c.native === 'ready'
+          ? await (await this.runtime(c.id)).metadata()
+          : { checks: [], artifacts: [] };
+      selected = { case: c, ...page, ...metadata };
     }
     return {
       protocol: 1,

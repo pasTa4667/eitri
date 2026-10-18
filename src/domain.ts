@@ -81,7 +81,13 @@ export type Snapshot = {
   sequence: number;
   mode: 'scripted';
   cases: Case[];
-  selected: { case: Case; messages: Message[]; more: boolean } | null;
+  selected: {
+    case: Case;
+    messages: Message[];
+    more: boolean;
+    checks: Check[];
+    artifacts: Artifact[];
+  } | null;
 };
 export type Assessment = {
   phase: Phase;
@@ -93,8 +99,29 @@ export type Assessment = {
   paths?: string[];
   candidate?: string;
 };
+export type ArtifactMime = 'text/plain' | 'image/png';
+export type ArtifactOutput = { label: string; mime: ArtifactMime; bytes: Uint8Array };
+export type Artifact = Readonly<{
+  id: string;
+  caseId: string;
+  actionId: string;
+  checkId: string;
+  revision: string;
+  configuration: string;
+  simulated: boolean;
+  createdAt: number;
+  label: string;
+  mime: ArtifactMime;
+  size: number;
+  sha256: string;
+}>;
+export type CheckResult = Omit<Check, 'id' | 'caseId' | 'actionId' | 'artifacts'> & {
+  outputs: readonly ArtifactOutput[];
+};
 export type Check = {
   id: string;
+  caseId: string;
+  actionId: string;
   kind: 'baseline' | 'checkpoint' | 'unit' | 'regression' | 'build' | 'browser';
   candidate: string;
   configuration: string;

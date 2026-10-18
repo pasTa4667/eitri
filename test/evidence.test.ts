@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, realpath, rm } from 'node:fs/promises';
+import { mkdtemp, realpath, rm, chmod, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -120,8 +120,8 @@ test('auth waiting is bounded by the allowance and cannot dispatch after timeout
   assert.equal(faux.state.callCount, 0);
 });
 
-for (const stale of [false, true])
-  test(`revision-bound scripted checks ${stale ? 'reject a stale green result' : 'reach but cannot bypass publication gating'}`, async (t) => {
+for (const mode of ['stored', 'stale', 'missing', 'corrupt', 'fabricated', 'empty'])
+  test(`revision-bound scripted checks with ${mode} artifacts fail closed at the expected phase`, async (t) => {
     const directory = await realpath(await mkdtemp(join(tmpdir(), 'eitri-evidence-test-')));
     const faux = fauxProvider({ tokensPerSecond: 100000 });
     const base = 'a'.repeat(40),
@@ -130,8 +130,8 @@ for (const stale of [false, true])
     let controller: Controller;
     const step: FauxResponseStep = async () => {
       const c = (await controller.snapshot()).cases[0];
-      const messages = (await controller.snapshot({ selected: c.id })).selected!.messages;
-      const checks = messages.filter((m) => m.kind === 'eitri.check').map((m) => m.data as Check);
+      const selected = (await controller.snapshot({ selected: c.id })).selected!;
+      const checks = selected.checks;
       const required: Check['kind'][] =
         c.phase === 'investigation'
           ? ['baseline']
@@ -145,13 +145,25 @@ for (const stale of [false, true])
         return fauxAssistantMessage(fauxToolCall('run_check', { kind: next }), {
           stopReason: 'toolUse',
         });
+      if (c.phase === 'testing' && ['missing', 'corrupt'].includes(mode)) {
+        const artifact = selected.artifacts[0];
+        const path = join(directory, 'cases', c.id, 'artifacts', artifact.id);
+        if (mode === 'missing') await rm(path);
+        else {
+          await chmod(path, 0o600);
+          await writeFile(path, Buffer.alloc(artifact.size, 120));
+        }
+      }
       return fauxAssistantMessage(
         fauxToolCall('complete_assessment', {
           phase: c.phase,
           expectedControlVersion: c.version,
           conclusion: 'progress',
           reason: 'Scripted fixture observations, not a live model fix',
-          evidenceIds: checks.map((check) => check.id),
+          evidenceIds:
+            mode === 'fabricated' && c.phase === 'testing'
+              ? [randomUUID()]
+              : checks.map((check) => check.id),
           proposal: 'Bounded scripted proposal',
           paths: ['src/example.ts'],
           ...(c.candidate ? { candidate: c.candidate } : {}),
@@ -167,11 +179,24 @@ for (const stale of [false, true])
       check: async (_id, kind) => ({
         kind,
         candidate:
-          kind === 'baseline' ? base : stale && kind === 'regression' ? 'd'.repeat(40) : candidate,
+          kind === 'baseline'
+            ? base
+            : mode === 'stale' && kind === 'regression'
+              ? 'd'.repeat(40)
+              : candidate,
         configuration: config,
         passed: true,
         simulated: true,
-        artifacts: kind === 'browser' ? [randomUUID()] : [],
+        outputs:
+          kind === 'browser' && mode !== 'empty'
+            ? [
+                {
+                  label: 'Scripted browser assertions',
+                  mime: 'text/plain',
+                  bytes: Buffer.from('Target assertion passed in simulation.\n'),
+                },
+              ]
+            : [],
       }),
     });
     t.after(async () => {
@@ -180,7 +205,28 @@ for (const stale of [false, true])
     });
     await controller.command({ requestId: randomUUID(), intent: { type: 'investigate', issue } });
     const c = await wait(controller, 'needs-attention');
-    assert.equal(c.phase, stale ? 'implementation' : 'publication');
+    assert.equal(
+      c.phase,
+      mode === 'stale' ? 'implementation' : mode === 'stored' ? 'publication' : 'testing',
+    );
+    const selected = (await controller.snapshot({ selected: c.id, limit: 1 })).selected!;
+    assert.equal(selected.checks.length, mode === 'stale' ? 3 : 6);
+    if (mode === 'stored') {
+      const artifact = selected.artifacts[0];
+      assert.equal(artifact.caseId, c.id);
+      assert.equal(artifact.revision, candidate);
+      assert.equal(artifact.configuration, config);
+      assert.equal(artifact.simulated, true);
+      const browser = selected.checks.find((check) => check.kind === 'browser')!;
+      assert.equal(artifact.checkId, browser.id);
+      assert.equal(artifact.actionId, browser.actionId);
+      const calls = faux.state.callCount;
+      assert.deepEqual(
+        (await controller.artifact(c.id, artifact.id)).bytes,
+        Buffer.from('Target assertion passed in simulation.\n'),
+      );
+      assert.equal(faux.state.callCount, calls);
+    }
     assert.equal(c.candidate, candidate);
     assert.equal(c.base, base);
     assert.equal(c.simulated, true);
@@ -231,7 +277,7 @@ test('initial failed validation permits two repair candidates, not two arbitrary
         configuration: 'c'.repeat(64),
         passed: kind !== 'regression',
         simulated: true,
-        artifacts: [],
+        outputs: [],
       };
     },
   });

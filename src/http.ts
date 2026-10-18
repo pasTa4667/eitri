@@ -57,6 +57,25 @@ export async function serve(factory: () => Promise<Controller>) {
         return;
       }
       const url = new URL(request.url ?? '/', `http://${host}`);
+      if (url.pathname.startsWith('/v1/cases/') || request.url?.includes('/artifacts')) {
+        const route = /^\/v1\/cases\/([0-9a-fA-F-]{36})\/artifacts\/([0-9a-fA-F-]{36})$/.exec(
+          request.url ?? '',
+        );
+        if (!route) return fail('invalid-artifact-route');
+        if (request.method !== 'GET') {
+          send(405, { error: 'get-required' });
+          return;
+        }
+        const { artifact, bytes } = await controller.artifact(route[1], route[2]);
+        response.writeHead(200, {
+          'content-type': artifact.mime,
+          'content-length': bytes.length,
+          'cache-control': 'no-store',
+          'x-content-type-options': 'nosniff',
+        });
+        response.end(bytes);
+        return;
+      }
       if (
         [...url.searchParams.keys()].some((k) => !['selected', 'before', 'limit'].includes(k)) ||
         [...url.searchParams.keys()].some((k) => url.searchParams.getAll(k).length !== 1)
@@ -160,9 +179,13 @@ export async function serve(factory: () => Promise<Controller>) {
       send(
         code === 'internal-error'
           ? 500
-          : code === 'stale-control-version' || code === 'request-id-conflict'
-            ? 409
-            : 400,
+          : ['artifact-not-found', 'case-not-found'].includes(code)
+            ? 404
+            : code === 'details-unavailable'
+              ? 410
+              : code === 'stale-control-version' || code === 'request-id-conflict'
+                ? 409
+                : 400,
         { error: code },
       );
     }

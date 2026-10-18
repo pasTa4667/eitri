@@ -19,7 +19,12 @@ const controller = await Controller.open({
           process.send?.({ stage: 'admitted', id });
           return hold();
         }
-        return fauxAssistantMessage(fauxToolCall('probe', {}), { stopReason: 'toolUse' });
+        return fauxAssistantMessage(
+          mode.startsWith('after-')
+            ? fauxToolCall('run_check', { kind: 'baseline' })
+            : fauxToolCall('probe', {}),
+          { stopReason: 'toolUse' },
+        );
       },
     ]);
     return { provider: faux.provider, modelId: faux.getModel().id };
@@ -29,8 +34,22 @@ const controller = await Controller.open({
     process.send?.({ stage: 'admitted', id });
     return hold();
   },
+  check: async (_id, kind) => ({
+    kind,
+    candidate: 'a'.repeat(40),
+    configuration: 'b'.repeat(64),
+    passed: true,
+    simulated: true,
+    outputs: [
+      {
+        label: 'Baseline log',
+        mime: 'text/plain',
+        bytes: Buffer.from('Simulated baseline reproduced.\n'),
+      },
+    ],
+  }),
   fault: (point, id) => {
-    if (mode === 'tool-receipt' && point === 'after-tool-action-receipt') {
+    if (point === mode || (mode === 'tool-receipt' && point === 'after-tool-action-receipt')) {
       process.send?.({ stage: 'admitted', id });
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0);
     }

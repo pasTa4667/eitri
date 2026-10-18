@@ -19,8 +19,15 @@ import type { Conversation } from '@earendil-works/pi-durable';
 import { openNodeSqliteStorage } from '@earendil-works/pi-durable/storage/sqlite/node';
 import { randomUUID, createHash } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { phases, fail } from './domain.ts';
-import type { Action, Assessment, Case, Check, Message } from './domain.ts';
+import { phases, fail, uuid } from './domain.ts';
+import type { Action, Artifact, Assessment, Case, Check, CheckResult, Message } from './domain.ts';
+import {
+  ArtifactStore,
+  artifactLimits,
+  checksum,
+  validateArtifact,
+  validateOutput,
+} from './artifacts.ts';
 
 export type RuntimeHost = {
   current(): Case;
@@ -30,7 +37,9 @@ export type RuntimeHost = {
   assess(assessment: Assessment, checks: Check[]): Promise<void>;
   checkpoint(check: Check): void;
   probe(signal: AbortSignal): Promise<string>;
-  check(kind: Check['kind'], signal: AbortSignal): Promise<Omit<Check, 'id'>>;
+  check(kind: Check['kind'], signal: AbortSignal): Promise<CheckResult>;
+  validateCheckAction(action: Action): void;
+  fault(point: string): void;
   changed(): void;
 };
 const Identity = defineDoc({
@@ -40,6 +49,19 @@ const Identity = defineDoc({
   history: 'latest',
   fork: 'initial',
   initial: () => ({ caseId: '', issueKey: '' }),
+});
+type EvidenceDocument = {
+  caseId: string;
+  artifacts: Record<string, Artifact>;
+  checks: Record<string, Check>;
+};
+const Evidence = defineDoc({
+  kind: 'eitri.artifacts',
+  version: 1,
+  scope: 'conversation',
+  history: 'latest',
+  fork: 'initial',
+  initial: (): EvidenceDocument => ({ caseId: '', artifacts: {}, checks: {} }),
 });
 const assessmentSchema = Type.Object(
   {
@@ -59,10 +81,12 @@ export class NativeCase {
   harness: Harness;
   root: Conversation;
   host: RuntimeHost;
-  constructor(harness: Harness, root: Conversation, host: RuntimeHost) {
+  private store: ArtifactStore;
+  constructor(harness: Harness, root: Conversation, host: RuntimeHost, store: ArtifactStore) {
     this.harness = harness;
     this.root = root;
     this.host = host;
+    this.store = store;
   }
 
   static async open(
@@ -70,6 +94,7 @@ export class NativeCase {
     identity: Case,
     route: { provider: Provider; modelId: string },
     host: RuntimeHost,
+    store: ArtifactStore,
   ): Promise<NativeCase> {
     const models = createModels({
       authContext: { env: async () => undefined, fileExists: async () => false },
@@ -166,11 +191,11 @@ export class NativeCase {
       );
     const registry = createRegistry();
     let native: NativeCase;
-    const tool = async <T>(operation: (signal: AbortSignal) => Promise<T>) => {
+    const tool = async <T>(operation: (signal: AbortSignal, action: Action) => Promise<T>) => {
       const action = host.admit('tool', 60_000);
       const signal = AbortSignal.timeout(action.limitMs);
       try {
-        const result = await abortable(operation(signal), signal);
+        const result = await abortable(operation(signal, action), signal);
         await native.note(`action-result-${action.id}`, 'eitri.action-result', {
           actionId: action.id,
           result: result ?? null,
@@ -195,13 +220,8 @@ export class NativeCase {
               await tool(async () => {
                 const assessment = args as Assessment;
                 await native.note(`assessment-${randomUUID()}`, 'eitri.assessment', assessment);
-                const entries = await native.messages(1000);
-                await host.assess(
-                  assessment,
-                  entries.messages
-                    .filter((e) => e.kind === 'eitri.check')
-                    .map((e) => e.data as Check),
-                );
+                const { checks } = await native.metadata();
+                await host.assess(assessment, checks);
               });
               return {
                 output: [{ type: 'text', text: 'Assessment recorded.' }],
@@ -232,23 +252,12 @@ export class NativeCase {
               { additionalProperties: false },
             ),
             execute: async (args) => {
-              const check = await tool(async (signal) => {
-                const result: Check = {
-                  ...(await host.check(args.kind as Check['kind'], signal)),
-                  id: randomUUID(),
-                };
-                if (
-                  result.kind !== args.kind ||
-                  !/^[0-9a-f]{40,64}$/.test(result.candidate) ||
-                  !/^[0-9a-f]{64}$/.test(result.configuration) ||
-                  !Array.isArray(result.artifacts) ||
-                  typeof result.passed !== 'boolean' ||
-                  result.simulated !== true
-                )
-                  fail('invalid-check-receipt');
-                await native.note(`check-${result.id}`, 'eitri.check', result);
-                host.checkpoint(result);
-                return result;
+              const check = await tool(async (signal, action) => {
+                const checkId = randomUUID();
+                const kind = args.kind as Check['kind'];
+                const result = await host.check(kind, signal);
+                if (result.kind !== kind) fail('invalid-check-receipt');
+                return native.recordCheck(action, checkId, result, signal);
               });
               return {
                 output: [
@@ -294,7 +303,7 @@ export class NativeCase {
             .map((item) => item.tool),
         },
       });
-      native = new NativeCase(harness, root, host);
+      native = new NativeCase(harness, root, host, store);
       await root.commit(async (tx) => {
         const doc = await tx.doc(Identity, root.id);
         if (
@@ -304,12 +313,200 @@ export class NativeCase {
           fail('native-identity-mismatch');
         doc.caseId = identity.id;
         doc.issueKey = identity.issueKey;
+        const evidence = await tx.doc(Evidence, root.id);
+        if (evidence.caseId && evidence.caseId !== identity.id) fail('native-identity-mismatch');
+        evidence.caseId = identity.id;
       }, context);
+      await native.metadata();
       return native;
     } catch (error) {
       await harness.close(context);
       throw error;
     }
+  }
+
+  async metadata(): Promise<{ checks: Check[]; artifacts: Artifact[] }> {
+    let value!: EvidenceDocument;
+    await this.root.commit(async (tx) => {
+      value = JSON.parse(JSON.stringify(await tx.doc(Evidence, this.root.id)));
+    }, context);
+    const caseId = this.host.current().id;
+    if (value.caseId !== caseId || !value.artifacts || !value.checks)
+      fail('invalid-artifact-document');
+    const artifacts = Object.values(value.artifacts);
+    const checks = Object.values(value.checks);
+    if (
+      artifacts.length > artifactLimits.caseCount ||
+      checks.length > artifactLimits.checks ||
+      artifacts.reduce((sum, artifact) => sum + artifact.size, 0) > artifactLimits.caseBytes
+    )
+      fail('artifact-case-limit');
+    for (const [id, artifact] of Object.entries(value.artifacts)) {
+      validateArtifact(artifact, caseId);
+      if (id !== artifact.id) fail('invalid-artifact-document');
+    }
+    for (const [id, check] of Object.entries(value.checks)) {
+      if (
+        Object.keys(check).some(
+          (key) =>
+            ![
+              'id',
+              'caseId',
+              'actionId',
+              'kind',
+              'candidate',
+              'configuration',
+              'passed',
+              'simulated',
+              'artifacts',
+            ].includes(key),
+        ) ||
+        id !== check.id ||
+        !uuid(id) ||
+        check.caseId !== caseId ||
+        !uuid(check.actionId) ||
+        !['baseline', 'checkpoint', 'unit', 'regression', 'build', 'browser'].includes(
+          check.kind,
+        ) ||
+        typeof check.candidate !== 'string' ||
+        !/^[0-9a-f]{40,64}$/.test(check.candidate) ||
+        typeof check.configuration !== 'string' ||
+        !/^[0-9a-f]{64}$/.test(check.configuration) ||
+        typeof check.passed !== 'boolean' ||
+        check.simulated !== true ||
+        !Array.isArray(check.artifacts) ||
+        check.artifacts.length > artifactLimits.checkCount ||
+        !check.artifacts.every(uuid) ||
+        new Set(check.artifacts).size !== check.artifacts.length
+      )
+        fail('invalid-check-receipt');
+    }
+    return { checks, artifacts };
+  }
+  async artifact(id: string): Promise<Artifact | undefined> {
+    if (!uuid(id)) fail('invalid-artifact-id');
+    let artifact: Artifact | undefined;
+    await this.root.commit(async (tx) => {
+      const doc = await tx.doc(Evidence, this.root.id);
+      if (doc.caseId !== this.host.current().id) fail('invalid-artifact-document');
+      const found = doc.artifacts[id];
+      if (found) artifact = JSON.parse(JSON.stringify(found));
+    }, context);
+    if (artifact) {
+      validateArtifact(artifact, this.host.current().id);
+      if (artifact.id !== id) fail('invalid-artifact-document');
+    }
+    return artifact;
+  }
+  async readArtifact(id: string) {
+    const artifact = (await this.artifact(id)) ?? fail('artifact-not-found');
+    return { artifact, bytes: await this.store.read(artifact) };
+  }
+  async verifyArtifacts(check: Check) {
+    let total = 0;
+    for (const id of check.artifacts) {
+      const { artifact } = await this.readArtifact(id);
+      if (
+        artifact.checkId !== check.id ||
+        artifact.actionId !== check.actionId ||
+        artifact.caseId !== check.caseId ||
+        artifact.revision !== check.candidate ||
+        artifact.configuration !== check.configuration ||
+        artifact.simulated !== check.simulated
+      )
+        fail('artifact-provenance-mismatch');
+      total += artifact.size;
+    }
+    if (total > artifactLimits.checkBytes) fail('artifact-check-limit');
+  }
+  async recordCheck(action: Action, checkId: string, result: CheckResult, signal: AbortSignal) {
+    const guard = () => {
+      signal.throwIfAborted();
+      this.host.validateCheckAction(action);
+    };
+    guard();
+    if (
+      !result ||
+      Object.keys(result).some(
+        (key) =>
+          !['kind', 'candidate', 'configuration', 'passed', 'simulated', 'outputs'].includes(key),
+      ) ||
+      typeof result.candidate !== 'string' ||
+      !/^[0-9a-f]{40,64}$/.test(result.candidate) ||
+      typeof result.configuration !== 'string' ||
+      !/^[0-9a-f]{64}$/.test(result.configuration) ||
+      typeof result.passed !== 'boolean' ||
+      result.simulated !== true ||
+      !Array.isArray(result.outputs) ||
+      result.outputs.length > artifactLimits.checkCount
+    )
+      fail('invalid-check-receipt');
+    if (
+      result.outputs.reduce((sum, output) => sum + (output?.bytes?.byteLength ?? Infinity), 0) >
+      artifactLimits.checkBytes
+    )
+      fail('artifact-check-limit');
+    const outputs = result.outputs.map((output) => {
+      const bytes = validateOutput(output);
+      return { label: output.label, mime: output.mime, bytes };
+    });
+    const check: Check = {
+      id: checkId,
+      caseId: action.caseId,
+      actionId: action.id,
+      kind: result.kind,
+      candidate: result.candidate,
+      configuration: result.configuration,
+      passed: result.passed,
+      simulated: this.host.current().simulated,
+      artifacts: [],
+    };
+    const artifacts: Artifact[] = outputs.map((output) => ({
+      id: randomUUID(),
+      caseId: action.caseId,
+      actionId: action.id,
+      checkId,
+      revision: check.candidate,
+      configuration: check.configuration,
+      simulated: check.simulated,
+      createdAt: Date.now(),
+      label: output.label,
+      mime: output.mime,
+      size: output.bytes.length,
+      sha256: checksum(output.bytes),
+    }));
+    const existing = await this.metadata();
+    const total = artifacts.reduce((sum, artifact) => sum + artifact.size, 0);
+    if (total > artifactLimits.checkBytes) fail('artifact-check-limit');
+    if (
+      existing.checks.length >= artifactLimits.checks ||
+      artifacts.length + existing.artifacts.length > artifactLimits.caseCount ||
+      total + existing.artifacts.reduce((sum, artifact) => sum + artifact.size, 0) >
+        artifactLimits.caseBytes
+    )
+      fail('artifact-case-limit');
+    for (let i = 0; i < artifacts.length; i++) {
+      guard();
+      await this.store.write(artifacts[i], outputs[i].bytes);
+    }
+    this.host.fault('after-artifact-blobs');
+    await this.root.commit(async (tx) => {
+      const doc = await tx.doc(Evidence, this.root.id);
+      guard();
+      for (const artifact of artifacts) doc.artifacts[artifact.id] = artifact;
+    }, context);
+    this.host.fault('after-artifact-manifests');
+    check.artifacts = artifacts.map((artifact) => artifact.id);
+    await this.root.commit(async (tx) => {
+      const doc = await tx.doc(Evidence, this.root.id);
+      guard();
+      doc.checks[check.id] = check;
+    }, context);
+    await this.note(`check-${check.id}`, 'eitri.check', check);
+    this.host.fault('after-check-receipt');
+    guard();
+    this.host.checkpoint(check);
+    return check;
   }
 
   async note(requestId: string, kind: string, data: unknown) {
