@@ -1,5 +1,7 @@
+npm notice run eitri@0.1.0 test:operator
+npm notice run DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer cargo test --locked --manifest-path operator/Cargo.toml
    Compiling eitri-operator v0.1.0 (/Users/felix.langbein/projects/eitri/operator)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.41s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.30s
 warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6, proc-macro-error2 v2.0.1
 note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
      Running unittests src/main.rs (operator/target/debug/deps/eitri_operator-d71d88ac8a08d867)
@@ -9,9 +11,4 @@ test input::tests::unicode_selection_multiline_and_ime_ranges ... ok
 test input::tests::native_handler_keyboard_clipboard_and_multiline ... ok
 test client::tests::real_http_sse_notes_reconnection_and_expired_history ... ok
 
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.63s
-
-   Compiling eitri-operator v0.1.0 (/Users/felix.langbein/projects/eitri/operator)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.64s
-warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6, proc-macro-error2 v2.0.1
-note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.64s

@@ -2,7 +2,9 @@ import { createHash } from 'node:crypto';
 
 export const phases = ['triage', 'investigation', 'implementation', 'testing', 'publication', 'pr-created'] as const;
 export type Phase = typeof phases[number];
-export type Status = 'provisioning' | 'queued' | 'running' | 'pause-requested' | 'paused' | 'needs-attention' | 'awaiting-merge' | 'terminal';
+export const statuses = ['provisioning', 'queued', 'running', 'pause-requested', 'paused', 'needs-attention', 'awaiting-merge', 'terminal'] as const;
+export type Status = typeof statuses[number];
+export const nativeStates = ['provisioning', 'ready', 'missing', 'deleting', 'expired'] as const;
 export type Issue = {
   id: string; project: string; environment: string; repository: string; title: string;
   priority: 'high' | 'medium' | 'low' | 'unknown'; status: 'unresolved' | 'resolved' | 'ignored' | 'unknown';
@@ -11,10 +13,10 @@ export type Issue = {
 export type Case = {
   id: string; issueKey: string; issue: Issue; previousId: string | null;
   phase: Phase; status: Status; version: number; epoch: number;
-  native: 'provisioning' | 'ready' | 'missing' | 'deleting' | 'expired';
+  native: typeof nativeStates[number];
   remainingMs: number; usedMs: number; attempt: number; repairs: number;
   accountedAt: number | null; terminalAt: number | null;
-  outcome: 'no-fix' | 'dismissed' | 'merged' | null; reason: string;
+  outcome: 'no-fix' | 'dismissed' | 'merged' | null; reason: string; warning?: string;
   base: string | null; candidate: string | null; failedCandidate: string | null; simulated: boolean;
 };
 export type Intent =

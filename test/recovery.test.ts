@@ -8,9 +8,9 @@ import { tmpdir } from 'node:os';
 import { Controller } from '../src/controller.ts';
 import { fauxProvider, fauxAssistantMessage } from '@earendil-works/pi-ai/providers/faux';
 
-for (const mode of ['model', 'paused-model', 'tool']) test(`SIGKILL during ${mode} conservatively preserves allowance and intent`, { timeout: 15000 }, async t => {
+for (const mode of ['model', 'paused-model', 'tool', 'tool-receipt']) test(`SIGKILL during ${mode} conservatively preserves allowance and intent`, { timeout: 15000 }, async t => {
   const directory = await realpath(await mkdtemp(join(tmpdir(), 'eitri-kill-test-')));
-  const child = fork(new URL('./crash-worker.ts', import.meta.url), [directory, mode === 'tool' ? 'tool' : 'model'], {
+  const child = fork(new URL('./crash-worker.ts', import.meta.url), [directory, mode.startsWith('tool') ? mode : 'model'], {
     env: { PATH: process.env.PATH, HOME: process.env.HOME, TMPDIR: process.env.TMPDIR }, stdio: ['ignore', 'ignore', 'pipe', 'ipc'],
   });
   let errors = ''; child.stderr!.on('data', chunk => { errors += chunk.toString(); });
@@ -32,8 +32,13 @@ for (const mode of ['model', 'paused-model', 'tool']) test(`SIGKILL during ${mod
   let c;
   do { c = (await controller.snapshot()).cases[0]; if (c.status === 'needs-attention' || c.status === 'paused') break; await new Promise(r => setTimeout(r, 10)); } while (Date.now() < deadline);
   assert.equal(c.id, message.id);
-  assert.ok(c.usedMs >= (mode === 'tool' ? 60000 : 120000));
-  assert.ok(c.remainingMs <= (mode === 'tool' ? 540000 : 480000));
+  if (mode !== 'tool-receipt') {
+    assert.ok(c.usedMs >= (mode === 'tool' ? 60000 : 120000));
+    assert.ok(c.remainingMs <= (mode === 'tool' ? 540000 : 480000));
+  } else {
+    assert.equal(c.reason, 'incomplete-native-tool-checkpoint');
+    assert.ok((await controller.snapshot({ selected: c.id })).selected!.messages.some(m => m.kind === 'eitri.action-result' && JSON.stringify(m.data).includes('Effect saved before SDK receipt')));
+  }
   assert.equal(c.attempt, 1);
   assert.equal(c.status, mode === 'paused-model' ? 'paused' : 'needs-attention');
   assert.equal(faux.state.callCount, mode === 'model' ? 1 : 0);

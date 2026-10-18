@@ -6,5 +6,7 @@ operator/target/
 !.env.example
 *.sqlite
 *.sqlite-*
+connection.json
+oauth.json
 .audit/
 .DS_Store

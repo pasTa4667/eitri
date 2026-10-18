@@ -4,7 +4,7 @@ import { resolve, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { Provider } from '@earendil-works/pi-ai/models';
 import { NativeCase } from './native.ts';
-import { ControlError, digest, fail, issueKey, parseCommand, phases, text, uuid } from './domain.ts';
+import { ControlError, digest, fail, issueKey, parseCommand, phases, statuses, nativeStates, text, uuid } from './domain.ts';
 import type { Action, Assessment, Case, Check, Command, Issue, Receipt, Selection, Snapshot } from './domain.ts';
 
 type Options = {
@@ -38,11 +38,17 @@ export class Controller {
 
   private constructor(directory: string, db: DatabaseSync, options: Options) {
     this.directory = directory; this.db = db; this.options = options;
-    this.clock = options.clock ?? Date.now;
+    this.clock = () => {
+      const now = options.clock ? options.clock() : Math.floor(performance.timeOrigin + performance.now());
+      if (!Number.isSafeInteger(now) || now < 0) return fail('invalid-clock');
+      return now;
+    };
     this.allowance = Math.min(options.allowanceMs ?? 600_000, 600_000);
   }
   static async open(options: Options) {
     const directory = resolve(options.directory);
+    if (!Number.isSafeInteger(options.capacity ?? 1) || (options.capacity ?? 1) < 1 || (options.capacity ?? 1) > 2
+      || !Number.isSafeInteger(options.allowanceMs ?? 600_000) || (options.allowanceMs ?? 600_000) < 1 || (options.allowanceMs ?? 600_000) > 600_000) fail('invalid-runtime-limits');
     if (openDirectories.has(directory)) fail('controller-already-open');
     openDirectories.add(directory);
     let controller: Controller | undefined;
@@ -82,10 +88,28 @@ export class Controller {
     try { const value = work(); this.db.exec('COMMIT'); return value; }
     catch (error) { this.db.exec('ROLLBACK'); throw error; }
   }
-  private all(): Case[] { return this.db.prepare('SELECT value FROM cases ORDER BY rowid').all().map(row => JSON.parse(String(row.value))); }
+  private all(): Case[] { return this.db.prepare('SELECT value FROM cases ORDER BY rowid').all().map(row => this.decode(String(row.value))); }
+  private decode(value: string): Case {
+    const c: Case = JSON.parse(value);
+    if (!c || !uuid(c.id) || !phases.includes(c.phase)
+      || !statuses.includes(c.status)
+      || !nativeStates.includes(c.native)
+      || ![c.version, c.epoch, c.remainingMs, c.usedMs, c.attempt, c.repairs].every(n => Number.isSafeInteger(n) && n >= 0)
+      || c.version < 1 || c.attempt < 1 || c.remainingMs > 600_000 || c.repairs > 3
+      || (c.repairs > 2 && c.status !== 'needs-attention' && c.status !== 'terminal')
+      || ![c.accountedAt, c.terminalAt].every(n => n === null || (Number.isSafeInteger(n) && n >= 0))
+      || typeof c.reason !== 'string' || Buffer.byteLength(c.reason) > 2048 || c.simulated !== true
+      || (c.warning !== undefined && !text(c.warning, 512))
+      || ![c.base, c.candidate, c.failedCandidate].every(sha => sha === null || /^[0-9a-f]{40,64}$/.test(sha))
+      || ![null, 'no-fix', 'dismissed', 'merged'].includes(c.outcome)
+      || (c.status === 'terminal' ? c.terminalAt === null || c.outcome === null : c.terminalAt !== null || c.outcome !== null)) return fail('invalid-control-state');
+    parseCommand({ requestId: c.id, intent: { type: 'investigate', issue: c.issue } });
+    if (c.issueKey !== issueKey(c.issue)) return fail('invalid-control-state');
+    return c;
+  }
   private get(id: string): Case {
     const row = this.db.prepare('SELECT value FROM cases WHERE id=?').get(id);
-    return row ? JSON.parse(String(row.value)) : fail('case-not-found');
+    return row ? this.decode(String(row.value)) : fail('case-not-found');
   }
   private save(c: Case) { this.db.prepare('INSERT INTO cases VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET value=excluded.value').run(c.id, c.issueKey, JSON.stringify(c)); }
   private charge(c: Case) {
@@ -265,6 +289,7 @@ export class Controller {
       this.save(c); this.db.prepare('DELETE FROM actions WHERE id=?').run(action.id);
     });
     this.changed();
+    this.options.fault?.(`after-${action.kind}-action-receipt`, action.caseId);
   }
   private checkpoint(id: string, check: Check) {
     this.transaction(() => {
@@ -373,6 +398,9 @@ export class Controller {
           c = this.get(c.id);
           if (actionRow) {
             const action: Action = JSON.parse(String(actionRow.value));
+            if (!action || !uuid(action.id) || action.caseId !== c.id || !['model', 'tool'].includes(action.kind)
+              || ![action.limitMs, action.startedAt, action.epoch, action.usedAtStart].every(n => Number.isSafeInteger(n) && n >= 0)
+              || action.limitMs < 1 || action.limitMs > (action.kind === 'model' ? 120_000 : 60_000) || action.epoch > c.epoch || action.usedAtStart > c.usedMs) fail('invalid-action-state');
             const cost = Math.min(c.remainingMs, Math.max(0, action.limitMs - (c.usedMs - action.usedAtStart)));
             c.remainingMs -= cost; c.usedMs += cost; c.accountedAt = null;
             if (action.kind === 'tool') this.attention(c, 'interrupted-tool-effect-uncertain');
@@ -383,11 +411,19 @@ export class Controller {
           c.accountedAt = null; c.epoch++; this.save(c);
         });
         const native = await this.runtime(c.id);
+        if (await native.hasUnsettledTool()) this.transaction(() => {
+          const latest = this.get(c.id);
+          if (latest.status !== 'terminal' && latest.status !== 'needs-attention') { this.attention(latest, 'incomplete-native-tool-checkpoint'); this.save(latest); }
+        });
         await native.reconcile();
         await this.deliver(c.id);
       } catch (error) {
         this.transaction(() => {
-          c = this.get(c.id); c.native = 'missing'; this.attention(c, error instanceof ControlError ? error.code : 'native-recovery-failed'); this.save(c);
+          c = this.get(c.id); c.native = 'missing';
+          const reason = error instanceof ControlError ? error.code : 'native-recovery-failed';
+          if (c.status === 'terminal') { c.warning = reason; c.version++; }
+          else this.attention(c, reason);
+          this.save(c);
         });
       }
     }
@@ -407,11 +443,11 @@ export class Controller {
         await rm(directory, { recursive: true });
       }
       this.transaction(() => {
-        c = this.get(id); c.native = 'expired'; c.version++; this.save(c);
+        c = this.get(id); c.native = 'expired'; delete c.warning; c.version++; this.save(c);
         this.db.prepare('DELETE FROM deliveries WHERE case_id=?').run(id);
       });
     } catch (error) {
-      c = this.get(id); c.reason = error instanceof ControlError ? error.code : 'details-cleanup-failed'; this.save(c); throw error;
+      c = this.get(id); c.warning = error instanceof ControlError ? error.code : 'details-cleanup-failed'; this.save(c); throw error;
     }
     this.changed();
   }

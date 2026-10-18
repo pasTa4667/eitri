@@ -4,7 +4,7 @@
 
 The operator approved retaining published Pi Durable 1.3.0 and continuing against its actual API. The differences below remain documented; no dependency or safety contract was substituted. The approved hashes are fixed in `docs/evidence/sdk-approved.json`.
 
-M0 now has a controller implementation with 21 passing native-SQLite, dispatch, recovery, lifecycle, and HTTP tests. Evidence is `docs/evidence/m0-tests.txt`. The compatibility prototype below remains throwaway and is not itself M0 acceptance.
+M0 now has a controller implementation with 23 passing native-SQLite, dispatch, recovery, lifecycle, and HTTP tests. Evidence is `docs/evidence/m0-tests.txt`. The compatibility prototype below remains throwaway and is not itself M0 acceptance.
 
 ## Reproduce the source comparison
 

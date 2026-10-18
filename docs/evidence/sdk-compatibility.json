@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-10-18T08:45:45.381Z",
+  "checkedAt": "2026-10-18T09:14:58.560Z",
   "inspectedCommit": "8efd314fa3d3232ce197d8d7a6a5660530b9d83e",
   "verdict": "approved-differences",
   "scope": "Selected SDK source and public type comparison. This does not verify runtime dispatch safety.",

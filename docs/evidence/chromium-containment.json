@@ -1,0 +1,61 @@
+{
+  "checkedAt": "2026-10-18T09:13:14.434Z",
+  "simulatedAgent": true,
+  "scope": "Standalone trusted containment probe. No repository or credential mounts; not a generated-code worker.",
+  "verdict": "blocked",
+  "daemonSecurity": [
+    "name=seccomp,profile=builtin",
+    "name=cgroupns"
+  ],
+  "applied": {
+    "imageId": "sha256:e9b00c709ee2b73dd4f112a862c666a4c547f78399a83ab6cb03e7eb88f35c75",
+    "user": "pwuser",
+    "mounts": [],
+    "network": "none",
+    "readOnly": true,
+    "privileged": false,
+    "capabilitiesAdded": null,
+    "capabilitiesDropped": [
+      "ALL"
+    ],
+    "security": [
+      "no-new-privileges"
+    ],
+    "memoryBytes": 4294967296,
+    "cpuNano": 2000000000,
+    "pids": 128,
+    "ipc": "private",
+    "shmBytes": 268435456,
+    "scratch": {
+      "/tmp": "rw,exec,nosuid,size=256m,uid=1001,gid=1001"
+    }
+  },
+  "exitCode": 1,
+  "stderr": "",
+  "observation": {
+    "node": "v26.5.0",
+    "architecture": "arm64",
+    "uid": 1001,
+    "checks": {
+      "readOnlyRoot": "enforced",
+      "socket": "unavailable",
+      "hostHomeSentinel": "unavailable",
+      "hostSource": "unavailable",
+      "egress": "denied"
+    },
+    "processSecurity": [
+      "Uid:\t1001\t1001\t1001\t1001",
+      "CapEff:\t0000000000000000",
+      "NoNewPrivs:\t1",
+      "Seccomp:\t2"
+    ],
+    "cgroups": {
+      "memory.max": "4294967296",
+      "cpu.max": "200000 100000",
+      "pids.max": "128"
+    },
+    "verdict": "blocked",
+    "error": "browserType.launch: Target page, context or browser has been closed\nBrowser logs:\nChromium sandboxing failed!\n================================\nTo avoid the sandboxing issue, do either of the following:\n  - (preferred): Configure your environment to support sandboxing\n  - (alternative): Launch Chromium without sandbox using 'chromiumSandbox: false' option\n================================\n\nCall log:\n  - <launching> /ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux-arm64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,AvoidCorsURLLoaderRestartOnRedirect,Translate,AutoDeElevate,OptimizationHints,NetworkTimeServiceQuerying,AimEnabled,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --user-data-dir=/tmp/playwright_chromiumdev_profile-2icX6N --remote-debugging-pipe --no-startup-window\n  - <launched> pid=17\n  - [pid=17][err] [1018/091314.935924:FATAL:content/browser/zygote_host/zygote_host_impl_linux.cc:130] No usable sandbox! If you are running on Ubuntu 23.10+ or another Linux distro that has disabled unprivileged user namespaces with AppArmor, see https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md. Otherwise see https://chromium.googlesource.com/chromium/src/+/main/docs/linux/suid_sandbox_development.md for more information on developing with the (older) SUID sandbox. If you want to live dangerously and need an immediate workaround, you can try using --no-sandbox.\n  - [pid=17] <gracefully close start>\n  - [pid=17] <kill>\n  - [pid=17] <will force kill>\n  - [pid=17] <process did exit: exitCode=null, signal=SIGTRAP>\n  - [pid=17] starting temporary directories cleanup\n  - [pid=17] finished temporary directories cleanup\n  - [pid=17] <gracefully close end>\n"
+  },
+  "containerRemoved": true
+}

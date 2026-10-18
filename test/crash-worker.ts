@@ -14,7 +14,13 @@ const controller = await Controller.open({
     }]);
     return { provider: faux.provider, modelId: faux.getModel().id };
   },
-  probe: async id => { process.send?.({ stage: 'admitted', id }); return hold(); },
+  probe: async id => { if (mode === 'tool-receipt') return 'Effect saved before SDK receipt'; process.send?.({ stage: 'admitted', id }); return hold(); },
+  fault: (point, id) => {
+    if (mode === 'tool-receipt' && point === 'after-tool-action-receipt') {
+      process.send?.({ stage: 'admitted', id });
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0);
+    }
+  },
 });
 process.on('message', async message => {
   if (message === 'pause') {

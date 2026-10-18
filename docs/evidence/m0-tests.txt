@@ -1,35 +1,37 @@
 npm notice run eitri@0.1.0 verify
 npm notice run npm run check && npm test
 npm notice run eitri@0.1.0 check
-npm notice run tsc --noEmit && node --check scripts/doctor.mjs && node --check scripts/check-sdk.mjs && node --check prototypes/sdk-compatibility.mjs
+npm notice run tsc --noEmit && node --check scripts/doctor.mjs && node --check scripts/check-sdk.mjs && node --check prototypes/sdk-compatibility.mjs && node --check prototypes/chromium/probe.mjs && node --check prototypes/chromium/run.mjs
 npm notice run eitri@0.1.0 test
 npm notice run node --test test/*.test.ts
-✔ atomic ownership, durable request receipts, policy checks and compact catalogue (37.952459ms)
-✔ pause lets an admitted tool finish, denies follow-up inference, and releases capacity (55.096292ms)
-✔ pause during model auth/response denies the next tool and native SDK follow-up (22.613916ms)
-✔ parked notes, duplicate delivery, views, reconnect watches and restart never infer (25.721875ms)
-✔ interrupted provisioning recovers the same owner and native file (21.750917ms)
-✔ structured triage can advance; a stale completion cannot advance or use a phase setter (44.145042ms)
-✔ No fix needed suppresses intake; explicit requeue links a new session (26.253416ms)
-✔ budget exhaustion makes no summary call; Retry is explicit, bounded, and cumulative (31.844333ms)
-✔ capacity-two scripted cases have distinct databases, messages, counters and IDs (30.550041ms)
-✔ per-file expiry preserves guards, cannot wake or recreate details, and protects unfinished work (23.886834ms)
-✔ missing native details and cleanup failure are surfaced without recreating history (36.942541ms)
-✔ active notes are steered at the SDK boundary without a handler starting inference (23.982458ms)
-✔ pause during asynchronous auth is checked at the actual provider dispatch (32.581667ms)
-✔ auth waiting is bounded by the allowance and cannot dispatch after timeout (66.240583ms)
-✔ revision-bound scripted checks reach but cannot bypass publication gating (249.775792ms)
-✔ revision-bound scripted checks reject a stale green result (119.710166ms)
-✔ initial failed validation permits two repair candidates, not two arbitrary check failures (95.380042ms)
-✔ authenticated HTTP/SSE, singleton-before-storage, idempotency and hostile input (81.201875ms)
-✔ SIGKILL during model conservatively preserves allowance and intent (261.062667ms)
-✔ SIGKILL during paused-model conservatively preserves allowance and intent (231.853041ms)
-✔ SIGKILL during tool conservatively preserves allowance and intent (245.13375ms)
-ℹ tests 21
+✔ atomic ownership, durable request receipts, policy checks and compact catalogue (37.958917ms)
+✔ pause lets an admitted tool finish, denies follow-up inference, and releases capacity (53.42825ms)
+✔ pause during model auth/response denies the next tool and native SDK follow-up (17.924208ms)
+✔ parked notes, duplicate delivery, views, reconnect watches and restart never infer (24.681ms)
+✔ interrupted provisioning recovers the same owner and native file (20.865834ms)
+✔ structured triage can advance; a stale completion cannot advance or use a phase setter (44.977166ms)
+✔ No fix needed suppresses intake; explicit requeue links a new session (30.357709ms)
+✔ budget exhaustion makes no summary call; Retry is explicit, bounded, and cumulative (30.033416ms)
+✔ capacity-two scripted cases have distinct databases, messages, counters and IDs (30.54975ms)
+✔ per-file expiry preserves guards, cannot wake or recreate details, and protects unfinished work (28.967791ms)
+✔ missing native details and cleanup failure are surfaced without recreating history (39.15075ms)
+✔ active notes are steered at the SDK boundary without a handler starting inference (19.126875ms)
+✔ corrupt durable allowance fails closed rather than allowing another model call (19.129875ms)
+✔ pause during asynchronous auth is checked at the actual provider dispatch (32.499041ms)
+✔ auth waiting is bounded by the allowance and cannot dispatch after timeout (65.598416ms)
+✔ revision-bound scripted checks reach but cannot bypass publication gating (250.889709ms)
+✔ revision-bound scripted checks reject a stale green result (122.886791ms)
+✔ initial failed validation permits two repair candidates, not two arbitrary check failures (96.669334ms)
+✔ authenticated HTTP/SSE, singleton-before-storage, idempotency and hostile input (77.200208ms)
+✔ SIGKILL during model conservatively preserves allowance and intent (260.731875ms)
+✔ SIGKILL during paused-model conservatively preserves allowance and intent (227.274417ms)
+✔ SIGKILL during tool conservatively preserves allowance and intent (224.21325ms)
+✔ SIGKILL during tool-receipt conservatively preserves allowance and intent (238.140916ms)
+ℹ tests 23
 ℹ suites 0
-ℹ pass 21
+ℹ pass 23
 ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 993.696541
+ℹ duration_ms 1271.731875

@@ -51,7 +51,7 @@ Six mandatory milestones remain, M1 through M6. This is a multi-hour implementat
 
 The operator approved the documented SDK differences and continuation with published 1.3.0. `docs/sdk-review.md` retains that decision and the two control-ownership designs. Approved source hashes are fixed separately from each fresh comparison.
 
-M0 evidence is `docs/evidence/m0-tests.txt`: `npm run verify` passes TypeScript and 21 tests. Tests use real temporary catalogue/native SQLite files, fake adapters, and three actual SIGKILL/reopen cases. They cover duplicate claims, safe pause, Continue/Retry, passive and active note delivery, provisioning recovery, auth-time dispatch denial, allowance/repair limits, same-revision phase gates, capacity-two isolation, deletion failure/expiry, authenticated HTTP/SSE, and singleton-before-storage. Model/integration outcomes remain explicitly scripted.
+M0 evidence is `docs/evidence/m0-tests.txt`: `npm run verify` passes TypeScript and 23 tests, including fail-closed handling of corrupt durable allowance state. Tests use real temporary catalogue/native SQLite files, fake adapters, and four actual SIGKILL/reopen cases, including the gap after an application tool receipt but before the SDK's tool checkpoint. Incomplete native tool work parks conservatively even when the action ledger was already cleared. Tool results are journaled in the native file before action completion; active time uses a monotonic process clock. They cover duplicate claims, safe pause, Continue/Retry, passive and active note delivery, provisioning recovery, auth-time dispatch denial, allowance/repair limits, same-revision phase gates, capacity-two isolation, deletion failure/expiry, authenticated HTTP/SSE, and singleton-before-storage. Model/integration outcomes remain explicitly scripted.
 
 `npm run check:sdk` now returns `approved-differences` for exactly the approved hashes. `npm run doctor` still exits 1 for missing installer Bash, which is deferred to M3.
 
@@ -61,7 +61,9 @@ M1 is implemented and compiles with published GPUI 0.2.2, installed Rust 1.97.1,
 
 Desktop screenshot capture returned `could not create image from display`; AppleScript accessibility inspection timed out. No permissions were granted or bypassed. The native visual/operator walkthrough is unverified, and real artifact screenshot cards await the resource surface. M1 is not marked fully accepted yet.
 
-Next is a standalone, trusted Chromium containment feasibility probe for M2, with no repository or credential mounts and no live agent. This is not enabling generated execution or claiming M2 acceptance. Do not request token values in chat.
+A standalone, trusted Chromium containment probe was built and run with no repository/credential mounts or live agent. Its final result is **blocked**: sandbox-enabled ARM64 Chromium exits with `No usable sandbox!`. Applied and effective isolation/resource settings are recorded in `docs/evidence/chromium-containment.json`. Read-only root, unavailable host/socket paths, denied egress, non-root UID, dropped capabilities, seccomp, no-new-privileges, and cgroup limits were observed. No page action or screenshot succeeded. The owned probe container was removed; the pinned local image remains for reproduction.
+
+Current stop is the failed containment gate. `docs/containment-review.md` requests review before any user-namespace/seccomp-policy adjustment. No security bypass, global configuration change, fixture edit, Sentry service, live model, token read, push, or PR was performed. M1 visual/artifact acceptance and all of M2–M6 remain incomplete. Do not request token values in chat.
 
 No subagent or compaction tool is exposed. No independent model review was performed. The design comparison and comment review were sequential self-review.
 

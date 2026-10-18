@@ -92,7 +92,11 @@ export class NativeCase {
     const tool = async <T>(operation: (signal: AbortSignal) => Promise<T>) => {
       const action = host.admit('tool', 60_000);
       const signal = AbortSignal.timeout(action.limitMs);
-      try { const result = await abortable(operation(signal), signal); host.finish(action, false); return result; }
+      try {
+        const result = await abortable(operation(signal), signal);
+        await native.note(`action-result-${action.id}`, 'eitri.action-result', { actionId: action.id, result: result ?? null });
+        host.finish(action, false); return result;
+      }
       catch (error) { host.finish(action, signal.aborted, true); throw error; }
     };
     registry.install(defineExtension({ name: 'eitri', tools: [
@@ -180,6 +184,7 @@ export class NativeCase {
     const submission = await this.root.submit({ type: 'input', requestId: `run-${c.id}-${c.epoch}`, content: input, whenBusy: 'reject' }, context);
     return submission.wait(context);
   }
+  async hasUnsettledTool() { return (await this.harness.inspect(context)).tasks.some(task => task.record.kind === 'pi.tool'); }
   async reconcile() { await this.root.abort(context, { background: true }); }
   async close() { await this.harness.close(context); }
 }

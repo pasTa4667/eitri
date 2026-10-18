@@ -1,6 +1,6 @@
 # eitri
 
-Local Sentry investigation and fix-PR pilot. M0's durable TypeScript controller is implemented and verified with scripted adapters. Native UI, sandboxed execution, and live integrations remain staged by the [build plan](docs/build-plan.md).
+Local Sentry investigation and fix-PR pilot. M0's durable TypeScript controller is implemented and verified with scripted adapters. The GPUI native operator builds and passes input/client tests. Visual acceptance, sandboxed execution, and live integrations remain staged by the [build plan](docs/build-plan.md).
 
 ## Check this checkout
 
@@ -8,7 +8,7 @@ Use Node 26.5.0.
 
 ```sh
 npm ci --ignore-scripts
-npm run verify
+npm run verify:all
 npm run doctor
 npm run check:sdk
 npm run probe:sdk
@@ -25,6 +25,20 @@ npm start
 ```
 
 The controller binds `127.0.0.1:43127`. Data defaults to `~/Library/Application Support/eitri`; set `EITRI_DATA_DIR` to select a private test directory. The mode-0600 `connection.json` contains the current bearer capability. Do not copy it into chat or a URL. `Check now` admits only synthetic issues. No live provider or publication route is enabled.
+
+## Run the native operator
+
+In a second terminal, with the same `EITRI_DATA_DIR` if overridden:
+
+```sh
+npm run operator
+```
+
+The pinned GPUI 0.2.2 build uses process-local Xcode selection, not a toolchain upgrade. `npm run test:operator` exercises GPUI input handlers and the Rust client against a real scripted controller. A desktop visual walkthrough and actual screenshot-resource cards remain unverified.
+
+## Containment gate
+
+The standalone ARM64 Chromium probe currently fails with `No usable sandbox!` under the recorded restrictions. No privileged, `SYS_ADMIN`, host IPC/network, or no-sandbox workaround was used. See [the containment review](docs/containment-review.md). Generated execution and live integrations remain disabled.
 
 ## Review the setup and progress
 

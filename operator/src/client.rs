@@ -23,6 +23,7 @@ pub struct Session {
     pub version: u64,
     pub remaining_ms: u64,
     pub reason: String,
+    pub warning: Option<String>,
     pub native: String,
     pub issue: Value,
 }

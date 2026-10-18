@@ -141,7 +141,13 @@ test('No fix needed suppresses intake; explicit requeue links a new session', as
   const id = await f.add(); const done = await f.wait(id, 'terminal');
   assert.equal(done.outcome, 'no-fix');
   assert.equal(await f.add(), id);
-  const receipt = await f.controller.command(command({ type: 'requeue', caseId: id, note: 'New explicit investigation' }, done.version));
+  await unlink(join(f.directory, 'cases', id, 'session.sqlite'));
+  await f.restart();
+  const recovered = await f.current(id);
+  assert.equal(recovered.status, 'terminal'); assert.equal(recovered.outcome, 'no-fix'); assert.equal(recovered.native, 'missing');
+  assert.equal(recovered.reason, done.reason); assert.equal(recovered.warning, 'native-file-missing');
+  assert.equal(await f.add(), id);
+  const receipt = await f.controller.command(command({ type: 'requeue', caseId: id, note: 'New explicit investigation' }, recovered.version));
   assert.notEqual(receipt.caseId, id);
   assert.equal((await f.current(receipt.caseId!)).previousId, id);
 });
@@ -215,4 +221,14 @@ test('active notes are steered at the SDK boundary without a handler starting in
   assert.equal(f.providers.get(id)!.state.callCount, 1);
   release.resolve(); await f.wait(id, 'needs-attention');
   assert.equal(observed, true);
+});
+
+test('corrupt durable allowance fails closed rather than allowing another model call', async t => {
+  const f = await fixture(t);
+  const id = await f.add(); const c = await f.wait(id, 'needs-attention');
+  const db = new DatabaseSync(join(f.directory, 'catalogue.sqlite'));
+  db.prepare('UPDATE cases SET value=? WHERE id=?').run(JSON.stringify({ ...c, remainingMs: 'invalid', status: 'running' }), id); db.close();
+  await assert.rejects(f.controller.snapshot(), { code: 'invalid-control-state' });
+  await assert.rejects(f.controller.command(command({ type: 'retry', caseId: id, note: 'Must not execute with invalid allowance' }, c.version)), { code: 'invalid-control-state' });
+  assert.equal(f.providers.get(id)!.state.callCount, 1);
 });

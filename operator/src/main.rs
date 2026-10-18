@@ -159,6 +159,15 @@ impl Render for Operator {
                         .child(c.reason.clone()),
                 );
             }
+            if let Some(warning) = &c.warning {
+                detail = detail.child(
+                    div()
+                        .p_3()
+                        .rounded_md()
+                        .bg(rgb(0x463334))
+                        .child(format!("History warning: {warning}")),
+                );
+            }
             let mut controls = div().flex().flex_wrap().gap_2();
             let version = Some(c.version);
             if self.status.starts_with("Connected") {
