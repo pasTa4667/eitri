@@ -1626,7 +1626,7 @@ export class FrozenBrowserValidator {
         ) ||
         array(object(image.RootFS).Layers, 256).length <= array(before.rootFS.Layers, 256).length ||
         !same(config.Entrypoint, entrypoint) ||
-        !same(config.Cmd, []) ||
+        (config.Cmd !== undefined && config.Cmd !== null && !same(config.Cmd, [])) ||
         config.User !== '1001:1001' ||
         config.WorkingDir !== '/opt/eitri' ||
         !same(envSet(config.Env), before.env)
@@ -1796,7 +1796,7 @@ export class FrozenBrowserValidator {
       c.User !== '1001:1001' ||
       c.WorkingDir !== '/opt/eitri' ||
       !same(c.Entrypoint, entrypoint) ||
-      !same(c.Cmd, []) ||
+      (c.Cmd !== undefined && c.Cmd !== null && !same(c.Cmd, [])) ||
       c.Healthcheck ||
       c.Volumes ||
       c.ExposedPorts ||
@@ -1909,7 +1909,7 @@ export class FrozenBrowserValidator {
         User: c.User,
         WorkingDir: c.WorkingDir,
         Entrypoint: c.Entrypoint,
-        Cmd: c.Cmd,
+        Cmd: [],
         StopTimeout: c.StopTimeout,
         OpenStdin: c.OpenStdin,
         Tty: c.Tty,
