@@ -57,7 +57,11 @@ M0 evidence is `docs/evidence/m0-tests.txt`: `npm run verify` passes TypeScript 
 
 The scripted TypeScript controller is implemented in `src/`, with Node HTTP/SSE and tests in `test/`. `npm start` binds the fixed loopback port before opening application storage, creates a private per-run connection capability, and runs only the faux provider. Live model routes and publication are denied. Tests remove only their own temporary data. No account, vault, item, token, OAuth state, worker container, push, or PR has been created. The existing fixture remains unchanged.
 
-Next is M1: build published GPUI 0.2.2 with the installed Rust/Xcode toolchain, implement the native input and off-render-thread authenticated HTTP/SSE client, then exercise it against the scripted controller. No new secret or live-inference approval is needed for M1. Do not request token values in chat.
+M1 is implemented and compiles with published GPUI 0.2.2, installed Rust 1.97.1, and process-local Xcode/Metal. `docs/evidence/m1-tests.txt` records three passing Rust tests: Unicode/IME buffer ranges; GPUI input-handler dispatch including keyboard, selection, clipboard, and multiline text; and the Rust HTTP/SSE client against a real child controller, including passive notes, UI-client reopen, and expired-history views. Network work is off the render thread; redirects and ambient proxies are disabled. Drafts are case-scoped and clear only on matching acknowledgments.
+
+Desktop screenshot capture returned `could not create image from display`; AppleScript accessibility inspection timed out. No permissions were granted or bypassed. The native visual/operator walkthrough is unverified, and real artifact screenshot cards await the resource surface. M1 is not marked fully accepted yet.
+
+Next is a standalone, trusted Chromium containment feasibility probe for M2, with no repository or credential mounts and no live agent. This is not enabling generated execution or claiming M2 acceptance. Do not request token values in chat.
 
 No subagent or compaction tool is exposed. No independent model review was performed. The design comparison and comment review were sequential self-review.
 

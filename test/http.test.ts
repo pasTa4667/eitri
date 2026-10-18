@@ -7,14 +7,14 @@ import { randomUUID } from 'node:crypto';
 import { request as httpRequest } from 'node:http';
 import { fauxProvider, fauxAssistantMessage } from '@earendil-works/pi-ai/providers/faux';
 import { Controller } from '../src/controller.ts';
-import { serve } from '../src/http.ts';
+import { serve, controllerPort } from '../src/http.ts';
 
-const port = 43128;
+const port = controllerPort;
 test('authenticated HTTP/SSE, singleton-before-storage, idempotency and hostile input', { timeout: 15000 }, async t => {
   const directory = await realpath(await mkdtemp(join(tmpdir(), 'eitri-http-test-')));
   const faux = fauxProvider({ tokensPerSecond: 100000 }); faux.setResponses([fauxAssistantMessage('Scripted attention')]);
   const policy = { project: 'demo', environment: 'demo', repository: 'eitri-test-web-app' };
-  const application = await serve(() => Controller.open({ directory, policy, providerForCase: () => ({ provider: faux.provider, modelId: faux.getModel().id }) }), port);
+  const application = await serve(() => Controller.open({ directory, policy, providerForCase: () => ({ provider: faux.provider, modelId: faux.getModel().id }) }));
   t.after(async () => { await application.close(); await rm(directory, { recursive: true }); });
   const connection = JSON.parse(await readFile(join(directory, 'connection.json'), 'utf8'));
   assert.equal((await lstat(join(directory, 'connection.json'))).mode & 0o777, 0o600);
@@ -33,7 +33,7 @@ test('authenticated HTTP/SSE, singleton-before-storage, idempotency and hostile 
   assert.equal((await fetch(`${base}/v1/commands`, { method: 'POST', headers, body: 'x'.repeat(33000) })).status, 413);
   assert.equal((await fetch(`${base}/v1/commands`, { method: 'POST', headers, body: '{' })).status, 400);
   let opened = false;
-  await assert.rejects(serve(async () => { opened = true; throw new Error('Must not open'); }, port), { code: 'EADDRINUSE' });
+  await assert.rejects(serve(async () => { opened = true; throw new Error('Must not open'); }), { code: 'EADDRINUSE' });
   assert.equal(opened, false);
   const abort = new AbortController();
   const stream = await fetch(`${base}/v1/events`, { headers, signal: abort.signal });

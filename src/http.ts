@@ -8,7 +8,8 @@ import { ControlError, fail } from './domain.ts';
 import type { Selection, Snapshot } from './domain.ts';
 
 export const controllerPort = 43127;
-export async function serve(factory: () => Promise<Controller>, port = controllerPort) {
+export async function serve(factory: () => Promise<Controller>) {
+  const port = controllerPort;
   const capability = randomBytes(32).toString('hex');
   const token = Buffer.from(`Bearer ${capability}`);
   let controller: Controller | undefined;
@@ -53,7 +54,7 @@ export async function serve(factory: () => Promise<Controller>, port = controlle
         };
         const unwatch = controller.watch(selection, frame, () => response.destroy());
         response.on('drain', () => { blocked = false; if (pending) { const next = pending; pending = null; frame(next); } });
-        const heartbeat = setInterval(() => { if (!blocked) response.write(': heartbeat\n\n'); else if (response.writableLength > 512_000) response.destroy(); }, 10_000);
+        const heartbeat = setInterval(() => { if (!blocked) response.write(': heartbeat\n\n'); else if (response.writableLength > 512_000) response.destroy(); }, 1_000);
         response.on('close', () => { clearInterval(heartbeat); unwatch(); streams.delete(response); pending = null; });
         return;
       }
