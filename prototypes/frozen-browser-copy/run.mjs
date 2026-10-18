@@ -468,11 +468,23 @@ try {
   assert.equal(container.Config.User, 'pwuser');
   assert.deepEqual(container.Config.Entrypoint, entrypoint);
   assert.ok(!container.Config.Cmd?.length && !container.Config.Healthcheck);
-  assert.deepEqual(container.Config.Env, [
+  const actualEnv = [...container.Config.Env].sort();
+  const expectedEnv = [
     ...image.Config.Env,
     `EITRI_HOST_SENTINEL=${sentinel}`,
     `EITRI_HOST_CONTROLLER=${controller}`,
-  ]);
+  ].sort();
+  for (const env of [actualEnv, expectedEnv]) {
+    const keys = env.map((binding) => {
+      assert.ok(
+        typeof binding === 'string' && binding.indexOf('=') > 0,
+        'Environment binding must contain a nonempty key and "="',
+      );
+      return binding.slice(0, binding.indexOf('='));
+    });
+    assert.equal(new Set(keys).size, keys.length, 'Environment keys must be unique');
+  }
+  assert.deepEqual(actualEnv, expectedEnv);
   assert.equal(container.Config.StopTimeout, 2);
   assert.deepEqual(container.Mounts, []);
   assert.ok(
