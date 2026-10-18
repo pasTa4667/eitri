@@ -1,0 +1,34 @@
+{
+  "scope": "Unwired recorded-frozen byte reader only. No Docker, controller, native or HTTP integration.",
+  "sourceCommit": "b79ac64383a8fde184e0cf7e06b7cc44f164eb90",
+  "integratedCommit": "64814eb",
+  "parentVerification": {
+    "command": "npm run verify:all",
+    "exitCode": 0,
+    "nodePassed": 128,
+    "rustPassed": 30,
+    "output": "tests.txt"
+  },
+  "review": {
+    "runId": "ce1d2511-d08f-4649-9cb6-fd0a1a57d07c",
+    "modelOverride": "openai-codex/gpt-6.1-sol",
+    "sameFamily": true,
+    "verdict": "No actionable findings for the unwired reader",
+    "output": "security-review.md"
+  },
+  "verified": [
+    "Literal A remains A after worktree and ref advance to B",
+    "Returned arrays and buffers do not expose mutable stored references",
+    "Only recorded case-owned frozen identities are accepted",
+    "Commit, tree, blob identity, hash, size and metadata guards remain enforced",
+    "Successful, rejected and cancelled reads preserve store inventory",
+    "Queued cancellation cannot start reader work",
+    "Active Git read closes before cancellation settles",
+    "Cancellation signals apply only to read operations"
+  ],
+  "limitations": [
+    "An active bounded filesystem operation may finish before cancellation is checked",
+    "One trusted store owner and the existing same-UID adversarial-writer exclusion remain",
+    "This does not accept a validation worker, project Node/build execution, full M2 or live operation"
+  ]
+}
