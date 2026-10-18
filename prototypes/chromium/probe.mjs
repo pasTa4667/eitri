@@ -80,7 +80,14 @@ try {
     !observations.namespaceProbe.userNamespacesUsable
   )
     throw new Error('User namespaces remain unavailable under the reviewed policy');
-  browser = await chromium.launch({ headless: true, chromiumSandbox: true, timeout: 20000 });
+  browser = await chromium.launch({
+    channel: 'chromium',
+    headless: true,
+    chromiumSandbox: true,
+    timeout: 20000,
+  });
+  observations.browserChannel = 'chromium';
+  observations.browserVersion = browser.version();
   const page = await browser.newPage();
   await page.goto('chrome://sandbox');
   observations.sandboxPage = await page.locator('body').innerText();
@@ -112,7 +119,6 @@ try {
   if ((await page.locator('#result').innerText()) !== 'verified')
     throw new Error('Actual browser action/assertion failed');
   observations.checks.browserAction = 'passed';
-  observations.browserVersion = browser.version();
   observations.verdict = 'supported';
 } catch (error) {
   observations.verdict = 'blocked';
