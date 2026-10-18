@@ -9,8 +9,95 @@ const observations = {
   architecture: process.arch,
   uid: process.getuid(),
   checks: {},
+  diagnostics: { snapshots: [], events: [] },
 };
 let browser;
+let page;
+let teardown = false;
+const startedAt = Date.now();
+
+async function diagnostic(action, timeout = 1500) {
+  const controller = new AbortController();
+  let timer;
+  try {
+    return await Promise.race([
+      Promise.resolve().then(() => action(controller.signal)),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          controller.abort();
+          reject(new Error('Diagnostic deadline exceeded'));
+        }, timeout);
+      }),
+    ]);
+  } catch (error) {
+    return { error: String(error.message).slice(0, 160) };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function census(stage) {
+  const result = await diagnostic(async (signal) => {
+    const snapshot = {
+      stage,
+      cgroups: {},
+      processCount: 0,
+      processesTruncated: false,
+      processes: [],
+    };
+    for (const resource of ['pids.current', 'pids.events', 'memory.events']) {
+      try {
+        snapshot.cgroups[resource] = (
+          await readFile(`/sys/fs/cgroup/${resource}`, { encoding: 'utf8', signal })
+        )
+          .trim()
+          .slice(0, 512);
+      } catch (error) {
+        snapshot.cgroups[resource] = { error: String(error.code ?? error.message).slice(0, 80) };
+      }
+    }
+    const pids = (await readdir('/proc'))
+      .filter((pid) => /^\d+$/.test(pid))
+      .sort((a, b) => +a - +b);
+    snapshot.processCount = pids.length;
+    snapshot.processesTruncated = pids.length > 128;
+    for (const pid of pids.slice(0, 128)) {
+      signal.throwIfAborted();
+      let entry;
+      try {
+        const status = await readFile(`/proc/${pid}/status`, { encoding: 'utf8', signal });
+        const command = await readFile(`/proc/${pid}/cmdline`, { encoding: 'utf8', signal });
+        entry = {
+          pid,
+          name: status.match(/^Name:\s*(.*)$/m)?.[1].slice(0, 32),
+          role: command.match(/(?:^|\0)--type=([^\0]*)/)?.[1].slice(0, 48) ?? 'untyped',
+          threads: status.match(/^Threads:\s*(.*)$/m)?.[1].slice(0, 8),
+          uid: status.match(/^Uid:\s*(.*)$/m)?.[1].slice(0, 48),
+          noNewPrivileges: status.match(/^NoNewPrivs:\s*(.*)$/m)?.[1].slice(0, 4),
+          seccomp: status.match(/^Seccomp:\s*(.*)$/m)?.[1].slice(0, 4),
+        };
+      } catch (error) {
+        if (error.code === 'ENOENT') continue;
+        entry = { pid, error: String(error.code ?? error.message).slice(0, 80) };
+      }
+      snapshot.processes.push(entry);
+      // Include the enclosing report's indentation in the per-snapshot output budget.
+      if (Buffer.byteLength(JSON.stringify(snapshot, null, 2).replace(/^/gm, '      ')) > 6000) {
+        snapshot.processes.pop();
+        snapshot.processesTruncated = true;
+        break;
+      }
+    }
+    return snapshot;
+  });
+  observations.diagnostics.snapshots.push({ stage, ...result });
+}
+
+function browserEvent(event) {
+  if (observations.diagnostics.events.length < 16)
+    observations.diagnostics.events.push({ event, elapsedMs: Date.now() - startedAt, teardown });
+}
+
 try {
   if (process.version !== 'v26.5.0' || process.arch !== 'arm64' || process.getuid() !== 1001)
     throw new Error('Unexpected runtime identity');
@@ -80,15 +167,20 @@ try {
     !observations.namespaceProbe.userNamespacesUsable
   )
     throw new Error('User namespaces remain unavailable under the reviewed policy');
+  await census('beforeLaunch');
   browser = await chromium.launch({
     channel: 'chromium',
     headless: true,
     chromiumSandbox: true,
     timeout: 20000,
   });
+  browser.on('disconnected', () => browserEvent('browserDisconnected'));
   observations.browserChannel = 'chromium';
   observations.browserVersion = browser.version();
-  const page = await browser.newPage();
+  await census('afterLaunch');
+  page = await browser.newPage();
+  page.on('crash', () => browserEvent('pageCrash'));
+  await census('afterNewPage');
   await page.goto('chrome://sandbox');
   observations.sandboxPage = await page.locator('body').innerText();
   if (
@@ -124,8 +216,22 @@ try {
   observations.verdict = 'blocked';
   observations.error = String(error.message).slice(0, 12000);
   process.exitCode = 1;
+  observations.diagnostics.failureState = await diagnostic(() => ({
+    url: page?.url().slice(0, 1024) ?? null,
+    isClosed: page?.isClosed() ?? null,
+    isConnected: browser?.isConnected() ?? null,
+  }));
+  await census('failure');
 } finally {
-  await browser?.close();
+  teardown = true;
+  const closeResult = await diagnostic(() => browser?.close(), 2000);
+  if (closeResult?.error) {
+    observations.diagnostics.teardownError = closeResult.error;
+    observations.verdict = 'blocked';
+    process.exitCode = 1;
+  }
   clearTimeout(lifetime);
-  console.log(JSON.stringify(observations, null, 2));
+  const output = `${JSON.stringify(observations, null, 2)}\n`;
+  if (closeResult?.error) process.stdout.write(output, () => process.exit(process.exitCode ?? 0));
+  else process.stdout.write(output);
 }

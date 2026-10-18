@@ -112,6 +112,8 @@ try {
     '--ulimit',
     'core=0',
     '--env',
+    'DEBUG=pw:browser',
+    '--env',
     `EITRI_POLICY_MODE=${mode}`,
     '--env',
     `EITRI_HOST_SENTINEL=${fileURLToPath(sentinel)}`,
