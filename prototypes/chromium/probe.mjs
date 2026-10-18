@@ -2,6 +2,7 @@ import { chromium } from 'playwright';
 import { readFile, readdir, writeFile } from 'node:fs/promises';
 import net from 'node:net';
 import { spawnSync } from 'node:child_process';
+import { isSandboxStatusVerified } from './sandbox-status.mjs';
 
 const lifetime = setTimeout(() => process.exit(124), 120000);
 const observations = {
@@ -184,10 +185,8 @@ try {
   await census('afterNewPage');
   await page.goto('chrome://sandbox');
   observations.sandboxPage = await page.locator('body').innerText();
-  if (
-    !/Namespace Sandbox\s+Yes/i.test(observations.sandboxPage) ||
-    !/Seccomp-BPF sandbox\s+Yes/i.test(observations.sandboxPage)
-  )
+  observations.sandboxStatusVerified = isSandboxStatusVerified(observations.sandboxPage);
+  if (!observations.sandboxStatusVerified)
     throw new Error('Sandbox status is not positively verified');
   const processes = [];
   for (const pid of (await readdir('/proc')).filter((p) => /^\d+$/.test(p))) {
@@ -205,9 +204,9 @@ try {
     }
   }
   observations.processes = processes;
-  await page.setContent(
-    '<button id="run">Run</button><output id="result"></output><script>run.onclick=()=>result.textContent="verified"</script>',
-  );
+  const actionDocument =
+    '<button id="run">Run</button><output id="result"></output><script>run.onclick=()=>result.textContent="verified"</script>';
+  await page.goto(`data:text/html,${encodeURIComponent(actionDocument)}`);
   await page.click('#run');
   if ((await page.locator('#result').innerText()) !== 'verified')
     throw new Error('Actual browser action/assertion failed');
