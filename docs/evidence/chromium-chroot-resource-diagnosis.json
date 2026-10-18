@@ -1,0 +1,34 @@
+{
+  "scope": "Trusted diagnostic only; browser support remains unverified",
+  "sourceCommit": "d4f7938",
+  "imageId": "sha256:46d73461ffd52db2357cdf0bd6b17d22b68460d080d53b4345c0d136e6b04924",
+  "pidsLimit": 128,
+  "samples": [
+    {
+      "stage": "beforeLaunch",
+      "pidsCurrent": "11",
+      "pidsEvents": "max 0"
+    },
+    {
+      "stage": "afterLaunch",
+      "pidsCurrent": "95",
+      "pidsEvents": "max 0"
+    },
+    {
+      "stage": "failure",
+      "pidsCurrent": "125",
+      "pidsEvents": "max 2"
+    }
+  ],
+  "observedFailure": "browser.newPage: Target crashed ",
+  "threadAllocationDenied": true,
+  "memoryOomKillObserved": false,
+  "negativeControlsPassed": true,
+  "containerRemoved": true,
+  "proposedNextExperiment": {
+    "pidsLimit": 256,
+    "otherRestrictions": "unchanged",
+    "approved": false
+  },
+  "caution": "Thread-limit denial is directly observed in this run. It is not proof of the sole cause of earlier navigation failures."
+}

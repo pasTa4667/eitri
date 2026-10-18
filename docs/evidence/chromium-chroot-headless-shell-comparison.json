@@ -1,0 +1,10 @@
+{
+  "scope": "Paired headless-shell diagnostic, not browser support",
+  "equalImageAndOtherContainment": true,
+  "onlyPolicyDelta": "one ARM64 chroot admission",
+  "negativeControlsPassed": true,
+  "containersRemoved": true,
+  "namespaceResult": "launch blocked at sys_chroot",
+  "chrootResult": "launch reached page.goto, but headless-shell rejected chrome://sandbox",
+  "browserSupportVerified": false
+}

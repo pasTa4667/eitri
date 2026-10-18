@@ -81,7 +81,6 @@ async function census(stage) {
         entry = { pid, error: String(error.code ?? error.message).slice(0, 80) };
       }
       snapshot.processes.push(entry);
-      // Include the enclosing report's indentation in the per-snapshot output budget.
       if (Buffer.byteLength(JSON.stringify(snapshot, null, 2).replace(/^/gm, '      ')) > 6000) {
         snapshot.processes.pop();
         snapshot.processesTruncated = true;

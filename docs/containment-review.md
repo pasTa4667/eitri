@@ -2,7 +2,7 @@
 
 ## Status
 
-The standalone M2 feasibility probe remains blocked after a reviewed namespace-policy experiment. USER namespace controls now pass, but Chromium stops at `sys_chroot("/proc/self/fdinfo/")`. This is a failed gate, not successful browser validation. Generated execution, fixture editing, Sentry installation, subscription inference, and publication have not been enabled.
+The standalone M2 feasibility gate remains blocked pending positive browser verification. The approved `chroot` candidate gets past launch. Bounded diagnostics now directly observe the container's 128-task PID/thread ceiling denying Chromium thread creation. A single 256-task experiment is proposed, not approved or applied. Browser launch alone is not successful sandbox validation. Generated execution, fixture editing, Sentry installation, subscription inference, and publication have not been enabled.
 
 M0 is implemented and verified. The native GPUI build, input handlers, and real controller connection pass their tests. M1's scripted native input, transport, visual, and artifact checks are accepted with evidence in `docs/native-rendering.md`. This does not establish browser containment or live remediation readiness. The probe below uses only a trusted fixed script, not an agent-generated command or a repository mount.
 
@@ -50,7 +50,7 @@ The pinned baseline is the vendored profile from Docker Engine commit `daa0cb7f2
 An independent source review found no security blocker to this diagnostic. It identified a cloned-child exit-status check, which was added before the final paired runs. Both runs use the same rebuilt image, `sha256:587e1d93485ee9e32dce53c271dd9b0fe54a1651c6313ebeb9ea6f05b4451911`.
 
 - `docs/evidence/chromium-containment-pinned.json` records USER namespace operations denied under the unchanged pinned policy and the earlier `No usable sandbox!` browser failure.
-- `docs/evidence/chromium-containment-namespaces.json` records all five positive USER namespace controls succeeding. Negative controls still return EPERM for mounts, `setns`, and tested MOUNT, IPC, UTS, and CGROUP namespace requests. `clone3` still returns ENOSYS.
+- `docs/evidence/chromium-containment-namespaces-before-chroot.json` preserves the earlier six-rule report, with all five positive USER namespace controls succeeding. Negative controls still return EPERM for mounts, `setns`, and tested MOUNT, IPC, UTS, and CGROUP namespace requests. `clone3` still returns ENOSYS.
 - The candidate browser launch reaches a new failure, `Check failed: sys_chroot("/proc/self/fdinfo/") == 0`. No browser page action or assertion succeeds.
 - Both runs observe the original no-network, no-host-mount, non-root, no-new-privileges, read-only, dropped-capability, private-IPC, and resource limits. Both owned containers were removed.
 
@@ -59,6 +59,33 @@ The pinned [Chromium credentials implementation](https://raw.githubusercontent.c
 A separate experiment could admit `chroot` while still dropping every container capability. The kernel would still require the appropriate namespace-local capability. Seccomp cannot restrict its pathname argument to `/proc/self/fdinfo/`. That is an additional syscall-admission change. The operator has now explicitly approved this single trusted experiment with all other restrictions unchanged. The operator also invited discussion of further easing if evidence warrants it; no additional relaxation is approved by that invitation. The candidate must receive source review before use. There is no automatic retry with a broader policy.
 
 The [diagnostic instructions](../prototypes/chromium/seccomp/README.md) document reproduction and limits.
+
+## Approved chroot experiment
+
+Commit `8cba063` adds the opt-in `--namespace-chroot-policy` candidate. A fresh same-family source review found no actionable issues for this trusted diagnostic. Structural tests prove its only delta from the six-rule namespace policy is one ARM64 `chroot` allowance. Defaults and all other container restrictions remain unchanged.
+
+Paired runs on image `sha256:db7b7c641e9a4b575d1304b092809474beb374aa096995f851c7887c227ef22e` are preserved as `chromium-containment-namespaces-headless-shell.json` and `chromium-containment-namespaces-chroot-headless-shell.json` under `docs/evidence/`. Both pass the USER namespace and negative controls. The six-rule run still fails at `sys_chroot`. The seven-rule run launches and creates a page, but the headless-shell browser rejects navigation to `chrome://sandbox`. No sandbox-page check, page-action assertion, or supported result is claimed.
+
+`docs/evidence/chromium-chroot-headless-shell-comparison.json` records the parent comparison. The image and other applied restrictions match; only the reviewed rule differs. Both owned containers were removed. No extra restriction was eased.
+
+[Playwright's headless-mode documentation](https://playwright.dev/docs/browsers#chromium-new-headless-mode) distinguishes its default headless shell from the bundled full Chromium selected by `channel: 'chromium'`. A full-browser paired check on image `sha256:ed883b28c9952305d935555b9c6e4d9fa6a3d7ba8764e562dae53d41ca4b102a` retains `chromiumSandbox: true` and every existing assertion. Its reports are preserved as `chromium-containment-namespaces-full-initial.json` and `chromium-containment-namespaces-chroot-full-initial.json`. The six-rule mode still fails at `chroot`; the seven-rule mode launches Chromium 156.0.8078.4, but diagnostic navigation aborts with `ERR_ABORTED`. The cause is not established. Both containers were removed. The following diagnostic run collects browser logs and per-stage cgroup/process counters. No further resource or policy relaxation has been applied.
+
+## Resource diagnosis and proposed next experiment
+
+Diagnostic commit `d4f7938` adds bounded counters and browser logs without changing the seven-rule policy or container restrictions. Its image is `sha256:46d73461ffd52db2357cdf0bd6b17d22b68460d080d53b4345c0d136e6b04924`. The latest `docs/evidence/chromium-containment-namespaces-chroot.json` records:
+
+- The same non-root, capability-drop, no-new-privileges, no-network, no-mount, read-only, private-IPC, CPU, memory, scratch, and 128-task limits.
+- USER namespace positives and negative syscall controls still passing.
+- `pids.current` sampled at 11 before launch, 95 after launch, and 125 after failure. These are samples, not peak measurements.
+- `pids.events` changing from `max 0` to `max 2`. Linux counts threads as tasks against this limit, not just process leaders.
+- Browser stderr reporting `pthread_create: Resource temporarily unavailable (11)` and `browser.newPage` failing with a crashed target.
+- No memory OOM event in the captured counters. The owned container was removed.
+
+`docs/evidence/chromium-chroot-resource-diagnosis.json` records the parent assertions. Thread-quota denial is directly observed in this run. It does not prove the sole cause of the earlier navigation failures.
+
+Propose one trusted experiment raising only the task ceiling from 128 to 256. Keep the two-CPU and 4 GiB memory limits, sandbox checks, seven-rule seccomp policy, and every other restriction unchanged. This doubles the bounded task capacity and increases resource-abuse headroom, but adds no syscall admission or privilege. Operator approval is required before applying it. No unlimited PID setting or automatic resource escalation is proposed.
+
+Parent `npm run verify:all` passes 89 Node and 30 Rust tests. Those checks do not replace the still-failing runtime gate. The candidate source review is preserved in `docs/evidence/chromium-chroot-review.md` and uses the configured model family, not cross-family assurance.
 
 ## Remaining work
 
