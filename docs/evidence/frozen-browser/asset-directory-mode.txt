@@ -1,0 +1,4 @@
+dr--r--r--  0 0      0           0 Oct 18 19:50 frozen-browser/
+-r--r--r--  0 0      0       10676 Jan  1  1970 frozen-browser/driver.mjs
+-r--r--r--  0 0      0         132 Jan  1  1970 frozen-browser/scenario.json
+-r--r--r--  0 0      0        1503 Jan  1  1970 frozen-browser/watchdog.mjs
