@@ -19,4 +19,4 @@ The native titlebar, existing control names, draft feedback, simulation warnings
 
 The [overview](evidence/native-visual/forge-overview.png) is an actual normal-production window capture. The [constrained selected state](evidence/native-visual/constrained-after.png) uses a synthetic local fixture and the production renderer. It shows the focused editor and reachable Save action after scrolling.
 
-Theme tests check text contrast against the used surfaces. Native layout and event tests check constrained geometry and nested wheel ownership. [Rendering verification](native-rendering.md) distinguishes those checks from the still-open stable artifact viewer and full live integration gates.
+Theme tests check text contrast against the used surfaces. Native layout and event tests check constrained geometry and nested wheel ownership. [Rendering verification](native-rendering.md) records the stable text/PNG viewer, image-handle release, and remaining verification limits. Full live integration gates remain closed.

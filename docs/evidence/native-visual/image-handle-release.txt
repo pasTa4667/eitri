@@ -1,0 +1,4 @@
+native-visual-driver artifact display=Some(("0e4d52cd-0e3f-4ac6-8e9d-1520ab7d0e63", false, false))
+native-visual-driver artifact client=Some(("0e4d52cd-0e3f-4ac6-8e9d-1520ab7d0e63", false, false))
+native-visual-driver image before clear=true
+native-visual-driver image released=Some((true, Some(true)))

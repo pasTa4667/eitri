@@ -1,0 +1,21 @@
+{
+  "mode": "synthetic",
+  "productionCommit": "6e6397a",
+  "fixtureCommit": "26cf3f7",
+  "screenCaptureAuthorized": true,
+  "osInputAutomation": false,
+  "artifactCapturedAfterWaitSeconds": 20,
+  "rawImageHandleReleased": true,
+  "renderedImageHandleReleased": true,
+  "physicalVramMeasured": false,
+  "processesStopped": {
+    "operator": true,
+    "controller": true
+  },
+  "source": "image-handle-release.txt",
+  "limits": [
+    "Selected states and scrolling were fixture driven.",
+    "Native input and wheel routing have separate GPUI event tests.",
+    "No browser, live model, existing integration credential, or original fixture was used."
+  ]
+}

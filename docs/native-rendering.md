@@ -34,8 +34,18 @@ The [scrolled native capture](evidence/native-visual/constrained-after.png) show
 
 [Integrated verification](evidence/native-visual/forge-tests.txt) passes 42 Node tests and 16 Rust tests. The layout tests check actual bounds and hit testing at 900 by 600, 700 by 480, and 1200 by 820. They also check both wheel directions away from outer scroll limits.
 
-## Open verification
+## Stable artifact viewer
 
-The artifact view uncovered an SSE reader failure, `timeout: receive response`, after a successful artifact request. Disconnect handling correctly removes its cached view, so a short-lived artifact fetch test alone does not establish a stable native viewer. A bounded stream-reader fix and longer-lived connection tests are in progress. No visual acceptance is claimed for that unresolved behavior.
+The native artifact view uncovered `timeout: receive response` after successful artifact requests. Under the original ureq 3.1.2 configuration, its response-header deadline also constrained body reads. The disconnect handler then correctly removed the cached view.
+
+Commits `541fa99` and `6e6397a` record the failing regression and fix. The private [SSE reader](../operator/src/sse.rs) connects only to the fixed controller loopback endpoint. It sends HTTP/1.0 to obtain unencoded stream framing. It rejects incompatible framing, enforces one absolute three-second header deadline, bounds headers and payloads, and enforces a fresh absolute fifteen-second deadline per complete body line. Heartbeats can continue indefinitely without removing those bounds. Bounded HTTP commands and resource downloads still use ureq. A stalled read can delay cancellation by up to fifteen seconds.
+
+[Integrated checks](evidence/native-visual/forge-sse-tests.txt) pass 42 Node tests and 30 Rust tests. They include heartbeat survival beyond both production deadlines, stalled and trickling peers, framing rejection, size boundaries, cancellation, stale frames, and retained artifact state.
+
+The [text artifact capture](evidence/native-visual/artifact-text.png) was taken after an additional twenty-second wait and contains the stored literal text. Its [OCR result](evidence/native-visual/artifact-text.json) passes. The checker normalizes Vision's line grouping into whitespace before comparing literal labels. The original missing-text baseline still fails, and an empty required label is rejected.
+
+The [PNG capture](evidence/native-visual/artifact-image.png) shows the synthetic one-pixel red image through the native texture path. It is not a browser screenshot. Fixture-driven deselection then [removed the viewer](evidence/native-visual/artifact-cleared.png). Weak-reference observations show that both raw and rendered image handles were released, as recorded in [the release log](evidence/native-visual/image-handle-release.txt). This does not measure physical GPU memory reclamation.
+
+[Verification scope](evidence/native-visual/viewer-verification.json) records the fixture revision, production revision, and stopped owned processes. The fixture and production builds use separate target directories to avoid sharing the executable output path. OS-level input automation was not used. Native input and wheel dispatch have separate event tests.
 
 The OCR check uses local macOS Vision. It does not upload screenshots. Matching required labels is a narrow regression check, not complete visual or accessibility acceptance. Accessibility authorization is still false; no permission was requested or changed.

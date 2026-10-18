@@ -26,7 +26,7 @@ The user's implementation request authorizes local implementation under the exis
 
 - [x] Prerequisite audit and manual setup guide. Never read or log token values.
 - [x] M0. Durable catalogue, per-session Pi stores, controller commands, guarded runner, recovery, retention, and HTTP tests.
-- [ ] M1. Native GPUI build, authenticated connection, controls, and native input verification.
+- [x] M1. Native GPUI build, authenticated connection, controls, native input, and scripted visual/artifact verification.
 - [ ] M2. Existing fixture integration, scoped file broker, immutable validation, and restricted ARM64 worker checks.
 - [ ] M3. Local Sentry and operator-reviewed credentials. Stop at named human gates.
 - [ ] M4. Supported OpenAI login and approved first inference. No ambient API-key fallback.
@@ -57,7 +57,7 @@ M0 evidence is `docs/evidence/m0-tests.txt`: `npm run verify` passes TypeScript 
 
 The scripted TypeScript controller is implemented in `src/`, with Node HTTP/SSE and tests in `test/`. `npm start` binds the fixed loopback port before opening application storage, creates a private per-run connection capability, and runs only the faux provider. Live model routes and publication are denied. Tests remove only their own temporary data. No external account, vault, item, service token, OAuth state, GitHub push, or PR was created. Only the explicitly labeled trusted probe containers described below were created and removed. The existing fixture remains unchanged.
 
-M1 compiles with published GPUI 0.2.2, installed Rust 1.97.1, and process-local Xcode/Metal. Its artifact resource and on-demand native cards are implemented. The latest completed visual-unit check is `docs/evidence/native-visual/forge-tests.txt`, with 42 Node tests and 16 Rust tests passing. The earlier `docs/evidence/artifact-resources-tests.txt` remains historical evidence for the artifact backend and client. These include artifact provenance, immutable reads, corruption and link rejection, crash ordering, native PNG decoding, stale response rejection, HTTP validation, body timeout, Unicode/input handlers, and real-controller reconnect/expiry behavior. Network work is off the render thread; redirects and ambient proxies are disabled. Drafts are case-scoped and clear only on matching acknowledgments.
+M1 compiles with published GPUI 0.2.2, installed Rust 1.97.1, and process-local Xcode/Metal. Its artifact resource and on-demand native cards are implemented. The latest integrated check is `docs/evidence/native-visual/forge-sse-tests.txt`, with 42 Node tests and 30 Rust tests passing. The earlier `docs/evidence/artifact-resources-tests.txt` remains historical evidence for the artifact backend and client. These include artifact provenance, immutable reads, corruption and link rejection, crash ordering, native PNG decoding, stale response rejection, HTTP validation, body timeout, Unicode/input handlers, and real-controller reconnect/expiry behavior. Network work is off the render thread; redirects and ambient proxies are disabled. Drafts are case-scoped and clear only on matching acknowledgments.
 
 Before the user's screen-capture approval, the native binary stayed alive but owned-window capture failed. `docs/evidence/native-artifacts-smoke.json` records that historical result. A later diagnostic found screen capture unauthorized and the macOS privacy log attributed the request to Cursor. The user then granted screen capture. Preflight now returns true and actual native window capture succeeds. No accessibility permission was granted or bypassed.
 
@@ -65,7 +65,9 @@ The first successful capture exposed missing client text. GPUI had selected `Noo
 
 The Eitri-inspired basalt/copper theme is integrated as `bded3a5`. Constrained native captures exposed collapsed history and unreachable Save. Commit `94ee0ca` adds a detail scrolling fallback; `f47a762` and `7072ada` reproduce and contain nested wheel propagation. Real captures now show a reachable Save button, focused multiline Unicode editor, and readable evidence controls. `docs/native-rendering.md` and `docs/operator-style.md` link the evidence and distinguish fixture-driven states from OS input automation.
 
-Native artifact viewing uncovered another open defect. The SSE body reader fails with `timeout: receive response` under its inherited header deadline, even while heartbeats arrive. Correct disconnect invalidation then removes the displayed artifact. A bounded reader fix is being implemented separately. M1 remains unaccepted until that viewer behavior and remaining visual checks are verified.
+Native artifact viewing exposed an SSE body-reader timeout inherited from its response-header deadline. Commits `541fa99` and `6e6397a` add the failing regression and a private fixed-loopback reader with separate bounded header and line deadlines. Independent static review found no issues, and the full integrated suite passes.
+
+Actual native text and PNG artifact captures remain visible after an additional twenty-second wait. Fixture-driven deselection removes the image; weak references confirm both raw and rendered image handles are released. Physical GPU-memory reclamation is not measured. `docs/evidence/native-visual/viewer-verification.json` records the exact scope and stopped owned processes. M1 is accepted for the scripted pilot using actual native rendering plus the existing native input, connection, and event tests. No OS-level input automation was used.
 
 A standalone, trusted Chromium containment probe was built and run with no repository/credential mounts or live agent. Its final result is **blocked**: sandbox-enabled ARM64 Chromium exits with `No usable sandbox!`. Applied and effective isolation/resource settings are recorded in `docs/evidence/chromium-containment.json`. Read-only root, unavailable host/socket paths, denied egress, non-root UID, dropped capabilities, seccomp, no-new-privileges, and cgroup limits were observed. No page action or screenshot succeeded. The owned probe container was removed; the pinned local image remains for reproduction.
 
@@ -85,9 +87,9 @@ Policy provenance and existing resource seams were independently reviewed. The s
 
 ## Resume point after artifact implementation
 
-- The implementation plan is unfinished. M1 glyph rendering, forge styling, constrained layout, and focused editor now have captured evidence. Stable artifact viewing is blocked on the SSE reader defect. Full operator acceptance and observed GPU-cache cleanup remain open.
+- The implementation plan is unfinished. M1 scripted acceptance is verified, including native glyphs, forge styling, constrained layout, focused editor, stable artifact viewing, and raw/rendered image-handle release. Verification limits remain explicit in `docs/native-rendering.md`.
 - M2 is blocked at Chromium's `chroot` call. A separately reviewed syscall-admission experiment was requested and is not approved or applied. Retain all existing restrictions and keep generated execution disabled.
-- The managed workspace, file broker, immutable validation driver, and fixture integration remain unimplemented. The original fixture is untouched.
+- Managed workspace and file-broker preparation is the next safe offline unit. It must remain unwired and use synthetic bytes with temporary Git repositories only. Immutable validation-driver integration, generated execution, and real fixture changes remain gated. The original fixture is untouched.
 - M3 through M6 remain pending, including operator-reviewed vault permissions, direct token setup, repository privacy/default-branch confirmation, supported OpenAI sign-in and first-inference approval, and deliberate live remediation activation.
 - The artifact implementation worktrees remain available at `../eitri-artifact-resources` and `../eitri-native-artifacts`. Their committed changes are integrated on `main`; do not replay their commits. Temporary native-smoke data is retained under `.audit/` and contains synthetic cases only.
 

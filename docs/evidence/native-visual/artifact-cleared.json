@@ -1,0 +1,29 @@
+{
+  "image" : "\/Users\/felix.langbein\/projects\/eitri\/docs\/evidence\/native-visual\/artifact-cleared.png",
+  "missing" : [
+
+  ],
+  "passed" : true,
+  "recognized" : [
+    "•",
+    "•",
+    "Eitri • scripted operator",
+    "eitri operator",
+    "Connected • scripted",
+    "Check now • scripted",
+    "Investigations",
+    "all",
+    "active",
+    "parked",
+    "history",
+    "Synthetic artifact viewer exercise",
+    "Phase triage",
+    "Status needs-attention",
+    "Choose an investigation",
+    "Check now creates synthetic cases for the native operator exercise. It does not contact Sentry or run a live model.",
+    "Scripted mode • no live model, worker, credentials, or publication"
+  ],
+  "required" : [
+    "Choose an investigation"
+  ]
+}

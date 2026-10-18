@@ -4,7 +4,7 @@
 
 The standalone M2 feasibility probe remains blocked after a reviewed namespace-policy experiment. USER namespace controls now pass, but Chromium stops at `sys_chroot("/proc/self/fdinfo/")`. This is a failed gate, not successful browser validation. Generated execution, fixture editing, Sentry installation, subscription inference, and publication have not been enabled.
 
-M0 is implemented and verified. The native GPUI build, input handlers, and real controller connection pass their tests. M1's artifact resources and native cards are implemented and tested. Its visual/operator walkthrough remains unverified, so it is not fully accepted. The probe below uses only a trusted fixed script, not an agent-generated command or a repository mount.
+M0 is implemented and verified. The native GPUI build, input handlers, and real controller connection pass their tests. M1's scripted native input, transport, visual, and artifact checks are accepted with evidence in `docs/native-rendering.md`. This does not establish browser containment or live remediation readiness. The probe below uses only a trusted fixed script, not an agent-generated command or a repository mount.
 
 ## Reproduce
 
@@ -62,4 +62,4 @@ The [diagnostic instructions](../prototypes/chromium/seccomp/README.md) document
 
 ## Remaining work
 
-After the gate is reviewed and a contained browser is positively verified: finish M1's artifact/resource surface and native visual acceptance; build M2's managed Git workspace, file broker, immutable revision-bound validation, trusted scenario manifest, and fixture changes. Preserve the fixture README, branch, uncommitted work, and environment file. M3–M6 retain all existing human setup and live-operation gates.
+M1's scripted visual and artifact acceptance is complete. Unwired workspace/file-broker preparation may use synthetic bytes and real temporary Git repositories without enabling execution. After a contained browser is positively verified, connect M2's managed workspace, file broker, immutable revision-bound validation, trusted scenario manifest, and fixture changes. Do not expose editing/execution tools or touch the real fixture before that gate passes. Preserve the fixture README, branch, uncommitted work, and environment file. M3–M6 retain all existing human setup and live-operation gates.

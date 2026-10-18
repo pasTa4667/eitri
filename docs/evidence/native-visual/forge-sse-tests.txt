@@ -1,0 +1,115 @@
+npm notice run eitri@0.1.0 verify:all
+npm notice run npm run verify && npm run lint:rust && npm run format:check:rust && npm run test:operator
+npm notice run eitri@0.1.0 verify
+npm notice run npm run lint:ts && npm run format:check:ts && npm run check && npm test
+npm notice run eitri@0.1.0 lint:ts
+npm notice run oxlint --deny-warnings src test scripts prototypes
+npm notice run eitri@0.1.0 format:check:ts
+npm notice run oxfmt --check '**/*.{ts,mjs}' package.json tsconfig.json .oxfmtrc.json
+Checking formatting...
+
+All matched files use the correct format.
+Finished in 3ms on 23 files using 12 threads.
+npm notice run eitri@0.1.0 check
+npm notice run tsc --noEmit && node --check scripts/doctor.mjs && node --check scripts/check-sdk.mjs && node --check prototypes/sdk-compatibility.mjs && node --check prototypes/chromium/probe.mjs && node --check prototypes/chromium/run.mjs && node --check prototypes/chromium/policy.mjs
+npm notice run eitri@0.1.0 test
+npm notice run node --test test/*.test.ts test/*.test.mjs
+✔ artifact reads stay passive across pagination, restart, missing directories, and serialized expiry (225.549ms)
+✔ trusted check output rejects forged-ids without accepting evidence (21.218417ms)
+✔ trusted check output rejects live-result without accepting evidence (21.676042ms)
+✔ trusted check output rejects check-count without accepting evidence (19.867291ms)
+✔ trusted check output rejects case-count without accepting evidence (868.386166ms)
+✔ trusted check output rejects check-bytes without accepting evidence (18.926375ms)
+✔ trusted check output rejects case-bytes without accepting evidence (172.920625ms)
+✔ native manifests bind every evidence reference to its case, action, receipt, revision and configuration (42.62425ms)
+✔ artifact MIME validation bounds UTF-8, labels, PNG structure, dimensions and decompression (6.44175ms)
+✔ private immutable blobs reject unsafe identities, corruption, links and replaced directories (63.535125ms)
+✔ namespace candidate preserves the pinned daemon baseline and adds only six exact ARM64 rules (4.284541ms)
+✔ atomic ownership, durable request receipts, policy checks and compact catalogue (60.408583ms)
+✔ pause lets an admitted tool finish, denies follow-up inference, and releases capacity (75.6335ms)
+✔ pause during model auth/response denies the next tool and native SDK follow-up (28.712416ms)
+✔ parked notes, duplicate delivery, views, reconnect watches and restart never infer (31.757417ms)
+✔ interrupted provisioning recovers the same owner and native file (26.298125ms)
+✔ structured triage can advance; a stale completion cannot advance or use a phase setter (48.030625ms)
+✔ No fix needed suppresses intake; explicit requeue links a new session (80.666125ms)
+✔ budget exhaustion makes no summary call; Retry is explicit, bounded, and cumulative (53.461166ms)
+✔ capacity-two scripted cases have distinct databases, messages, counters and IDs (59.163917ms)
+✔ per-file expiry preserves guards, cannot wake or recreate details, and protects unfinished work (46.07975ms)
+✔ missing native details and cleanup failure are surfaced without recreating history (64.449167ms)
+✔ active notes are steered at the SDK boundary without a handler starting inference (33.534459ms)
+✔ corrupt durable allowance fails closed rather than allowing another model call (31.43125ms)
+✔ pause during asynchronous auth is checked at the actual provider dispatch (45.342375ms)
+✔ auth waiting is bounded by the allowance and cannot dispatch after timeout (81.562375ms)
+✔ revision-bound scripted checks with stored artifacts fail closed at the expected phase (328.014542ms)
+✔ revision-bound scripted checks with stale artifacts fail closed at the expected phase (155.923833ms)
+✔ revision-bound scripted checks with missing artifacts fail closed at the expected phase (243.583459ms)
+✔ revision-bound scripted checks with corrupt artifacts fail closed at the expected phase (255.275208ms)
+✔ revision-bound scripted checks with fabricated artifacts fail closed at the expected phase (201.857917ms)
+✔ revision-bound scripted checks with empty artifacts fail closed at the expected phase (176.9545ms)
+✔ initial failed validation permits two repair candidates, not two arbitrary check failures (103.366792ms)
+✔ authenticated HTTP/SSE, singleton-before-storage, idempotency and hostile input (112.317292ms)
+✔ authenticated strict artifact resources return verified exact bytes and honest unavailable states (97.543416ms)
+✔ SIGKILL during model conservatively preserves allowance and intent (341.13925ms)
+✔ SIGKILL during paused-model conservatively preserves allowance and intent (252.902916ms)
+✔ SIGKILL during tool conservatively preserves allowance and intent (267.659041ms)
+✔ SIGKILL during tool-receipt conservatively preserves allowance and intent (243.840083ms)
+✔ SIGKILL after-artifact-blobs preserves storage ordering without replay or invented checkpoint (262.267667ms)
+✔ SIGKILL after-artifact-manifests preserves storage ordering without replay or invented checkpoint (247.280625ms)
+✔ SIGKILL after-check-receipt preserves storage ordering without replay or invented checkpoint (241.874541ms)
+ℹ tests 42
+ℹ suites 0
+ℹ pass 42
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2285.391625
+npm notice run eitri@0.1.0 lint:rust
+npm notice run DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer cargo clippy --locked --manifest-path operator/Cargo.toml --all-targets -- -D warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.37s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6, proc-macro-error2 v2.0.1
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+npm notice run eitri@0.1.0 format:check:rust
+npm notice run cargo fmt --manifest-path operator/Cargo.toml --all -- --check
+npm notice run eitri@0.1.0 test:operator
+npm notice run DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer cargo test --locked --manifest-path operator/Cargo.toml
+   Compiling eitri-operator v0.1.0 (/Users/felix.langbein/projects/eitri/operator)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.54s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6, proc-macro-error2 v2.0.1
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running unittests src/main.rs (operator/target/debug/deps/eitri_operator-16b23e7f4fc03507)
+
+running 30 tests
+test client::artifact_tests::png_rejects_dimensions_malformed_chunks_and_compressed_metadata_before_decode ... ok
+test client::artifact_tests::artifact_provenance_requires_every_check_link ... ok
+test client::sse::tests::expired_deadline_and_cancellation_reject_already_buffered_lines ... ok
+test client::artifact_tests::artifact_acceptance_rejects_stale_boot_generation_case_expiry_and_disconnect ... ok
+test client::sse::tests::header_bytes_and_line_count_are_bounded ... ok
+test client::sse::tests::exact_header_byte_and_line_limits_and_http10_status_are_accepted ... ok
+test client::sse::tests::eof_partial_lines_invalid_utf8_and_overlong_wire_lines_are_rejected ... ok
+test client::sse::tests::request_route_bearer_and_numeric_loopback_host_are_validated ... ok
+test client::artifact_tests::native_png_decoder_accepts_exact_png_and_rejects_corrupt_pixel_data ... ok
+test client::artifact_tests::sse_frames_reject_protocol_boot_snapshot_and_sequence_changes_before_applying ... ok
+test client::sse::tests::malformed_status_headers_framing_and_encoding_are_rejected ... ok
+test input::tests::unicode_selection_multiline_and_ime_ranges ... ok
+test input::tests::native_handler_keyboard_clipboard_and_multiline ... ok
+test client::sse::tests::payload_limit_counts_json_bytes_not_data_prefix_or_crlf ... ok
+test client::artifact_tests::artifact_http_validates_exact_route_bearer_bytes_hash_status_type_and_length ... ok
+test client::artifact_tests::sse_generation_and_stop_checks_prevent_buffered_late_frames_from_applying ... ok
+test layout_tests::editor_wheel_down_does_not_scroll_detail ... ok
+test theme::tests::session_status_never_implies_a_passed_check ... ok
+test theme::tests::workshop_text_meets_wcag_aa_contrast ... ok
+test layout_tests::editor_wheel_up_does_not_scroll_detail ... ok
+test client::sse::tests::partial_body_line_trickle_cannot_restart_the_deadline ... ok
+test layout_tests::history_wheel_down_does_not_scroll_detail ... ok
+test client::sse::tests::stalled_line_cancellation_finishes_within_the_line_deadline ... ok
+test layout_tests::history_wheel_up_does_not_scroll_detail ... ok
+test layout_tests::selected_paused_detail_keeps_history_and_save_reachable ... ok
+test client::sse::tests::header_stall_byte_trickle_and_complete_header_lines_share_one_deadline ... ok
+test client::artifact_tests::artifact_body_timeout_does_not_wait_for_connection_close ... ok
+test client::artifact_tests::sse_heartbeats_survive_the_response_header_deadline ... ok
+test client::tests::real_http_sse_notes_reconnection_and_expired_history ... ok
+test client::sse::tests::healthy_heartbeats_outlive_both_production_deadlines_on_one_connection ... ok
+
+test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 17.05s
+
