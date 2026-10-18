@@ -10,3 +10,4 @@ connection.json
 oauth.json
 .audit/
 .DS_Store
+.vscode/
