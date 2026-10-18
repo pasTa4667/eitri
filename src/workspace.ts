@@ -523,10 +523,15 @@ async function writePrivate(path: string, bytes: Uint8Array) {
     await fd.close();
   }
 }
-async function scan(root: string, mode: 'metadata' | 'workspace'): Promise<Node[]> {
+async function scan(
+  root: string,
+  mode: 'metadata' | 'workspace',
+  signal?: AbortSignal,
+): Promise<Node[]> {
   const result: Node[] = [];
   let total = 0;
   async function walk(relative: string) {
+    signal?.throwIfAborted();
     if (result.length >= workspaceLimits.metadataFiles) fail('workspace-metadata-limit');
     const path = join(root, relative),
       s = await lstat(path);
@@ -564,6 +569,7 @@ async function scan(root: string, mode: 'metadata' | 'workspace'): Promise<Node[
     }
   }
   await walk('');
+  signal?.throwIfAborted();
   return ordered(result);
 }
 
@@ -573,7 +579,12 @@ type GitOperation =
   | { kind: 'blob'; bytes: Buffer }
   | { kind: 'tree'; bytes: Buffer }
   | { kind: 'commit'; tree: GitObjectId; parent: GitRevision | null; sequence: number }
-  | { kind: 'read'; type: 'blob' | 'tree' | 'commit'; object: GitObjectId | GitRevision }
+  | {
+      kind: 'read';
+      type: 'blob' | 'tree' | 'commit';
+      object: GitObjectId | GitRevision;
+      signal?: AbortSignal;
+    }
   | { kind: 'ref'; caseId: CaseId }
   | { kind: 'cas'; caseId: CaseId; revision: GitRevision; previous: GitRevision | null };
 
@@ -772,14 +783,35 @@ export class WorkspaceStore {
       throw error;
     }
   }
-  private serial<T>(fn: () => Promise<T>): Promise<T> {
+  private serial<T>(fn: () => Promise<T>, signal?: AbortSignal): Promise<T> {
+    if (signal?.aborted) return Promise.reject(signal.reason);
     if (this.closing) return Promise.reject(new Error('workspace-store-closed'));
+    let started = false;
     const result = this.queue.then(() => {
+      started = true;
+      signal?.throwIfAborted();
       if (this.broken) return fail('workspace-journal-failed');
       return fn();
     });
     this.queue = result.catch(() => {});
-    return result;
+    if (!signal) return result;
+    return new Promise<T>((resolve, reject) => {
+      const abort = () => {
+        if (!started) reject(signal.reason);
+      };
+      signal.addEventListener('abort', abort, { once: true });
+      if (signal.aborted) abort();
+      result.then(
+        (value) => {
+          signal.removeEventListener('abort', abort);
+          resolve(value);
+        },
+        (error: unknown) => {
+          signal.removeEventListener('abort', abort);
+          reject(error);
+        },
+      );
+    });
   }
   private save() {
     try {
@@ -842,7 +874,8 @@ export class WorkspaceStore {
             },
     });
   }
-  private async inventory(): Promise<Node[]> {
+  private async inventory(signal?: AbortSignal): Promise<Node[]> {
+    signal?.throwIfAborted();
     const nodes: Node[] = [
       { path: '', identity: await identity(this.directory), kind: 'directory' },
     ];
@@ -879,6 +912,7 @@ export class WorkspaceStore {
     if (!same((await readdir(this.directory)).sort(), expected))
       fail('unexpected-workspace-metadata');
     for (const name of ['cases', 'exports']) {
+      signal?.throwIfAborted();
       const path = join(this.directory, name);
       if (!(await lstat(path)).isDirectory() || (await identity(path)).mode !== 0o700)
         fail('unsafe-workspace-directory');
@@ -891,20 +925,26 @@ export class WorkspaceStore {
         fail('unexpected-workspace-directory');
     }
     for (const name of ['repositories', 'home', 'xdg', 'empty']) {
+      signal?.throwIfAborted();
       if (name !== 'repositories' && (await readdir(join(this.directory, name))).length)
         fail('unexpected-workspace-metadata');
-      for (const node of await scan(join(this.directory, name), 'metadata'))
+      for (const node of await scan(join(this.directory, name), 'metadata', signal))
         nodes.push({ ...node, path: node.path ? `${name}/${node.path}` : name });
     }
+    signal?.throwIfAborted();
     return ordered(nodes);
   }
-  private async verifyInventory() {
-    if (!same(this.data.inventory, await this.inventory())) fail('workspace-metadata-changed');
+  private async verifyInventory(signal?: AbortSignal) {
+    if (!same(this.data.inventory, await this.inventory(signal)))
+      fail('workspace-metadata-changed');
     await readRegular(join(this.directory, 'journal.sqlite'), workspaceLimits.journalBytes);
     if (!same(this.data.journalIdentity, await identity(join(this.directory, 'journal.sqlite'))))
       fail('workspace-journal-replaced');
+    signal?.throwIfAborted();
   }
   private async git(repository: RepositoryId, op: GitOperation): Promise<Buffer> {
+    const signal = op.kind === 'read' ? op.signal : undefined;
+    signal?.throwIfAborted();
     const repo = this.repo(repository);
     if (op.kind !== 'init') {
       if ((await readRegular(join(repo, 'config'), 4096)).toString() !== config)
@@ -913,11 +953,14 @@ export class WorkspaceStore {
         (c) =>
           c.repositoryId === repository &&
           (c.status.state === 'ready' || c.status.state === 'editing'),
-      ))
+      )) {
+        signal?.throwIfAborted();
         await this.pointer(c);
+      }
       for (const node of this.data.inventory.filter(
         (n) => n.kind === 'directory' && (n.path === '' || n.path.startsWith('repositories')),
       )) {
+        signal?.throwIfAborted();
         if (!same(node.identity, await identity(join(this.directory, node.path))))
           fail('workspace-directory-replaced');
       }
@@ -1020,6 +1063,7 @@ export class WorkspaceStore {
       GIT_COMMITTER_EMAIL: 'workspace@invalid',
       GIT_COMMITTER_DATE: '2000-01-01T00:00:00Z',
     };
+    signal?.throwIfAborted();
     return new Promise<Buffer>((resolve, reject) => {
       const child = spawn('/usr/bin/git', args, {
         cwd: this.directory,
@@ -1034,6 +1078,9 @@ export class WorkspaceStore {
         failed = true;
         child.kill('SIGKILL');
       }, 10000);
+      const abort = () => child.kill('SIGKILL');
+      signal?.addEventListener('abort', abort, { once: true });
+      if (signal?.aborted) abort();
       child.on('error', reject);
       for (const stream of [child.stdout, child.stderr])
         stream.on('data', (chunk: Buffer) => {
@@ -1047,7 +1094,9 @@ export class WorkspaceStore {
       child.stdin.end(input);
       child.on('close', (code) => {
         clearTimeout(timer);
-        if (failed || code !== 0) reject(new Error('workspace-git-failed'));
+        signal?.removeEventListener('abort', abort);
+        if (signal?.aborted) reject(signal.reason);
+        else if (failed || code !== 0) reject(new Error('workspace-git-failed'));
         else resolve(Buffer.concat(output));
       });
     });
@@ -1081,11 +1130,17 @@ export class WorkspaceStore {
       fail('workspace-manifest-changed');
     return { files, nodes };
   }
-  private async verifyCommit(c: CaseRecord, checkpoint: WorkspaceCheckpoint, files: File[]) {
+  private async verifyCommit(
+    c: CaseRecord,
+    checkpoint: WorkspaceCheckpoint,
+    files: File[],
+    signal?: AbortSignal,
+  ) {
     const commit = await this.git(c.repositoryId, {
       kind: 'read',
       type: 'commit',
       object: checkpoint.revision,
+      signal,
     });
     if (
       createHash('sha1').update(`commit ${commit.length}\0`).update(commit).digest('hex') !==
@@ -1093,21 +1148,24 @@ export class WorkspaceStore {
       !commit.toString().startsWith(`tree ${checkpoint.tree}\n`)
     )
       fail('workspace-commit-mismatch');
-    const tree = await this.buildTree(c.repositoryId, files, false);
+    const tree = await this.buildTree(c.repositoryId, files, false, signal);
     if (tree !== checkpoint.tree || manifestDigest(files) !== checkpoint.manifestDigest)
       fail('workspace-tree-mismatch');
     const verified = new Set<GitObjectId>();
     for (const f of files) {
+      signal?.throwIfAborted();
       if (verified.has(f.object)) continue;
       const bytes = await this.git(c.repositoryId, {
         kind: 'read',
         type: 'blob',
         object: f.object,
+        signal,
       });
       verified.add(f.object);
       if (bytes.length !== f.size || hash(bytes) !== f.hash || blobId(bytes) !== f.object)
         fail('workspace-blob-mismatch');
     }
+    signal?.throwIfAborted();
   }
   private async verify(c: CaseRecord, status: Ready) {
     await this.verifyInventory();
@@ -1141,8 +1199,14 @@ export class WorkspaceStore {
     repository.attempts++;
     repository.reservedBytes += amount;
   }
-  private async buildTree(repo: RepositoryId, files: File[], write: boolean): Promise<GitObjectId> {
+  private async buildTree(
+    repo: RepositoryId,
+    files: File[],
+    write: boolean,
+    signal?: AbortSignal,
+  ): Promise<GitObjectId> {
     async function tree(store: WorkspaceStore, prefix: string): Promise<GitObjectId> {
+      signal?.throwIfAborted();
       const entries = new Map<string, { mode: string; type: string; object: GitObjectId }>();
       for (const f of files.filter((f) => f.path.startsWith(prefix))) {
         const rest = f.path.slice(prefix.length),
@@ -1182,7 +1246,9 @@ export class WorkspaceStore {
         )
           fail('workspace-tree-mismatch');
       } else if (
-        !(await store.git(repo, { kind: 'read', type: 'tree', object: expected })).equals(raw)
+        !(await store.git(repo, { kind: 'read', type: 'tree', object: expected, signal })).equals(
+          raw,
+        )
       )
         fail('workspace-tree-mismatch');
       return expected;
@@ -1531,6 +1597,32 @@ export class WorkspaceStore {
       }
       return structuredClone(frozen);
     });
+  }
+  async readFrozen(frozen: FrozenRevision, signal: AbortSignal): Promise<readonly BaselineFile[]> {
+    fields(frozen, ['caseId', 'revision', 'manifestDigest']);
+    const parsed = parseFrozen(frozen);
+    return this.serial(async () => {
+      await this.verifyInventory(signal);
+      const record =
+        this.data.frozen.find((r) => same(r.frozen, parsed)) ??
+        fail('workspace-revision-not-frozen');
+      const c = this.get(parsed.caseId);
+      await this.verifyCommit(c, record.checkpoint, record.files, signal);
+      const files: BaselineFile[] = [];
+      for (const f of record.files) {
+        const bytes = await this.git(c.repositoryId, {
+          kind: 'read',
+          type: 'blob',
+          object: f.object,
+          signal,
+        });
+        if (bytes.length !== f.size || hash(bytes) !== f.hash || blobId(bytes) !== f.object)
+          fail('workspace-blob-mismatch');
+        files.push({ virtualPath: f.path, bytes });
+      }
+      signal.throwIfAborted();
+      return files;
+    }, signal);
   }
   async exportRevision(
     input: FrozenRevision,

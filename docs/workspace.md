@@ -22,6 +22,8 @@ Recovery is deliberately conservative. A pending intent causes other ready works
 
 Freeze requires a clean ready checkpoint. Export accepts only a recorded case-owned frozen revision and reads verified commit blobs, not the current worktree. Exporting old A after an edit to B still produces A. Git and controller storage are not copied from the store.
 
+`readFrozen(frozen: FrozenRevision, signal: AbortSignal): Promise<readonly BaselineFile[]>` returns fresh verified Git bytes for a recorded case-owned freeze, including old A after current B. It returns only virtual paths and detached buffers, without allocating an export or changing source, refs, or the journal. Cancellation rejects before or while queued and between bounded I/O stages. A spawned Git read stops before cancellation settles. An active filesystem call can finish before cancellation is checked.
+
 Read-only file permissions are not a containment boundary. Future validation must mount source read-only inside a positively verified container and use separate bounded scratch. A malicious concurrent same-UID host writer is outside the library's guarantee. Process-crash tests do not establish power-loss durability.
 
 ## Pilot limits
