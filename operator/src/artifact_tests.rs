@@ -36,6 +36,44 @@ controller.artifact = async (...ids) => {
 return controller;
 });
 "#;
+#[test]
+fn sse_heartbeats_survive_the_response_header_deadline() {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let url = format!("http://{}/v1/events", listener.local_addr().unwrap());
+    let server = thread::spawn(move || {
+        let (mut stream, _) = listener.accept().unwrap();
+        stream.set_read_timeout(Some(Duration::from_secs(2))).unwrap();
+        let mut request = BufReader::new(stream.try_clone().unwrap());
+        loop {
+            let mut line = String::new();
+            request.read_line(&mut line).unwrap();
+            if line == "\r\n" {
+                break;
+            }
+        }
+        stream.write_all(b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nConnection: keep-alive\r\n\r\n").unwrap();
+        for _ in 0..5 {
+            if stream.write_all(b": heartbeat\n").is_err() {
+                break;
+            }
+            thread::sleep(Duration::from_secs(1));
+        }
+    });
+    let response = agent(true).get(url).call().unwrap();
+    let mut reader = BufReader::new(response.into_body().into_reader());
+    let result = (|| -> std::io::Result<usize> {
+        for _ in 0..5 {
+            let mut line = String::new();
+            reader.read_line(&mut line)?;
+            assert_eq!(line, ": heartbeat\n");
+        }
+        Ok(5)
+    })();
+    drop(reader);
+    server.join().unwrap();
+    assert_eq!(result.unwrap(), 5);
+}
+
 const PNG: &[u8] = &[
     137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0,
     0, 0, 31, 21, 196, 137, 0, 0, 0, 13, 73, 68, 65, 84, 120, 156, 99, 248, 207, 192, 240, 31, 0,
