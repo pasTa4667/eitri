@@ -1,0 +1,30 @@
+✖ actual Docker frozen A after B, protected classifications, PNG and containment provenance (3710.175792ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3816.954958
+
+✖ failing tests:
+
+test at test/integration/frozen-browser.test.ts:139:1
+✖ actual Docker frozen A after B, protected classifications, PNG and containment provenance (3710.175792ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'infrastructure-failed'
+  - 'baseline-reproduced'
+  
+      at TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-frozen-browser-validator/test/integration/frozen-browser.test.ts:147:12)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'infrastructure-failed',
+    expected: 'baseline-reproduced',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

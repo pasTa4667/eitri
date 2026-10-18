@@ -1,0 +1,272 @@
+npm notice run eitri@0.1.0 verify:all
+npm notice run npm run verify && npm run lint:rust && npm run format:check:rust && npm run test:operator
+npm notice run eitri@0.1.0 verify
+npm notice run npm run lint:ts && npm run format:check:ts && npm run check && npm test
+npm notice run eitri@0.1.0 lint:ts
+npm notice run oxlint --deny-warnings src test scripts prototypes
+npm notice run eitri@0.1.0 format:check:ts
+npm notice run oxfmt --check '**/*.{ts,mjs}' package.json tsconfig.json .oxfmtrc.json
+Checking formatting...
+
+All matched files use the correct format.
+Finished in 4ms on 38 files using 12 threads.
+npm notice run eitri@0.1.0 check
+npm notice run tsc --noEmit && node --check scripts/doctor.mjs && node --check scripts/check-sdk.mjs && node --check prototypes/sdk-compatibility.mjs && node --check prototypes/chromium/probe.mjs && node --check prototypes/chromium/run.mjs && node --check prototypes/chromium/policy.mjs
+npm notice run eitri@0.1.0 test
+npm notice run node --test test/*.test.ts test/*.test.mjs
+✔ artifact reads stay passive across pagination, restart, missing directories, and serialized expiry (315.856083ms)
+✔ trusted check output rejects forged-ids without accepting evidence (37.200458ms)
+✔ trusted check output rejects live-result without accepting evidence (30.857459ms)
+✔ trusted check output rejects check-count without accepting evidence (41.940625ms)
+✔ trusted check output rejects case-count without accepting evidence (1319.68675ms)
+✔ trusted check output rejects check-bytes without accepting evidence (34.728583ms)
+✔ trusted check output rejects case-bytes without accepting evidence (255.261375ms)
+✔ native manifests bind every evidence reference to its case, action, receipt, revision and configuration (69.09275ms)
+✔ artifact MIME validation bounds UTF-8, labels, PNG structure, dimensions and decompression (5.572792ms)
+✔ private immutable blobs reject unsafe identities, corruption, links and replaced directories (153.041709ms)
+✔ captured Chromium 156 sandbox status is positively verified (1.391209ms)
+✔ sandbox status accepts multiple-space columns and CRLF line endings (0.194542ms)
+✔ sandbox status requires the rows rather than the summary or optional protections (0.134416ms)
+✔ sandbox status rejects missing Layer 1 Sandbox (0.142667ms)
+✔ sandbox status rejects negative Layer 1 Sandbox (0.152125ms)
+✔ sandbox status rejects duplicate Layer 1 Sandbox (0.154042ms)
+✔ sandbox status rejects conflicting Layer 1 Sandbox in either order (0.177792ms)
+✔ sandbox status rejects ambiguous Layer 1 Sandbox values (0.131583ms)
+✔ sandbox status rejects missing PID namespaces (0.127333ms)
+✔ sandbox status rejects negative PID namespaces (0.202541ms)
+✔ sandbox status rejects duplicate PID namespaces (0.110041ms)
+✔ sandbox status rejects conflicting PID namespaces in either order (0.134625ms)
+✔ sandbox status rejects ambiguous PID namespaces values (0.095875ms)
+✔ sandbox status rejects missing Network namespaces (0.737125ms)
+✔ sandbox status rejects negative Network namespaces (0.127958ms)
+✔ sandbox status rejects duplicate Network namespaces (0.084667ms)
+✔ sandbox status rejects conflicting Network namespaces in either order (0.059417ms)
+✔ sandbox status rejects ambiguous Network namespaces values (0.12325ms)
+✔ sandbox status rejects missing Seccomp-BPF sandbox (0.145875ms)
+✔ sandbox status rejects negative Seccomp-BPF sandbox (0.066875ms)
+✔ sandbox status rejects duplicate Seccomp-BPF sandbox (0.040375ms)
+✔ sandbox status rejects conflicting Seccomp-BPF sandbox in either order (0.042583ms)
+✔ sandbox status rejects ambiguous Seccomp-BPF sandbox values (0.041125ms)
+✔ sandbox status rejects nonexact positive values (0.073292ms)
+✔ summary and kernel seccomp evidence cannot establish Chromium sandbox status (0.063375ms)
+✔ namespace candidate preserves the pinned daemon baseline and adds only six exact ARM64 rules (18.433541ms)
+✔ namespace chroot candidate adds only one ARM64 chroot rule to the six-rule namespace candidate (6.678042ms)
+✔ atomic ownership, durable request receipts, policy checks and compact catalogue (78.743625ms)
+✔ pause lets an admitted tool finish, denies follow-up inference, and releases capacity (131.787084ms)
+✔ pause during model auth/response denies the next tool and native SDK follow-up (42.355833ms)
+✔ parked notes, duplicate delivery, views, reconnect watches and restart never infer (46.625709ms)
+✔ interrupted provisioning recovers the same owner and native file (46.755458ms)
+✔ structured triage can advance; a stale completion cannot advance or use a phase setter (81.732041ms)
+✔ No fix needed suppresses intake; explicit requeue links a new session (60.306ms)
+✔ budget exhaustion makes no summary call; Retry is explicit, bounded, and cumulative (75.820792ms)
+✔ capacity-two scripted cases have distinct databases, messages, counters and IDs (80.388375ms)
+✔ per-file expiry preserves guards, cannot wake or recreate details, and protects unfinished work (60.980709ms)
+✔ missing native details and cleanup failure are surfaced without recreating history (75.996291ms)
+✔ active notes are steered at the SDK boundary without a handler starting inference (36.978125ms)
+✔ corrupt durable allowance fails closed rather than allowing another model call (41.460875ms)
+✔ pause during asynchronous auth is checked at the actual provider dispatch (59.829209ms)
+✔ auth waiting is bounded by the allowance and cannot dispatch after timeout (83.731791ms)
+✔ revision-bound scripted checks with stored artifacts fail closed at the expected phase (400.734083ms)
+✔ revision-bound scripted checks with stale artifacts fail closed at the expected phase (195.87075ms)
+✔ revision-bound scripted checks with missing artifacts fail closed at the expected phase (337.669583ms)
+✔ revision-bound scripted checks with corrupt artifacts fail closed at the expected phase (296.455291ms)
+✔ revision-bound scripted checks with fabricated artifacts fail closed at the expected phase (278.236125ms)
+✔ revision-bound scripted checks with empty artifacts fail closed at the expected phase (276.955917ms)
+✔ initial failed validation permits two repair candidates, not two arbitrary check failures (173.831583ms)
+✔ trusted frozen driver retains complete B and shutdown observations without faults (125.150417ms)
+▶ trusted frozen driver fails closed on overflow through final shutdown
+  ✔ screenshot overflow (79.638583ms)
+  ✔ screenshot count-overflow (88.198542ms)
+  ✔ screenshot bytes-overflow (90.87125ms)
+  ✔ census overflow (100.693125ms)
+  ✔ census count-overflow (92.55775ms)
+  ✔ census bytes-overflow (86.184125ms)
+  ✔ browser-close overflow (74.530541ms)
+  ✔ browser-close count-overflow (85.131583ms)
+  ✔ browser-close bytes-overflow (84.695667ms)
+  ✔ server-close overflow (79.842959ms)
+  ✔ server-close count-overflow (77.624542ms)
+  ✔ server-close bytes-overflow (82.656583ms)
+✔ trusted frozen driver fails closed on overflow through final shutdown (1025.0275ms)
+▶ trusted frozen driver collects popup and shutdown errors instead of clean B
+  ✔ popup-error (92.240333ms)
+  ✔ popup-console-error (102.736458ms)
+  ✔ popup-crash (77.348416ms)
+  ✔ late-browser-close-error (71.656583ms)
+  ✔ late-server-close-error (72.080042ms)
+✔ trusted frozen driver collects popup and shutdown errors instead of clean B (416.746916ms)
+▶ trusted frozen driver rejects popup overflow and unexpected dedicated workers
+  ✔ popup-overflow (84.456125ms)
+  ✔ worker (74.000833ms)
+✔ trusted frozen driver rejects popup overflow and unexpected dedicated workers (158.801458ms)
+▶ trusted frozen driver serves a worker restriction and retains worker denial errors
+  ✔ dedicated-worker (70.330167ms)
+  ✔ shared-worker (71.650083ms)
+✔ trusted frozen driver serves a worker restriction and retains worker denial errors (142.28625ms)
+✔ frozen browser literal A after B has host evidence, detached cache and persistent idempotency (3276.775041ms)
+▶ frozen browser classifies protected roles and unrelated startup or literal failures
+  ✔ baseline B normal (2264.02925ms)
+  ✔ candidate B normal (2087.297458ms)
+  ✔ candidate B console-error (2046.515584ms)
+  ✔ candidate B page-error (2071.05875ms)
+  ✔ candidate A normal (2407.102958ms)
+  ✔ baseline C normal (2054.498834ms)
+  ✔ baseline A startup-error (2025.705ms)
+  ✔ baseline A console-forgery (1985.065333ms)
+✔ frozen browser classifies protected roles and unrelated startup or literal failures (16942.202333ms)
+▶ frozen browser rejects malformed protocol and containment transcripts before classification
+  ✔ trailing (2002.576ms)
+  ✔ duplicate (1996.776042ms)
+  ✔ nonce (2004.782334ms)
+  ✔ overflow (1952.582625ms)
+  ✔ bad-mime (2008.981792ms)
+  ✔ bad-png (2071.473458ms)
+  ✔ unknown-namespace (1983.475792ms)
+  ✔ outer-sysadmin (2017.549916ms)
+  ✔ bad-env (1938.724708ms)
+  ✔ bad-mount (1954.576125ms)
+✔ frozen browser rejects malformed protocol and containment transcripts before classification (19932.557084ms)
+✔ frozen browser cancellation and close remove the running container even without awaiting validation (1975.551167ms)
+✔ frozen browser lost build remains uncertain and blocks new attempts across reopen (1323.044709ms)
+✔ frozen browser exact boundary rejects extra fields and unrecorded revisions without Docker effects (628.446458ms)
+✔ frozen browser reservations are nonrefundable and persist through all 16 failed attempts (1176.521417ms)
+▶ frozen browser rejects unowned, linked, missing-accounting and replaced stores without adoption
+  ✔ unowned (600.110583ms)
+  ✔ symlink (608.676959ms)
+  ✔ hardlink (586.582ms)
+  ✔ accounting (575.863125ms)
+✔ frozen browser rejects unowned, linked, missing-accounting and replaced stores without adoption (2371.68825ms)
+✔ frozen browser allows native SQLite hot-journal rollback before recovery validation (2070.791959ms)
+▶ frozen browser actual host death distinguishes pending, committed and acknowledged outcomes without replay
+  ✔ before-outcome-commit (2623.561708ms)
+  ✔ after-outcome-commit (2635.023ms)
+  ✔ before-acknowledgment (2553.773958ms)
+✔ frozen browser actual host death distinguishes pending, committed and acknowledged outcomes without replay (7812.751541ms)
+✔ frozen browser committed observation survives failed cleanup and exact repeats do not rerun (2026.306041ms)
+✔ frozen browser lost create response does not misreport a still-pending named effect as removed (1648.450167ms)
+✔ frozen browser refuses an eligible committed outcome without its complete durable evidence (2104.03125ms)
+✔ authenticated HTTP/SSE, singleton-before-storage, idempotency and hostile input (178.169375ms)
+✔ authenticated strict artifact resources return verified exact bytes and honest unavailable states (130.7225ms)
+✔ SIGKILL during model conservatively preserves allowance and intent (495.924458ms)
+✔ SIGKILL during paused-model conservatively preserves allowance and intent (376.406542ms)
+✔ SIGKILL during tool conservatively preserves allowance and intent (370.470375ms)
+✔ SIGKILL during tool-receipt conservatively preserves allowance and intent (344.755875ms)
+✔ SIGKILL after-artifact-blobs preserves storage ordering without replay or invented checkpoint (383.198333ms)
+✔ SIGKILL after-artifact-manifests preserves storage ordering without replay or invented checkpoint (315.040708ms)
+✔ SIGKILL after-check-receipt preserves storage ordering without replay or invented checkpoint (303.034583ms)
+✔ workspace boundary accepts copied bytes and one edit only, never source paths or extra operations (1193.026791ms)
+✔ readFrozen returns literal A after B with fresh buffers and no store writes or exports (3292.868667ms)
+✔ readFrozen rejects unrecorded, foreign, forged and extra frozen fields without writes (1434.492292ms)
+✔ readFrozen already-aborted and queued cancellation reject before the owner is released (1404.1285ms)
+✔ readFrozen kills a spawned real Git read and waits for close before cancellation settles (585.615084ms)
+✔ readFrozen cancellation between Git stages returns no partial files and leaves the owner usable (852.130833ms)
+✔ readFrozen rejects corrupt config without changing source, refs, journal or exports (581.903083ms)
+✔ readFrozen rejects corrupt object without changing source, refs, journal or exports (585.822208ms)
+✔ readFrozen rejects corrupt mode without changing source, refs, journal or exports (592.714792ms)
+✔ readFrozen rejects corrupt pointer without changing source, refs, journal or exports (573.108375ms)
+✔ readFrozen fails closed on recorded hash corruption in real SQLite (896.50775ms)
+✔ readFrozen fails closed on recorded size corruption in real SQLite (906.87825ms)
+✔ readFrozen fails closed on recorded file-limit corruption in real SQLite (626.053458ms)
+✔ readFrozen fails closed on recorded count-limit corruption in real SQLite (664.483959ms)
+✔ readFrozen fails closed on recorded aggregate-limit corruption in real SQLite (650.983458ms)
+✔ workspace ownership rejects marker mismatch before catalogue mutation (33.048458ms)
+✔ workspace ownership rejects catalogue mismatch before catalogue mutation (24.306708ms)
+✔ workspace ownership rejects rollback-symlink mismatch before catalogue mutation (19.680667ms)
+✔ workspace ownership rejects rollback-hardlink mismatch before catalogue mutation (22.880916ms)
+✔ workspace ownership rejects rollback-mode mismatch before catalogue mutation (19.151709ms)
+✔ workspace rejects hot-journal marker identity mismatch without rollback or source mutation (1290.041416ms)
+✔ workspace rejects hot-journal catalogue identity mismatch without rollback or source mutation (995.172375ms)
+✔ workspace rejects hot-journal root identity mismatch without rollback or source mutation (741.579291ms)
+✔ workspace incomplete store creation is never adopted or reinitialized (2.045083ms)
+✔ workspace owns real independent worktrees and literal raw checkpoints without runtime wiring (4102.891959ms)
+✔ workspace protects baseline tests and configuration even nested under src (6956.34575ms)
+✔ workspace rejects sensitive imports, noncanonical paths, unicode and case collisions without writes (22.833917ms)
+✔ workspace bounds file, manifest count, aggregate bytes and canonical path bytes (5128.660583ms)
+✔ workspace copies bytes before awaits and serializes edit compare-and-swap (864.323291ms)
+✔ workspace stale checks and conflicting request reuse do not mutate source or refs (1355.127833ms)
+✔ workspace detects and preserves unexpected tracked changes before edit and freeze (646.046792ms)
+✔ workspace detects and preserves unexpected untracked changes before edit and freeze (650.243084ms)
+✔ workspace detects and preserves unexpected ignored changes before edit and freeze (633.590625ms)
+✔ workspace detects and preserves unexpected protected changes before edit and freeze (626.898416ms)
+✔ workspace detects and preserves unexpected mode changes before edit and freeze (676.343375ms)
+✔ workspace detects and preserves unexpected directory changes before edit and freeze (609.819ms)
+✔ workspace detects and preserves unexpected ancestor-identity changes before edit and freeze (619.212833ms)
+✔ workspace detects and preserves unexpected symlink changes before edit and freeze (687.379791ms)
+✔ workspace detects and preserves unexpected hardlink changes before edit and freeze (618.267708ms)
+✔ workspace detects and preserves unexpected socket changes before edit and freeze (615.664375ms)
+✔ workspace detects and preserves unexpected pointer changes before edit and freeze (648.962375ms)
+✔ workspace detects and preserves unexpected ref changes before edit and freeze (631.764875ms)
+✔ workspace freeze independently rejects dirty bytes and exports only recorded case-owned A after B (2164.991667ms)
+✔ workspace rejects unowned nonempty and unsafe roots without changing bytes or permissions (2.577667ms)
+✔ workspace fails closed reopening corrupt journal (425.945125ms)
+✔ workspace fails closed reopening corrupt config (474.547709ms)
+✔ workspace fails closed reopening corrupt metadata-directory (480.365ms)
+✔ workspace fails closed reopening corrupt source-directory (438.91575ms)
+✔ workspace never inherits hostile Git configuration, execution canaries or parent environment (1247.643958ms)
+✔ workspace owns one serialized store and bounds failed-attempt objects and export orphans (33180.509042ms)
+✔ workspace SIGKILL after-provision-intent preserves intents or replays the durable receipt (122.459209ms)
+✔ workspace SIGKILL after-provision-repository preserves intents or replays the durable receipt (169.557875ms)
+✔ workspace SIGKILL after-provision-worktree preserves intents or replays the durable receipt (371.069292ms)
+✔ workspace SIGKILL after-intent preserves intents or replays the durable receipt (737.060583ms)
+✔ workspace SIGKILL after-file preserves intents or replays the durable receipt (723.907292ms)
+✔ workspace SIGKILL after-commit preserves intents or replays the durable receipt (915.934208ms)
+✔ workspace SIGKILL after-ref preserves intents or replays the durable receipt (979.104833ms)
+✔ workspace SIGKILL after-checkpoint preserves intents or replays the durable receipt (1218.931792ms)
+✔ workspace SIGKILL before-response preserves intents or replays the durable receipt (1230.763666ms)
+✔ workspace SIGKILL inside-journal-transaction preserves intents or replays the durable receipt (728.927375ms)
+ℹ tests 192
+ℹ suites 0
+ℹ pass 192
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 72106.192125
+npm notice run eitri@0.1.0 lint:rust
+npm notice run DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer cargo clippy --locked --manifest-path operator/Cargo.toml --all-targets -- -D warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.84s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6, proc-macro-error2 v2.0.1
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+npm notice run eitri@0.1.0 format:check:rust
+npm notice run cargo fmt --manifest-path operator/Cargo.toml --all -- --check
+npm notice run eitri@0.1.0 test:operator
+npm notice run DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer cargo test --locked --manifest-path operator/Cargo.toml
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.43s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6, proc-macro-error2 v2.0.1
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running unittests src/main.rs (operator/target/debug/deps/eitri_operator-16b23e7f4fc03507)
+
+running 30 tests
+test client::artifact_tests::png_rejects_dimensions_malformed_chunks_and_compressed_metadata_before_decode ... ok
+test client::artifact_tests::artifact_provenance_requires_every_check_link ... ok
+test client::artifact_tests::artifact_acceptance_rejects_stale_boot_generation_case_expiry_and_disconnect ... ok
+test client::sse::tests::expired_deadline_and_cancellation_reject_already_buffered_lines ... ok
+test client::artifact_tests::native_png_decoder_accepts_exact_png_and_rejects_corrupt_pixel_data ... ok
+test client::sse::tests::header_bytes_and_line_count_are_bounded ... ok
+test client::sse::tests::exact_header_byte_and_line_limits_and_http10_status_are_accepted ... ok
+test client::sse::tests::request_route_bearer_and_numeric_loopback_host_are_validated ... ok
+test client::sse::tests::eof_partial_lines_invalid_utf8_and_overlong_wire_lines_are_rejected ... ok
+test client::artifact_tests::sse_frames_reject_protocol_boot_snapshot_and_sequence_changes_before_applying ... ok
+test client::sse::tests::malformed_status_headers_framing_and_encoding_are_rejected ... ok
+test input::tests::unicode_selection_multiline_and_ime_ranges ... ok
+test input::tests::native_handler_keyboard_clipboard_and_multiline ... ok
+test client::sse::tests::payload_limit_counts_json_bytes_not_data_prefix_or_crlf ... ok
+test client::artifact_tests::artifact_http_validates_exact_route_bearer_bytes_hash_status_type_and_length ... ok
+test client::artifact_tests::sse_generation_and_stop_checks_prevent_buffered_late_frames_from_applying ... ok
+test client::sse::tests::partial_body_line_trickle_cannot_restart_the_deadline ... ok
+test theme::tests::session_status_never_implies_a_passed_check ... ok
+test layout_tests::history_wheel_down_does_not_scroll_detail ... ok
+test theme::tests::workshop_text_meets_wcag_aa_contrast ... ok
+test client::sse::tests::stalled_line_cancellation_finishes_within_the_line_deadline ... ok
+test layout_tests::editor_wheel_down_does_not_scroll_detail ... ok
+test layout_tests::editor_wheel_up_does_not_scroll_detail ... ok
+test layout_tests::history_wheel_up_does_not_scroll_detail ... ok
+test layout_tests::selected_paused_detail_keeps_history_and_save_reachable ... ok
+test client::sse::tests::header_stall_byte_trickle_and_complete_header_lines_share_one_deadline ... ok
+test client::artifact_tests::artifact_body_timeout_does_not_wait_for_connection_close ... ok
+test client::artifact_tests::sse_heartbeats_survive_the_response_header_deadline ... ok
+test client::tests::real_http_sse_notes_reconnection_and_expired_history ... ok
+test client::sse::tests::healthy_heartbeats_outlive_both_production_deadlines_on_one_connection ... ok
+
+test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 17.12s
+
