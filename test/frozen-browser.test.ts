@@ -194,6 +194,7 @@ const baseId = 'sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89
 const derived = 'sha256:' + 'd'.repeat(64), cid = 'c'.repeat(64);
 const base = { Id: baseId, Architecture: 'arm64', Os: 'linux', RootFS: {Type: 'layers', Layers: ['sha256:'+'b'.repeat(64)]}, Config: {Env:['HOME=/tmp','PATH=/usr/local/bin:/usr/bin:/bin'], OnBuild:null} };
 const opt = name => args[args.indexOf(name)+1];
+const commandConfig = kind => state.commandConfig?.[kind] ?? {Cmd:[]};
 if (args[0] === 'version') output({Version:'29.4.0', Arch:'arm64', GitCommit:'daa0cb7f'});
 else if (args[0] === 'info') output(['name=seccomp,profile=builtin']);
 else if (args[0] === 'build') {
@@ -225,20 +226,23 @@ else if (args[0] === 'build') {
  else { state.image=true; plain('COPY complete\n'); }
 } else if (args[0] === 'image' && args[1] === 'inspect') {
  if (args[2].startsWith('eitri-chromium-probe:')) output([base]);
- else if (state.image) output([{...base,Id:derived,RepoTags:[state.tag],RootFS:{Type:'layers',Layers:[...base.RootFS.Layers,'sha256:'+'e'.repeat(64)]},Config:{...base.Config,Labels:state.labels,Entrypoint:['/usr/local/bin/node','/opt/eitri/frozen-browser/watchdog.mjs'],Cmd:[],User:'1001:1001',WorkingDir:'/opt/eitri'}}]);
+ else if (state.image) output([{...base,Id:derived,RepoTags:[state.tag],RootFS:{Type:'layers',Layers:[...base.RootFS.Layers,'sha256:'+'e'.repeat(64)]},Config:{...base.Config,Labels:state.labels,Entrypoint:['/usr/local/bin/node','/opt/eitri/frozen-browser/watchdog.mjs'],...commandConfig('image'),User:'1001:1001',WorkingDir:'/opt/eitri'}}]);
  else {save(); process.exitCode=1;}
 } else if (args[0]==='create') {
  if(state.mode==='create-hang') {save();await new Promise(()=>setInterval(()=>{},1000));}
  const env=args.flatMap((v,i)=>v==='--env'?[args[i+1]]:[]);
  const policyArg=args.flatMap((v,i)=>v==='--security-opt'?[args[i+1]]:[]).find(v=>v.startsWith('seccomp='));
  state.container={Id:cid,Name:'/'+opt('--name'),Image:derived,Mounts:[],State:{Status:'created',ExitCode:0,OOMKilled:false},
-  Config:{Labels:state.labels,User:'1001:1001',WorkingDir:'/opt/eitri',Entrypoint:['/usr/local/bin/node','/opt/eitri/frozen-browser/watchdog.mjs'],Cmd:[],StopTimeout:2,OpenStdin:false,Tty:false,Env:[...base.Config.Env,...env].reverse()},
+  Config:{Labels:state.labels,User:'1001:1001',WorkingDir:'/opt/eitri',Entrypoint:['/usr/local/bin/node','/opt/eitri/frozen-browser/watchdog.mjs'],...commandConfig('container'),StopTimeout:2,OpenStdin:false,Tty:false,Env:[...base.Config.Env,...env].reverse()},
   HostConfig:{NetworkMode:'none',ReadonlyRootfs:true,Privileged:false,CapDrop:['ALL'],CapAdd:null,Memory:4294967296,MemorySwap:4294967296,NanoCpus:2e9,PidsLimit:256,IpcMode:'private',ShmSize:268435456,PublishAllPorts:false,AutoRemove:false,Runtime:'runc',CgroupnsMode:'private',RestartPolicy:{Name:'no',MaximumRetryCount:0},Tmpfs:{'/tmp':'rw,exec,nosuid,size=256m,uid=1001,gid=1001'},Ulimits:[{Name:'core',Hard:0,Soft:0}],SecurityOpt:['no-new-privileges','seccomp='+readFileSync(policyArg.slice(8),'utf8')]}};
  if(state.mode==='bad-env') state.container.Config.Env.push('HOME=/forged');
  if(state.mode==='bad-mount') state.container.Mounts.push({Source:'/host',Destination:'/snapshot'});
  plain(cid+'\n');
 } else if(args[0]==='container' && args[1]==='inspect') {
- if(state.container) output([state.container]); else {save();process.exitCode=1;}
+ if(state.container) {
+  if(state.container.State.Status==='created') state.appliedInspection={config:state.container.Config,hostConfig:state.container.HostConfig,mounts:state.container.Mounts};
+  output([state.container]);
+ } else {save();process.exitCode=1;}
 } else if(args[0]==='start') {
  state.started=true; state.container.State.Status='exited';
  if(state.mode==='execution-hang') {state.container.State.Status='running';save();setInterval(()=>{},1000);}
@@ -556,6 +560,157 @@ test('frozen browser literal A after B has host evidence, detached cache and per
   t.after(() => reopened.close());
   assert.deepEqual(await reopened.validate(f.request, signal()), cached);
   assert.deepEqual((await f.state()).calls, calls);
+});
+
+test('frozen browser empty inspected Cmd forms persist canonically and reopen without effects', async (t) => {
+  const forms = [
+    ['omitted', {}],
+    ['null', { Cmd: null }],
+    ['empty array', { Cmd: [] }],
+  ] as const;
+  for (const [imageName, image] of forms)
+    for (const [containerName, container] of forms)
+      await t.test(`image ${imageName}, container ${containerName}`, async (t) => {
+        const f = await fixture(t);
+        await writeFile(
+          f.statePath,
+          JSON.stringify({ ...(await f.state()), commandConfig: { image, container } }),
+        );
+        const report = await f.validator.validate(f.request, signal());
+        assert.deepEqual(report.outcome, { kind: 'baseline-reproduced' });
+        assert.deepEqual(report.cleanup, { kind: 'owned-removed', cache: 'retained' });
+        const state = await f.state();
+        const raw = state.appliedInspection as {
+          config: Record<string, unknown>;
+          hostConfig: Record<string, unknown>;
+          mounts: unknown[];
+        };
+        assert.equal(Object.hasOwn(raw.config, 'Cmd'), Object.hasOwn(container, 'Cmd'));
+        assert.deepEqual(raw.config.Cmd, 'Cmd' in container ? container.Cmd : undefined);
+        assert.ok(report.evidence);
+        const applied = report.evidence.provenance.applied;
+        assert.deepEqual((applied.config as Record<string, unknown>).Cmd, []);
+        assert.equal(applied.inspectionSha256, digest(raw));
+        if (containerName !== 'empty array')
+          assert.notEqual(
+            applied.inspectionSha256,
+            digest({ ...raw, config: { ...raw.config, Cmd: [] } }),
+          );
+        await f.validator.close();
+        const db = new DatabaseSync(join(f.directory, 'journal.sqlite'), { readOnly: true });
+        try {
+          const value = JSON.parse(
+            String(db.prepare('SELECT body FROM runs WHERE id=1').get()?.body),
+          );
+          assert.deepEqual(value.result.report.evidence.provenance.applied.config.Cmd, []);
+        } finally {
+          db.close();
+        }
+        const reopened = await FrozenBrowserValidator.open({
+          workspace: f.store,
+          directory: f.directory,
+        });
+        t.after(() => reopened.close());
+        assert.deepEqual(await reopened.validate(f.request, signal()), report);
+        assert.deepEqual((await f.state()).calls, state.calls);
+      });
+});
+
+test('frozen browser rejects nonempty and malformed raw Cmd before container start', async (t) => {
+  for (const kind of ['image', 'container'])
+    for (const cmd of [
+      ['--unexpected'],
+      [null],
+      [1],
+      [[]],
+      '',
+      'node',
+      {},
+      { length: 0 },
+      false,
+      0,
+    ])
+      await t.test(`${kind} Cmd ${JSON.stringify(cmd)}`, async (t) => {
+        const f = await fixture(t);
+        await writeFile(
+          f.statePath,
+          JSON.stringify({ ...(await f.state()), commandConfig: { [kind]: { Cmd: cmd } } }),
+        );
+        const report = await f.validator.validate(f.request, signal());
+        assert.deepEqual(report.outcome, {
+          kind: 'infrastructure-failed',
+          code: 'frozen-browser-check-failed',
+        });
+        assert.deepEqual(report.cleanup, { kind: 'owned-removed', cache: 'retained' });
+        assert.equal(report.evidence, null);
+        const state = await f.state();
+        assert.equal(state.started, undefined);
+        assert.equal(
+          (state.calls as string[][]).some((args) => args[0] === 'create'),
+          kind === 'container',
+        );
+        await f.validator.close();
+        const reopened = await FrozenBrowserValidator.open({
+          workspace: f.store,
+          directory: f.directory,
+        });
+        t.after(() => reopened.close());
+        assert.deepEqual(await reopened.validate(f.request, signal()), report);
+        assert.deepEqual((await f.state()).calls, state.calls);
+      });
+});
+
+test('frozen browser reopen rejects noncanonical persisted Cmd in recorded and settled evidence', async (t) => {
+  for (const kind of ['recorded', 'settled'])
+    await t.test(kind, async (t) => {
+      const f = await fixture(t);
+      assert.deepEqual((await f.validator.validate(f.request, signal())).outcome, {
+        kind: 'baseline-reproduced',
+      });
+      await f.validator.close();
+      const calls = (await f.state()).calls;
+      const marker = await readFile(join(f.directory, 'owner.json'));
+      const db = new DatabaseSync(join(f.directory, 'journal.sqlite'));
+      try {
+        const body = String(db.prepare('SELECT body FROM runs WHERE id=1').get()?.body);
+        for (const cmd of [
+          undefined,
+          null,
+          ['--unexpected'],
+          [null],
+          [1],
+          [[]],
+          '',
+          'node',
+          {},
+          { length: 0 },
+          false,
+          0,
+        ]) {
+          const value = JSON.parse(body);
+          if (kind === 'recorded') {
+            const { outcome, evidence } = value.result.report;
+            value.result = { kind, outcome, evidence };
+          }
+          const saved = kind === 'recorded' ? value.result : value.result.report;
+          if (cmd === undefined) delete saved.evidence.provenance.applied.config.Cmd;
+          else saved.evidence.provenance.applied.config.Cmd = cmd;
+          db.prepare('UPDATE runs SET body=?,digest=? WHERE id=1').run(
+            JSON.stringify(value),
+            digest(value),
+          );
+          await assert.rejects(
+            FrozenBrowserValidator.open({ workspace: f.store, directory: f.directory }),
+            cmd === undefined ? /invalid-frozen-browser-fields/ : /corrupt-committed-bindings/,
+            `${kind} Cmd ${JSON.stringify(cmd)}`,
+          );
+        }
+      } finally {
+        db.close();
+      }
+      assert.deepEqual((await f.state()).calls, calls);
+      assert.deepEqual(await readFile(join(f.directory, 'owner.json')), marker);
+    });
 });
 
 test('frozen browser classifies protected roles and unrelated startup or literal failures', async (t) => {
