@@ -52,6 +52,58 @@ function restricted(status) {
   assert.equal(status.seccomp, '2');
 }
 
+function isBrowserProcessSecurityVerified(status, initialUserNamespace) {
+  if (
+    !Array.isArray(status.uid) ||
+    status.uid.length !== 4 ||
+    !status.uid.every((uid) => uid === 1001) ||
+    status.noNewPrivileges !== '1' ||
+    status.seccomp !== '2'
+  )
+    return false;
+  const knownNamespace = (namespace) =>
+    typeof namespace?.identity === 'string' &&
+    namespace.identity.length < 64 &&
+    namespace.identity.match(/^user:\[[1-9]\d*\]$/)?.[0] === namespace.identity &&
+    namespace.unavailable !== true &&
+    namespace.truncated !== true;
+  const sameInitialNamespace =
+    knownNamespace(initialUserNamespace) &&
+    knownNamespace(status.userNamespace) &&
+    status.userNamespace.identity === initialUserNamespace.identity;
+  if (sameInitialNamespace && status.capBnd != null && !/^0+$/.test(status.capBnd)) return false;
+  if (
+    typeof status.capEff === 'string' &&
+    /^0+$/.test(status.capEff) &&
+    typeof status.capPrm === 'string' &&
+    /^0+$/.test(status.capPrm)
+  )
+    return true;
+  // Chromium's zygote retains only CAP_SYS_ADMIN in its child user namespace, not the container's.
+  return (
+    status.role === 'zygote' &&
+    status.capEff === '0000000000200000' &&
+    status.capPrm === '0000000000200000' &&
+    knownNamespace(initialUserNamespace) &&
+    knownNamespace(status.userNamespace) &&
+    !sameInitialNamespace &&
+    ['uid_map', 'gid_map'].every((name) => {
+      const map = status.idMaps?.[name];
+      return (
+        map?.unavailable !== true &&
+        map?.truncated === false &&
+        typeof map.text === 'string' &&
+        map.text.length <= 256 &&
+        /^1001[ \t]+1001[ \t]+1$/.test(map.text.trim())
+      );
+    }) &&
+    typeof status.nspid === 'string' &&
+    status.nspid.length < 64 &&
+    /^[1-9]\d*(?:[ \t]+[1-9]\d*)+$/.test(status.nspid) &&
+    status.nspid.split(/[ \t]+/)[0] === status.pid
+  );
+}
+
 try {
   observations.runtime = { node: process.version, arch: process.arch, uid: process.getuid() };
   observations.initialUserNamespace = await readlink('/proc/self/ns/user').then(
@@ -233,7 +285,13 @@ try {
       sandboxAndDebuggingFlags,
     });
     assert.ok(observations.processes.length <= 64);
-    restricted(status);
+    assert.equal(
+      isBrowserProcessSecurityVerified(
+        observations.processes.at(-1),
+        observations.initialUserNamespace,
+      ),
+      true,
+    );
   }
   assert.ok(
     observations.processes.length > 0 &&

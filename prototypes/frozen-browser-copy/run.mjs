@@ -182,18 +182,70 @@ async function removeOwnScratch(path) {
   }
 }
 
+function isBrowserProcessSecurityVerified(status, initialUserNamespace) {
+  if (
+    !Array.isArray(status.uid) ||
+    status.uid.length !== 4 ||
+    !status.uid.every((uid) => uid === 1001) ||
+    status.noNewPrivileges !== '1' ||
+    status.seccomp !== '2'
+  )
+    return false;
+  const knownNamespace = (namespace) =>
+    typeof namespace?.identity === 'string' &&
+    namespace.identity.length < 64 &&
+    namespace.identity.match(/^user:\[[1-9]\d*\]$/)?.[0] === namespace.identity &&
+    namespace.unavailable !== true &&
+    namespace.truncated !== true;
+  const sameInitialNamespace =
+    knownNamespace(initialUserNamespace) &&
+    knownNamespace(status.userNamespace) &&
+    status.userNamespace.identity === initialUserNamespace.identity;
+  if (sameInitialNamespace && status.capBnd != null && !/^0+$/.test(status.capBnd)) return false;
+  if (
+    typeof status.capEff === 'string' &&
+    /^0+$/.test(status.capEff) &&
+    typeof status.capPrm === 'string' &&
+    /^0+$/.test(status.capPrm)
+  )
+    return true;
+  // Chromium's zygote retains only CAP_SYS_ADMIN in its child user namespace, not the container's.
+  return (
+    status.role === 'zygote' &&
+    status.capEff === '0000000000200000' &&
+    status.capPrm === '0000000000200000' &&
+    knownNamespace(initialUserNamespace) &&
+    knownNamespace(status.userNamespace) &&
+    !sameInitialNamespace &&
+    ['uid_map', 'gid_map'].every((name) => {
+      const map = status.idMaps?.[name];
+      return (
+        map?.unavailable !== true &&
+        map?.truncated === false &&
+        typeof map.text === 'string' &&
+        map.text.length <= 256 &&
+        /^1001[ \t]+1001[ \t]+1$/.test(map.text.trim())
+      );
+    }) &&
+    typeof status.nspid === 'string' &&
+    status.nspid.length < 64 &&
+    /^[1-9]\d*(?:[ \t]+[1-9]\d*)+$/.test(status.nspid) &&
+    status.nspid.split(/[ \t]+/)[0] === status.pid
+  );
+}
+
 function verifyObservations(observations) {
   assert.equal(observations.protocol, 1);
   assert.equal(observations.driverSha256, report.provenance.driverSha256);
   assert.equal(observations.error, undefined);
   assert.equal(observations.teardownError, undefined);
   assert.deepEqual(observations.runtime, { node: 'v26.5.0', arch: 'arm64', uid: 1001 });
-  for (const status of [observations.security, ...observations.processes]) {
-    assert.deepEqual(status.uid, [1001, 1001, 1001, 1001]);
-    assert.match(status.capEff, /^0+$/);
-    assert.equal(status.noNewPrivileges, '1');
-    assert.equal(status.seccomp, '2');
-  }
+  assert.deepEqual(observations.security.uid, [1001, 1001, 1001, 1001]);
+  assert.match(observations.security.capEff, /^0+$/);
+  assert.equal(observations.security.noNewPrivileges, '1');
+  assert.equal(observations.security.seccomp, '2');
+  for (const status of observations.processes)
+    assert.equal(isBrowserProcessSecurityVerified(status, observations.initialUserNamespace), true);
   assert.ok(observations.processes.length > 0 && observations.processes.length <= 64);
   const flags = observations.processes.flatMap((entry) => entry.sandboxAndDebuggingFlags);
   assert.ok(!flags.some((flag) => /^(--no-sandbox|--disable-.*sandbox)(=|$)/.test(flag)));
