@@ -44,7 +44,7 @@ impl Buffer {
         }
         self.selection = self.anchor.min(offset)..self.anchor.max(offset);
     }
-    fn from_utf16(&self, offset: usize) -> usize {
+    fn utf16_to_byte(&self, offset: usize) -> usize {
         let mut units = 0;
         for (index, ch) in self.text.char_indices() {
             if units >= offset {
@@ -58,7 +58,7 @@ impl Buffer {
         self.text[..offset].encode_utf16().count()
     }
     fn range(&self, range: Range<usize>) -> Range<usize> {
-        self.from_utf16(range.start)..self.from_utf16(range.end)
+        self.utf16_to_byte(range.start)..self.utf16_to_byte(range.end)
     }
     fn utf16(&self, range: Range<usize>) -> Range<usize> {
         self.to_utf16(range.start)..self.to_utf16(range.end)
@@ -496,10 +496,10 @@ impl Element for InputElement {
                 cx,
             );
         }
-        if focus.is_focused(window) {
-            if let Some(caret) = state.cursor.take() {
-                window.paint_quad(caret);
-            }
+        if focus.is_focused(window)
+            && let Some(caret) = state.cursor.take()
+        {
+            window.paint_quad(caret);
         }
         self.entity.update(cx, |input, _| {
             input.lines = std::mem::take(&mut state.lines);
@@ -601,7 +601,7 @@ mod tests {
     fn unicode_selection_multiline_and_ime_ranges() {
         let mut b = Buffer::default();
         b.replace(None, "A👩‍💻\ne\u{301} 🦀");
-        assert_eq!(b.from_utf16(b.to_utf16(b.text.len())), b.text.len());
+        assert_eq!(b.utf16_to_byte(b.to_utf16(b.text.len())), b.text.len());
         b.select(1 + "👩‍💻".len(), false);
         assert_eq!(b.previous(), 1);
         b.select(b.text.len(), false);

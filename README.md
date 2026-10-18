@@ -14,9 +14,20 @@ npm run check:sdk
 npm run probe:sdk
 ```
 
-`verify` type-checks and runs the native-SQLite, control, recovery, and HTTP tests. `doctor` reports local prerequisites without reading secrets; installer Bash remains missing until M3. `check:sdk` accepts only the operator-reviewed package/source hashes and fails on unreviewed differences.
+`verify` lints and checks formatting for TypeScript/JavaScript, type-checks, and runs the native-SQLite, control, recovery, and HTTP tests. `verify:all` also checks Rust linting/formatting and runs the operator tests. `doctor` reports local prerequisites without reading secrets; installer Bash remains missing until M3. `check:sdk` accepts only the operator-reviewed package/source hashes and fails on unreviewed differences.
 
 `probe:sdk` runs a throwaway faux-model experiment against a temporary real Pi SQLite store. It is not a live inference or the M0 controller.
+
+## Lint and format
+
+```sh
+rustup component add clippy rustfmt
+npm run lint          # Oxlint for TS/JS; Clippy for Rust (warnings fail)
+npm run format        # Oxfmt for TS/JS and root JSON config; rustfmt for Rust
+npm run format:check  # Check formatting without writing
+```
+
+Each command also has `:ts` and `:rust` variants (for example, `npm run lint:ts`). Rust linting uses the same macOS/Xcode environment as the operator build. Generated evidence and Markdown are not reformatted.
 
 ## Run the scripted controller
 

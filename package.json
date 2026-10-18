@@ -3,20 +3,26 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": {
-    "node": "26.5.0"
-  },
   "scripts": {
     "doctor": "node scripts/doctor.mjs",
     "check:sdk": "node scripts/check-sdk.mjs",
     "probe:sdk": "node prototypes/sdk-compatibility.mjs",
     "check": "tsc --noEmit && node --check scripts/doctor.mjs && node --check scripts/check-sdk.mjs && node --check prototypes/sdk-compatibility.mjs && node --check prototypes/chromium/probe.mjs && node --check prototypes/chromium/run.mjs",
     "test": "node --test test/*.test.ts",
-    "verify": "npm run check && npm test",
+    "lint:ts": "oxlint --deny-warnings src test scripts prototypes",
+    "lint:rust": "DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer cargo clippy --locked --manifest-path operator/Cargo.toml --all-targets -- -D warnings",
+    "lint": "npm run lint:ts && npm run lint:rust",
+    "format:ts": "oxfmt --write '**/*.{ts,mjs}' package.json tsconfig.json .oxfmtrc.json",
+    "format:rust": "cargo fmt --manifest-path operator/Cargo.toml --all",
+    "format": "npm run format:ts && npm run format:rust",
+    "format:check:ts": "oxfmt --check '**/*.{ts,mjs}' package.json tsconfig.json .oxfmtrc.json",
+    "format:check:rust": "cargo fmt --manifest-path operator/Cargo.toml --all -- --check",
+    "format:check": "npm run format:check:ts && npm run format:check:rust",
+    "verify": "npm run lint:ts && npm run format:check:ts && npm run check && npm test",
     "start": "node src/main.ts",
     "operator": "DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer cargo run --locked --manifest-path operator/Cargo.toml",
     "test:operator": "DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer cargo test --locked --manifest-path operator/Cargo.toml",
-    "verify:all": "npm run verify && npm run test:operator",
+    "verify:all": "npm run verify && npm run lint:rust && npm run format:check:rust && npm run test:operator",
     "probe:chromium": "node prototypes/chromium/run.mjs"
   },
   "dependencies": {
@@ -26,6 +32,11 @@
   },
   "devDependencies": {
     "@types/node": "26.0.0",
+    "oxfmt": "0.73.0",
+    "oxlint": "1.88.0",
     "typescript": "6.0.3"
+  },
+  "engines": {
+    "node": "26.5.0"
   }
 }

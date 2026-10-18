@@ -73,19 +73,19 @@ impl Operator {
                 "Command not confirmed. Draft retained; refresh state before retrying."
             }
             .into();
-            if let Some((pending, case_id, text)) = &self.pending_note {
-                if *pending == id {
-                    if accepted {
-                        let text = text.clone();
-                        if self.selected.as_ref() == Some(case_id) {
-                            self.input.update(cx, |input, cx| input.clear_if(&text, cx));
-                        }
-                        if self.drafts.get(case_id) == Some(&text) {
-                            self.drafts.remove(case_id);
-                        }
+            if let Some((pending, case_id, text)) = &self.pending_note
+                && *pending == id
+            {
+                if accepted {
+                    let text = text.clone();
+                    if self.selected.as_ref() == Some(case_id) {
+                        self.input.update(cx, |input, cx| input.clear_if(&text, cx));
                     }
-                    self.pending_note = None;
+                    if self.drafts.get(case_id) == Some(&text) {
+                        self.drafts.remove(case_id);
+                    }
                 }
+                self.pending_note = None;
             }
         }
         if changed {

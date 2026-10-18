@@ -42,8 +42,12 @@ for (const [npmName, directory, module] of inputs) {
         published: published.includes('readonly models: Models | (() => Models)'),
       },
       replaceableSettings: {
-        inspected: inspected.includes('readonly settings?: HarnessSettings | (() => HarnessSettings | undefined)'),
-        published: published.includes('readonly settings?: HarnessSettings | (() => HarnessSettings | undefined)'),
+        inspected: inspected.includes(
+          'readonly settings?: HarnessSettings | (() => HarnessSettings | undefined)',
+        ),
+        published: published.includes(
+          'readonly settings?: HarnessSettings | (() => HarnessSettings | undefined)',
+        ),
       },
       perModelCompaction: {
         inspected: inspected.includes('export type CompactionSettings ='),
@@ -58,20 +62,36 @@ for (const [npmName, directory, module] of inputs) {
   files.push(record);
 }
 
-const approved = JSON.parse(await readFile(new URL('docs/evidence/sdk-approved.json', root), 'utf8'));
-const reviewed = approved.commit === commit && files.every(file => approved.files.some(known =>
-  known.package === file.package && known.module === file.module
-  && known.inspectedSha256 === file.inspectedSha256 && known.publishedSha256 === file.publishedSha256));
+const approved = JSON.parse(
+  await readFile(new URL('docs/evidence/sdk-approved.json', root), 'utf8'),
+);
+const reviewed =
+  approved.commit === commit &&
+  files.every((file) =>
+    approved.files.some(
+      (known) =>
+        known.package === file.package &&
+        known.module === file.module &&
+        known.inspectedSha256 === file.inspectedSha256 &&
+        known.publishedSha256 === file.publishedSha256,
+    ),
+  );
 const report = {
   checkedAt: new Date().toISOString(),
   inspectedCommit: commit,
-  verdict: files.every(file => file.identical) ? 'source-match' : reviewed ? 'approved-differences' : 'review-required',
-  scope: 'Selected SDK source and public type comparison. This does not verify runtime dispatch safety.',
+  verdict: files.every((file) => file.identical)
+    ? 'source-match'
+    : reviewed
+      ? 'approved-differences'
+      : 'review-required',
+  scope:
+    'Selected SDK source and public type comparison. This does not verify runtime dispatch safety.',
   files,
 };
 const destination = new URL('docs/evidence/sdk-compatibility.json', root);
 await mkdir(new URL('./', destination), { recursive: true });
 await writeFile(destination, `${JSON.stringify(report, null, 2)}\n`, { mode: 0o600 });
 console.log(`${report.verdict}. Evidence saved to ${fileURLToPath(destination)}.`);
-for (const file of files) console.log(`${file.identical ? 'MATCH' : 'MISMATCH'} ${file.package}/${file.module}`);
+for (const file of files)
+  console.log(`${file.identical ? 'MATCH' : 'MISMATCH'} ${file.package}/${file.module}`);
 if (report.verdict === 'review-required') process.exitCode = 1;

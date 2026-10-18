@@ -192,19 +192,15 @@ impl Client {
                                     .header("content-type", "application/json")
                                     .send(body.to_string().as_bytes());
                                 if let Ok(mut response) = response {
-                                    if response.status() == 200 {
-                                        if let Ok(text) = response
+                                    if response.status() == 200
+                                        && let Ok(text) = response
                                             .body_mut()
                                             .with_config()
                                             .limit(4096)
                                             .read_to_string()
-                                        {
-                                            if let Ok(receipt) =
-                                                serde_json::from_str::<Value>(&text)
-                                            {
-                                                result = receipt["requestId"] == id;
-                                            }
-                                        }
+                                        && let Ok(receipt) = serde_json::from_str::<Value>(&text)
+                                    {
+                                        result = receipt["requestId"] == id;
                                     }
                                     break;
                                 }
@@ -335,10 +331,10 @@ mod tests {
     fn snapshot(client: &Client, predicate: impl Fn(&Snapshot) -> bool) -> Snapshot {
         let deadline = Instant::now() + Duration::from_secs(8);
         loop {
-            if let Some(view) = client.update.lock().unwrap().snapshot.as_ref() {
-                if predicate(view) {
-                    return view.clone();
-                }
+            if let Some(view) = client.update.lock().unwrap().snapshot.as_ref()
+                && predicate(view)
+            {
+                return view.clone();
             }
             assert!(
                 Instant::now() < deadline,
