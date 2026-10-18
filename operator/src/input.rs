@@ -1,3 +1,4 @@
+use crate::theme::THEME;
 use gpui::{prelude::*, *};
 use std::ops::Range;
 use unicode_segmentation::UnicodeSegmentation;
@@ -229,7 +230,7 @@ impl NoteInput {
         let Some(bounds) = self.bounds else {
             return 0;
         };
-        let line = (((position.y - bounds.top()) / px(22.0)).max(0.0) as usize)
+        let line = (((position.y - bounds.top()) / px(THEME.editor_line_height)).max(0.0) as usize)
             .min(self.lines.len().saturating_sub(1));
         let offset: usize = self
             .buffer
@@ -352,9 +353,9 @@ impl EntityInputHandler for NoteInput {
         Some(Bounds::new(
             point(
                 bounds.left() + line.x_for_index(range.start - start),
-                bounds.top() + px(index as f32 * 22.0),
+                bounds.top() + px(index as f32 * THEME.editor_line_height),
             ),
-            size(px(2.0), px(22.0)),
+            size(px(2.0), px(THEME.editor_line_height)),
         ))
     }
     fn character_index_for_point(
@@ -398,8 +399,11 @@ impl Element for InputElement {
     ) -> (LayoutId, ()) {
         let mut style = Style::default();
         style.size.width = relative(1.0).into();
-        style.size.height =
-            px(self.entity.read(cx).buffer.text.split('\n').count().max(5) as f32 * 22.0).into();
+        style.size.height = px(
+            self.entity.read(cx).buffer.text.split('\n').count().max(5) as f32
+                * THEME.editor_line_height,
+        )
+        .into();
         (window.request_layout(style, [], cx), ())
     }
     fn prepaint(
@@ -433,7 +437,7 @@ impl Element for InputElement {
                 &[run],
                 None,
             );
-            let y = bounds.top() + px(index as f32 * 22.0);
+            let y = bounds.top() + px(index as f32 * THEME.editor_line_height);
             let end = start + text.len();
             if !buffer.selection.is_empty()
                 && buffer.selection.start <= end
@@ -446,18 +450,18 @@ impl Element for InputElement {
                 selections.push(fill(
                     Bounds::new(
                         point(bounds.left() + left, y),
-                        size((right - left).max(px(3.0)), px(22.0)),
+                        size((right - left).max(px(3.0)), px(THEME.editor_line_height)),
                     ),
-                    rgb(0x284d65),
+                    rgb(THEME.editor_selection),
                 ));
             }
             if buffer.cursor() >= start && buffer.cursor() <= end {
                 caret = Some(fill(
                     Bounds::new(
                         point(bounds.left() + line.x_for_index(buffer.cursor() - start), y),
-                        size(px(2.0), px(22.0)),
+                        size(px(2.0), px(THEME.editor_line_height)),
                     ),
-                    rgb(0x74c5b3),
+                    rgb(THEME.caret),
                 ));
             }
             lines.push(line);
@@ -490,8 +494,11 @@ impl Element for InputElement {
         }
         for (index, line) in state.lines.iter().enumerate() {
             let _ = line.paint(
-                point(bounds.left(), bounds.top() + px(index as f32 * 22.0)),
-                px(22.0),
+                point(
+                    bounds.left(),
+                    bounds.top() + px(index as f32 * THEME.editor_line_height),
+                ),
+                px(THEME.editor_line_height),
                 window,
                 cx,
             );
@@ -534,13 +541,20 @@ impl Render for NoteInput {
             .on_mouse_up(MouseButton::Left, cx.listener(Self::mouse_up))
             .on_mouse_up_out(MouseButton::Left, cx.listener(Self::mouse_up))
             .w_full()
+            .min_h(px(110.0))
             .max_h(px(154.0))
+            .flex_shrink_0()
             .overflow_scroll()
             .p_3()
-            .bg(rgb(0x10171d))
-            .rounded_md()
-            .text_size(px(14.0))
-            .line_height(px(22.0))
+            .bg(rgb(THEME.input))
+            .border_1()
+            .border_color(rgb(THEME.border))
+            .focus(|s| s.border_color(rgb(THEME.focus)))
+            .rounded(px(THEME.radius))
+            .font_family(THEME.body_family)
+            .text_color(rgb(THEME.text))
+            .text_size(px(THEME.body_size))
+            .line_height(px(THEME.editor_line_height))
             .child(InputElement {
                 entity: cx.entity(),
             })
