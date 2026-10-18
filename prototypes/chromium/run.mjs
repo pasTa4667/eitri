@@ -15,9 +15,12 @@ const modes = new Map([
   ['--pinned-policy', 'pinned'],
   ['--namespace-policy', 'namespaces'],
   ['--namespace-chroot-policy', 'namespaces-chroot'],
+  ['--namespace-chroot-pids256-policy', 'namespaces-chroot-pids256'],
 ]);
 const mode = modes.get(process.argv[2] ?? '');
 if (!mode || process.argv.length > 3) throw new Error('Unknown containment probe mode');
+const chrootMode = mode === 'namespaces-chroot' || mode === 'namespaces-chroot-pids256';
+const pidsLimit = mode === 'namespaces-chroot-pids256' ? 256 : 128;
 
 const root = new URL('../../', import.meta.url);
 const sentinel = new URL('.audit/containment-sentinel.txt', root);
@@ -58,19 +61,18 @@ try {
     report.daemonVersion = server;
     const baseline = await readFile(new URL('seccomp/docker-29.4.0.json', import.meta.url));
     if (sha256(baseline) !== baselineSha256) throw new Error('Unreviewed seccomp baseline');
-    policy =
-      mode === 'namespaces-chroot'
-        ? namespaceChrootPolicy(baseline)
-        : mode === 'namespaces'
-          ? namespacePolicy(baseline)
-          : baseline.toString('utf8');
+    policy = chrootMode
+      ? namespaceChrootPolicy(baseline)
+      : mode === 'namespaces'
+        ? namespacePolicy(baseline)
+        : baseline.toString('utf8');
     policyFile = new URL(`.audit/seccomp-${randomUUID()}.json`, root);
     await writeFile(policyFile, policy, { mode: 0o600, flag: 'wx' });
     report.policy = {
       engineCommit,
       baselineSha256,
       sha256: sha256(policy),
-      addedRules: mode === 'namespaces-chroot' ? 7 : mode === 'namespaces' ? 6 : 0,
+      addedRules: chrootMode ? 7 : mode === 'namespaces' ? 6 : 0,
     };
     securityOptions.push('--security-opt', `seccomp=${fileURLToPath(policyFile)}`);
   }
@@ -102,7 +104,7 @@ try {
     '--memory-swap',
     '4g',
     '--pids-limit',
-    '128',
+    String(pidsLimit),
     '--ipc',
     'private',
     '--shm-size',
@@ -169,7 +171,7 @@ try {
     config.Memory !== 4 * 1024 ** 3 ||
     config.MemorySwap !== 4 * 1024 ** 3 ||
     config.NanoCpus !== 2e9 ||
-    config.PidsLimit !== 128 ||
+    config.PidsLimit !== pidsLimit ||
     config.IpcMode !== 'private' ||
     config.ShmSize !== 256 * 1024 ** 2 ||
     JSON.stringify(config.Tmpfs) !==
