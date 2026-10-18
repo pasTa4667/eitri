@@ -47,7 +47,7 @@ The user's implementation request authorizes local implementation under the exis
 
 ## Current checkpoint
 
-Six mandatory milestones remain, M1 through M6. This is a multi-hour implementation with external human-presence gates, not a single scaffold change. M7 is optional. Rigor is high because generated code execution, credentials, and repository writes cross trust boundaries.
+Five mandatory milestones remain, M2 through M6. M0 and the scoped scripted M1 checks are verified. External human-presence gates remain explicit. M7 is optional. Rigor remains high because generated code execution, credentials, and repository writes cross trust boundaries.
 
 The operator approved the documented SDK differences and continuation with published 1.3.0. `docs/sdk-review.md` retains that decision and the two control-ownership designs. Approved source hashes are fixed separately from each fresh comparison.
 
@@ -73,19 +73,19 @@ A standalone, trusted Chromium containment probe was built and run with no repos
 
 The earlier stop was the failed containment gate. The continuation tested a reviewed six-rule namespace/seccomp candidate under the unchanged remaining restrictions. All positive USER namespace controls pass, and negative controls retain their expected denials. Chromium now stops at `sys_chroot("/proc/self/fdinfo/")`. `docs/containment-review.md` records paired reports and requests approval for a separate `chroot` syscall experiment. No such addition has been applied. Both owned containers were removed.
 
-No security bypass, global configuration change, fixture edit, Sentry service, live application inference, existing service-token read, GitHub push, or PR was performed. M1 visual/artifact acceptance and all of M2 through M6 remain incomplete. Do not request token values in chat.
+No security bypass, fixture edit, Sentry service, live application inference, existing integration-token read, GitHub push, or PR was performed. The agent changed no global Docker, kernel, or toolchain configuration. The user explicitly granted screen capture. Scripted M1 acceptance is now verified; M2 through M6 remain incomplete. Do not request token values in chat.
 
 The earlier run had no subagent or compaction tool. Its design comparison and comment review were sequential self-review. The continuation now has subagents and uses independent exploration and review.
 
-## Continuation framing
+## Earlier continuation framing
 
-Resume from `77bb89a`, which includes `d11c927` plus lint and format setup. The inherited checkpoint remains authoritative. The operator requested continued implementation and commits for finished units. This is interpreted as approval for the narrow local namespace/seccomp experiment described in `docs/containment-review.md`, not broader privileges or disabled sandboxing.
+This run resumed from `77bb89a`, which includes `d11c927` plus lint and format setup. The inherited checkpoint remains authoritative. The operator requested continued implementation and commits for finished units. This is interpreted as approval for the narrow local namespace/seccomp experiment described in `docs/containment-review.md`, not broader privileges or disabled sandboxing.
 
 The definition of done remains M0 through M6 acceptance on real artifacts. Security-sensitive rigor remains high. Operator-presence gates cannot be completed by local implementation alone. Local code and mocked integration tests may proceed, but they do not enable live remediation.
 
-Policy provenance and existing resource seams were independently reviewed. The smallest contained experiment was run and remains blocked. Authenticated case-scoped artifacts were implemented in an isolated worktree and integrated as `0925818` after independent static review. Native-case manifests own provenance and reference immutable private bytes. The controller rechecks artifact integrity during evidence admission. ID-only authenticated HTTP reads are passive and serialized against expiry. Focused parent verification passed 26 artifact, evidence, and crash-recovery tests; TypeScript, lint, and format checks pass. The native card/client unit was independently reviewed and integrated as `1141a89`. Final parent verification passed `npm run verify:all`, with 42 Node tests and nine Rust tests, including real HTTP artifact retrieval. The native binary also builds and launches; its visual capture failed as recorded above. Independent source reviews found no actionable defects in either unit, but do not replace runtime or visual evidence. Each finished unit receives its own verification and commit. M2 generated execution remains blocked until positive sandbox verification. The remaining M3, M4, and M6 gates stay explicit. `.audit/resume-todos.md` tracks this run's checklist. `decisions.tsv` remains the committed decision trail.
+Policy provenance and existing resource seams were independently reviewed. The smallest contained experiment was run and remains blocked. Authenticated case-scoped artifacts were implemented in an isolated worktree and integrated as `0925818` after independent static review. Native-case manifests own provenance and reference immutable private bytes. The controller rechecks artifact integrity during evidence admission. ID-only authenticated HTTP reads are passive and serialized against expiry. Focused parent verification passed 26 artifact, evidence, and crash-recovery tests; TypeScript, lint, and format checks pass. The native card/client unit was independently reviewed and integrated as `1141a89`. At that earlier artifact checkpoint, parent verification passed `npm run verify:all` with 42 Node tests and nine Rust tests, including real HTTP artifact retrieval. The native binary built and launched, but capture was not yet authorized. The later native verification above supersedes that acceptance status. Independent source reviews found no actionable defects in either unit, but do not replace runtime or visual evidence. Each finished unit receives its own verification and commit. M2 generated execution remains blocked until positive sandbox verification. The remaining M3, M4, and M6 gates stay explicit. `.audit/resume-todos.md` tracks this run's checklist. `decisions.tsv` remains the committed decision trail.
 
-## Resume point after artifact implementation
+## Resume point after scripted native acceptance
 
 - The implementation plan is unfinished. M1 scripted acceptance is verified, including native glyphs, forge styling, constrained layout, focused editor, stable artifact viewing, and raw/rendered image-handle release. Verification limits remain explicit in `docs/native-rendering.md`.
 - M2 is blocked at Chromium's `chroot` call. A separately reviewed syscall-admission experiment was requested and is not approved or applied. Retain all existing restrictions and keep generated execution disabled.
@@ -93,9 +93,15 @@ Policy provenance and existing resource seams were independently reviewed. The s
 - M3 through M6 remain pending, including operator-reviewed vault permissions, direct token setup, repository privacy/default-branch confirmation, supported OpenAI sign-in and first-inference approval, and deliberate live remediation activation.
 - The artifact implementation worktrees remain available at `../eitri-artifact-resources` and `../eitri-native-artifacts`. Their committed changes are integrated on `main`; do not replay their commits. Temporary native-smoke data is retained under `.audit/` and contains synthetic cases only.
 
-## Continuation audit
+## Earlier audit at `567a48a`
 
-A read-only evidence audit by `openai-codex/gpt-6.1-sol` found no material discrepancies between this run's decision trail, transcript, and committed evidence. It confirmed the namespace approval was an interpretation, not a separate affirmative approval, and that no `chroot` addition was applied. The reviews used the configured model family, so cross-model-family review is not satisfied. Visual/operator acceptance, observed GPU-cache cleanup, positive browser containment, and the remaining live gates are still open.
+A read-only evidence audit by `openai-codex/gpt-6.1-sol` found no material discrepancies at that checkpoint. It confirmed the namespace approval was an interpretation, not a separate affirmative approval, and that no `chroot` addition was applied. Visual/operator acceptance, image-handle cleanup, positive browser containment, and live gates were open then. Later evidence above closes the scoped M1 visual and handle-release checks, not physical VRAM measurement or the containment/live gates.
+
+## Native visual audit at `5b430a2`
+
+A fresh read-only evidence audit by `openai-codex/gpt-6.1-sol` checked original transcript outputs and actual images. It supported the recorded checks, fixture-driven captures, image-handle release, and scoped scripted M1 acceptance. It found stale current-status statements in this file that still described M1 as unaccepted. Those statements are now corrected or explicitly historical. The decision log remains append-only.
+
+Both audits used the configured model family, so cross-model-family review is not satisfied. OS-level input automation and physical VRAM measurement are not claimed. M2 acceptance and live gates remain open.
 
 ## Checkpoint policy
 
