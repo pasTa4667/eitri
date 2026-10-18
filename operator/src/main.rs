@@ -2,6 +2,9 @@ mod client;
 mod input;
 mod theme;
 
+#[cfg(test)]
+mod layout_tests;
+
 use client::{Artifact, ArtifactState, ArtifactView, Client, Selected, Snapshot};
 use gpui::{prelude::*, *};
 use input::NoteInput;
@@ -232,6 +235,7 @@ impl Operator {
     ) -> Stateful<Div> {
         div()
             .id(id)
+            .debug_selector(|| id.into())
             .min_h(px(THEME.control_height))
             .flex_shrink_0()
             .border_1()
@@ -259,6 +263,9 @@ impl Render for Operator {
             .and_then(|v| v.selected.clone())
             .filter(|s| Some(&s.case.id) == self.selected.as_ref());
         let mut detail = div()
+            .id("detail")
+            .overflow_y_scroll()
+            .debug_selector(|| "detail".into())
             .flex()
             .flex_col()
             .flex_1()
@@ -286,6 +293,7 @@ impl Render for Operator {
                         .flex()
                         .flex_col()
                         .gap_1()
+                        .debug_selector(|| "case-metadata".into())
                         .flex_shrink_0()
                         .child(
                             div()
@@ -335,7 +343,12 @@ impl Render for Operator {
                         .child(format!("History warning: {warning}")),
                 );
             }
-            let mut controls = div().flex().flex_wrap().flex_shrink_0().gap_2();
+            let mut controls = div()
+                .debug_selector(|| "case-controls".into())
+                .flex()
+                .flex_wrap()
+                .flex_shrink_0()
+                .gap_2();
             let version = Some(c.version);
             if self.status.starts_with("Connected") {
                 if ["running", "queued", "provisioning", "pause-requested"]
@@ -433,11 +446,12 @@ impl Render for Operator {
             } else {
                 let mut history = div()
                     .id("history")
+                    .debug_selector(|| "history".into())
                     .flex()
                     .flex_col()
                     .gap_3()
                     .flex_1()
-                    .min_h_0()
+                    .min_h(px(120.0))
                     .overflow_y_scroll();
                 history =
                     history.child(div().text_color(rgb(THEME.muted)).child(
@@ -458,6 +472,7 @@ impl Render for Operator {
                         .flex()
                         .flex_col()
                         .gap_2()
+                        .debug_selector(|| format!("check-{}", check.id))
                         .child(
                             div()
                                 .text_color(rgb(
@@ -541,12 +556,13 @@ impl Render for Operator {
                             ),
                     );
                 }
-                detail = detail.child(history).child(div().flex_shrink_0().text_size(px(THEME.metadata_size)).text_color(rgb(THEME.muted)).child("Notes are saved without inference when parked. Enter inserts a new line. Retry / Dismiss / Requeue use this text as their reason."))
+                detail = detail.child(history).child(div().debug_selector(|| "note-help".into()).flex_shrink_0().text_size(px(THEME.metadata_size)).text_color(rgb(THEME.muted)).child("Notes are saved without inference when parked. Enter inserts a new line. Retry / Dismiss / Requeue use this text as their reason."))
                     .child(self.input.clone());
                 let case_id = c.id.clone();
                 detail = detail.child(
                     div()
                         .id("save-note")
+                        .debug_selector(|| "save-note".into())
                         .min_h(px(THEME.control_height))
                         .flex_shrink_0()
                         .border_1()
@@ -773,6 +789,7 @@ impl Render for Operator {
             .child(div().flex().flex_1().min_h_0().child(sidebar).child(detail))
             .child(
                 div()
+                    .debug_selector(|| "footer".into())
                     .min_h(px(THEME.footer_height))
                     .flex_shrink_0()
                     .px_4()
