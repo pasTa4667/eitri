@@ -1,0 +1,36 @@
+{
+  "decision": "Operator approved published Pi Durable 1.3.0 and these documented source differences in the conversation.",
+  "commit": "8efd314fa3d3232ce197d8d7a6a5660530b9d83e",
+  "files": [
+    {
+      "package": "@earendil-works/pi-durable",
+      "module": "harness/types",
+      "inspectedSha256": "be599207d7a36dd00451d6493a6680b8b9a19566ddbbd5fad8f4267cfd859003",
+      "publishedSha256": "5d308f63ffea57be068849cae7a50e30c5802fde8a4c7688d6adfc4274fb4b34"
+    },
+    {
+      "package": "@earendil-works/pi-durable",
+      "module": "harness/generation",
+      "inspectedSha256": "07973923ea91ad13293987f6087db565a65a266b1f38dbe34dae31272d9998f1",
+      "publishedSha256": "35f56b7f279c872f2c66d3fd2b833f56f82537caed90b70fb556602a55d425b6"
+    },
+    {
+      "package": "@earendil-works/pi-durable",
+      "module": "harness/compaction",
+      "inspectedSha256": "e64fd83d6bd282d0d03f169d7800fcd858e42007681f1961c00181bba60c9e76",
+      "publishedSha256": "9459f26f1704e263e11635e7fd4900457dcbf55817725fe21b4f3f6b35b8335b"
+    },
+    {
+      "package": "@earendil-works/pi-durable",
+      "module": "storage/sqlite/node",
+      "inspectedSha256": "4eb34b79d18b812b818f976737617593bbc3d25d0562b118810aed9e4efc123a",
+      "publishedSha256": "4eb34b79d18b812b818f976737617593bbc3d25d0562b118810aed9e4efc123a"
+    },
+    {
+      "package": "@earendil-works/pi-ai",
+      "module": "models",
+      "inspectedSha256": "c10385291e4e79dc3ea5301629288a35cac354f8a3635c07f9312608c269f573",
+      "publishedSha256": "c10385291e4e79dc3ea5301629288a35cac354f8a3635c07f9312608c269f573"
+    }
+  ]
+}

@@ -2,15 +2,15 @@
 
 ## Current decision
 
-Application implementation is paused at the SDK review gate in build-plan section 2. Published Pi Durable 1.3.0 has public API differences from the inspected commit. No application contract has been weakened and no dependency has been substituted.
+The operator approved retaining published Pi Durable 1.3.0 and continuing against its actual API. The differences below remain documented; no dependency or safety contract was substituted. The approved hashes are fixed in `docs/evidence/sdk-approved.json`.
 
-Recommendation for operator review is to retain published 1.3.0 and implement against its actual API. M0 must still prove the complete control and recovery contract before M1. The compatibility prototype below does not complete M0.
+M0 now has a controller implementation with 21 passing native-SQLite, dispatch, recovery, lifecycle, and HTTP tests. Evidence is `docs/evidence/m0-tests.txt`. The compatibility prototype below remains throwaway and is not itself M0 acceptance.
 
 ## Reproduce the source comparison
 
 Run `npm ci --ignore-scripts`, then `npm run check:sdk`.
 
-The check compares selected published source maps against commit `8efd314fa3d3232ce197d8d7a6a5660530b9d83e`. It records source hashes and public signature differences in `docs/evidence/sdk-compatibility.json`. Its exit code is 1 when source differences require review. That exit is intentional, not a passing compatibility gate.
+The check compares selected published source maps against commit `8efd314fa3d3232ce197d8d7a6a5660530b9d83e`. It records source hashes and public signature differences in `docs/evidence/sdk-compatibility.json`. The reviewed hashes return `approved-differences` with exit code 0. Unexpected source or API differences still return `review-required` with exit code 1. Approval is not extended automatically to another package or upstream change.
 
 | Contract | Inspected commit | Published 1.3.0 |
 |---|---|---|
@@ -53,6 +53,6 @@ The review rubric is atomic ownership, one dispatch authority, crash-recoverable
 
 No independent model judge was available. This harness has no subagent tool. The alternatives and prototype were examined sequentially by the same assistant.
 
-## Remaining operator decision
+## Resolved operator decision
 
-Accept the documented differences and continue with published Pi Durable 1.3.0, or require a revised dependency selection and design review. No Git snapshot replacement or newer SDK is selected automatically.
+Accepted published Pi Durable 1.3.0 with the documented differences. No Git snapshot replacement or newer SDK was selected.

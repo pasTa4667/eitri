@@ -1,0 +1,35 @@
+npm notice run eitri@0.1.0 verify
+npm notice run npm run check && npm test
+npm notice run eitri@0.1.0 check
+npm notice run tsc --noEmit && node --check scripts/doctor.mjs && node --check scripts/check-sdk.mjs && node --check prototypes/sdk-compatibility.mjs
+npm notice run eitri@0.1.0 test
+npm notice run node --test test/*.test.ts
+✔ atomic ownership, durable request receipts, policy checks and compact catalogue (35.082666ms)
+✔ pause lets an admitted tool finish, denies follow-up inference, and releases capacity (49.705584ms)
+✔ pause during model auth/response denies the next tool and native SDK follow-up (18.743ms)
+✔ parked notes, duplicate delivery, views, reconnect watches and restart never infer (22.657792ms)
+✔ interrupted provisioning recovers the same owner and native file (20.519917ms)
+✔ structured triage can advance; a stale completion cannot advance or use a phase setter (48.08725ms)
+✔ No fix needed suppresses intake; explicit requeue links a new session (28.882666ms)
+✔ budget exhaustion makes no summary call; Retry is explicit, bounded, and cumulative (32.96325ms)
+✔ capacity-two scripted cases have distinct databases, messages, counters and IDs (32.540958ms)
+✔ per-file expiry preserves guards, cannot wake or recreate details, and protects unfinished work (31.533959ms)
+✔ missing native details and cleanup failure are surfaced without recreating history (42.399959ms)
+✔ active notes are steered at the SDK boundary without a handler starting inference (24.059667ms)
+✔ pause during asynchronous auth is checked at the actual provider dispatch (29.464417ms)
+✔ auth waiting is bounded by the allowance and cannot dispatch after timeout (65.207542ms)
+✔ revision-bound scripted checks reach but cannot bypass publication gating (252.30875ms)
+✔ revision-bound scripted checks reject a stale green result (116.645083ms)
+✔ initial failed validation permits two repair candidates, not two arbitrary check failures (95.115416ms)
+✔ authenticated HTTP/SSE, singleton-before-storage, idempotency and hostile input (71.200792ms)
+✔ SIGKILL during model conservatively preserves allowance and intent (266.228041ms)
+✔ SIGKILL during paused-model conservatively preserves allowance and intent (228.702333ms)
+✔ SIGKILL during tool conservatively preserves allowance and intent (238.269792ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 975.655833

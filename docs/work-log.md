@@ -25,7 +25,7 @@ The user's implementation request authorizes local implementation under the exis
 ### Execution units
 
 - [x] Prerequisite audit and manual setup guide. Never read or log token values.
-- [ ] M0. Durable catalogue, per-session Pi stores, controller commands, guarded runner, recovery, retention, and HTTP tests.
+- [x] M0. Durable catalogue, per-session Pi stores, controller commands, guarded runner, recovery, retention, and HTTP tests.
 - [ ] M1. Native GPUI build, authenticated connection, controls, and native input verification.
 - [ ] M2. Existing fixture integration, scoped file broker, immutable validation, and restricted ARM64 worker checks.
 - [ ] M3. Local Sentry and operator-reviewed credentials. Stop at named human gates.
@@ -47,15 +47,17 @@ The user's implementation request authorizes local implementation under the exis
 
 ## Current checkpoint
 
-Seven mandatory milestones remain, M0 through M6. This is a multi-hour implementation with external human-presence gates, not a single scaffold change. M7 is optional. Rigor is high because generated code execution, credentials, and repository writes cross trust boundaries.
+Six mandatory milestones remain, M1 through M6. This is a multi-hour implementation with external human-presence gates, not a single scaffold change. M7 is optional. Rigor is high because generated code execution, credentials, and repository writes cross trust boundaries.
 
-Application implementation is paused at the explicit SDK review condition in build-plan section 2. `docs/sdk-review.md` records two control-ownership designs, the actual published API differences, and a limited runtime compatibility prototype. The recommendation is to retain published 1.3.0 after the operator accepts those differences. Do not mark M0 complete or proceed around the review condition.
+The operator approved the documented SDK differences and continuation with published 1.3.0. `docs/sdk-review.md` retains that decision and the two control-ownership designs. Approved source hashes are fixed separately from each fresh comparison.
 
-Verified observations are in `docs/evidence/`. `npm run check` succeeds. `npm run doctor` exits 1 for missing installer Bash. `npm run check:sdk` exits 1 for actual source and public API differences. `npm run probe:sdk` completes with a real temporary native SQLite file, a faux provider, and an unanswered denied submission. It is not a live-model or controller acceptance test.
+M0 evidence is `docs/evidence/m0-tests.txt`: `npm run verify` passes TypeScript and 21 tests. Tests use real temporary catalogue/native SQLite files, fake adapters, and three actual SIGKILL/reopen cases. They cover duplicate claims, safe pause, Continue/Retry, passive and active note delivery, provisioning recovery, auth-time dispatch denial, allowance/repair limits, same-revision phase gates, capacity-two isolation, deletion failure/expiry, authenticated HTTP/SSE, and singleton-before-storage. Model/integration outcomes remain explicitly scripted.
 
-No account, vault, item, token, OAuth state, controller database, application source, container, push, or PR has been created. Local Git, the Node dependency lockfile, prerequisite tools, and the throwaway prototype are the artifacts of this run. The existing fixture remains unchanged.
+`npm run check:sdk` now returns `approved-differences` for exactly the approved hashes. `npm run doctor` still exits 1 for missing installer Bash, which is deferred to M3.
 
-Next action is operator review of `docs/sdk-review.md`. After acceptance, add TypeScript build tooling and implement the catalogue-first M0 design with the remaining race, budget, dispatch, and cleanup acceptance tests. Do not request GitHub or Sentry token values in chat.
+The scripted TypeScript controller is implemented in `src/`, with Node HTTP/SSE and tests in `test/`. `npm start` binds the fixed loopback port before opening application storage, creates a private per-run connection capability, and runs only the faux provider. Live model routes and publication are denied. Tests remove only their own temporary data. No account, vault, item, token, OAuth state, worker container, push, or PR has been created. The existing fixture remains unchanged.
+
+Next is M1: build published GPUI 0.2.2 with the installed Rust/Xcode toolchain, implement the native input and off-render-thread authenticated HTTP/SSE client, then exercise it against the scripted controller. No new secret or live-inference approval is needed for M1. Do not request token values in chat.
 
 No subagent or compaction tool is exposed. No independent model review was performed. The design comparison and comment review were sequential self-review.
 

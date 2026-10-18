@@ -58,10 +58,14 @@ for (const [npmName, directory, module] of inputs) {
   files.push(record);
 }
 
+const approved = JSON.parse(await readFile(new URL('docs/evidence/sdk-approved.json', root), 'utf8'));
+const reviewed = approved.commit === commit && files.every(file => approved.files.some(known =>
+  known.package === file.package && known.module === file.module
+  && known.inspectedSha256 === file.inspectedSha256 && known.publishedSha256 === file.publishedSha256));
 const report = {
   checkedAt: new Date().toISOString(),
   inspectedCommit: commit,
-  verdict: files.every(file => file.identical) ? 'source-match' : 'review-required',
+  verdict: files.every(file => file.identical) ? 'source-match' : reviewed ? 'approved-differences' : 'review-required',
   scope: 'Selected SDK source and public type comparison. This does not verify runtime dispatch safety.',
   files,
 };

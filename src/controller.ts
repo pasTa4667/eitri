@@ -1,0 +1,469 @@
+import { DatabaseSync } from 'node:sqlite';
+import { mkdir, chmod, lstat, open, realpath, rm } from 'node:fs/promises';
+import { resolve, join } from 'node:path';
+import { randomUUID } from 'node:crypto';
+import type { Provider } from '@earendil-works/pi-ai/models';
+import { NativeCase } from './native.ts';
+import { ControlError, digest, fail, issueKey, parseCommand, phases, text, uuid } from './domain.ts';
+import type { Action, Assessment, Case, Check, Command, Issue, Receipt, Selection, Snapshot } from './domain.ts';
+
+type Options = {
+  directory: string; policy: { project: string; environment: string; repository: string };
+  providerForCase(id: string): { provider: Provider; modelId: string };
+  clock?: () => number; capacity?: number; allowanceMs?: number;
+  probe?: (id: string, signal: AbortSignal) => Promise<string>;
+  check?: (id: string, kind: Check['kind'], signal: AbortSignal) => Promise<Omit<Check, 'id'>>;
+  issues?: () => Promise<Issue[]>;
+  fault?: (point: string, caseId: string) => void;
+};
+const openDirectories = new Set<string>();
+const terminalRetentionMs = 30 * 24 * 60 * 60 * 1000;
+
+export class Controller {
+  directory: string;
+  bootId = randomUUID();
+  private db: DatabaseSync;
+  private options: Options;
+  private clock: () => number;
+  private runtimes = new Map<string, Promise<NativeCase>>();
+  private runners = new Map<string, Promise<void>>();
+  private watchers = new Set<() => void>();
+  private queue: Promise<unknown> = Promise.resolve();
+  private closing = false;
+  private starting = true;
+  private tickScheduled = false;
+  private polling = false;
+  private sequence = 0;
+  private allowance: number;
+
+  private constructor(directory: string, db: DatabaseSync, options: Options) {
+    this.directory = directory; this.db = db; this.options = options;
+    this.clock = options.clock ?? Date.now;
+    this.allowance = Math.min(options.allowanceMs ?? 600_000, 600_000);
+  }
+  static async open(options: Options) {
+    const directory = resolve(options.directory);
+    if (openDirectories.has(directory)) fail('controller-already-open');
+    openDirectories.add(directory);
+    let controller: Controller | undefined;
+    let db: DatabaseSync | undefined;
+    try {
+      await mkdir(directory, { recursive: true, mode: 0o700 });
+      if ((await lstat(directory)).isSymbolicLink() || await realpath(directory) !== directory) fail('unsafe-data-directory');
+      await chmod(directory, 0o700);
+      await mkdir(join(directory, 'cases'), { mode: 0o700 }).catch(error => { if (error.code !== 'EEXIST') throw error; });
+      if (!(await lstat(join(directory, 'cases'))).isDirectory() || (await lstat(join(directory, 'cases'))).isSymbolicLink()) fail('unsafe-cases-directory');
+      const catalogue = join(directory, 'catalogue.sqlite');
+      await open(catalogue, 'wx', 0o600).then(f => f.close()).catch(error => { if (error.code !== 'EEXIST') throw error; });
+      if (!(await lstat(catalogue)).isFile() || (await lstat(catalogue)).isSymbolicLink()) fail('unsafe-catalogue');
+      db = new DatabaseSync(catalogue);
+      db.exec(`PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA foreign_keys=ON;
+        CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+        INSERT OR IGNORE INTO metadata VALUES ('schema', '1');
+        CREATE TABLE IF NOT EXISTS cases (id TEXT PRIMARY KEY, issue_key TEXT NOT NULL, value TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS guards (issue_key TEXT PRIMARY KEY, owner TEXT NOT NULL REFERENCES cases(id));
+        CREATE TABLE IF NOT EXISTS receipts (id TEXT PRIMARY KEY, digest TEXT NOT NULL, value TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS deliveries (id TEXT PRIMARY KEY, case_id TEXT NOT NULL REFERENCES cases(id), text TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS actions (id TEXT PRIMARY KEY, case_id TEXT NOT NULL UNIQUE REFERENCES cases(id), value TEXT NOT NULL);
+      `);
+      if (db.prepare("SELECT value FROM metadata WHERE key='schema'").get()?.value !== '1') fail('unsupported-schema');
+      controller = new Controller(directory, db, options);
+      await controller.recover();
+      controller.starting = false;
+      controller.schedule();
+      return controller;
+    } catch (error) {
+      if (controller) await Promise.allSettled([...controller.runtimes.values()].map(async p => (await p).close()));
+      db?.close(); openDirectories.delete(directory); throw error;
+    }
+  }
+  private transaction<T>(work: () => T): T {
+    this.db.exec('BEGIN IMMEDIATE');
+    try { const value = work(); this.db.exec('COMMIT'); return value; }
+    catch (error) { this.db.exec('ROLLBACK'); throw error; }
+  }
+  private all(): Case[] { return this.db.prepare('SELECT value FROM cases ORDER BY rowid').all().map(row => JSON.parse(String(row.value))); }
+  private get(id: string): Case {
+    const row = this.db.prepare('SELECT value FROM cases WHERE id=?').get(id);
+    return row ? JSON.parse(String(row.value)) : fail('case-not-found');
+  }
+  private save(c: Case) { this.db.prepare('INSERT INTO cases VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET value=excluded.value').run(c.id, c.issueKey, JSON.stringify(c)); }
+  private charge(c: Case) {
+    if (c.accountedAt !== null) {
+      const elapsed = Math.max(0, this.clock() - c.accountedAt);
+      const cost = Math.min(c.remainingMs, elapsed);
+      c.remainingMs -= cost; c.usedMs += cost; c.accountedAt = this.clock();
+    }
+  }
+  private attention(c: Case, reason: string) {
+    this.charge(c); c.accountedAt = null; c.status = 'needs-attention'; c.reason = reason; c.epoch++; c.version++;
+  }
+  private changed = () => {
+    if (this.closing) return;
+    this.sequence++;
+    for (const watcher of this.watchers) watcher();
+  };
+  private serial<T>(work: () => Promise<T>): Promise<T> {
+    const next = this.queue.then(() => { if (this.closing) return fail('controller-closed'); return work(); });
+    this.queue = next.catch(() => {}); return next;
+  }
+  private admit(issue: Issue, previousId: string | null = null): Case {
+    if (issue.project !== this.options.policy.project || issue.environment !== this.options.policy.environment || issue.repository !== this.options.policy.repository) fail('issue-policy-denied');
+    if (issue.status !== 'unresolved') fail('issue-not-unresolved');
+    const key = issueKey(issue);
+    const c: Case = {
+      id: randomUUID(), issueKey: key, issue, previousId, phase: 'triage', status: 'provisioning',
+      version: 1, epoch: 0, native: 'provisioning', remainingMs: this.allowance, usedMs: 0,
+      attempt: 1, repairs: 0, accountedAt: null, terminalAt: null, outcome: null, reason: '', base: null, candidate: null, failedCandidate: null, simulated: true,
+    };
+    this.save(c);
+    this.db.prepare('INSERT INTO guards VALUES (?,?) ON CONFLICT(issue_key) DO UPDATE SET owner=excluded.owner').run(key, c.id);
+    return c;
+  }
+
+  async command(input: unknown): Promise<Receipt> {
+    const command = parseCommand(input);
+    return this.serial(async () => {
+      const hash = digest(command);
+      const result = this.transaction(() => {
+        const old = this.db.prepare('SELECT digest,value FROM receipts WHERE id=?').get(command.requestId);
+        if (old) { if (old.digest !== hash) fail('request-id-conflict'); return JSON.parse(String(old.value)) as Receipt; }
+        const i = command.intent;
+        let c: Case | undefined;
+        let disposition: Receipt['disposition'] = 'accepted';
+        if (i.type === 'investigate') {
+          const guard = this.db.prepare('SELECT owner FROM guards WHERE issue_key=?').get(issueKey(i.issue));
+          if (guard) { c = this.get(String(guard.owner)); disposition = 'existing'; }
+          else c = this.admit(i.issue);
+        } else if (i.type !== 'check-now') {
+          c = this.get(i.caseId);
+          if (!['pause', 'post-message'].includes(i.type) && command.expectedControlVersion !== c.version) fail('stale-control-version');
+          if (i.type === 'pause') {
+            if (c.status === 'running') { c.status = 'pause-requested'; c.version++; }
+            else if (c.status === 'queued' || c.status === 'provisioning') { c.status = 'paused'; c.version++; }
+          } else if (i.type === 'continue') {
+            if (c.status !== 'paused' || c.native !== 'ready' || c.remainingMs <= 0) fail('cannot-continue');
+            c.status = 'queued'; c.reason = ''; c.version++;
+          } else if (i.type === 'retry') {
+            if (c.status !== 'needs-attention' || c.native !== 'ready') fail('cannot-retry');
+            c.status = 'queued'; c.reason = ''; c.remainingMs = this.allowance; c.repairs = 0; c.failedCandidate = null; c.attempt++; c.version++; c.epoch++;
+          } else if (i.type === 'dismiss') {
+            if (!['paused', 'needs-attention', 'queued'].includes(c.status)) fail('cannot-dismiss');
+            c.status = 'terminal'; c.outcome = 'dismissed'; c.reason = i.note!; c.terminalAt = this.clock(); c.version++; c.epoch++;
+          } else if (i.type === 'requeue') {
+            if (c.status !== 'terminal') fail('cannot-requeue');
+            const guard = this.db.prepare('SELECT owner FROM guards WHERE issue_key=?').get(c.issueKey);
+            if (guard?.owner !== c.id) fail('issue-already-owned');
+            c = this.admit(c.issue, c.id);
+          } else if (i.type === 'post-message') {
+            if (c.native === 'expired' || c.native === 'deleting' || c.native === 'missing') fail('details-unavailable');
+          } else if (i.type === 'details-cleanup') {
+            if (c.status !== 'terminal') fail('unfinished-case-protected');
+            if (c.native !== 'expired') { c.native = 'deleting'; c.version++; }
+          }
+          this.save(c);
+          if (i.type === 'post-message' || i.type === 'retry' || i.type === 'requeue') this.db.prepare('INSERT INTO deliveries VALUES (?,?,?)').run(command.requestId, c.id, i.type === 'post-message' ? i.text : i.note!);
+        }
+        const receipt: Receipt = { requestId: command.requestId, caseId: c?.id ?? null, version: c?.version ?? null, disposition };
+        this.db.prepare('INSERT INTO receipts VALUES (?,?,?)').run(command.requestId, hash, JSON.stringify(receipt));
+        return receipt;
+      });
+      if (result.caseId) {
+        this.options.fault?.('after-command-commit', result.caseId);
+        await this.provision(result.caseId);
+        await this.deliver(result.caseId);
+        if (this.get(result.caseId).native === 'deleting') await this.expire(result.caseId);
+      }
+      this.changed(); this.schedule();
+      if (command.intent.type === 'check-now') void this.poll();
+      return result;
+    });
+  }
+
+  private async casePath(id: string) {
+    if (!uuid(id)) fail('unsafe-case-id');
+    const directory = join(this.directory, 'cases', id);
+    await mkdir(directory, { mode: 0o700 }).catch(error => { if (error.code !== 'EEXIST') throw error; });
+    if ((await lstat(directory)).isSymbolicLink() || await realpath(directory) !== directory) fail('unsafe-case-directory');
+    return directory;
+  }
+  private async runtime(id: string): Promise<NativeCase> {
+    if (!this.runtimes.has(id)) {
+      const pending = (async () => {
+        const c = this.get(id);
+        if (!['ready', 'provisioning'].includes(c.native)) fail('details-unavailable');
+        const directory = await this.casePath(id);
+        const path = join(directory, 'session.sqlite');
+        const existing = await lstat(path).catch(error => { if (error.code !== 'ENOENT') throw error; return null; });
+        if (existing && (!existing.isFile() || existing.isSymbolicLink())) fail('unsafe-native-file');
+        if (!existing) {
+          if (c.native !== 'provisioning') fail('native-file-missing');
+          await (await open(path, 'wx', 0o600)).close();
+        }
+        return NativeCase.open(path, c, this.options.providerForCase(id), {
+          current: () => this.get(id),
+          admit: (kind, limit) => this.admitAction(id, kind, limit), permit: action => this.permitAction(id, action), finish: (action, uncertain, failed) => this.finishAction(action, uncertain, failed),
+          assess: (assessment, checks) => this.assess(id, assessment, checks),
+          checkpoint: check => this.checkpoint(id, check),
+          probe: signal => this.options.probe?.(id, signal) ?? Promise.resolve('Scripted probe; no external effect.'),
+          check: (kind, signal) => this.options.check?.(id, kind, signal) ?? Promise.reject(new ControlError('validation-not-configured')),
+          changed: this.changed,
+        });
+      })();
+      this.runtimes.set(id, pending);
+      void pending.catch(() => { this.runtimes.delete(id); });
+    }
+    return this.runtimes.get(id)!;
+  }
+  private async provision(id: string) {
+    const c = this.get(id);
+    if (c.native !== 'provisioning') return;
+    this.options.fault?.('before-native-provision', id);
+    await this.runtime(id);
+    this.options.fault?.('after-native-provision', id);
+    this.transaction(() => {
+      const latest = this.get(id); latest.native = 'ready';
+      if (latest.status === 'provisioning') latest.status = 'queued';
+      this.save(latest);
+    });
+  }
+  private async deliver(id: string) {
+    if (this.get(id).native !== 'ready') return;
+    const rows = this.db.prepare('SELECT id,text FROM deliveries WHERE case_id=? ORDER BY rowid').all(id);
+    if (!rows.length) return;
+    const native = await this.runtime(id);
+    for (const row of rows) {
+      await native.note(String(row.id), 'eitri.note', { text: String(row.text), origin: 'operator' });
+      this.options.fault?.('after-note-delivery', id);
+      this.db.prepare('DELETE FROM deliveries WHERE id=?').run(String(row.id));
+    }
+  }
+  private admitAction(id: string, kind: 'model' | 'tool', maxMs: number): Action {
+    if (this.closing || this.starting) fail('dispatch-disabled');
+    return this.transaction(() => {
+      const c = this.get(id); this.charge(c);
+      if (c.status !== 'running' || c.native !== 'ready' || c.remainingMs <= 0) fail('dispatch-denied');
+      if (this.db.prepare('SELECT id FROM actions WHERE case_id=?').get(id)) fail('action-already-running');
+      const action: Action = { id: randomUUID(), caseId: id, epoch: c.epoch, kind, startedAt: this.clock(), limitMs: Math.max(1, Math.min(maxMs, c.remainingMs)), usedAtStart: c.usedMs };
+      this.save(c); this.db.prepare('INSERT INTO actions VALUES (?,?,?)').run(action.id, id, JSON.stringify(action)); return action;
+    });
+  }
+  private permitAction(id: string, action: Action | undefined) {
+    const admitted = action ?? fail('dispatch-disabled');
+    if (this.closing || this.starting) fail('dispatch-disabled');
+    this.transaction(() => {
+      const c = this.get(id); this.charge(c); this.save(c);
+      if (c.status !== 'running' || c.epoch !== admitted.epoch || c.remainingMs <= 0 || !this.db.prepare('SELECT id FROM actions WHERE id=? AND case_id=?').get(admitted.id, id)) fail('dispatch-denied');
+    });
+  }
+  private finishAction(action: Action, uncertain: boolean, failed = false) {
+    this.transaction(() => {
+      if (!this.db.prepare('SELECT id FROM actions WHERE id=?').get(action.id)) return;
+      const c = this.get(action.caseId); this.charge(c);
+      if (uncertain) this.attention(c, `${action.kind}-action-timed-out`);
+      else if (failed && c.status === 'running') this.attention(c, `${action.kind}-action-failed`);
+      this.save(c); this.db.prepare('DELETE FROM actions WHERE id=?').run(action.id);
+    });
+    this.changed();
+  }
+  private checkpoint(id: string, check: Check) {
+    this.transaction(() => {
+      const c = this.get(id);
+      if (c.status !== 'running') fail('checkpoint-control-changed');
+      if (check.kind === 'baseline') {
+        if (check.passed && (!c.base || c.base === check.candidate)) c.base = check.candidate;
+        else this.attention(c, 'baseline-not-reproduced-or-changed');
+      } else if (check.kind === 'checkpoint') {
+        if (c.phase !== 'implementation' || !check.passed) fail('checkpoint-not-allowed');
+        if (c.failedCandidate && check.candidate !== c.failedCandidate) { c.repairs++; c.failedCandidate = null; }
+        if (c.repairs > 2) this.attention(c, 'repair-budget-exhausted');
+        else { c.candidate = check.candidate; c.version++; }
+      } else if (!check.passed) {
+        c.failedCandidate = check.candidate;
+        if (c.repairs >= 2) this.attention(c, 'repair-budget-exhausted');
+        else { c.phase = 'implementation'; c.version++; }
+      }
+      this.save(c);
+    });
+  }
+  private async assess(id: string, a: Assessment, checks: Check[]) {
+    this.transaction(() => {
+      const c = this.get(id); this.charge(c);
+      if (c.status !== 'running' || c.phase !== a.phase || c.version !== a.expectedControlVersion || c.remainingMs <= 0) fail('stale-phase-result');
+      if (!text(a.reason, 512)) fail('assessment-reason-required');
+      if (a.conclusion === 'attention') this.attention(c, a.reason);
+      else if (a.conclusion === 'no-fix') {
+        if (c.phase !== 'triage' && c.phase !== 'investigation') fail('no-fix-not-allowed');
+        c.status = 'terminal'; c.outcome = 'no-fix'; c.reason = a.reason; c.terminalAt = this.clock(); c.accountedAt = null; c.epoch++; c.version++;
+      } else {
+        const evidence = checks.filter(check => a.evidenceIds.includes(check.id));
+        if (evidence.length !== a.evidenceIds.length) fail('unknown-evidence');
+        if (c.phase === 'investigation' && (!text(a.proposal, 8000) || !a.paths?.length || a.paths.some(p => !/^(src|test)\/[a-zA-Z0-9_./-]+$/.test(p) || p.split('/').includes('..')) || !evidence.some(e => e.kind === 'baseline' && e.passed))) fail('investigation-evidence-required');
+        if (['implementation', 'testing', 'publication'].includes(c.phase)) {
+          if (!c.candidate || a.candidate !== c.candidate || !evidence.length || evidence.some(e => e.candidate !== (e.kind === 'baseline' ? c.base : c.candidate) || !e.passed)) fail('stale-candidate-evidence');
+          if (new Set(evidence.map(e => e.configuration)).size !== 1) fail('configuration-mismatch');
+          const required: Check['kind'][] = c.phase === 'implementation' ? ['checkpoint', 'regression'] : ['baseline', 'unit', 'regression', 'build', 'browser'];
+          if (required.some(kind => !evidence.some(e => e.kind === kind))) fail('missing-required-check');
+          if (c.phase !== 'implementation' && !evidence.some(e => e.kind === 'browser' && e.artifacts.length > 0)) fail('browser-artifact-required');
+        }
+        if (c.phase === 'publication' || c.phase === 'pr-created') fail('publication-not-enabled');
+        c.phase = phases[phases.indexOf(c.phase) + 1]; c.status = 'queued'; c.reason = ''; c.epoch++; c.version++;
+      }
+      this.save(c);
+    });
+    this.changed();
+  }
+  private schedule() {
+    if (this.closing || this.starting || this.tickScheduled) return;
+    this.tickScheduled = true;
+    setImmediate(() => { this.tickScheduled = false; if (!this.closing) void this.tick(); });
+  }
+  private async tick() {
+    for (const c of this.all()) {
+      if (this.closing || this.runners.size >= (this.options.capacity ?? 1)) break;
+      if (c.status !== 'queued' || c.native !== 'ready' || this.runners.has(c.id)) continue;
+      const runner = this.execute(c.id).finally(() => { this.runners.delete(c.id); this.changed(); this.schedule(); });
+      this.runners.set(c.id, runner);
+      void runner.catch(() => {});
+    }
+  }
+  private async execute(id: string) {
+    let epoch = -1;
+    try {
+      const native = await this.runtime(id);
+      const c = this.transaction(() => {
+        const c = this.get(id);
+        if (this.closing || c.status !== 'queued') fail('run-not-queued');
+        if (c.remainingMs <= 0) { this.attention(c, 'allowance-exhausted'); this.save(c); return null; }
+        c.status = 'running'; c.epoch++; c.accountedAt = this.clock(); c.version++; this.save(c); return c;
+      });
+      if (!c) return;
+      epoch = c.epoch; this.changed();
+      await this.deliver(id);
+      const result = await native.run(c);
+      if (this.closing) return;
+      this.transaction(() => {
+        const latest = this.get(id); this.charge(latest);
+        if (latest.status === 'pause-requested') {
+          latest.status = 'paused'; latest.accountedAt = null; latest.epoch++; latest.version++;
+        } else if (latest.status === 'running' && latest.epoch === epoch) this.attention(latest, result.status === 'unanswered' ? 'model-error-or-dispatch-denied' : 'assessment-required');
+        if (latest.status !== 'running') latest.accountedAt = null;
+        this.save(latest);
+      });
+      if (this.get(id).status === 'paused') await native.reconcile();
+    } catch (error) {
+      if (this.closing) return;
+      this.transaction(() => {
+        const c = this.get(id);
+        if (c.status === 'pause-requested') { this.charge(c); c.status = 'paused'; c.accountedAt = null; c.version++; c.epoch++; }
+        else if (c.status === 'running' || c.status === 'queued') this.attention(c, error instanceof ControlError ? error.code : 'native-execution-error');
+        this.save(c);
+      });
+    }
+  }
+  private async recover() {
+    for (const original of this.all()) {
+      let c = original;
+      if (c.native === 'deleting' || (c.status === 'terminal' && c.terminalAt !== null && this.clock() - c.terminalAt >= terminalRetentionMs && c.native !== 'expired')) { await this.expire(c.id); continue; }
+      if (c.native === 'expired' || c.native === 'missing') continue;
+      try {
+        await this.provision(c.id); c = this.get(c.id);
+        const actionRow = this.db.prepare('SELECT value FROM actions WHERE case_id=?').get(c.id);
+        this.transaction(() => {
+          c = this.get(c.id);
+          if (actionRow) {
+            const action: Action = JSON.parse(String(actionRow.value));
+            const cost = Math.min(c.remainingMs, Math.max(0, action.limitMs - (c.usedMs - action.usedAtStart)));
+            c.remainingMs -= cost; c.usedMs += cost; c.accountedAt = null;
+            if (action.kind === 'tool') this.attention(c, 'interrupted-tool-effect-uncertain');
+            this.db.prepare('DELETE FROM actions WHERE case_id=?').run(c.id);
+          } else if (c.status === 'running' || c.status === 'pause-requested') this.charge(c);
+          if (c.status === 'pause-requested') { c.status = 'paused'; c.version++; }
+          else if (c.status === 'running') { c.status = c.remainingMs > 0 ? 'queued' : 'needs-attention'; c.reason = c.remainingMs > 0 ? '' : 'allowance-exhausted'; c.version++; }
+          c.accountedAt = null; c.epoch++; this.save(c);
+        });
+        const native = await this.runtime(c.id);
+        await native.reconcile();
+        await this.deliver(c.id);
+      } catch (error) {
+        this.transaction(() => {
+          c = this.get(c.id); c.native = 'missing'; this.attention(c, error instanceof ControlError ? error.code : 'native-recovery-failed'); this.save(c);
+        });
+      }
+    }
+  }
+  private async expire(id: string) {
+    let c = this.get(id);
+    if (c.status !== 'terminal') fail('unfinished-case-protected');
+    this.transaction(() => { c = this.get(id); c.native = 'deleting'; this.save(c); });
+    try {
+      const runtime = this.runtimes.get(id);
+      if (runtime) { await (await runtime).close(); this.runtimes.delete(id); }
+      const directory = join(this.directory, 'cases', id);
+      const stat = await lstat(directory).catch(error => { if (error.code !== 'ENOENT') throw error; return null; });
+      if (stat) {
+        if (stat.isSymbolicLink() || await realpath(directory) !== directory) fail('unsafe-cleanup-directory');
+        this.options.fault?.('before-details-delete', id);
+        await rm(directory, { recursive: true });
+      }
+      this.transaction(() => {
+        c = this.get(id); c.native = 'expired'; c.version++; this.save(c);
+        this.db.prepare('DELETE FROM deliveries WHERE case_id=?').run(id);
+      });
+    } catch (error) {
+      c = this.get(id); c.reason = error instanceof ControlError ? error.code : 'details-cleanup-failed'; this.save(c); throw error;
+    }
+    this.changed();
+  }
+  async maintain() {
+    return this.serial(async () => {
+      for (const c of this.all()) if (c.status === 'terminal' && c.terminalAt !== null && this.clock() - c.terminalAt >= terminalRetentionMs && c.native !== 'expired') await this.expire(c.id);
+      this.changed();
+    });
+  }
+  async poll() {
+    if (this.polling || this.closing || !this.options.issues) return;
+    this.polling = true;
+    try {
+      const issues = await this.options.issues();
+      for (const issue of issues) if (issue.status === 'unresolved' && (issue.priority === 'high' || issue.regressed || issue.escalating)) await this.command({ requestId: randomUUID(), intent: { type: 'investigate', issue } });
+    } finally { this.polling = false; }
+  }
+  async snapshot(selection: Selection = {}): Promise<Snapshot> {
+    if (selection.selected !== undefined && !uuid(selection.selected)) fail('invalid-selection');
+    if (selection.limit !== undefined && (!Number.isInteger(selection.limit) || selection.limit < 1 || selection.limit > 100)) fail('invalid-page-size');
+    if (selection.before !== undefined && !uuid(selection.before)) fail('invalid-cursor');
+    const cases = this.all();
+    let selected: Snapshot['selected'] = null;
+    if (selection.selected) {
+      const c = this.get(selection.selected);
+      const page = c.native === 'ready' ? await (await this.runtime(c.id)).messages(selection.limit ?? 100, selection.before) : { messages: [], more: false };
+      selected = { case: c, ...page };
+    }
+    return { protocol: 1, bootId: this.bootId, sequence: this.sequence, mode: 'scripted', cases, selected };
+  }
+  watch(selection: Selection, notify: (snapshot: Snapshot) => void, error: (error: unknown) => void = () => {}) {
+    let closed = false, pending = false, dirty = false;
+    const update = () => {
+      if (closed) return;
+      dirty = true;
+      if (pending) return;
+      pending = true;
+      void (async () => {
+        try { while (dirty && !closed) { dirty = false; const view = await this.snapshot(selection); if (!closed) notify(view); } }
+        catch (e) { error(e); }
+        finally { pending = false; }
+      })();
+    };
+    this.watchers.add(update); update();
+    return () => { closed = true; this.watchers.delete(update); };
+  }
+  async close() {
+    this.closing = true;
+    await this.queue;
+    const closed = await Promise.allSettled([...this.runtimes.values()].map(async p => (await p).close()));
+    await Promise.allSettled([...this.runners.values()]);
+    this.watchers.clear(); this.db.close(); openDirectories.delete(this.directory);
+    if (closed.some(result => result.status === 'rejected')) fail('native-close-failed');
+  }
+}
