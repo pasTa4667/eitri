@@ -1,0 +1,568 @@
+{
+  "protocol": 1,
+  "runId": "4003967d-1dd7-4d41-8a60-99691742df1d",
+  "checkedAt": "2026-10-18T15:23:11.002Z",
+  "scope": "Pure throwaway COPY instrument with synthetic bytes. Not a production validator or receipt.",
+  "status": "blocked",
+  "observationOutcome": "blocked",
+  "resources": {
+    "containerName": "eitri-frozen-browser-copy-4003967d-1dd7-4d41-8a60-99691742df1d",
+    "imageTag": "eitri-frozen-browser-copy:4003967d-1dd7-4d41-8a60-99691742df1d",
+    "privateRoot": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-copy-YWHxdQ",
+    "imageId": "sha256:266409d6b5913ef9e01eecaf5f13c9e5b6d79e2532a8750f73e0035cd692a1a0",
+    "containerId": "3fb5e0ef9e061b7ed8015445cbf6b48432ef4f26d4d93d92829904d6291c1916"
+  },
+  "cleanup": {
+    "container": "removed",
+    "image": "removed",
+    "store": "closed",
+    "scratch": "removed",
+    "buildCache": "Not pruned. Docker may retain synthetic COPY bytes and trusted driver in build cache."
+  },
+  "exportBefore": {
+    "directories": [
+      {
+        "path": "",
+        "mode": 320
+      },
+      {
+        "path": "src",
+        "mode": 320
+      }
+    ],
+    "files": [
+      {
+        "path": "src/index.html",
+        "literal": "<button id=\"run\">Run</button><output id=\"result\"></output><script>run.onclick=()=>result.textContent=\"A\"</script>\n",
+        "sha256": "adb761859f7364fac2b2db7cba60b84e2e23752ab4b46a3dc0a3a009ea26ecac",
+        "size": 114,
+        "mode": 256
+      },
+      {
+        "path": "package.json",
+        "literal": "{\"private\":true,\"scripts\":{\"preinstall\":\"node poison.cjs\",\"install\":\"node poison.cjs\",\"postinstall\":\"node poison.cjs\"}}\n",
+        "sha256": "a97cbe5510fb1f70ae3356370b59d30eda6487b0694cb261d16051295b802d9c",
+        "size": 120,
+        "mode": 256
+      },
+      {
+        "path": "poison.cjs",
+        "literal": "require(\"node:fs\").writeFileSync(\"/tmp/project-node-executed\", \"project Node executed\\n\");\n",
+        "sha256": "f0fb69b8541163d64b881c0799d9a036f88f89ef75db9c725771231dd5d820ce",
+        "size": 91,
+        "mode": 256
+      }
+    ]
+  },
+  "workspaceB": {
+    "revision": "05594a71319d678ca37c7835c098a1c5f6b56eba",
+    "literal": "<button id=\"run\">Run</button><output id=\"result\"></output><script>run.onclick=()=>result.textContent=\"B\"</script>\n",
+    "sha256": "5d61c69d5d1643f6d9c6ebe89fdb7b96e58cfd8c683686504e4f12dd3607fb4a"
+  },
+  "provenance": {
+    "frozen": {
+      "caseId": "e259a9c2-56e1-4e17-882b-754be80ec5f3",
+      "revision": "6fb1d2a259643a67516ef7f6cb48b1129bcfc124",
+      "manifestDigest": "e5790764ef87f3bc867490773c2f93b11a91531e397581125126bc1cb4841be2"
+    },
+    "exported": {
+      "exportId": "15f14844-1b79-4921-9477-5b07e9130fe7",
+      "revision": "6fb1d2a259643a67516ef7f6cb48b1129bcfc124",
+      "manifestDigest": "e5790764ef87f3bc867490773c2f93b11a91531e397581125126bc1cb4841be2"
+    },
+    "transferredBytesSha256": "c7264eb51adb289dbe838727a12f1a2890fa99f4c792a7163c912491a84a2ad8",
+    "driverSha256": "401fb788b2f4bbdbf981da965f6df1f4e9a0a6ce0b6f9e7f082a78070a4a6373",
+    "dockerfileSha256": "73a64e444a0ab8484215fdd0581486faa36a044ef94bc808309acb700ff50072",
+    "contextFiles": [
+      "Dockerfile",
+      "driver.mjs",
+      "rootfs/snapshot/src/index.html",
+      "rootfs/snapshot/package.json",
+      "rootfs/snapshot/poison.cjs"
+    ]
+  },
+  "daemon": {
+    "version": "29.4.0",
+    "gitCommit": "daa0cb7f",
+    "architecture": "arm64"
+  },
+  "daemonSecurity": [
+    "name=seccomp,profile=builtin",
+    "name=cgroupns"
+  ],
+  "policy": {
+    "engineCommit": "daa0cb7f23594cdbcce5002e370027d3fd36ffd7",
+    "baselineSha256": "01536f1d1df938ae611eba20d6349e0de7a99b6ecdee1549427a0b01b8301e28",
+    "sha256": "c85c2b40abc8ca15cace108b94f91e337b73313c8288b03c41d1ca51fe239bd7",
+    "addedRules": 7
+  },
+  "baseBefore": {
+    "id": "sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff",
+    "architecture": "arm64",
+    "os": "linux",
+    "rootFS": {
+      "Type": "layers",
+      "Layers": [
+        "sha256:1e9178dc90058fa454a60803300219ee8c17e515be8718817ed824b96fa1207b",
+        "sha256:1d38b7af782dce9e2df5cc7b5c8e94587259b17bb93110de639e2c815bf4a9e7",
+        "sha256:472ad09fba4cd8693c98d51891a4d5738b3159293649c3372492a09a04944af8",
+        "sha256:f961188457542bd7a109688fcf635d59e9e00ec065a96305b16c6a12a56f7048",
+        "sha256:17ef8e1840b43e248cb97e872b9549deb255cf90be50daa985c72c1cc48e63df",
+        "sha256:1ac9e58fe1af6fc1f0154e24bd1e5b9dd5f99e24945acbadab50271f2586678d",
+        "sha256:a9e15583932640eec3161df8feaab852469f184960a9f79d281b0ee16f5aba3d",
+        "sha256:d745008c8a5d0869378a69dbd059d0fee7aa3b6fa472bc42623af1898bd70741",
+        "sha256:c9b16ca40ef340c8df47968c33cf2ca2e4b46468a8ec4c670a3a24713bbed6ec",
+        "sha256:d1772fa77dc101c66d80440fe6ba8afe2c2577daebafda376b9472b77a39c22d",
+        "sha256:9f0487aca0b17cb7441a6df8fd6ea817901ec53fdf3c8ee8905f7bd3036ef4cb"
+      ]
+    }
+  },
+  "build": {
+    "exitCode": 0,
+    "stdout": "",
+    "stderr": "#0 building with \"orbstack\" instance using docker driver\n\n#1 [internal] load build definition from Dockerfile\n#1 transferring dockerfile: 291B done\n#1 DONE 0.0s\n\n#2 [internal] load metadata for docker.io/library/eitri-chromium-probe:1.64.1-node26.5.0\n#2 DONE 0.0s\n\n#3 [internal] load .dockerignore\n#3 transferring context: 2B done\n#3 DONE 0.0s\n\n#4 [1/4] FROM docker.io/library/eitri-chromium-probe:1.64.1-node26.5.0\n#4 DONE 0.0s\n\n#5 [internal] load build context\n#5 transferring context: 9.14kB done\n#5 DONE 0.0s\n\n#6 [2/4] COPY --chown=0:0 --chmod=0444 driver.mjs /opt/eitri/frozen-driver.mjs\n#6 CACHED\n\n#7 [3/4] COPY --chown=1001:1001 rootfs/ /\n#7 CACHED\n\n#8 [4/4] WORKDIR /opt/eitri\n#8 CACHED\n\n#9 exporting to image\n#9 exporting layers done\n#9 writing image sha256:266409d6b5913ef9e01eecaf5f13c9e5b6d79e2532a8750f73e0035cd692a1a0 done\n#9 naming to docker.io/library/eitri-frozen-browser-copy:4003967d-1dd7-4d41-8a60-99691742df1d done\n#9 DONE 0.0s\n",
+    "offlineGuarantee": false
+  },
+  "baseAfterBuild": {
+    "id": "sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff",
+    "architecture": "arm64",
+    "os": "linux",
+    "rootFS": {
+      "Type": "layers",
+      "Layers": [
+        "sha256:1e9178dc90058fa454a60803300219ee8c17e515be8718817ed824b96fa1207b",
+        "sha256:1d38b7af782dce9e2df5cc7b5c8e94587259b17bb93110de639e2c815bf4a9e7",
+        "sha256:472ad09fba4cd8693c98d51891a4d5738b3159293649c3372492a09a04944af8",
+        "sha256:f961188457542bd7a109688fcf635d59e9e00ec065a96305b16c6a12a56f7048",
+        "sha256:17ef8e1840b43e248cb97e872b9549deb255cf90be50daa985c72c1cc48e63df",
+        "sha256:1ac9e58fe1af6fc1f0154e24bd1e5b9dd5f99e24945acbadab50271f2586678d",
+        "sha256:a9e15583932640eec3161df8feaab852469f184960a9f79d281b0ee16f5aba3d",
+        "sha256:d745008c8a5d0869378a69dbd059d0fee7aa3b6fa472bc42623af1898bd70741",
+        "sha256:c9b16ca40ef340c8df47968c33cf2ca2e4b46468a8ec4c670a3a24713bbed6ec",
+        "sha256:d1772fa77dc101c66d80440fe6ba8afe2c2577daebafda376b9472b77a39c22d",
+        "sha256:9f0487aca0b17cb7441a6df8fd6ea817901ec53fdf3c8ee8905f7bd3036ef4cb"
+      ]
+    }
+  },
+  "derivedRootFS": {
+    "Type": "layers",
+    "Layers": [
+      "sha256:1e9178dc90058fa454a60803300219ee8c17e515be8718817ed824b96fa1207b",
+      "sha256:1d38b7af782dce9e2df5cc7b5c8e94587259b17bb93110de639e2c815bf4a9e7",
+      "sha256:472ad09fba4cd8693c98d51891a4d5738b3159293649c3372492a09a04944af8",
+      "sha256:f961188457542bd7a109688fcf635d59e9e00ec065a96305b16c6a12a56f7048",
+      "sha256:17ef8e1840b43e248cb97e872b9549deb255cf90be50daa985c72c1cc48e63df",
+      "sha256:1ac9e58fe1af6fc1f0154e24bd1e5b9dd5f99e24945acbadab50271f2586678d",
+      "sha256:a9e15583932640eec3161df8feaab852469f184960a9f79d281b0ee16f5aba3d",
+      "sha256:d745008c8a5d0869378a69dbd059d0fee7aa3b6fa472bc42623af1898bd70741",
+      "sha256:c9b16ca40ef340c8df47968c33cf2ca2e4b46468a8ec4c670a3a24713bbed6ec",
+      "sha256:d1772fa77dc101c66d80440fe6ba8afe2c2577daebafda376b9472b77a39c22d",
+      "sha256:9f0487aca0b17cb7441a6df8fd6ea817901ec53fdf3c8ee8905f7bd3036ef4cb",
+      "sha256:70b9de68908ed07889ab62e605a93fdcabae869e7abcb21d086b91e1101468ee",
+      "sha256:112fc293fb8fd7cf7460d213e234e77b2a30aaf6beac802c208a89bece74b0e5",
+      "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef"
+    ]
+  },
+  "applied": {
+    "image": "sha256:266409d6b5913ef9e01eecaf5f13c9e5b6d79e2532a8750f73e0035cd692a1a0",
+    "config": {
+      "Hostname": "3fb5e0ef9e06",
+      "Domainname": "",
+      "User": "pwuser",
+      "AttachStdin": false,
+      "AttachStdout": true,
+      "AttachStderr": true,
+      "Tty": false,
+      "OpenStdin": false,
+      "StdinOnce": false,
+      "Env": [
+        "EITRI_HOST_SENTINEL=/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-copy-YWHxdQ/host-sentinel",
+        "EITRI_HOST_CONTROLLER=/Users/felix.langbein/projects/eitri/src/controller.ts",
+        "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "LANG=C.UTF-8",
+        "LC_ALL=C.UTF-8",
+        "PLAYWRIGHT_BROWSERS_PATH=/ms-playwright",
+        "HOME=/tmp"
+      ],
+      "Cmd": null,
+      "Image": "sha256:266409d6b5913ef9e01eecaf5f13c9e5b6d79e2532a8750f73e0035cd692a1a0",
+      "Volumes": null,
+      "WorkingDir": "/opt/eitri",
+      "Entrypoint": [
+        "/usr/local/bin/node",
+        "/opt/eitri/frozen-driver.mjs"
+      ],
+      "Labels": {
+        "eitri.frozen-browser-copy.run": "4003967d-1dd7-4d41-8a60-99691742df1d",
+        "org.opencontainers.image.version": "24.04"
+      },
+      "StopTimeout": 2
+    },
+    "hostConfig": {
+      "Binds": null,
+      "ContainerIDFile": "",
+      "LogConfig": {
+        "Type": "json-file",
+        "Config": {
+          "max-file": "5",
+          "max-size": "20m"
+        }
+      },
+      "NetworkMode": "none",
+      "PortBindings": {},
+      "RestartPolicy": {
+        "Name": "no",
+        "MaximumRetryCount": 0
+      },
+      "AutoRemove": false,
+      "VolumeDriver": "",
+      "VolumesFrom": null,
+      "ConsoleSize": [
+        0,
+        0
+      ],
+      "CapAdd": null,
+      "CapDrop": [
+        "ALL"
+      ],
+      "CgroupnsMode": "private",
+      "Dns": null,
+      "DnsOptions": [],
+      "DnsSearch": [],
+      "ExtraHosts": null,
+      "GroupAdd": null,
+      "IpcMode": "private",
+      "Cgroup": "",
+      "Links": null,
+      "OomScoreAdj": 0,
+      "PidMode": "",
+      "Privileged": false,
+      "PublishAllPorts": false,
+      "ReadonlyRootfs": true,
+      "SecurityOpt": [
+        "no-new-privileges",
+        "seccomp={\"defaultAction\":\"SCMP_ACT_ERRNO\",\"defaultErrnoRet\":1,\"archMap\":[{\"architecture\":\"SCMP_ARCH_X86_64\",\"subArchitectures\":[\"SCMP_ARCH_X86\",\"SCMP_ARCH_X32\"]},{\"architecture\":\"SCMP_ARCH_AARCH64\",\"subArchitectures\":[\"SCMP_ARCH_ARM\"]},{\"architecture\":\"SCMP_ARCH_MIPS64\",\"subArchitectures\":[\"SCMP_ARCH_MIPS\",\"SCMP_ARCH_MIPS64N32\"]},{\"architecture\":\"SCMP_ARCH_MIPS64N32\",\"subArchitectures\":[\"SCMP_ARCH_MIPS\",\"SCMP_ARCH_MIPS64\"]},{\"architecture\":\"SCMP_ARCH_MIPSEL64\",\"subArchitectures\":[\"SCMP_ARCH_MIPSEL\",\"SCMP_ARCH_MIPSEL64N32\"]},{\"architecture\":\"SCMP_ARCH_MIPSEL64N32\",\"subArchitectures\":[\"SCMP_ARCH_MIPSEL\",\"SCMP_ARCH_MIPSEL64\"]},{\"architecture\":\"SCMP_ARCH_S390X\",\"subArchitectures\":[\"SCMP_ARCH_S390\"]},{\"architecture\":\"SCMP_ARCH_RISCV64\",\"subArchitectures\":null}],\"syscalls\":[{\"names\":[\"accept\",\"accept4\",\"access\",\"adjtimex\",\"alarm\",\"bind\",\"brk\",\"cachestat\",\"capget\",\"capset\",\"chdir\",\"chmod\",\"chown\",\"chown32\",\"clock_adjtime\",\"clock_adjtime64\",\"clock_getres\",\"clock_getres_time64\",\"clock_gettime\",\"clock_gettime64\",\"clock_nanosleep\",\"clock_nanosleep_time64\",\"close\",\"close_range\",\"connect\",\"copy_file_range\",\"creat\",\"dup\",\"dup2\",\"dup3\",\"epoll_create\",\"epoll_create1\",\"epoll_ctl\",\"epoll_ctl_old\",\"epoll_pwait\",\"epoll_pwait2\",\"epoll_wait\",\"epoll_wait_old\",\"eventfd\",\"eventfd2\",\"execve\",\"execveat\",\"exit\",\"exit_group\",\"faccessat\",\"faccessat2\",\"fadvise64\",\"fadvise64_64\",\"fallocate\",\"fanotify_mark\",\"fchdir\",\"fchmod\",\"fchmodat\",\"fchmodat2\",\"fchown\",\"fchown32\",\"fchownat\",\"fcntl\",\"fcntl64\",\"fdatasync\",\"fgetxattr\",\"flistxattr\",\"flock\",\"fork\",\"fremovexattr\",\"fsetxattr\",\"fstat\",\"fstat64\",\"fstatat64\",\"fstatfs\",\"fstatfs64\",\"fsync\",\"ftruncate\",\"ftruncate64\",\"futex\",\"futex_requeue\",\"futex_time64\",\"futex_wait\",\"futex_waitv\",\"futex_wake\",\"futimesat\",\"getcpu\",\"getcwd\",\"getdents\",\"getdents64\",\"getegid\",\"getegid32\",\"geteuid\",\"geteuid32\",\"getgid\",\"getgid32\",\"getgroups\",\"getgroups32\",\"getitimer\",\"getpeername\",\"getpgid\",\"getpgrp\",\"getpid\",\"getppid\",\"getpriority\",\"getrandom\",\"getresgid\",\"getresgid32\",\"getresuid\",\"getresuid32\",\"getrlimit\",\"get_robust_list\",\"getrusage\",\"getsid\",\"getsockname\",\"getsockopt\",\"get_thread_area\",\"gettid\",\"gettimeofday\",\"getuid\",\"getuid32\",\"getxattr\",\"getxattrat\",\"inotify_add_watch\",\"inotify_init\",\"inotify_init1\",\"inotify_rm_watch\",\"io_cancel\",\"ioctl\",\"io_destroy\",\"io_getevents\",\"io_pgetevents\",\"io_pgetevents_time64\",\"ioprio_get\",\"ioprio_set\",\"io_setup\",\"io_submit\",\"ipc\",\"kill\",\"landlock_add_rule\",\"landlock_create_ruleset\",\"landlock_restrict_self\",\"lchown\",\"lchown32\",\"lgetxattr\",\"link\",\"linkat\",\"listen\",\"listmount\",\"listxattr\",\"listxattrat\",\"llistxattr\",\"_llseek\",\"lremovexattr\",\"lseek\",\"lsetxattr\",\"lstat\",\"lstat64\",\"madvise\",\"map_shadow_stack\",\"membarrier\",\"memfd_create\",\"memfd_secret\",\"mincore\",\"mkdir\",\"mkdirat\",\"mknod\",\"mknodat\",\"mlock\",\"mlock2\",\"mlockall\",\"mmap\",\"mmap2\",\"mprotect\",\"mq_getsetattr\",\"mq_notify\",\"mq_open\",\"mq_timedreceive\",\"mq_timedreceive_time64\",\"mq_timedsend\",\"mq_timedsend_time64\",\"mq_unlink\",\"mremap\",\"mseal\",\"msgctl\",\"msgget\",\"msgrcv\",\"msgsnd\",\"msync\",\"munlock\",\"munlockall\",\"munmap\",\"name_to_handle_at\",\"nanosleep\",\"newfstatat\",\"_newselect\",\"open\",\"openat\",\"openat2\",\"pause\",\"pidfd_open\",\"pidfd_send_signal\",\"pipe\",\"pipe2\",\"pkey_alloc\",\"pkey_free\",\"pkey_mprotect\",\"poll\",\"ppoll\",\"ppoll_time64\",\"prctl\",\"pread64\",\"preadv\",\"preadv2\",\"prlimit64\",\"process_mrelease\",\"pselect6\",\"pselect6_time64\",\"pwrite64\",\"pwritev\",\"pwritev2\",\"read\",\"readahead\",\"readlink\",\"readlinkat\",\"readv\",\"recv\",\"recvfrom\",\"recvmmsg\",\"recvmmsg_time64\",\"recvmsg\",\"remap_file_pages\",\"removexattr\",\"removexattrat\",\"rename\",\"renameat\",\"renameat2\",\"restart_syscall\",\"riscv_hwprobe\",\"rmdir\",\"rseq\",\"rt_sigaction\",\"rt_sigpending\",\"rt_sigprocmask\",\"rt_sigqueueinfo\",\"rt_sigreturn\",\"rt_sigsuspend\",\"rt_sigtimedwait\",\"rt_sigtimedwait_time64\",\"rt_tgsigqueueinfo\",\"sched_getaffinity\",\"sched_getattr\",\"sched_getparam\",\"sched_get_priority_max\",\"sched_get_priority_min\",\"sched_getscheduler\",\"sched_rr_get_interval\",\"sched_rr_get_interval_time64\",\"sched_setaffinity\",\"sched_setattr\",\"sched_setparam\",\"sched_setscheduler\",\"sched_yield\",\"seccomp\",\"select\",\"semctl\",\"semget\",\"semop\",\"semtimedop\",\"semtimedop_time64\",\"send\",\"sendfile\",\"sendfile64\",\"sendmmsg\",\"sendmsg\",\"sendto\",\"setfsgid\",\"setfsgid32\",\"setfsuid\",\"setfsuid32\",\"setgid\",\"setgid32\",\"setgroups\",\"setgroups32\",\"setitimer\",\"setpgid\",\"setpriority\",\"setregid\",\"setregid32\",\"setresgid\",\"setresgid32\",\"setresuid\",\"setresuid32\",\"setreuid\",\"setreuid32\",\"setrlimit\",\"set_robust_list\",\"setsid\",\"setsockopt\",\"set_thread_area\",\"set_tid_address\",\"setuid\",\"setuid32\",\"setxattr\",\"setxattrat\",\"shmat\",\"shmctl\",\"shmdt\",\"shmget\",\"shutdown\",\"sigaltstack\",\"signalfd\",\"signalfd4\",\"sigprocmask\",\"sigreturn\",\"socketcall\",\"socketpair\",\"splice\",\"stat\",\"stat64\",\"statfs\",\"statfs64\",\"statmount\",\"statx\",\"symlink\",\"symlinkat\",\"sync\",\"sync_file_range\",\"syncfs\",\"sysinfo\",\"tee\",\"tgkill\",\"time\",\"timer_create\",\"timer_delete\",\"timer_getoverrun\",\"timer_gettime\",\"timer_gettime64\",\"timer_settime\",\"timer_settime64\",\"timerfd_create\",\"timerfd_gettime\",\"timerfd_gettime64\",\"timerfd_settime\",\"timerfd_settime64\",\"times\",\"tkill\",\"truncate\",\"truncate64\",\"ugetrlimit\",\"umask\",\"uname\",\"unlink\",\"unlinkat\",\"uretprobe\",\"utime\",\"utimensat\",\"utimensat_time64\",\"utimes\",\"vfork\",\"vmsplice\",\"wait4\",\"waitid\",\"waitpid\",\"write\",\"writev\"],\"action\":\"SCMP_ACT_ALLOW\"},{\"names\":[\"process_vm_readv\",\"process_vm_writev\",\"ptrace\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"minKernel\":\"4.8\"}},{\"names\":[\"socket\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":40,\"op\":\"SCMP_CMP_NE\"}]},{\"names\":[\"personality\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":0,\"op\":\"SCMP_CMP_EQ\"}]},{\"names\":[\"personality\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":8,\"op\":\"SCMP_CMP_EQ\"}]},{\"names\":[\"personality\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":131072,\"op\":\"SCMP_CMP_EQ\"}]},{\"names\":[\"personality\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":131080,\"op\":\"SCMP_CMP_EQ\"}]},{\"names\":[\"personality\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":4294967295,\"op\":\"SCMP_CMP_EQ\"}]},{\"names\":[\"sync_file_range2\",\"swapcontext\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"ppc64le\"]}},{\"names\":[\"arm_fadvise64_64\",\"arm_sync_file_range\",\"sync_file_range2\",\"breakpoint\",\"cacheflush\",\"set_tls\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"arm\",\"arm64\"]}},{\"names\":[\"arch_prctl\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"amd64\",\"x32\"]}},{\"names\":[\"modify_ldt\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"amd64\",\"x32\",\"x86\"]}},{\"names\":[\"s390_pci_mmio_read\",\"s390_pci_mmio_write\",\"s390_runtime_instr\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"s390\",\"s390x\"]}},{\"names\":[\"riscv_flush_icache\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"riscv64\"]}},{\"names\":[\"open_by_handle_at\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_DAC_READ_SEARCH\"]}},{\"names\":[\"bpf\",\"clone\",\"clone3\",\"fanotify_init\",\"fsconfig\",\"fsmount\",\"fsopen\",\"fspick\",\"lookup_dcookie\",\"lsm_get_self_attr\",\"lsm_list_modules\",\"lsm_set_self_attr\",\"mount\",\"mount_setattr\",\"move_mount\",\"open_tree\",\"perf_event_open\",\"quotactl\",\"quotactl_fd\",\"setdomainname\",\"sethostname\",\"setns\",\"syslog\",\"umount\",\"umount2\",\"unshare\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_ADMIN\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":2114060288,\"op\":\"SCMP_CMP_MASKED_EQ\"}],\"excludes\":{\"caps\":[\"CAP_SYS_ADMIN\"],\"arches\":[\"s390\",\"s390x\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":1,\"value\":2114060288,\"op\":\"SCMP_CMP_MASKED_EQ\"}],\"comment\":\"s390 parameter ordering for clone is different\",\"includes\":{\"arches\":[\"s390\",\"s390x\"]},\"excludes\":{\"caps\":[\"CAP_SYS_ADMIN\"]}},{\"names\":[\"clone3\"],\"action\":\"SCMP_ACT_ERRNO\",\"errnoRet\":38,\"excludes\":{\"caps\":[\"CAP_SYS_ADMIN\"]}},{\"names\":[\"reboot\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_BOOT\"]}},{\"names\":[\"chroot\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_CHROOT\"]}},{\"names\":[\"delete_module\",\"init_module\",\"finit_module\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_MODULE\"]}},{\"names\":[\"acct\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_PACCT\"]}},{\"names\":[\"kcmp\",\"pidfd_getfd\",\"process_madvise\",\"process_vm_readv\",\"process_vm_writev\",\"ptrace\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_PTRACE\"]}},{\"names\":[\"iopl\",\"ioperm\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_RAWIO\"]}},{\"names\":[\"settimeofday\",\"stime\",\"clock_settime\",\"clock_settime64\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_TIME\"]}},{\"names\":[\"vhangup\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_TTY_CONFIG\"]}},{\"names\":[\"get_mempolicy\",\"mbind\",\"set_mempolicy\",\"set_mempolicy_home_node\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_NICE\"]}},{\"names\":[\"syslog\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYSLOG\"]}},{\"names\":[\"bpf\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_BPF\"]}},{\"names\":[\"perf_event_open\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_PERFMON\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":268435473,\"op\":\"SCMP_CMP_EQ\"}],\"includes\":{\"arches\":[\"arm64\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":805306385,\"op\":\"SCMP_CMP_EQ\"}],\"includes\":{\"arches\":[\"arm64\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":1342177297,\"op\":\"SCMP_CMP_EQ\"}],\"includes\":{\"arches\":[\"arm64\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":1879048209,\"op\":\"SCMP_CMP_EQ\"}],\"includes\":{\"arches\":[\"arm64\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":536870929,\"op\":\"SCMP_CMP_EQ\"}],\"includes\":{\"arches\":[\"arm64\"]}},{\"names\":[\"unshare\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":268435456,\"op\":\"SCMP_CMP_EQ\"}],\"includes\":{\"arches\":[\"arm64\"]}},{\"names\":[\"chroot\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"arm64\"]}}]}"
+      ],
+      "Tmpfs": {
+        "/tmp": "rw,exec,nosuid,size=256m,uid=1001,gid=1001"
+      },
+      "UTSMode": "",
+      "UsernsMode": "",
+      "ShmSize": 268435456,
+      "Runtime": "runc",
+      "Isolation": "",
+      "CpuShares": 0,
+      "Memory": 4294967296,
+      "NanoCpus": 2000000000,
+      "CgroupParent": "",
+      "BlkioWeight": 0,
+      "BlkioWeightDevice": [],
+      "BlkioDeviceReadBps": [],
+      "BlkioDeviceWriteBps": [],
+      "BlkioDeviceReadIOps": [],
+      "BlkioDeviceWriteIOps": [],
+      "CpuPeriod": 0,
+      "CpuQuota": 0,
+      "CpuRealtimePeriod": 0,
+      "CpuRealtimeRuntime": 0,
+      "CpusetCpus": "",
+      "CpusetMems": "",
+      "Devices": [],
+      "DeviceCgroupRules": null,
+      "DeviceRequests": null,
+      "MemoryReservation": 0,
+      "MemorySwap": 4294967296,
+      "MemorySwappiness": null,
+      "OomKillDisable": false,
+      "PidsLimit": 256,
+      "Ulimits": [
+        {
+          "Name": "core",
+          "Hard": 0,
+          "Soft": 0
+        }
+      ],
+      "CpuCount": 0,
+      "CpuPercent": 0,
+      "IOMaximumIOps": 0,
+      "IOMaximumBandwidth": 0,
+      "MaskedPaths": [
+        "/proc/acpi",
+        "/proc/asound",
+        "/proc/interrupts",
+        "/proc/kcore",
+        "/proc/keys",
+        "/proc/latency_stats",
+        "/proc/sched_debug",
+        "/proc/scsi",
+        "/proc/timer_list",
+        "/proc/timer_stats",
+        "/sys/devices/virtual/powercap",
+        "/sys/firmware"
+      ],
+      "ReadonlyPaths": [
+        "/proc/bus",
+        "/proc/fs",
+        "/proc/irq",
+        "/proc/sys",
+        "/proc/sysrq-trigger"
+      ]
+    },
+    "mounts": []
+  },
+  "appliedVerified": true,
+  "execution": {
+    "exitCode": 1,
+    "stderr": ""
+  },
+  "observations": {
+    "protocol": 1,
+    "snapshot": [
+      {
+        "path": "src/index.html",
+        "sha256": "adb761859f7364fac2b2db7cba60b84e2e23752ab4b46a3dc0a3a009ea26ecac",
+        "size": 114,
+        "mode": 292,
+        "uid": 1001
+      },
+      {
+        "path": "package.json",
+        "sha256": "a97cbe5510fb1f70ae3356370b59d30eda6487b0694cb261d16051295b802d9c",
+        "size": 120,
+        "mode": 292,
+        "uid": 1001
+      },
+      {
+        "path": "poison.cjs",
+        "sha256": "f0fb69b8541163d64b881c0799d9a036f88f89ef75db9c725771231dd5d820ce",
+        "size": 91,
+        "mode": 292,
+        "uid": 1001
+      }
+    ],
+    "unavailable": {
+      "dockerSocket": "ENOENT",
+      "hostSentinel": "ENOENT",
+      "hostController": "ENOENT",
+      "projectNodeCanary": "ENOENT"
+    },
+    "processes": [
+      {
+        "pid": "106",
+        "uid": [
+          1001,
+          1001,
+          1001,
+          1001
+        ],
+        "capEff": "0000000000000000",
+        "noNewPrivileges": "1",
+        "seccomp": "2",
+        "sandboxAndDebuggingFlags": []
+      },
+      {
+        "pid": "117",
+        "uid": [
+          1001,
+          1001,
+          1001,
+          1001
+        ],
+        "capEff": "0000000000000000",
+        "noNewPrivileges": "1",
+        "seccomp": "2",
+        "sandboxAndDebuggingFlags": []
+      },
+      {
+        "pid": "145",
+        "uid": [
+          1001,
+          1001,
+          1001,
+          1001
+        ],
+        "capEff": "0000000000000000",
+        "noNewPrivileges": "1",
+        "seccomp": "2",
+        "sandboxAndDebuggingFlags": []
+      },
+      {
+        "pid": "17",
+        "uid": [
+          1001,
+          1001,
+          1001,
+          1001
+        ],
+        "capEff": "0000000000000000",
+        "noNewPrivileges": "1",
+        "seccomp": "2",
+        "sandboxAndDebuggingFlags": [
+          "--remote-debugging-pipe"
+        ]
+      },
+      {
+        "pid": "19",
+        "uid": [
+          1001,
+          1001,
+          1001,
+          1001
+        ],
+        "capEff": "0000000000000000",
+        "noNewPrivileges": "1",
+        "seccomp": "2",
+        "sandboxAndDebuggingFlags": []
+      },
+      {
+        "pid": "21",
+        "uid": [
+          1001,
+          1001,
+          1001,
+          1001
+        ],
+        "capEff": "0000000000000000",
+        "noNewPrivileges": "1",
+        "seccomp": "2",
+        "sandboxAndDebuggingFlags": []
+      },
+      {
+        "pid": "25",
+        "uid": [
+          1001,
+          1001,
+          1001,
+          1001
+        ],
+        "capEff": "0000000000000000",
+        "noNewPrivileges": "1",
+        "seccomp": "2",
+        "sandboxAndDebuggingFlags": []
+      },
+      {
+        "pid": "26",
+        "uid": [
+          1001,
+          1001,
+          1001,
+          1001
+        ],
+        "capEff": "0000000000000000",
+        "noNewPrivileges": "1",
+        "seccomp": "2",
+        "sandboxAndDebuggingFlags": []
+      }
+    ],
+    "runtime": {
+      "node": "v26.5.0",
+      "arch": "arm64",
+      "uid": 1001
+    },
+    "nodeExecArgv": [],
+    "driverSha256": "401fb788b2f4bbdbf981da965f6df1f4e9a0a6ce0b6f9e7f082a78070a4a6373",
+    "security": {
+      "uid": [
+        1001,
+        1001,
+        1001,
+        1001
+      ],
+      "capEff": "0000000000000000",
+      "noNewPrivileges": "1",
+      "seccomp": "2"
+    },
+    "budgets": {
+      "memory.max": "4294967296",
+      "memory.swap.max": "0",
+      "cpu.max": "200000 100000",
+      "pids.max": "256"
+    },
+    "readOnly": {
+      "root": "EROFS",
+      "snapshot": "EROFS"
+    },
+    "egress": "ENETUNREACH",
+    "directories": [
+      {
+        "path": "/snapshot",
+        "mode": 365,
+        "uid": 1001
+      },
+      {
+        "path": "/snapshot/src",
+        "mode": 365,
+        "uid": 1001
+      }
+    ],
+    "staticServer": {
+      "address": "127.0.0.1",
+      "port": 36987
+    },
+    "browserVersion": "156.0.8078.4",
+    "sandboxText": "Sandbox Status\nLayer 1 Sandbox\tNamespace\nPID namespaces\tYes\nNetwork namespaces\tYes\nSeccomp-BPF sandbox\tYes\nSeccomp-BPF sandbox supports TSYNC\tYes\nPtrace Protection with Yama LSM (Broker)\tNo\nPtrace Protection with Yama LSM (Non-broker)\tNo\n\nYou are adequately sandboxed.",
+    "error": "The input did not match the regular expression /^0+$/. Input:\n\n'0000000000200000'\n"
+  },
+  "error": "Driver did not complete normally\n\n1 !== 0\n",
+  "exportAfter": {
+    "directories": [
+      {
+        "path": "",
+        "mode": 320
+      },
+      {
+        "path": "src",
+        "mode": 320
+      }
+    ],
+    "files": [
+      {
+        "path": "src/index.html",
+        "literal": "<button id=\"run\">Run</button><output id=\"result\"></output><script>run.onclick=()=>result.textContent=\"A\"</script>\n",
+        "sha256": "adb761859f7364fac2b2db7cba60b84e2e23752ab4b46a3dc0a3a009ea26ecac",
+        "size": 114,
+        "mode": 256
+      },
+      {
+        "path": "package.json",
+        "literal": "{\"private\":true,\"scripts\":{\"preinstall\":\"node poison.cjs\",\"install\":\"node poison.cjs\",\"postinstall\":\"node poison.cjs\"}}\n",
+        "sha256": "a97cbe5510fb1f70ae3356370b59d30eda6487b0694cb261d16051295b802d9c",
+        "size": 120,
+        "mode": 256
+      },
+      {
+        "path": "poison.cjs",
+        "literal": "require(\"node:fs\").writeFileSync(\"/tmp/project-node-executed\", \"project Node executed\\n\");\n",
+        "sha256": "f0fb69b8541163d64b881c0799d9a036f88f89ef75db9c725771231dd5d820ce",
+        "size": 91,
+        "mode": 256
+      }
+    ]
+  },
+  "exportPreserved": true,
+  "workspaceAfter": {
+    "literal": "<button id=\"run\">Run</button><output id=\"result\"></output><script>run.onclick=()=>result.textContent=\"B\"</script>\n",
+    "sha256": "5d61c69d5d1643f6d9c6ebe89fdb7b96e58cfd8c683686504e4f12dd3607fb4a"
+  },
+  "baseFinally": {
+    "id": "sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff",
+    "architecture": "arm64",
+    "os": "linux",
+    "rootFS": {
+      "Type": "layers",
+      "Layers": [
+        "sha256:1e9178dc90058fa454a60803300219ee8c17e515be8718817ed824b96fa1207b",
+        "sha256:1d38b7af782dce9e2df5cc7b5c8e94587259b17bb93110de639e2c815bf4a9e7",
+        "sha256:472ad09fba4cd8693c98d51891a4d5738b3159293649c3372492a09a04944af8",
+        "sha256:f961188457542bd7a109688fcf635d59e9e00ec065a96305b16c6a12a56f7048",
+        "sha256:17ef8e1840b43e248cb97e872b9549deb255cf90be50daa985c72c1cc48e63df",
+        "sha256:1ac9e58fe1af6fc1f0154e24bd1e5b9dd5f99e24945acbadab50271f2586678d",
+        "sha256:a9e15583932640eec3161df8feaab852469f184960a9f79d281b0ee16f5aba3d",
+        "sha256:d745008c8a5d0869378a69dbd059d0fee7aa3b6fa472bc42623af1898bd70741",
+        "sha256:c9b16ca40ef340c8df47968c33cf2ca2e4b46468a8ec4c670a3a24713bbed6ec",
+        "sha256:d1772fa77dc101c66d80440fe6ba8afe2c2577daebafda376b9472b77a39c22d",
+        "sha256:9f0487aca0b17cb7441a6df8fd6ea817901ec53fdf3c8ee8905f7bd3036ef4cb"
+      ]
+    }
+  }
+}
