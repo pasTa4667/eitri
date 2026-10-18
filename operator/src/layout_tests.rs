@@ -35,9 +35,10 @@ fn scroll(cx: &mut VisualTestContext, position: Point<Pixels>, y: f32) {
     draw(cx);
 }
 
-#[gpui::test]
-fn selected_paused_detail_keeps_history_and_save_reachable(cx: &mut TestAppContext) {
-    let directory = PrivateDirectory::new();
+fn paused_detail<'a>(
+    cx: &'a mut TestAppContext,
+    directory: &PrivateDirectory,
+) -> (Session, String, Entity<Operator>, &'a mut VisualTestContext) {
     let case = Session {
         id: "11111111-1111-4111-8111-111111111111".into(),
         issue: json!({"title": "Paused investigation with recorded checks"}),
@@ -94,6 +95,13 @@ fn selected_paused_detail_keeps_history_and_save_reachable(cx: &mut TestAppConte
             artifact_revision: 0,
         }
     });
+    (case, draft, view, cx)
+}
+
+#[gpui::test]
+fn selected_paused_detail_keeps_history_and_save_reachable(cx: &mut TestAppContext) {
+    let directory = PrivateDirectory::new();
+    let (case, draft, view, cx) = paused_detail(cx, &directory);
     cx.simulate_resize(size(px(900.0), px(600.0)));
     draw(cx);
     let detail = cx.debug_bounds("detail").unwrap();
@@ -191,4 +199,137 @@ fn selected_paused_detail_keeps_history_and_save_reachable(cx: &mut TestAppConte
             );
         }
     }
+}
+
+fn editor_index(
+    view: &Entity<Operator>,
+    cx: &mut VisualTestContext,
+    position: Point<Pixels>,
+) -> usize {
+    cx.update(|window, cx| {
+        let input = view.read(cx).input.clone();
+        input.update(cx, |input, cx| {
+            input
+                .character_index_for_point(position, window, cx)
+                .unwrap()
+        })
+    })
+}
+
+fn assert_inner_wheel_ownership(cx: &mut TestAppContext, selector: &'static str, delta: f32) {
+    let directory = PrivateDirectory::new();
+    let (_, draft, view, cx) = paused_detail(cx, &directory);
+    cx.simulate_resize(size(px(900.0), px(600.0)));
+    draw(cx);
+    let detail = cx.debug_bounds("detail").unwrap();
+    let margin = point(detail.right() - px(2.0), detail.center().y);
+    let top = cx.debug_bounds("case-metadata").unwrap().top();
+    scroll(cx, margin, -10_000.0);
+    let bottom = cx.debug_bounds("case-metadata").unwrap().top();
+    let travel = top - bottom;
+    assert!(travel > px(88.0), "outer scroller must have room both ways");
+    scroll(cx, margin, f32::from(travel / 2.0));
+    let midpoint = cx.debug_bounds("case-metadata").unwrap();
+    scroll(cx, margin, 22.0);
+    assert_eq!(
+        cx.debug_bounds("case-metadata").unwrap().top(),
+        midpoint.top() + px(22.0)
+    );
+    scroll(cx, margin, -44.0);
+    assert_eq!(
+        cx.debug_bounds("case-metadata").unwrap().top(),
+        midpoint.top() - px(22.0)
+    );
+    scroll(cx, margin, 22.0);
+
+    let inner = cx.debug_bounds(selector).unwrap();
+    let position = point(
+        inner.center().x,
+        (inner.top().max(detail.top()) + inner.bottom().min(detail.bottom())) / 2.0,
+    );
+    assert!(inner.contains(&position) && detail.contains(&position));
+    scroll(cx, position, -200.0);
+    let shifted = cx.debug_bounds("case-metadata").unwrap();
+    scroll(cx, margin, f32::from(midpoint.top() - shifted.top()));
+    assert_eq!(cx.debug_bounds("case-metadata").unwrap(), midpoint);
+    assert!(top - midpoint.top() > px(delta.abs()));
+    assert!(midpoint.top() - bottom > px(delta.abs()));
+
+    let history = cx.debug_bounds("history").unwrap();
+    let editor = cx.debug_bounds("note-input").unwrap();
+    let check = cx.debug_bounds("check-check-0").unwrap();
+    let index = editor_index(&view, cx, position);
+    scroll(cx, position, delta);
+    let check_after = cx.debug_bounds("check-check-0").unwrap();
+    let index_after = editor_index(&view, cx, position);
+    eprintln!(
+        "{selector} delta={delta} outer_before={midpoint:?} outer_after={:?} check_before={check:?} check_after={check_after:?} editor_index={index}->{index_after}",
+        cx.debug_bounds("case-metadata").unwrap()
+    );
+    assert_eq!(cx.debug_bounds("detail").unwrap(), detail);
+    assert_eq!(
+        cx.debug_bounds("case-metadata").unwrap(),
+        midpoint,
+        "{selector} wheel must not scroll the outer detail in either direction"
+    );
+    assert_eq!(cx.debug_bounds("history").unwrap(), history);
+    assert_eq!(cx.debug_bounds("note-input").unwrap(), editor);
+    if selector == "history" {
+        assert_eq!(check_after.top(), check.top() + px(delta));
+    } else {
+        let line_units = draft.lines().next().unwrap().encode_utf16().count() + 1;
+        assert_eq!(
+            index_after as isize,
+            index as isize - (delta / 22.0) as isize * line_units as isize
+        );
+        assert_eq!(check_after, check);
+    }
+
+    for edge in [10_000.0, -10_000.0] {
+        scroll(cx, position, edge);
+        let check_at_edge = cx.debug_bounds("check-check-0").unwrap();
+        let index_at_edge = editor_index(&view, cx, position);
+        scroll(cx, position, edge);
+        assert_eq!(
+            cx.debug_bounds("case-metadata").unwrap(),
+            midpoint,
+            "{selector} owns wheel events even at a clamped edge"
+        );
+        assert_eq!(cx.debug_bounds("history").unwrap(), history);
+        assert_eq!(cx.debug_bounds("note-input").unwrap(), editor);
+        assert_eq!(cx.debug_bounds("check-check-0").unwrap(), check_at_edge);
+        assert_eq!(editor_index(&view, cx, position), index_at_edge);
+    }
+    scroll(cx, margin, 22.0);
+    assert_eq!(
+        cx.debug_bounds("case-metadata").unwrap().top(),
+        midpoint.top() + px(22.0)
+    );
+    scroll(cx, margin, -44.0);
+    assert_eq!(
+        cx.debug_bounds("case-metadata").unwrap().top(),
+        midpoint.top() - px(22.0)
+    );
+    assert_eq!(cx.debug_bounds("detail").unwrap(), detail);
+    assert_eq!(cx.read(|cx| view.read(cx).input.read(cx).text()), draft);
+}
+
+#[gpui::test]
+fn history_wheel_down_does_not_scroll_detail(cx: &mut TestAppContext) {
+    assert_inner_wheel_ownership(cx, "history", -44.0);
+}
+
+#[gpui::test]
+fn history_wheel_up_does_not_scroll_detail(cx: &mut TestAppContext) {
+    assert_inner_wheel_ownership(cx, "history", 44.0);
+}
+
+#[gpui::test]
+fn editor_wheel_down_does_not_scroll_detail(cx: &mut TestAppContext) {
+    assert_inner_wheel_ownership(cx, "note-input", -44.0);
+}
+
+#[gpui::test]
+fn editor_wheel_up_does_not_scroll_detail(cx: &mut TestAppContext) {
+    assert_inner_wheel_ownership(cx, "note-input", 44.0);
 }

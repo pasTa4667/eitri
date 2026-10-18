@@ -518,6 +518,7 @@ impl Render for NoteInput {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         div()
             .id("note-input")
+            .debug_selector(|| "note-input".into())
             .key_context("NoteInput")
             .track_focus(&self.focus)
             .cursor(CursorStyle::IBeam)
