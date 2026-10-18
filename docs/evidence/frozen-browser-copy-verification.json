@@ -1,0 +1,27 @@
+{
+  "scope": "Throwaway synthetic controlled-COPY decision only. Not a shipping validator or M2 acceptance.",
+  "sourceCommit": "6c4f3a3",
+  "observedBrowserOutput": "A",
+  "currentWorkspaceOutput": "B",
+  "frozenRevision": "6fb1d2a259643a67516ef7f6cb48b1129bcfc124",
+  "currentRevision": "05594a71319d678ca37c7835c098a1c5f6b56eba",
+  "exportPreserved": true,
+  "baseImageId": "sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff",
+  "derivedImageId": "sha256:fb5809d773956f96ff5da6bdabecdd469001c17d62aed7460b55ebcd1a19f386",
+  "baseAncestryVerified": true,
+  "copyReadableByUid": 1001,
+  "snapshotWritesRejected": true,
+  "hostMounts": [],
+  "containerCapabilitiesAdded": false,
+  "namespaceQualifiedZygoteWitnessVerified": true,
+  "projectNodeCanaryAbsent": true,
+  "ownedContainerImageScratchRemoved": true,
+  "buildCacheReclamationClaimed": false,
+  "offlineBuildGuaranteed": false,
+  "parentChecks": {
+    "command": "npm run verify:all",
+    "nodePassed": 114,
+    "rustPassed": 30
+  },
+  "recommendation": "Use controlled COPY for browser-only frozen validation. Replace throwaway layout coupling and synchronous lifecycle with a small owned interface before production use."
+}
