@@ -456,7 +456,7 @@ test('frozen browser COPY context has a short first header recognizable without 
   assert.deepEqual(archive.subarray(-1024), Buffer.alloc(1024));
 });
 
-test('frozen browser COPY context round-trips UTF8 and long paths with read-only modes', async (t) => {
+test('frozen browser COPY context fixes trusted file destinations and preserves read-only modes and paths', async (t) => {
   const extraFiles = [
     { virtualPath: virtualPath('src/café.txt'), bytes: Buffer.from('UTF8 café 🌱\n') },
     {
@@ -488,6 +488,17 @@ test('frozen browser COPY context round-trips UTF8 and long paths with read-only
   await mkdir(extracted);
   const unpack = await run('/usr/bin/tar', ['-xf', `${f.statePath}.tar`, '-C', extracted]);
   assert.equal(unpack.stderr, '');
+  assert.deepEqual((await readFile(join(extracted, 'Dockerfile'), 'utf8')).trimEnd().split('\n'), [
+    'FROM eitri-chromium-probe:1.64.1-node26.5.0',
+    'COPY --chown=0:0 --chmod=0444 driver.mjs /opt/eitri/frozen-browser/driver.mjs',
+    'COPY --chown=0:0 --chmod=0444 watchdog.mjs /opt/eitri/frozen-browser/watchdog.mjs',
+    'COPY --chown=0:0 --chmod=0444 scenario.json /opt/eitri/frozen-browser/scenario.json',
+    'COPY --chown=1001:1001 rootfs/ /',
+    'USER 1001:1001',
+    'WORKDIR /opt/eitri',
+    'ENTRYPOINT ["/usr/local/bin/node", "/opt/eitri/frozen-browser/watchdog.mjs"]',
+    'CMD []',
+  ]);
   for (const file of await f.store.readFrozen(f.request.frozen, signal())) {
     const path = join(extracted, 'rootfs/snapshot', file.virtualPath);
     assert.deepEqual(await readFile(path), Buffer.from(file.bytes));
