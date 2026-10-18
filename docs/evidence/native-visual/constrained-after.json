@@ -1,0 +1,38 @@
+{
+  "image" : "\/Users\/felix.langbein\/projects\/eitri\/docs\/evidence\/native-visual\/constrained-after.png",
+  "missing" : [
+
+  ],
+  "passed" : true,
+  "recognized" : [
+    "Eitri • scripted operator",
+    "eitri operator",
+    "Connected • scripted",
+    "assessment-required",
+    "Check now • scripted",
+    "Investigations",
+    "all",
+    "active",
+    "parked",
+    "history",
+    "Retry • new allowance",
+    "Dismiss locally",
+    "Recorded checks • observed results, not complete correctness proof",
+    "Synthetic artifact viewer exercise",
+    "Phase triage",
+    "Status needs-attention",
+    "browser • observed outcome passed • simulated",
+    "Revision",
+    "аааааааааааааааааааааааааааааааааааааааа",
+    "Notes are saved without inference when parked. Enter inserts a new line. Retry \/ Dismiss \/ Requeue",
+    "use this text as their reason.",
+    "Review the recorded checks.",
+    "Eitri forge exercise: Ægir, Pórr, E4545.",
+    "Save message \/ note",
+    "Scripted mode • no live model, worker, credentials, or publication"
+  ],
+  "required" : [
+    "Save message",
+    "Review the recorded checks"
+  ]
+}

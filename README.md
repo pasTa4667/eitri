@@ -45,7 +45,7 @@ In a second terminal, with the same `EITRI_DATA_DIR` if overridden:
 npm run operator
 ```
 
-The pinned GPUI 0.2.2 build uses process-local Xcode selection, not a toolchain upgrade. `npm run test:operator` exercises GPUI input handlers and the Rust client against a real scripted controller. The operator has typed check cards and on-demand text/PNG artifact viewing. Its client verifies provenance, byte limits, and checksums off the render thread. Tests include real-controller artifact retrieval and native PNG decoding. Desktop visual acceptance remains unverified; the latest owned-window capture failed without a screenshot. See [acceptance evidence](docs/evidence/native-artifacts-smoke.json).
+The pinned GPUI 0.2.2 build uses process-local Xcode selection, not a toolchain upgrade. `npm run test:operator` exercises GPUI input handlers and the Rust client against a real scripted controller. The operator has typed check cards and on-demand text/PNG artifact viewing. Its client verifies provenance, byte limits, and checksums off the render thread. Tests include real-controller artifact retrieval and native PNG decoding. Screen capture now works. The [forge-style overview](docs/evidence/native-visual/forge-overview.png) and [constrained editor](docs/evidence/native-visual/constrained-after.png) have actual native captures. The missing-text production feature was fixed without upgrading GPUI. Full operator acceptance remains open while the SSE artifact-view lifetime is corrected. See [rendering verification](docs/native-rendering.md).
 
 ## Containment gate
 
