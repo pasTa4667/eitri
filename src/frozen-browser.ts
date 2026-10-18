@@ -703,18 +703,22 @@ function tar(files: { path: string; bytes: Buffer; directory?: boolean }[]): Buf
   };
   for (const [index, file] of files.entries()) {
     const path = file.directory ? `${file.path}/` : file.path;
-    let line = ` path=${path}\n`;
-    let length = Buffer.byteLength(line) + 1;
-    while (length !== Buffer.byteLength(line) + String(length).length)
-      length = Buffer.byteLength(line) + String(length).length;
-    line = `${length}${line}`;
-    const pax = Buffer.from(line);
-    append(header(`pax-${index}`, pax.length, 0o444, 'x'));
-    append(pax);
-    append(Buffer.alloc((512 - (pax.length % 512)) % 512));
+    // Docker's stdin archive sniff needs a complete member header without PAX lookahead.
+    const extended = Buffer.byteLength(path) > 100 || !/^[\x20-\x7e]+$/.test(path);
+    if (extended) {
+      let line = ` path=${path}\n`;
+      let length = Buffer.byteLength(line) + 1;
+      while (length !== Buffer.byteLength(line) + String(length).length)
+        length = Buffer.byteLength(line) + String(length).length;
+      line = `${length}${line}`;
+      const pax = Buffer.from(line);
+      append(header(`pax-${index}`, pax.length, 0o444, 'x'));
+      append(pax);
+      append(Buffer.alloc((512 - (pax.length % 512)) % 512));
+    }
     append(
       header(
-        `entry-${index}`,
+        extended ? `entry-${index}` : path,
         file.bytes.length,
         file.directory ? 0o555 : 0o444,
         file.directory ? '5' : '0',

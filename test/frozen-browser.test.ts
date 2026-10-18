@@ -12,11 +12,13 @@ import {
   readdir,
   symlink,
   link,
+  stat,
 } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { randomUUID } from 'node:crypto';
-import { spawn } from 'node:child_process';
+import { createHash, randomUUID } from 'node:crypto';
+import { execFile, spawn } from 'node:child_process';
+import { promisify } from 'node:util';
 import { once } from 'node:events';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
@@ -195,14 +197,23 @@ const opt = name => args[args.indexOf(name)+1];
 if (args[0] === 'version') output({Version:'29.4.0', Arch:'arm64', GitCommit:'daa0cb7f'});
 else if (args[0] === 'info') output(['name=seccomp,profile=builtin']);
 else if (args[0] === 'build') {
- const chunks=[]; for await (const b of process.stdin) chunks.push(b);
+ const chunks=[]; let total=0;
+ for await (const b of process.stdin) {
+  total+=b.length; if(total>40*1024**2) throw Error('context-overflow');
+  chunks.push(b);
+ }
  const tar=Buffer.concat(chunks); state.contextBytes=tar.length;
+ if(state.mode==='capture-context') writeFileSync(path+'.tar',tar);
  let offset=0, nextPath; const files={};
  while (offset+512<=tar.length && tar[offset]) {
   const h=tar.subarray(offset,offset+512), size=parseInt(h.toString('ascii',124,136),8)||0;
   const b=tar.subarray(offset+512,offset+512+size);
   if (h.toString('ascii',156,157)==='x') nextPath=b.toString().match(/ path=(.*)\n/)[1];
-  else if (h.toString('ascii',156,157)==='0') files[nextPath]=b;
+  else {
+   const name=nextPath??h.toString('utf8',0,100).replace(/\0.*$/s,'');
+   if (h.toString('ascii',156,157)==='0') files[name]=b;
+   nextPath=undefined;
+  }
   offset+=512+Math.ceil(size/512)*512;
  }
  if (!files.Dockerfile || /\nRUN /.test(files.Dockerfile.toString())) throw Error('not COPY only');
@@ -257,7 +268,12 @@ else if(args[0]==='image'&&args[1]==='rm') {state.image=false;plain('removed\n')
 else throw Error('Unrecorded transcript command '+JSON.stringify(args));
 `;
 
-async function fixture(t: TestContext, mode = 'normal', literal = 'A') {
+async function fixture(
+  t: TestContext,
+  mode = 'normal',
+  literal = 'A',
+  extraFiles: { virtualPath: ReturnType<typeof virtualPath>; bytes: Buffer }[] = [],
+) {
   const root = await realpath(await mkdtemp(join(tmpdir(), 'eitri-frozen-validator-')));
   const workspaceRoot = join(root, 'workspace'),
     directory = join(root, 'validator'),
@@ -294,6 +310,7 @@ async function fixture(t: TestContext, mode = 'normal', literal = 'A') {
         virtualPath: virtualPath('poison.cjs'),
         bytes: Buffer.from('throw Error("project code must not run")'),
       },
+      ...extraFiles,
     ],
   });
   if (w.state !== 'ready') throw Error('not-ready');
@@ -407,6 +424,87 @@ test('trusted frozen driver serves a worker restriction and retains worker denia
       assert.equal(observations.stage, 'action-failed');
       assert.equal(observations.literal, null);
     });
+});
+
+test('frozen browser COPY context has a short first header recognizable without PAX lookahead', async (t) => {
+  const f = await fixture(t, 'capture-context');
+  const report = await f.validator.validate(f.request, signal());
+  assert.deepEqual(report.outcome, { kind: 'baseline-reproduced' });
+  const archive = await readFile(`${f.statePath}.tar`);
+  const run = promisify(execFile);
+  const full = await run('/usr/bin/tar', ['-tf', `${f.statePath}.tar`]);
+  assert.equal(full.stderr, '');
+  assert.equal(full.stdout.split('\n')[0], 'rootfs/');
+  const peek = join(f.root, 'header.tar');
+  await writeFile(peek, archive.subarray(0, 512));
+  const sniff = await run('/usr/bin/tar', ['-tf', peek]);
+  assert.equal(sniff.stdout, 'rootfs/\n');
+  assert.equal(sniff.stderr, '');
+  assert.equal(archive.toString('ascii', 257, 265), 'ustar\0' + '00');
+  assert.equal(archive.toString('ascii', 156, 157), '5');
+  assert.equal(report.evidence?.provenance.contextBytes, archive.length);
+  assert.equal(
+    report.evidence?.provenance.contextSha256,
+    createHash('sha256').update(archive).digest('hex'),
+  );
+  assert.equal(archive.length <= 40 * 1024 ** 2, true);
+  assert.equal(archive.length % 512, 0);
+  assert.deepEqual(archive.subarray(-1024), Buffer.alloc(1024));
+});
+
+test('frozen browser COPY context round-trips UTF8 and long paths with read-only modes', async (t) => {
+  const extraFiles = [
+    { virtualPath: virtualPath('src/café.txt'), bytes: Buffer.from('UTF8 café 🌱\n') },
+    {
+      virtualPath: virtualPath(`src/${'é'.repeat(70)}/${'長'.repeat(50)}.bin`),
+      bytes: Buffer.from([0, 255, 128, 10, 0, 42]),
+    },
+  ];
+  let extracted: string | undefined;
+  const directories = [
+    'rootfs',
+    'rootfs/snapshot',
+    'rootfs/snapshot/src',
+    `rootfs/snapshot/src/${'é'.repeat(70)}`,
+  ];
+  t.after(async () => {
+    if (extracted) for (const path of directories) await chmod(join(extracted, path), 0o755);
+  });
+  const f = await fixture(t, 'capture-context', 'A', extraFiles);
+  const report = await f.validator.validate(f.request, signal());
+  assert.deepEqual(report.outcome, { kind: 'baseline-reproduced' });
+  const run = promisify(execFile);
+  const listing = await run('/usr/bin/tar', ['-tvnf', `${f.statePath}.tar`]);
+  assert.equal(listing.stderr, '');
+  for (const line of listing.stdout.trimEnd().split('\n')) {
+    assert.match(line, /^(dr-xr-xr-x|-r--r--r--)\s/);
+    assert.match(line, /\s1001(?:\/|\s+)1001\s/);
+  }
+  extracted = join(f.root, 'extracted');
+  await mkdir(extracted);
+  const unpack = await run('/usr/bin/tar', ['-xf', `${f.statePath}.tar`, '-C', extracted]);
+  assert.equal(unpack.stderr, '');
+  for (const file of await f.store.readFrozen(f.request.frozen, signal())) {
+    const path = join(extracted, 'rootfs/snapshot', file.virtualPath);
+    assert.deepEqual(await readFile(path), Buffer.from(file.bytes));
+    assert.equal((await stat(path)).mode & 0o777, 0o444);
+  }
+  for (const path of directories)
+    assert.equal((await stat(join(extracted, path))).mode & 0o777, 0o555);
+  for (const name of ['Dockerfile', 'driver.mjs', 'watchdog.mjs', 'scenario.json']) {
+    assert.deepEqual(
+      await readFile(join(extracted, name)),
+      await readFile(new URL(`../worker/frozen-browser/${name}`, import.meta.url)),
+    );
+    assert.equal((await stat(join(extracted, name))).mode & 0o777, 0o444);
+  }
+  assert.deepEqual((await readdir(extracted)).sort(), [
+    'Dockerfile',
+    'driver.mjs',
+    'rootfs',
+    'scenario.json',
+    'watchdog.mjs',
+  ]);
 });
 
 test('frozen browser literal A after B has host evidence, detached cache and persistent idempotency', async (t) => {
