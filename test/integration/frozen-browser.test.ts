@@ -213,15 +213,16 @@ test(
 );
 
 const screenshotPreparation = (payload = '') => `
-const observer = new MutationObserver(records => {
-  if (records.some(record => [...record.addedNodes].some(node =>
-    node.nodeName === 'STYLE' && node.textContent.includes('caret-color')))) {
+const editable = document.createElement('textarea');
+document.body.append(editable);
+const observer = new MutationObserver(() => {
+  if (editable.style.getPropertyValue('caret-color') === 'transparent') {
     observer.disconnect();
     console.log('screenshot-preparation-observed');
     ${payload}
   }
 });
-observer.observe(document.documentElement, {childList:true, subtree:true});
+observer.observe(editable, {attributes:true, attributeFilter:['style']});
 `;
 
 test(
