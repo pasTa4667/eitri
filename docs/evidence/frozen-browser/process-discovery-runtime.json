@@ -1,0 +1,586 @@
+{
+  "implementationCommit": "cdacccc4ed9274f85e6268533fc9c79d12baf119",
+  "command": "node .audit/process-discovery-runtime.mjs final",
+  "outcome": {
+    "kind": "baseline-reproduced"
+  },
+  "cleanup": {
+    "kind": "owned-removed",
+    "cache": "retained"
+  },
+  "provenance": {
+    "requestDigest": "9568de912ef5db3cfcdba5298c64fa616ae2ca7a4fe025edce7cd20fef3286aa",
+    "configurationDigest": "ae3f8fec27e58505496f35e1a299d96b55d94084469ff0f0e0d7ed639e63c38a",
+    "frozen": {
+      "caseId": "defcde03-af14-4853-a978-64cd4477484a",
+      "revision": "fb82b3c1c307cf3733c3f4604f3b6ce0407dcd83",
+      "manifestDigest": "b52ba1a64cce14aa1129fb256bbd17a144364e9c19ec8e0cf76cc057ea59ddf5"
+    },
+    "transfer": [
+      {
+        "path": "src/index.html",
+        "size": 113,
+        "sha256": "ec8a82ce34542093d1f48742cad645ae515cd6af6d5a371944b8de7872ca784f"
+      }
+    ],
+    "contextBytes": 21504,
+    "contextSha256": "b31ac20565ac3aed8ae734a31da07150006cc40d877b6992dc7089df66df1235",
+    "assets": {
+      "dockerfile": "ea2f93c7c5c271019cf5022c3f209c0f2dc03cf956e3a0238540b10e1a626976",
+      "driver": "0fcfdc7bca72ad7ef215ebaa4fee0de0060134fd0605978bc6876fb9571c3129",
+      "watchdog": "f272ff69098c3d10f3907db67ab181e26979f958aeb70c2bbe917e3e1420baef",
+      "scenario": "fa32ef55363d18c95a66c340d7f8e8593c206207455092c8ab4a5e967df0e415",
+      "policy": "c85c2b40abc8ca15cace108b94f91e337b73313c8288b03c41d1ca51fe239bd7"
+    },
+    "policy": {
+      "sha256": "c85c2b40abc8ca15cace108b94f91e337b73313c8288b03c41d1ca51fe239bd7",
+      "engineCommit": "daa0cb7f23594cdbcce5002e370027d3fd36ffd7",
+      "baselineSha256": "01536f1d1df938ae611eba20d6349e0de7a99b6ecdee1549427a0b01b8301e28"
+    },
+    "engine": {
+      "version": "29.4.0",
+      "arch": "arm64",
+      "commit": "daa0cb7f",
+      "security": [
+        "name=seccomp,profile=builtin",
+        "name=cgroupns"
+      ]
+    },
+    "baseBefore": {
+      "id": "sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff",
+      "architecture": "arm64",
+      "os": "linux",
+      "rootFS": {
+        "Type": "layers",
+        "Layers": [
+          "sha256:1e9178dc90058fa454a60803300219ee8c17e515be8718817ed824b96fa1207b",
+          "sha256:1d38b7af782dce9e2df5cc7b5c8e94587259b17bb93110de639e2c815bf4a9e7",
+          "sha256:472ad09fba4cd8693c98d51891a4d5738b3159293649c3372492a09a04944af8",
+          "sha256:f961188457542bd7a109688fcf635d59e9e00ec065a96305b16c6a12a56f7048",
+          "sha256:17ef8e1840b43e248cb97e872b9549deb255cf90be50daa985c72c1cc48e63df",
+          "sha256:1ac9e58fe1af6fc1f0154e24bd1e5b9dd5f99e24945acbadab50271f2586678d",
+          "sha256:a9e15583932640eec3161df8feaab852469f184960a9f79d281b0ee16f5aba3d",
+          "sha256:d745008c8a5d0869378a69dbd059d0fee7aa3b6fa472bc42623af1898bd70741",
+          "sha256:c9b16ca40ef340c8df47968c33cf2ca2e4b46468a8ec4c670a3a24713bbed6ec",
+          "sha256:d1772fa77dc101c66d80440fe6ba8afe2c2577daebafda376b9472b77a39c22d",
+          "sha256:9f0487aca0b17cb7441a6df8fd6ea817901ec53fdf3c8ee8905f7bd3036ef4cb"
+        ]
+      },
+      "env": [
+        "HOME=/tmp",
+        "LANG=C.UTF-8",
+        "LC_ALL=C.UTF-8",
+        "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "PLAYWRIGHT_BROWSERS_PATH=/ms-playwright"
+      ]
+    },
+    "baseAfter": {
+      "id": "sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff",
+      "architecture": "arm64",
+      "os": "linux",
+      "rootFS": {
+        "Type": "layers",
+        "Layers": [
+          "sha256:1e9178dc90058fa454a60803300219ee8c17e515be8718817ed824b96fa1207b",
+          "sha256:1d38b7af782dce9e2df5cc7b5c8e94587259b17bb93110de639e2c815bf4a9e7",
+          "sha256:472ad09fba4cd8693c98d51891a4d5738b3159293649c3372492a09a04944af8",
+          "sha256:f961188457542bd7a109688fcf635d59e9e00ec065a96305b16c6a12a56f7048",
+          "sha256:17ef8e1840b43e248cb97e872b9549deb255cf90be50daa985c72c1cc48e63df",
+          "sha256:1ac9e58fe1af6fc1f0154e24bd1e5b9dd5f99e24945acbadab50271f2586678d",
+          "sha256:a9e15583932640eec3161df8feaab852469f184960a9f79d281b0ee16f5aba3d",
+          "sha256:d745008c8a5d0869378a69dbd059d0fee7aa3b6fa472bc42623af1898bd70741",
+          "sha256:c9b16ca40ef340c8df47968c33cf2ca2e4b46468a8ec4c670a3a24713bbed6ec",
+          "sha256:d1772fa77dc101c66d80440fe6ba8afe2c2577daebafda376b9472b77a39c22d",
+          "sha256:9f0487aca0b17cb7441a6df8fd6ea817901ec53fdf3c8ee8905f7bd3036ef4cb"
+        ]
+      },
+      "env": [
+        "HOME=/tmp",
+        "LANG=C.UTF-8",
+        "LC_ALL=C.UTF-8",
+        "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "PLAYWRIGHT_BROWSERS_PATH=/ms-playwright"
+      ]
+    },
+    "imageId": "sha256:dcc767da46035ca47768bb0290a8b9e02659889b9000fa0e91730c731350b1c3",
+    "containerId": "da67ff75ab6e3c33750a2086bb292e6261c0c269c25855c05ff4855b5cc500e5",
+    "applied": {
+      "image": "sha256:dcc767da46035ca47768bb0290a8b9e02659889b9000fa0e91730c731350b1c3",
+      "inspectionSha256": "bb8cde9bdbb419e0ff3b20536eb194d60b0f658a63a14a1a8afcd0f9505bf296",
+      "config": {
+        "User": "1001:1001",
+        "WorkingDir": "/opt/eitri",
+        "Entrypoint": [
+          "/usr/local/bin/node",
+          "/opt/eitri/frozen-browser/watchdog.mjs"
+        ],
+        "Cmd": [],
+        "StopTimeout": 2,
+        "OpenStdin": false,
+        "Tty": false,
+        "Env": [
+          "EITRI_DEADLINE=1792420732284",
+          "EITRI_NONCE=27ac3cf65fc4c97db0fb6e82da3da657bdde52dfdfa722e196192c6af9d74aa7",
+          "EITRI_REQUEST=9568de912ef5db3cfcdba5298c64fa616ae2ca7a4fe025edce7cd20fef3286aa",
+          "HOME=/tmp",
+          "LANG=C.UTF-8",
+          "LC_ALL=C.UTF-8",
+          "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+          "PLAYWRIGHT_BROWSERS_PATH=/ms-playwright"
+        ],
+        "Labels": {
+          "eitri.frozen-browser.owner": "47f93137-fc2e-4c01-a243-44fcf483c72b",
+          "eitri.frozen-browser.run": "672764cd-0293-41ac-bacc-b772271a9835"
+        }
+      },
+      "hostConfig": {
+        "NetworkMode": "none",
+        "ReadonlyRootfs": true,
+        "Privileged": false,
+        "CapAdd": null,
+        "CapDrop": [
+          "ALL"
+        ],
+        "SecurityOpt": [
+          "no-new-privileges",
+          "seccomp={\"defaultAction\":\"SCMP_ACT_ERRNO\",\"defaultErrnoRet\":1,\"archMap\":[{\"architecture\":\"SCMP_ARCH_X86_64\",\"subArchitectures\":[\"SCMP_ARCH_X86\",\"SCMP_ARCH_X32\"]},{\"architecture\":\"SCMP_ARCH_AARCH64\",\"subArchitectures\":[\"SCMP_ARCH_ARM\"]},{\"architecture\":\"SCMP_ARCH_MIPS64\",\"subArchitectures\":[\"SCMP_ARCH_MIPS\",\"SCMP_ARCH_MIPS64N32\"]},{\"architecture\":\"SCMP_ARCH_MIPS64N32\",\"subArchitectures\":[\"SCMP_ARCH_MIPS\",\"SCMP_ARCH_MIPS64\"]},{\"architecture\":\"SCMP_ARCH_MIPSEL64\",\"subArchitectures\":[\"SCMP_ARCH_MIPSEL\",\"SCMP_ARCH_MIPSEL64N32\"]},{\"architecture\":\"SCMP_ARCH_MIPSEL64N32\",\"subArchitectures\":[\"SCMP_ARCH_MIPSEL\",\"SCMP_ARCH_MIPSEL64\"]},{\"architecture\":\"SCMP_ARCH_S390X\",\"subArchitectures\":[\"SCMP_ARCH_S390\"]},{\"architecture\":\"SCMP_ARCH_RISCV64\",\"subArchitectures\":null}],\"syscalls\":[{\"names\":[\"accept\",\"accept4\",\"access\",\"adjtimex\",\"alarm\",\"bind\",\"brk\",\"cachestat\",\"capget\",\"capset\",\"chdir\",\"chmod\",\"chown\",\"chown32\",\"clock_adjtime\",\"clock_adjtime64\",\"clock_getres\",\"clock_getres_time64\",\"clock_gettime\",\"clock_gettime64\",\"clock_nanosleep\",\"clock_nanosleep_time64\",\"close\",\"close_range\",\"connect\",\"copy_file_range\",\"creat\",\"dup\",\"dup2\",\"dup3\",\"epoll_create\",\"epoll_create1\",\"epoll_ctl\",\"epoll_ctl_old\",\"epoll_pwait\",\"epoll_pwait2\",\"epoll_wait\",\"epoll_wait_old\",\"eventfd\",\"eventfd2\",\"execve\",\"execveat\",\"exit\",\"exit_group\",\"faccessat\",\"faccessat2\",\"fadvise64\",\"fadvise64_64\",\"fallocate\",\"fanotify_mark\",\"fchdir\",\"fchmod\",\"fchmodat\",\"fchmodat2\",\"fchown\",\"fchown32\",\"fchownat\",\"fcntl\",\"fcntl64\",\"fdatasync\",\"fgetxattr\",\"flistxattr\",\"flock\",\"fork\",\"fremovexattr\",\"fsetxattr\",\"fstat\",\"fstat64\",\"fstatat64\",\"fstatfs\",\"fstatfs64\",\"fsync\",\"ftruncate\",\"ftruncate64\",\"futex\",\"futex_requeue\",\"futex_time64\",\"futex_wait\",\"futex_waitv\",\"futex_wake\",\"futimesat\",\"getcpu\",\"getcwd\",\"getdents\",\"getdents64\",\"getegid\",\"getegid32\",\"geteuid\",\"geteuid32\",\"getgid\",\"getgid32\",\"getgroups\",\"getgroups32\",\"getitimer\",\"getpeername\",\"getpgid\",\"getpgrp\",\"getpid\",\"getppid\",\"getpriority\",\"getrandom\",\"getresgid\",\"getresgid32\",\"getresuid\",\"getresuid32\",\"getrlimit\",\"get_robust_list\",\"getrusage\",\"getsid\",\"getsockname\",\"getsockopt\",\"get_thread_area\",\"gettid\",\"gettimeofday\",\"getuid\",\"getuid32\",\"getxattr\",\"getxattrat\",\"inotify_add_watch\",\"inotify_init\",\"inotify_init1\",\"inotify_rm_watch\",\"io_cancel\",\"ioctl\",\"io_destroy\",\"io_getevents\",\"io_pgetevents\",\"io_pgetevents_time64\",\"ioprio_get\",\"ioprio_set\",\"io_setup\",\"io_submit\",\"ipc\",\"kill\",\"landlock_add_rule\",\"landlock_create_ruleset\",\"landlock_restrict_self\",\"lchown\",\"lchown32\",\"lgetxattr\",\"link\",\"linkat\",\"listen\",\"listmount\",\"listxattr\",\"listxattrat\",\"llistxattr\",\"_llseek\",\"lremovexattr\",\"lseek\",\"lsetxattr\",\"lstat\",\"lstat64\",\"madvise\",\"map_shadow_stack\",\"membarrier\",\"memfd_create\",\"memfd_secret\",\"mincore\",\"mkdir\",\"mkdirat\",\"mknod\",\"mknodat\",\"mlock\",\"mlock2\",\"mlockall\",\"mmap\",\"mmap2\",\"mprotect\",\"mq_getsetattr\",\"mq_notify\",\"mq_open\",\"mq_timedreceive\",\"mq_timedreceive_time64\",\"mq_timedsend\",\"mq_timedsend_time64\",\"mq_unlink\",\"mremap\",\"mseal\",\"msgctl\",\"msgget\",\"msgrcv\",\"msgsnd\",\"msync\",\"munlock\",\"munlockall\",\"munmap\",\"name_to_handle_at\",\"nanosleep\",\"newfstatat\",\"_newselect\",\"open\",\"openat\",\"openat2\",\"pause\",\"pidfd_open\",\"pidfd_send_signal\",\"pipe\",\"pipe2\",\"pkey_alloc\",\"pkey_free\",\"pkey_mprotect\",\"poll\",\"ppoll\",\"ppoll_time64\",\"prctl\",\"pread64\",\"preadv\",\"preadv2\",\"prlimit64\",\"process_mrelease\",\"pselect6\",\"pselect6_time64\",\"pwrite64\",\"pwritev\",\"pwritev2\",\"read\",\"readahead\",\"readlink\",\"readlinkat\",\"readv\",\"recv\",\"recvfrom\",\"recvmmsg\",\"recvmmsg_time64\",\"recvmsg\",\"remap_file_pages\",\"removexattr\",\"removexattrat\",\"rename\",\"renameat\",\"renameat2\",\"restart_syscall\",\"riscv_hwprobe\",\"rmdir\",\"rseq\",\"rt_sigaction\",\"rt_sigpending\",\"rt_sigprocmask\",\"rt_sigqueueinfo\",\"rt_sigreturn\",\"rt_sigsuspend\",\"rt_sigtimedwait\",\"rt_sigtimedwait_time64\",\"rt_tgsigqueueinfo\",\"sched_getaffinity\",\"sched_getattr\",\"sched_getparam\",\"sched_get_priority_max\",\"sched_get_priority_min\",\"sched_getscheduler\",\"sched_rr_get_interval\",\"sched_rr_get_interval_time64\",\"sched_setaffinity\",\"sched_setattr\",\"sched_setparam\",\"sched_setscheduler\",\"sched_yield\",\"seccomp\",\"select\",\"semctl\",\"semget\",\"semop\",\"semtimedop\",\"semtimedop_time64\",\"send\",\"sendfile\",\"sendfile64\",\"sendmmsg\",\"sendmsg\",\"sendto\",\"setfsgid\",\"setfsgid32\",\"setfsuid\",\"setfsuid32\",\"setgid\",\"setgid32\",\"setgroups\",\"setgroups32\",\"setitimer\",\"setpgid\",\"setpriority\",\"setregid\",\"setregid32\",\"setresgid\",\"setresgid32\",\"setresuid\",\"setresuid32\",\"setreuid\",\"setreuid32\",\"setrlimit\",\"set_robust_list\",\"setsid\",\"setsockopt\",\"set_thread_area\",\"set_tid_address\",\"setuid\",\"setuid32\",\"setxattr\",\"setxattrat\",\"shmat\",\"shmctl\",\"shmdt\",\"shmget\",\"shutdown\",\"sigaltstack\",\"signalfd\",\"signalfd4\",\"sigprocmask\",\"sigreturn\",\"socketcall\",\"socketpair\",\"splice\",\"stat\",\"stat64\",\"statfs\",\"statfs64\",\"statmount\",\"statx\",\"symlink\",\"symlinkat\",\"sync\",\"sync_file_range\",\"syncfs\",\"sysinfo\",\"tee\",\"tgkill\",\"time\",\"timer_create\",\"timer_delete\",\"timer_getoverrun\",\"timer_gettime\",\"timer_gettime64\",\"timer_settime\",\"timer_settime64\",\"timerfd_create\",\"timerfd_gettime\",\"timerfd_gettime64\",\"timerfd_settime\",\"timerfd_settime64\",\"times\",\"tkill\",\"truncate\",\"truncate64\",\"ugetrlimit\",\"umask\",\"uname\",\"unlink\",\"unlinkat\",\"uretprobe\",\"utime\",\"utimensat\",\"utimensat_time64\",\"utimes\",\"vfork\",\"vmsplice\",\"wait4\",\"waitid\",\"waitpid\",\"write\",\"writev\"],\"action\":\"SCMP_ACT_ALLOW\"},{\"names\":[\"process_vm_readv\",\"process_vm_writev\",\"ptrace\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"minKernel\":\"4.8\"}},{\"names\":[\"socket\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":40,\"op\":\"SCMP_CMP_NE\"}]},{\"names\":[\"personality\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":0,\"op\":\"SCMP_CMP_EQ\"}]},{\"names\":[\"personality\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":8,\"op\":\"SCMP_CMP_EQ\"}]},{\"names\":[\"personality\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":131072,\"op\":\"SCMP_CMP_EQ\"}]},{\"names\":[\"personality\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":131080,\"op\":\"SCMP_CMP_EQ\"}]},{\"names\":[\"personality\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":4294967295,\"op\":\"SCMP_CMP_EQ\"}]},{\"names\":[\"sync_file_range2\",\"swapcontext\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"ppc64le\"]}},{\"names\":[\"arm_fadvise64_64\",\"arm_sync_file_range\",\"sync_file_range2\",\"breakpoint\",\"cacheflush\",\"set_tls\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"arm\",\"arm64\"]}},{\"names\":[\"arch_prctl\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"amd64\",\"x32\"]}},{\"names\":[\"modify_ldt\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"amd64\",\"x32\",\"x86\"]}},{\"names\":[\"s390_pci_mmio_read\",\"s390_pci_mmio_write\",\"s390_runtime_instr\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"s390\",\"s390x\"]}},{\"names\":[\"riscv_flush_icache\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"riscv64\"]}},{\"names\":[\"open_by_handle_at\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_DAC_READ_SEARCH\"]}},{\"names\":[\"bpf\",\"clone\",\"clone3\",\"fanotify_init\",\"fsconfig\",\"fsmount\",\"fsopen\",\"fspick\",\"lookup_dcookie\",\"lsm_get_self_attr\",\"lsm_list_modules\",\"lsm_set_self_attr\",\"mount\",\"mount_setattr\",\"move_mount\",\"open_tree\",\"perf_event_open\",\"quotactl\",\"quotactl_fd\",\"setdomainname\",\"sethostname\",\"setns\",\"syslog\",\"umount\",\"umount2\",\"unshare\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_ADMIN\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":2114060288,\"op\":\"SCMP_CMP_MASKED_EQ\"}],\"excludes\":{\"caps\":[\"CAP_SYS_ADMIN\"],\"arches\":[\"s390\",\"s390x\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":1,\"value\":2114060288,\"op\":\"SCMP_CMP_MASKED_EQ\"}],\"comment\":\"s390 parameter ordering for clone is different\",\"includes\":{\"arches\":[\"s390\",\"s390x\"]},\"excludes\":{\"caps\":[\"CAP_SYS_ADMIN\"]}},{\"names\":[\"clone3\"],\"action\":\"SCMP_ACT_ERRNO\",\"errnoRet\":38,\"excludes\":{\"caps\":[\"CAP_SYS_ADMIN\"]}},{\"names\":[\"reboot\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_BOOT\"]}},{\"names\":[\"chroot\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_CHROOT\"]}},{\"names\":[\"delete_module\",\"init_module\",\"finit_module\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_MODULE\"]}},{\"names\":[\"acct\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_PACCT\"]}},{\"names\":[\"kcmp\",\"pidfd_getfd\",\"process_madvise\",\"process_vm_readv\",\"process_vm_writev\",\"ptrace\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_PTRACE\"]}},{\"names\":[\"iopl\",\"ioperm\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_RAWIO\"]}},{\"names\":[\"settimeofday\",\"stime\",\"clock_settime\",\"clock_settime64\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_TIME\"]}},{\"names\":[\"vhangup\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_TTY_CONFIG\"]}},{\"names\":[\"get_mempolicy\",\"mbind\",\"set_mempolicy\",\"set_mempolicy_home_node\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_NICE\"]}},{\"names\":[\"syslog\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYSLOG\"]}},{\"names\":[\"bpf\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_BPF\"]}},{\"names\":[\"perf_event_open\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_PERFMON\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":268435473,\"op\":\"SCMP_CMP_EQ\"}],\"includes\":{\"arches\":[\"arm64\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":805306385,\"op\":\"SCMP_CMP_EQ\"}],\"includes\":{\"arches\":[\"arm64\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":1342177297,\"op\":\"SCMP_CMP_EQ\"}],\"includes\":{\"arches\":[\"arm64\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":1879048209,\"op\":\"SCMP_CMP_EQ\"}],\"includes\":{\"arches\":[\"arm64\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":536870929,\"op\":\"SCMP_CMP_EQ\"}],\"includes\":{\"arches\":[\"arm64\"]}},{\"names\":[\"unshare\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":268435456,\"op\":\"SCMP_CMP_EQ\"}],\"includes\":{\"arches\":[\"arm64\"]}},{\"names\":[\"chroot\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"arm64\"]}}]}"
+        ],
+        "Memory": 4294967296,
+        "MemorySwap": 4294967296,
+        "NanoCpus": 2000000000,
+        "PidsLimit": 256,
+        "IpcMode": "private",
+        "ShmSize": 268435456,
+        "Tmpfs": {
+          "/tmp": "rw,exec,nosuid,size=256m,uid=1001,gid=1001"
+        },
+        "Ulimits": [
+          {
+            "Name": "core",
+            "Hard": 0,
+            "Soft": 0
+          }
+        ],
+        "PublishAllPorts": false,
+        "AutoRemove": false,
+        "Runtime": "runc",
+        "CgroupnsMode": "private",
+        "RestartPolicy": {
+          "Name": "no",
+          "MaximumRetryCount": 0
+        }
+      },
+      "mounts": []
+    },
+    "admittedAt": 1792420672284,
+    "deadline": 1792420732284,
+    "finishedAt": 1792420676147,
+    "exitCode": 0,
+    "oomKilled": false,
+    "stdoutSha256": "2b9942e53a06205eac30e463fd4948a6db71933ce9ab6aa0675580fc65ef6de5",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "buildStdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "buildStderrSha256": "fc0d9a85159947c5dba1155d9b1bf7ff6213ee4c5f585feee66d9a3ba27be294"
+  },
+  "observations": {
+    "runtime": {
+      "node": "v26.5.0",
+      "arch": "arm64",
+      "uid": 1001
+    },
+    "driverSha256": "0fcfdc7bca72ad7ef215ebaa4fee0de0060134fd0605978bc6876fb9571c3129",
+    "watchdogSha256": "f272ff69098c3d10f3907db67ab181e26979f958aeb70c2bbe917e3e1420baef",
+    "scenarioSha256": "fa32ef55363d18c95a66c340d7f8e8593c206207455092c8ab4a5e967df0e415",
+    "processes": [
+      {
+        "pid": "1",
+        "startTicks": "2956186",
+        "ppid": "0",
+        "state": "live",
+        "uid": [
+          1001,
+          1001,
+          1001,
+          1001
+        ],
+        "capEff": "0000000000000000",
+        "capPrm": "0000000000000000",
+        "capBnd": "0000000000000000",
+        "nnp": "1",
+        "seccomp": "2",
+        "nspid": "1",
+        "userNamespace": "user:[4026531837]",
+        "uidMap": "0          0 4294967295",
+        "gidMap": "0          0 4294967295"
+      },
+      {
+        "pid": "12",
+        "startTicks": "2956195",
+        "ppid": "1",
+        "state": "live",
+        "uid": [
+          1001,
+          1001,
+          1001,
+          1001
+        ],
+        "capEff": "0000000000000000",
+        "capPrm": "0000000000000000",
+        "capBnd": "0000000000000000",
+        "nnp": "1",
+        "seccomp": "2",
+        "nspid": "12",
+        "userNamespace": "user:[4026531837]",
+        "uidMap": "0          0 4294967295",
+        "gidMap": "0          0 4294967295"
+      },
+      {
+        "pid": "24",
+        "startTicks": "2956221",
+        "ppid": "12",
+        "state": "live",
+        "uid": [
+          1001,
+          1001,
+          1001,
+          1001
+        ],
+        "capEff": "0000000000000000",
+        "capPrm": "0000000000000000",
+        "capBnd": "0000000000000000",
+        "nnp": "1",
+        "seccomp": "2",
+        "nspid": "24",
+        "userNamespace": "user:[4026531837]",
+        "uidMap": "0          0 4294967295",
+        "gidMap": "0          0 4294967295"
+      },
+      {
+        "pid": "26",
+        "startTicks": "2956231",
+        "ppid": "1",
+        "state": "live",
+        "uid": [
+          1001,
+          1001,
+          1001,
+          1001
+        ],
+        "capEff": "0000000000000000",
+        "capPrm": "0000000000000000",
+        "capBnd": "0000000000000000",
+        "nnp": "1",
+        "seccomp": "2",
+        "nspid": "26",
+        "userNamespace": "user:[4026531837]",
+        "uidMap": "0          0 4294967295",
+        "gidMap": "0          0 4294967295"
+      },
+      {
+        "pid": "28",
+        "startTicks": "2956231",
+        "ppid": "1",
+        "state": "live",
+        "uid": [
+          1001,
+          1001,
+          1001,
+          1001
+        ],
+        "capEff": "0000000000000000",
+        "capPrm": "0000000000000000",
+        "capBnd": "0000000000000000",
+        "nnp": "1",
+        "seccomp": "2",
+        "nspid": "28",
+        "userNamespace": "user:[4026531837]",
+        "uidMap": "0          0 4294967295",
+        "gidMap": "0          0 4294967295"
+      },
+      {
+        "pid": "32",
+        "startTicks": "2956232",
+        "ppid": "24",
+        "state": "live",
+        "uid": [
+          1001,
+          1001,
+          1001,
+          1001
+        ],
+        "capEff": "0000000000000000",
+        "capPrm": "0000000000000000",
+        "capBnd": "0000000000000000",
+        "nnp": "1",
+        "seccomp": "2",
+        "nspid": "32",
+        "userNamespace": "user:[4026531837]",
+        "uidMap": "0          0 4294967295",
+        "gidMap": "0          0 4294967295"
+      },
+      {
+        "pid": "33",
+        "startTicks": "2956232",
+        "ppid": "24",
+        "state": "live",
+        "uid": [
+          1001,
+          1001,
+          1001,
+          1001
+        ],
+        "capEff": "0000000000000000",
+        "capPrm": "0000000000000000",
+        "capBnd": "000001ffffffffff",
+        "nnp": "1",
+        "seccomp": "2",
+        "nspid": "33\t1",
+        "userNamespace": "user:[4026536343]",
+        "uidMap": "1001       1001          1",
+        "gidMap": "1001       1001          1"
+      },
+      {
+        "pid": "35",
+        "startTicks": "2956242",
+        "ppid": "33",
+        "state": "live",
+        "uid": [
+          1001,
+          1001,
+          1001,
+          1001
+        ],
+        "capEff": "0000000000200000",
+        "capPrm": "0000000000200000",
+        "capBnd": "000001ffffffffff",
+        "nnp": "1",
+        "seccomp": "2",
+        "nspid": "35\t3",
+        "userNamespace": "user:[4026536343]",
+        "uidMap": "1001       1001          1",
+        "gidMap": "1001       1001          1"
+      },
+      {
+        "pid": "57",
+        "startTicks": "2956258",
+        "ppid": "32",
+        "state": "live",
+        "uid": [
+          1001,
+          1001,
+          1001,
+          1001
+        ],
+        "capEff": "0000000000000000",
+        "capPrm": "0000000000000000",
+        "capBnd": "0000000000000000",
+        "nnp": "1",
+        "seccomp": "2",
+        "nspid": "57",
+        "userNamespace": "user:[4026531837]",
+        "uidMap": "0          0 4294967295",
+        "gidMap": "0          0 4294967295"
+      },
+      {
+        "pid": "60",
+        "startTicks": "2956258",
+        "ppid": "24",
+        "state": "live",
+        "uid": [
+          1001,
+          1001,
+          1001,
+          1001
+        ],
+        "capEff": "0000000000000000",
+        "capPrm": "0000000000000000",
+        "capBnd": "0000000000000000",
+        "nnp": "1",
+        "seccomp": "2",
+        "nspid": "60",
+        "userNamespace": "user:[4026531837]",
+        "uidMap": "0          0 4294967295",
+        "gidMap": "0          0 4294967295"
+      },
+      {
+        "pid": "86",
+        "startTicks": "2956261",
+        "ppid": "35",
+        "state": "live",
+        "uid": [
+          1001,
+          1001,
+          1001,
+          1001
+        ],
+        "capEff": "0000000000000000",
+        "capPrm": "0000000000000000",
+        "capBnd": "000001ffffffffff",
+        "nnp": "1",
+        "seccomp": "2",
+        "nspid": "86\t4\t1",
+        "userNamespace": "user:[4026536343]",
+        "uidMap": "1001       1001          1",
+        "gidMap": "1001       1001          1"
+      },
+      {
+        "pid": "114",
+        "startTicks": "2956269",
+        "ppid": "35",
+        "state": "live",
+        "uid": [
+          1001,
+          1001,
+          1001,
+          1001
+        ],
+        "capEff": "0000000000000000",
+        "capPrm": "0000000000000000",
+        "capBnd": "000001ffffffffff",
+        "nnp": "1",
+        "seccomp": "2",
+        "nspid": "114\t14\t1",
+        "userNamespace": "user:[4026536343]",
+        "uidMap": "1001       1001          1",
+        "gidMap": "1001       1001          1"
+      },
+      {
+        "pid": "153",
+        "startTicks": "2956281",
+        "ppid": "35",
+        "state": "live",
+        "uid": [
+          1001,
+          1001,
+          1001,
+          1001
+        ],
+        "capEff": "0000000000000000",
+        "capPrm": "0000000000000000",
+        "capBnd": "000001ffffffffff",
+        "nnp": "1",
+        "seccomp": "2",
+        "nspid": "153\t52\t1",
+        "userNamespace": "user:[4026536343]",
+        "uidMap": "1001       1001          1",
+        "gidMap": "1001       1001          1"
+      },
+      {
+        "pid": "171",
+        "startTicks": "2956300",
+        "ppid": "35",
+        "state": "live",
+        "uid": [
+          1001,
+          1001,
+          1001,
+          1001
+        ],
+        "capEff": "0000000000000000",
+        "capPrm": "0000000000000000",
+        "capBnd": "000001ffffffffff",
+        "nnp": "1",
+        "seccomp": "2",
+        "nspid": "171\t70\t1",
+        "userNamespace": "user:[4026536343]",
+        "uidMap": "1001       1001          1",
+        "gidMap": "1001       1001          1"
+      }
+    ],
+    "labels": [
+      {
+        "pid": "24",
+        "role": "browser",
+        "startTicks": "2956221"
+      },
+      {
+        "pid": "114",
+        "role": "renderer",
+        "startTicks": "2956269"
+      },
+      {
+        "pid": "153",
+        "role": "renderer",
+        "startTicks": "2956281"
+      },
+      {
+        "pid": "171",
+        "role": "renderer",
+        "startTicks": "2956300"
+      }
+    ],
+    "outer": {
+      "pid": "12",
+      "startTicks": "2956195",
+      "ppid": "1",
+      "state": "live",
+      "uid": [
+        1001,
+        1001,
+        1001,
+        1001
+      ],
+      "capEff": "0000000000000000",
+      "capPrm": "0000000000000000",
+      "capBnd": "0000000000000000",
+      "nnp": "1",
+      "seccomp": "2",
+      "nspid": "12",
+      "userNamespace": "user:[4026531837]",
+      "uidMap": "0          0 4294967295",
+      "gidMap": "0          0 4294967295"
+    },
+    "watchdog": {
+      "pid": "1",
+      "startTicks": "2956186",
+      "ppid": "0",
+      "state": "live",
+      "uid": [
+        1001,
+        1001,
+        1001,
+        1001
+      ],
+      "capEff": "0000000000000000",
+      "capPrm": "0000000000000000",
+      "capBnd": "0000000000000000",
+      "nnp": "1",
+      "seccomp": "2",
+      "nspid": "1",
+      "userNamespace": "user:[4026531837]",
+      "uidMap": "0          0 4294967295",
+      "gidMap": "0          0 4294967295"
+    },
+    "sandboxText": "Sandbox Status\nLayer 1 Sandbox\tNamespace\nPID namespaces\tYes\nNetwork namespaces\tYes\nSeccomp-BPF sandbox\tYes\nSeccomp-BPF sandbox supports TSYNC\tYes\nPtrace Protection with Yama LSM (Broker)\tNo\nPtrace Protection with Yama LSM (Non-broker)\tNo\n\nYou are adequately sandboxed.",
+    "budgets": {
+      "memory.max": "4294967296",
+      "memory.swap.max": "0",
+      "pids.max": "256",
+      "cpu.max": "200000 100000"
+    },
+    "restrictions": {
+      "root": "EROFS",
+      "snapshot": "EROFS",
+      "socket": "ENOENT",
+      "hostPath": "ENOENT",
+      "canary": "ENOENT",
+      "egress": "ENETUNREACH"
+    },
+    "manifest": [
+      {
+        "path": "src/index.html",
+        "size": 113,
+        "sha256": "ec8a82ce34542093d1f48742cad645ae515cd6af6d5a371944b8de7872ca784f"
+      }
+    ],
+    "stage": "complete",
+    "literal": "A",
+    "events": [],
+    "canaryAfter": "ENOENT"
+  },
+  "png": {
+    "mime": "image/png",
+    "size": 2783,
+    "sha256": "40de898e90fbfe3fd837dc0328fb4bbc0ef19ad4905b4e22cb77f47b0e283c31"
+  }
+}
