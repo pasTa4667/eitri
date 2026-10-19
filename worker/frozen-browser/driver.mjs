@@ -51,17 +51,30 @@ async function boundedRead(path, max) {
   if (bytes.length > max) throw new Error('witness-overflow');
   return bytes.toString('utf8').trim();
 }
-async function security(pid, role, args) {
+async function identity(pid) {
+  const text = await boundedRead(`/proc/${pid}/stat`, 4096);
+  const match = text.match(/^([1-9]\d*) \(.*\) ([RSDZTtXxIKWP]) (0|[1-9]\d*) (.*)$/s);
+  if (!match || match[1] !== String(pid)) throw new Error('invalid-stat');
+  const startTicks = match[4].split(/\s+/)[17];
+  if (!/^[1-9]\d{0,19}$/.test(startTicks)) throw new Error('invalid-stat');
+  if (['X', 'x'].includes(match[2])) throw new Error('process-churn');
+  return {
+    pid: String(pid),
+    startTicks,
+    ppid: match[3],
+    state: match[2] === 'Z' ? 'zombie' : 'live',
+  };
+}
+async function security(pid) {
+  const before = await identity(pid);
   const status = await boundedRead(`/proc/${pid}/status`, 16384);
   const field = (name) => {
     const rows = status.split('\n').filter((line) => line.startsWith(`${name}:`));
     if (rows.length !== 1) throw new Error('missing-status');
     return rows[0].slice(name.length + 1).trim();
   };
-  return {
-    pid: String(pid),
-    role,
-    args,
+  const witness = {
+    ...before,
     uid: field('Uid').split(/\s+/).map(Number),
     capEff: field('CapEff'),
     capPrm: field('CapPrm'),
@@ -73,30 +86,76 @@ async function security(pid, role, args) {
     uidMap: await boundedRead(`/proc/${pid}/uid_map`, 256),
     gidMap: await boundedRead(`/proc/${pid}/gid_map`, 256),
   };
+  const state = field('State').split(/\s+/)[0];
+  if (!/^[RSDZTtIKWP]$/.test(state)) throw new Error('invalid-status-state');
+  if (
+    field('PPid') !== before.ppid ||
+    (state === 'Z' ? 'zombie' : 'live') !== before.state ||
+    JSON.stringify(before) !== JSON.stringify(await identity(pid))
+  )
+    throw new Error('process-churn');
+  return witness;
 }
-async function census() {
-  const result = [];
-  for (const pid of (await readdir('/proc')).filter((p) => /^[1-9]\d*$/.test(p))) {
-    let command;
-    try {
-      command = await boundedRead(`/proc/${pid}/cmdline`, 16384);
-    } catch (error) {
-      if (error.code === 'ENOENT') continue;
-      throw error;
-    }
-    const args = command.split('\0').filter(Boolean);
-    if (!/\/(?:chrome|chromium|chrome_crashpad_handler)$/.test(args[0] ?? '')) continue;
-    const role =
-      args.find((arg) => arg.startsWith('--type='))?.slice(7) ??
-      (args[0].endsWith('chrome_crashpad_handler') ? 'crashpad-handler' : 'browser');
-    try {
-      result.push(await security(pid, role, args));
-    } catch (error) {
-      if (error.code !== 'ENOENT') throw error;
-    }
-    if (result.length > 64) throw new Error('process-limit');
+async function scan() {
+  const pids = (await readdir('/proc'))
+    .filter((p) => /^[1-9]\d*$/.test(p))
+    .sort((a, b) => Number(a) - Number(b));
+  if (!pids.length || pids.length > 256) throw new Error('process-limit');
+  const records = [];
+  for (const pid of pids) records.push(await security(pid));
+  return records;
+}
+async function cdpLabels(session) {
+  const { processInfo } = await session.send('SystemInfo.getProcessInfo');
+  if (!Array.isArray(processInfo) || processInfo.length > 256) throw new Error('cdp-limit');
+  const seen = new Set();
+  const labels = [];
+  for (const entry of processInfo) {
+    if (
+      !Number.isSafeInteger(entry.id) ||
+      entry.id <= 0 ||
+      typeof entry.type !== 'string' ||
+      entry.type.length > 64 ||
+      seen.has(entry.id)
+    )
+      throw new Error('invalid-cdp-process');
+    seen.add(entry.id);
+    if (entry.type === 'browser' || entry.type === 'renderer')
+      labels.push({ pid: String(entry.id), role: entry.type });
   }
-  return result;
+  return labels.sort((a, b) => Number(a.pid) - Number(b.pid));
+}
+async function census(session) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const before = await scan();
+      const labels = await cdpLabels(session);
+      const processes = await scan();
+      const afterLabels = await cdpLabels(session);
+      if (
+        JSON.stringify(before) !== JSON.stringify(processes) ||
+        JSON.stringify(labels) !== JSON.stringify(afterLabels)
+      )
+        throw new Error('process-churn');
+      const joined = labels.map((label) => {
+        const p = processes.find((p) => p.pid === label.pid);
+        if (!p || p.state !== 'live') throw new Error('process-churn');
+        return { ...label, startTicks: p.startTicks };
+      });
+      if (
+        joined.filter((p) => p.role === 'browser').length !== 1 ||
+        !joined.some((p) => p.role === 'renderer')
+      )
+        throw new Error('missing-cdp-process');
+      const outer = processes.find((p) => p.pid === String(process.pid));
+      const watchdog = processes.find((p) => p.pid === '1');
+      if (!outer || !watchdog) throw new Error('missing-outer');
+      return { processes, labels: joined, outer, watchdog };
+    } catch (error) {
+      if (error.code !== 'ENOENT' && error.message !== 'process-churn') throw error;
+    }
+  }
+  throw new Error('unstable-process-census');
 }
 async function deniedWrite(path, allowed) {
   try {
@@ -163,8 +222,6 @@ try {
     process.execArgv.length
   )
     throw new Error('runtime-identity');
-  const outer = await security(process.pid, 'driver', []);
-  const watchdog = await security(1, 'watchdog', []);
   const budgets = {};
   for (const name of ['memory.max', 'memory.swap.max', 'pids.max', 'cpu.max'])
     budgets[name] = await boundedRead(`/sys/fs/cgroup/${name}`, 128);
@@ -260,14 +317,15 @@ try {
   if (eventFailure) throw new Error(eventFailure);
   const png = await page.screenshot({ type: 'png', timeout: 5000 });
   if (png.length > 4 * 1024 * 1024) throw new Error('png-limit');
+  const session = await browser.newBrowserCDPSession();
+  const discovery = await census(session);
+  await session.detach();
   const observations = {
     runtime: { node: process.version, arch: process.arch, uid: process.getuid() },
     driverSha256: hash(await readFile(new URL('driver.mjs', import.meta.url))),
     watchdogSha256: hash(await readFile(new URL('watchdog.mjs', import.meta.url))),
     scenarioSha256: hash(await readFile(new URL('scenario.json', import.meta.url))),
-    outer,
-    watchdog,
-    processes: await census(),
+    ...discovery,
     sandboxText,
     budgets,
     restrictions,

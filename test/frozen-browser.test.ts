@@ -26,24 +26,37 @@ import { FrozenBrowserValidator, frozenBrowserRequest } from '../src/frozen-brow
 import { digest } from '../src/domain.ts';
 import { WorkspaceStore, caseId, repositoryId, requestId, virtualPath } from '../src/workspace.ts';
 
-// Raw /proc cmdlines captured from pinned Chromium, including rewritten single-string children.
-const capturedChromiumCommands: Record<string, string> = {
-  '24': '/ms-playwright/chromium-1248/chrome-linux-arm64/chrome\u0000--disable-field-trial-config\u0000--disable-background-networking\u0000--disable-background-timer-throttling\u0000--disable-backgrounding-occluded-windows\u0000--disable-back-forward-cache\u0000--disable-breakpad\u0000--disable-client-side-phishing-detection\u0000--disable-component-extensions-with-background-pages\u0000--disable-component-update\u0000--no-default-browser-check\u0000--disable-default-apps\u0000--disable-dev-shm-usage\u0000--disable-edgeupdater\u0000--disable-extensions\u0000--disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,AvoidCorsURLLoaderRestartOnRedirect,Translate,AutoDeElevate,OptimizationHints,NetworkTimeServiceQuerying,AimEnabled,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion\u0000--enable-features=CDPScreenshotNewSurface\u0000--allow-pre-commit-input\u0000--disable-hang-monitor\u0000--disable-ipc-flooding-protection\u0000--disable-popup-blocking\u0000--disable-prompt-on-repost\u0000--disable-renderer-backgrounding\u0000--disable-updater-scheduler\u0000--force-color-profile=srgb\u0000--metrics-recording-only\u0000--no-first-run\u0000--password-store=basic\u0000--use-mock-keychain\u0000--no-service-autorun\u0000--export-tagged-pdf\u0000--disable-search-engine-choice-screen\u0000--unsafely-disable-devtools-self-xss-warnings\u0000--edge-skip-compat-layer-relaunch\u0000--disable-infobars\u0000--disable-search-engine-choice-screen\u0000--disable-sync\u0000--enable-unsafe-swiftshader\u0000--headless\u0000--hide-scrollbars\u0000--mute-audio\u0000--blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4\u0000--user-data-dir=/tmp/playwright_chromiumdev_profile-p8afzM\u0000--remote-debugging-pipe\u0000--no-startup-window\u0000',
-  '26': '/ms-playwright/chromium-1248/chrome-linux-arm64/chrome_crashpad_handler\u0000--monitor-self\u0000--monitor-self-annotation=ptype=crashpad-handler\u0000--user-stream-region=6,65568\u0000--database=/tmp/.config/google-chrome-for-testing/Crash Reports\u0000--annotation=lsb-release=Ubuntu 24.04.5 LTS\u0000--annotation=plat=Linux\u0000--annotation=prod=Chrome_Linux\u0000--annotation=ver=156.0.8078.4\u0000--initial-client-fd=9\u0000--shared-client-connection\u0000',
-  '28': '/ms-playwright/chromium-1248/chrome-linux-arm64/chrome_crashpad_handler\u0000--no-periodic-tasks\u0000--monitor-self-annotation=ptype=crashpad-handler\u0000--database=/tmp/.config/google-chrome-for-testing/Crash Reports\u0000--annotation=lsb-release=Ubuntu 24.04.5 LTS\u0000--annotation=plat=Linux\u0000--annotation=prod=Chrome_Linux\u0000--annotation=ver=156.0.8078.4\u0000--initial-client-fd=4\u0000--shared-client-connection\u0000',
-  '32': '/ms-playwright/chromium-1248/chrome-linux-arm64/chrome --type=zygote --no-zygote-sandbox --headless --crashpad-handler-pid=26 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/tmp/playwright_chromiumdev_profile-p8afzM --change-stack-guard-on-fork=enable --no-first-run --ozone-platform=headless --ozone-override-screen-size=800,600 --use-angle=swiftshader-webgl\u0000',
-  '33': '/ms-playwright/chromium-1248/chrome-linux-arm64/chrome --type=zygote --headless --crashpad-handler-pid=26 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/tmp/playwright_chromiumdev_profile-p8afzM --change-stack-guard-on-fork=enable --no-first-run --ozone-platform=headless --ozone-override-screen-size=800,600 --use-angle=swiftshader-webgl\u0000',
-  '35': '/ms-playwright/chromium-1248/chrome-linux-arm64/chrome --type=zygote --headless --crashpad-handler-pid=26 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/tmp/playwright_chromiumdev_profile-p8afzM --change-stack-guard-on-fork=enable --no-first-run --ozone-platform=headless --ozone-override-screen-size=800,600 --use-angle=swiftshader-webgl\u0000',
-  '57': '/ms-playwright/chromium-1248/chrome-linux-arm64/chrome --type=gpu-process --gpu-recent-crash-count=0 --disable-dev-shm-usage --disable-breakpad --headless --ozone-platform=headless --use-angle=swiftshader-webgl --enable-unsafe-swiftshader --crashpad-handler-pid=26 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/tmp/playwright_chromiumdev_profile-p8afzM --change-stack-guard-on-fork=enable --gpu-preferences=YAAAAAAAAAAgAAAEAAAAAAAAAAAAAGAASAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAMAAAAAQAAAAAAAAAAAAAACAAAAAAAAAAIAAAAAAAAAA== --shared-files --field-trial-handle=3,i,700291210317273837\u0000',
-  '59': '/ms-playwright/chromium-1248/chrome-linux-arm64/chrome --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=none --disable-dev-shm-usage --use-angle=swiftshader-webgl --mute-audio --crashpad-handler-pid=26 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/tmp/playwright_chromiumdev_profile-p8afzM --change-stack-guard-on-fork=enable --shared-files=v8_context_snapshot_data:100 --field-trial-handle=3,i,7002912103172738370,16973106075250199282,262144 --enable-features=CDPScreenshotNewSurface --disable-features=AimEnabled,AutoDeElevate,AvoidCorsURLLoaderRestartOnRedirect,AvoidUnnecessaryBeforeUnloadCheckSync,BlockOriginHeaderModificationOnRedirect,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,NetworkTimeServiceQuerying,OptimizationHints,PaintHolding,ThirdPartyStoragePartitioning,Translate,msEdgeUpdateLaunchServicesPreferredVersion,msForceBrowserSignIn --variations-seed-version --pseudonymization-salt-handle=7,i,8975384601855052431,12288640632494808107,4 --trace-process-track-uuid=3190708989122997041\u0000',
-  '93': '/ms-playwright/chromium-1248/chrome-linux-arm64/chrome --type=utility --utility-sub-type=storage.mojom.StorageService --lang=en-US --service-sandbox-type=utility --disable-dev-shm-usage --use-angle=swiftshader-webgl --mute-audio --crashpad-handler-pid=26 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/tmp/playwright_chromiumdev_profile-p8afzM --change-stack-guard-on-fork=enable --shared-files=v8_context_snapshot_data:100 --field-trial-handle=3,i,7002912103172738370,16973106075250199282,262144 --enable-features=CDPScreenshotNewSurface --disable-features=AimEnabled,AutoDeElevate,AvoidCorsURLLoaderRestartOnRedirect,AvoidUnnecessaryBeforeUnloadCheckSync,BlockOriginHea\u0000',
-  '114':
-    '/ms-playwright/chromium-1248/chrome-linux-arm64/chrome --type=renderer --top-chrome-webui --crashpad-handler-pid=26 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/tmp/playwright_chromiumdev_profile-p8afzM --change-stack-guard-on-fork=enable --disable-dev-shm-usage --disable-back-forward-cache --disable-background-timer-throttling --disable-breakpad --force-color-profile=srgb --remote-debugging-pipe --allow-pre-commit-input --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --ozone-platform=headless --disable-gpu-compositing --lang=en-US --num-raster-threads=4 --enable-main-frame-before-activation --renderer-clie\u0000',
-  '125':
-    '/ms-playwright/chromium-1248/chrome-linux-arm64/chrome --type=renderer --crashpad-handler-pid=26 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/tmp/playwright_chromiumdev_profile-p8afzM --change-stack-guard-on-fork=enable --disable-dev-shm-usage --disable-back-forward-cache --disable-background-timer-throttling --disable-breakpad --force-color-profile=srgb --remote-debugging-pipe --allow-pre-commit-input --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --ozone-platform=headless --disable-gpu-compositing --lang=en-US --num-raster-threads=4 --enable-main-frame-before-activation --renderer-client-id=7 --launch-ti\u0000',
-  '153':
-    '/ms-playwright/chromium-1248/chrome-linux-arm64/chrome --type=renderer --crashpad-handler-pid=26 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/tmp/playwright_chromiumdev_profile-p8afzM --change-stack-guard-on-fork=enable --disable-dev-shm-usage --disable-back-forward-cache --disable-background-timer-throttling --disable-breakpad --force-color-profile=srgb --remote-debugging-pipe --allow-pre-commit-input --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --ozone-platform=headless --disable-gpu-compositing --lang=en-US --num-raster-threads=4 --enable-main-frame-before-activation --renderer-client-id=8 --launch-ti\u0000',
-};
+function processWitness(pid: string, ppid: string, nested = false) {
+  return {
+    pid,
+    ppid,
+    startTicks: String(Number(pid) * 100),
+    state: 'live',
+    uid: [1001, 1001, 1001, 1001],
+    capEff: '0000000000000000',
+    capPrm: '0000000000000000',
+    capBnd: nested ? '000001ffffffffff' : '0000000000000000',
+    nnp: '1',
+    seccomp: '2',
+    nspid: nested ? `${pid} 3` : pid,
+    userNamespace: nested ? 'user:[101]' : 'user:[100]',
+    uidMap: nested ? '1001 1001 1' : '0 0 4294967295',
+    gidMap: nested ? '1001 1001 1' : '0 0 4294967295',
+  };
+}
+const kernelProcesses = [
+  processWitness('1', '0'),
+  processWitness('2', '1'),
+  processWitness('24', '2'),
+  processWitness('33', '24', true),
+  { ...processWitness('35', '33', true), capEff: '0000000000200000', capPrm: '0000000000200000' },
+  processWitness('83', '33', true),
+  { ...processWitness('119', '35', true), state: 'zombie' },
+  processWitness('158', '35', true),
+  processWitness('176', '35', true),
+  processWitness('187', '35', true),
+  processWitness('200', '1'),
+];
 
 const driverFixture = String.raw`
 import { SourceTextModule, SyntheticModule, createContext } from 'node:vm';
@@ -51,7 +64,8 @@ import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 const mode = process.argv[2];
-const procCommands = JSON.parse(process.argv[3]);
+const procRecords = JSON.parse(process.argv[3]);
+let scans=0, statReads=0, cdpReads=0;
 const result = {stdout:'',stderr:'',exitCode:0,headers:{},closed:[],phases:[]};
 let context, primary, serve;
 const message = (page, type, text) => {
@@ -115,7 +129,11 @@ class Context extends EventEmitter {
 }
 const fs = {
  async readdir(path) {
-  if(path==='/proc') {phase('census');return Object.keys(procCommands);}
+  if(path==='/proc') {
+   phase('census'); scans++;
+   if(mode==='census-overflow') return Array.from({length:257},(_,i)=>String(i+1));
+   return [...procRecords.filter(p=>!(mode==='entries-churn' && scans%2===0 && p.pid==='200')).map(p=>p.pid), 'self', 'sys'];
+  }
   return path==='/snapshot/'?['src']:['index.html'];
  },
  async lstat(path) {
@@ -126,16 +144,32 @@ const fs = {
  async readFile(path) {
   const name=String(path);
   if(name.endsWith('/scenario.json')) return readFileSync(new URL('scenario.json', 'file://'+process.argv[1]));
-  const proc = name.match(/^\/proc\/(\d+)\/(cmdline|status|uid_map|gid_map)$/);
+  if (/^\/proc\/\d+\/(cmdline|exe)$/.test(name)) throw Error('forbidden-argv-read');
+  const proc = name.match(/^\/proc\/(\d+)\/(stat|status|uid_map|gid_map)$/);
   if(proc) {
    const [,pid,field]=proc;
-   if(field==='cmdline') return Buffer.from(procCommands[pid]);
-   if(field==='status') return 'Uid:\t1001 1001 1001 1001\nCapEff:\t0000000000000000\nCapPrm:\t0000000000000000\nCapBnd:\t0000000000000000\nNoNewPrivs:\t1\nSeccomp:\t2\nNSpid:\t'+pid;
-   return '0 0 4294967295\n';
+   const p=procRecords.find(p=>p.pid===pid);
+   if(pid==='200' && (mode==='disappearing' || (mode==='disappears-once' && scans===1)))
+    throw Object.assign(Error(),{code:'ENOENT'});
+   if(pid==='200' && mode==='access-error') throw Object.assign(Error(),{code:'EACCES'});
+   if(pid==='119' && mode==='zombie-unreadable') throw Object.assign(Error(),{code:'EACCES'});
+   if(field==='stat') {
+    statReads++;
+    const state=p.state==='zombie' || (mode==='state-churn' && pid==='200' && statReads%2===0)?'Z':statReads%2?'R':'S';
+    const ticks=mode==='pid-reuse' && pid==='200'?String(Number(p.startTicks)+statReads):p.startTicks;
+    const ppid=mode==='reparent-churn' && pid==='200' && statReads%2===0?'2':p.ppid;
+    return p.pid+' (rewritten ) helper) '+state+' '+ppid+' '+Array(17).fill('0').join(' ')+' '+ticks+' 0 0';
+   }
+   if(field==='status' && mode==='security-churn' && pid==='200') p.capBnd=scans%2?'0000000000000000':'0000000000000001';
+   if(field==='status') return 'State:\t'+(p.state==='zombie'?'Z':'S')+'\nPPid:\t'+p.ppid+'\nUid:\t'+p.uid.join(' ')+'\nCapEff:\t'+p.capEff+'\nCapPrm:\t'+p.capPrm+'\nCapBnd:\t'+p.capBnd+'\nNoNewPrivs:\t'+p.nnp+'\nSeccomp:\t'+p.seccomp+'\nNSpid:\t'+p.nspid;
+   return p[field==='uid_map'?'uidMap':'gidMap'];
   }
   return Buffer.from('fixture');
  },
- async readlink() {return 'user:[100]';},
+ async readlink(path) {
+  if(!/^\/proc\/\d+\/ns\/user$/.test(path)) throw Error('unexpected-readlink');
+  return procRecords.find(p=>p.pid===path.split('/')[2]).userNamespace;
+ },
  async writeFile() {throw Object.assign(Error(),{code:'EROFS'});}
 };
 const server = {
@@ -154,6 +188,19 @@ const realm=createContext({process:fakeProcess,Buffer,URL});
 const dependencies = {
  'playwright':{chromium:{launch:async()=>({
   newContext:async()=>{context=new Context();return context;},
+  newBrowserCDPSession:async()=>({
+   send:async name=>{
+    if(name!=='SystemInfo.getProcessInfo') throw Error('unexpected-cdp');
+    cdpReads++;
+    let processInfo=[{id:24,type:'browser'},{id:158,type:'renderer'},{id:176,type:'renderer'},{id:187,type:'renderer'},{id:83,type:'other'}];
+    if(mode==='cdp-missing-browser') processInfo=processInfo.filter(p=>p.type!=='browser');
+    if(mode==='cdp-missing-renderer') processInfo=processInfo.filter(p=>p.type!=='renderer');
+    if(mode==='cdp-duplicate') processInfo.push({id:24,type:'browser'});
+    if(mode==='cdp-unmatched') processInfo.push({id:250,type:'renderer'});
+    if(mode==='cdp-churn' && cdpReads%2===0) processInfo=processInfo.filter(p=>p.id!==187);
+    return {processInfo};
+   },detach:async()=>{}
+  }),
   close:async()=>{phase('browser-close');result.closed.push('browser');}
  })}},
  'node:fs/promises':fs,
@@ -176,7 +223,7 @@ process.stdout.write(JSON.stringify(result));
 
 async function runTrustedDriver(
   mode: string,
-  procCommands: Record<string, string> = {},
+  processes = kernelProcesses,
 ): Promise<{
   stdout: string;
   stderr: string;
@@ -194,7 +241,7 @@ async function runTrustedDriver(
       driverFixture,
       fileURLToPath(new URL('../worker/frozen-browser/driver.mjs', import.meta.url)),
       mode,
-      JSON.stringify(procCommands),
+      JSON.stringify(processes),
     ],
     { stdio: ['ignore', 'pipe', 'pipe'] },
   );
@@ -278,14 +325,16 @@ else if (args[0] === 'build') {
  if(state.mode==='execution-hang') {state.container.State.Status='running';save();setInterval(()=>{},1000);}
  else {
  const bindings=Object.fromEntries(state.container.Config.Env.map(v=>[v.slice(0,v.indexOf('=')),v.slice(v.indexOf('=')+1)]));
- const chrome='/ms-playwright/chromium-1248/chrome-linux-arm64/chrome';
- const sec=(pid,role,args=['driver','watchdog'].includes(role)?[]:[chrome,'--type='+role])=>({pid,role,args,uid:[1001,1001,1001,1001],capEff:'0000000000000000',capPrm:'0000000000000000',capBnd:'0000000000000000',nnp:'1',seccomp:'2',nspid:pid,userNamespace:'user:[100]',uidMap:'0 0 4294967295',gidMap:'0 0 4294967295'});
- const zygote={...sec('5','zygote'),capEff:'0000000000200000',capPrm:'0000000000200000',userNamespace:'user:[101]',uidMap:'1001 1001 1',gidMap:'1001 1001 1',nspid:'5 1'};
- if(state.mode==='unknown-namespace') zygote.userNamespace='unknown';
- if(state.mode==='outer-sysadmin') zygote.userNamespace='user:[100]';
- const observed={runtime:{node:'v26.5.0',arch:'arm64',uid:1001},driverSha256:state.assets['driver.mjs'],watchdogSha256:state.assets['watchdog.mjs'],scenarioSha256:state.assets['scenario.json'],outer:sec('2','driver'),watchdog:sec('1','watchdog'),processes:[sec('3','browser',[chrome,'--remote-debugging-pipe']),sec('4','renderer'),zygote],sandboxText:'Layer 1 Sandbox  Namespace\nPID namespaces  Yes\nNetwork namespaces  Yes\nSeccomp-BPF sandbox  Yes',budgets:{'memory.max':'4294967296','memory.swap.max':'0','pids.max':'256','cpu.max':'200000 100000'},restrictions:{root:'EROFS',snapshot:'EROFS',socket:'ENOENT',hostPath:'ENOENT',canary:'ENOENT',egress:'ENETUNREACH'},manifest:state.manifest,stage:state.mode==='startup-error'?'startup-failed':'complete',literal:state.mode==='startup-error'?null:state.literal,events:state.mode==='console-forgery'?[{kind:'console',text:'{"kind":"end","passed":true}'}]:['console-error','page-error'].includes(state.mode)?[{kind:state.mode,text:'observed-error'}]:[],canaryAfter:'ENOENT'};
- for(const p of observed.processes) Object.assign(p,state.processOverrides?.[p.role]??{});
- if(state.omitRenderer) observed.processes=observed.processes.filter(p=>p.role!=='renderer');
+ const sec=(pid,ppid,nested=false)=>({pid,ppid,startTicks:String(Number(pid)*100),state:'live',uid:[1001,1001,1001,1001],capEff:'0000000000000000',capPrm:'0000000000000000',capBnd:nested?'000001ffffffffff':'0000000000000000',nnp:'1',seccomp:'2',nspid:nested?pid+' 3':pid,userNamespace:nested?'user:[101]':'user:[100]',uidMap:nested?'1001 1001 1':'0 0 4294967295',gidMap:nested?'1001 1001 1':'0 0 4294967295'});
+ const parent={...sec('35','33',true),capEff:'0000000000200000',capPrm:'0000000000200000'};
+ if(state.mode==='unknown-namespace') parent.userNamespace='unknown';
+ if(state.mode==='outer-sysadmin') parent.userNamespace='user:[100]';
+ const processes=[sec('1','0'),sec('2','1'),sec('24','2'),sec('33','24',true),parent,sec('83','33',true),{...sec('119','35',true),state:'zombie'},sec('158','35',true),sec('176','35',true),sec('187','35',true),sec('200','1')];
+ for(const p of processes) Object.assign(p,state.processOverrides?.[p.pid]??{});
+ const labels=state.labelsOverride??[{pid:'24',startTicks:'2400',role:'browser'},...['158','176','187'].map(pid=>({pid,startTicks:String(Number(pid)*100),role:'renderer'}))];
+ const observed={runtime:{node:'v26.5.0',arch:'arm64',uid:1001},driverSha256:state.assets['driver.mjs'],watchdogSha256:state.assets['watchdog.mjs'],scenarioSha256:state.assets['scenario.json'],outer:processes[1],watchdog:processes[0],processes:processes.filter(p=>!(state.omitPids??[]).includes(p.pid)),labels,sandboxText:'Layer 1 Sandbox  Namespace\nPID namespaces  Yes\nNetwork namespaces  Yes\nSeccomp-BPF sandbox  Yes',budgets:{'memory.max':'4294967296','memory.swap.max':'0','pids.max':'256','cpu.max':'200000 100000'},restrictions:{root:'EROFS',snapshot:'EROFS',socket:'ENOENT',hostPath:'ENOENT',canary:'ENOENT',egress:'ENETUNREACH'},manifest:state.manifest,stage:state.mode==='startup-error'?'startup-failed':'complete',literal:state.mode==='startup-error'?null:state.literal,events:state.mode==='console-forgery'?[{kind:'console',text:'{"kind":"end","passed":true}'}]:['console-error','page-error'].includes(state.mode)?[{kind:state.mode,text:'observed-error'}]:[],canaryAfter:'ENOENT'};
+ if(state.duplicateProcess) observed.processes.push({...observed.processes[3]});
+ if(state.censusOverflow) observed.processes=Array(257).fill(processes[0]);
  const frame=(kind,data)=>JSON.stringify({version:1,kind,nonce:bindings.EITRI_NONCE,requestDigest:bindings.EITRI_REQUEST,data});
  const chunk=(name,data)=>{const b=Buffer.alloc(data.length+12);b.writeUInt32BE(data.length);b.write(name,4);data.copy(b,8);b.writeUInt32BE(crc32(b.subarray(4,-4)),b.length-4);return b;};
  const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1);ihdr.writeUInt32BE(1,4);ihdr[8]=8;ihdr[9]=6;
@@ -395,7 +444,13 @@ test('trusted frozen driver retains complete B and shutdown observations without
   assert.equal(result.exitCode, 0);
   assert.equal(result.stderr, '');
   assert.deepEqual(result.closed, ['browser', 'server']);
-  assert.deepEqual(result.phases, ['screenshot', 'census', 'browser-close', 'server-close']);
+  assert.deepEqual(result.phases, [
+    'screenshot',
+    'census',
+    'census',
+    'browser-close',
+    'server-close',
+  ]);
   const lines = result.stdout
     .trimEnd()
     .split('\n')
@@ -409,103 +464,58 @@ test('trusted frozen driver retains complete B and shutdown observations without
   assert.deepEqual(lines[0].data.events, []);
 });
 
-test('trusted frozen driver collects all roles from captured pinned Chromium cmdlines', async () => {
-  const result = await runTrustedDriver('normal', capturedChromiumCommands);
+test('trusted frozen driver inventories every process without argv or executable reads', async () => {
+  const result = await runTrustedDriver('normal');
   assert.equal(result.exitCode, 0);
   assert.equal(result.stderr, '');
   const frames = result.stdout
     .trimEnd()
     .split('\n')
     .map((line) => JSON.parse(line));
-  assert.deepEqual(
-    frames.map((frame) => frame.kind),
-    ['observations', 'png', 'end'],
-  );
-  const processes = frames[0].data.processes;
-  assert.deepEqual(
-    processes.map(({ pid, role }: { pid: string; role: string }) => [pid, role]),
-    [
-      ['24', 'browser'],
-      ['26', 'crashpad-handler'],
-      ['28', 'crashpad-handler'],
-      ['32', 'zygote'],
-      ['33', 'zygote'],
-      ['35', 'zygote'],
-      ['57', 'gpu-process'],
-      ['59', 'utility'],
-      ['93', 'utility'],
-      ['114', 'renderer'],
-      ['125', 'renderer'],
-      ['153', 'renderer'],
-    ],
-  );
-  for (const p of processes) {
-    assert.deepEqual(p.args, capturedChromiumCommands[p.pid]!.slice(0, -1).split('\0'));
-    assert.equal(p.nspid, p.pid);
-    assert.deepEqual(p.uid, [1001, 1001, 1001, 1001]);
-  }
-});
-
-test('trusted frozen driver preserves raw NUL and joined Chromium command witnesses', async () => {
-  const chrome = '/ms-playwright/chromium-1248/chrome-linux-arm64/chrome';
-  const procCommands = {
-    '3': `${chrome}\0--remote-debugging-pipe\0--headless\0`,
-    '4': `${chrome} --type=renderer --remote-debugging-pipe\0`,
-    '5': 'chrome --type=zygote --no-zygote-sandbox\0',
-    '6': `${chrome}_crashpad_handler\0--database=/tmp/Crash Reports\0`,
-    '7': '/usr/local/bin/node\0/opt/eitri/frozen-browser/driver.mjs\0',
-    '8': ['/usr/bin/sleep', '10', ''].join('\0'),
-  };
-  const result = await runTrustedDriver('normal', procCommands);
-  assert.equal(result.exitCode, 0);
-  assert.equal(result.stderr, '');
-  const frames = result.stdout
-    .trimEnd()
-    .split('\n')
-    .map((line) => JSON.parse(line));
-  assert.deepEqual(
-    frames.map((frame) => frame.kind),
-    ['observations', 'png', 'end'],
-  );
-  assert.deepEqual(
-    frames[0].data.processes.map(
-      ({ pid, role, args }: { pid: string; role: string; args: string[] }) => ({ pid, role, args }),
-    ),
-    [
-      { pid: '3', role: 'browser', args: [chrome, '--remote-debugging-pipe', '--headless'] },
-      { pid: '4', role: 'renderer', args: [`${chrome} --type=renderer --remote-debugging-pipe`] },
-      { pid: '5', role: 'zygote', args: ['chrome --type=zygote --no-zygote-sandbox'] },
-      {
-        pid: '6',
-        role: 'crashpad-handler',
-        args: [`${chrome}_crashpad_handler`, '--database=/tmp/Crash Reports'],
-      },
-    ],
-  );
+  assert.deepEqual(frames[0].data.processes, kernelProcesses);
+  assert.deepEqual(frames[0].data.labels, [
+    { pid: '24', role: 'browser', startTicks: '2400' },
+    { pid: '158', role: 'renderer', startTicks: '15800' },
+    { pid: '176', role: 'renderer', startTicks: '17600' },
+    { pid: '187', role: 'renderer', startTicks: '18700' },
+  ]);
   assert.equal(
     frames[2].data.observationsSha256,
     createHash('sha256').update(result.stdout.split('\n')[0]!).digest('hex'),
   );
 });
 
-test('trusted frozen driver rejects unsafe or ambiguous Chromium command witnesses', async (t) => {
-  for (const command of [
-    'chrome --type=renderer --no-sandbox\0',
-    'chrome --type=renderer --disable-gpu-sandbox\0',
-    'chrome --type=renderer --remote-debugging-port=0\0',
-    'chrome --type=renderer --single-process\0',
-    'chrome --type=renderer --no-zygote\0',
-    'chrome --type=unknown\0',
-    'chrome --type=renderer --type=zygote\0',
-    'chrome\0--type=renderer\0--type=renderer\0',
-    'chrome --type=\0',
-    'chrome --type renderer\0',
+test('trusted frozen driver retries a disappearing scan without omitting a helper', async () => {
+  const result = await runTrustedDriver('disappears-once');
+  assert.equal(result.exitCode, 0);
+  assert.deepEqual(JSON.parse(result.stdout.split('\n')[0]).data.processes, kernelProcesses);
+  assert.equal(result.phases.filter((p) => p === 'census').length, 3);
+});
+
+test('trusted frozen driver rejects unstable, inaccessible and invalid CDP censuses', async (t) => {
+  for (const mode of [
+    'disappearing',
+    'access-error',
+    'zombie-unreadable',
+    'pid-reuse',
+    'state-churn',
+    'reparent-churn',
+    'security-churn',
+    'entries-churn',
+    'cdp-missing-browser',
+    'cdp-missing-renderer',
+    'cdp-duplicate',
+    'cdp-unmatched',
+    'cdp-churn',
+    'census-overflow',
   ])
-    await t.test(JSON.stringify(command), async () => {
-      const result = await runTrustedDriver('normal', { '4': command });
+    await t.test(mode, async () => {
+      const result = await runTrustedDriver(mode);
       assert.equal(result.exitCode, 1);
       assert.equal(result.stdout, '');
       assert.equal(result.stderr, 'frozen-driver-failed\n');
+      if (['disappearing', 'pid-reuse'].includes(mode))
+        assert.equal(result.phases.filter((p) => p === 'census').length, 3);
     });
 });
 
@@ -899,73 +909,103 @@ test('frozen browser rejects malformed protocol and containment transcripts befo
     });
 });
 
-test('frozen browser verifies raw joined Chromium roles without weakening namespace witnesses', async (t) => {
+test('frozen browser accepts the nested census including an unknown helper and zombie', async (t) => {
   const f = await fixture(t);
-  await writeFile(
-    f.statePath,
-    JSON.stringify({
-      ...(await f.state()),
-      processOverrides: {
-        browser: { args: ['chrome --remote-debugging-pipe --headless'] },
-        renderer: { args: ['chrome --type=renderer --remote-debugging-pipe'] },
-        zygote: { args: ['chrome --type=zygote --headless'] },
-      },
-    }),
-  );
   const report = await f.validator.validate(f.request, signal());
   assert.deepEqual(report.outcome, { kind: 'baseline-reproduced' });
-  assert.deepEqual(report.cleanup, { kind: 'owned-removed', cache: 'retained' });
+  assert.deepEqual(report.evidence?.observations.processes, kernelProcesses);
 });
 
-test('frozen browser rejects forged joined arguments and incomplete security witnesses', async (t) => {
-  for (const [name, change] of [
-    ...[
-      '--no-sandbox',
-      '--disable-gpu-sandbox',
-      '--remote-debugging-port=0',
-      '--single-process',
-      '--no-zygote',
-    ].map(
-      (flag) =>
-        [
-          flag,
-          { processOverrides: { renderer: { args: ['chrome --type=renderer ' + flag] } } },
-        ] as const,
+test('frozen browser rejects invalid kernel identity, labels and security on every process', async (t) => {
+  const sysadmin = { capEff: '0000000000200000', capPrm: '0000000000200000' };
+  const browser = { pid: '24', startTicks: '2400', role: 'browser' };
+  const renderer = { pid: '158', startTicks: '15800', role: 'renderer' };
+  const mutations: [string, Record<string, unknown>][] = [
+    ...['1', '2', '24', '200'].flatMap((pid) =>
+      ['capEff', 'capPrm', 'capBnd'].map(
+        (mask) =>
+          [
+            `initial ${pid} ${mask}`,
+            { processOverrides: { [pid]: { [mask]: '0000000000200000' } } },
+          ] as [string, Record<string, unknown>],
+      ),
     ),
-    ['unknown type', { processOverrides: { renderer: { args: ['chrome --type=unknown'] } } }],
-    ['mismatched type', { processOverrides: { renderer: { args: ['chrome --type=zygote'] } } }],
+    ...['33', '35', '83', '119', '158'].map(
+      (pid) =>
+        [
+          `nested ${pid} bounding`,
+          { processOverrides: { [pid]: { capBnd: '0000000000000001' } } },
+        ] as [string, Record<string, unknown>],
+    ),
+    ['unknown helper SYS_ADMIN', { processOverrides: { '200': sysadmin } }],
+    ['nested service SYS_ADMIN', { processOverrides: { '83': sysadmin } }],
+    ['indirect renderer ancestor SYS_ADMIN', { processOverrides: { '33': sysadmin } }],
+    ['renderer SYS_ADMIN', { processOverrides: { '158': sysadmin } }],
+    ['zombie SYS_ADMIN', { processOverrides: { '119': sysadmin } }],
+    ['parent zombie', { processOverrides: { '35': { state: 'zombie' } } }],
+    ['parent namespace mismatch', { processOverrides: { '35': { userNamespace: 'user:[102]' } } }],
+    ['parent effective only', { processOverrides: { '35': { capPrm: '0000000000000000' } } }],
     [
-      'duplicate type',
-      { processOverrides: { renderer: { args: ['chrome --type=renderer --type=zygote'] } } },
+      'parent other capability',
+      { processOverrides: { '35': { capEff: '0000000000000001', capPrm: '0000000000000001' } } },
     ],
+    ['browser not direct driver child', { processOverrides: { '24': { ppid: '1' } } }],
     [
-      'duplicate NUL type',
+      'browser nested',
       {
-        processOverrides: { renderer: { args: ['chrome', '--type=renderer', '--type=renderer'] } },
+        processOverrides: {
+          '24': {
+            userNamespace: 'user:[101]',
+            uidMap: '1001 1001 1',
+            gidMap: '1001 1001 1',
+            nspid: '24 2',
+          },
+        },
       },
     ],
-    ['empty type', { processOverrides: { renderer: { args: ['chrome --type='] } } }],
-    ['separated type', { processOverrides: { renderer: { args: ['chrome --type renderer'] } } }],
-    ['missing executable', { processOverrides: { renderer: { args: ['--type=renderer'] } } }],
+    ['renderer outside browser ancestry', { processOverrides: { '33': { ppid: '2' } } }],
+    ...['33', '35', '83', '119', '158'].flatMap(
+      (pid) =>
+        [
+          [`nested ${pid} uid map`, { processOverrides: { [pid]: { uidMap: '1001 1001 2' } } }],
+          [
+            `nested ${pid} gid map`,
+            { processOverrides: { [pid]: { gidMap: '1001 1001 1\n1002 1002 1' } } },
+          ],
+          [`nested ${pid} NSpid`, { processOverrides: { [pid]: { nspid: pid } } }],
+        ] as [string, Record<string, unknown>][],
+    ),
+    ['helper UID', { processOverrides: { '200': { uid: [0, 0, 0, 0] } } }],
+    ['helper NNP', { processOverrides: { '200': { nnp: '0' } } }],
+    ['zombie seccomp', { processOverrides: { '119': { seccomp: '0' } } }],
+    ['helper namespace', { processOverrides: { '200': { userNamespace: 'unknown' } } }],
+    ['missing browser label', { labelsOverride: [renderer] }],
+    ['missing renderer label', { labelsOverride: [browser] }],
+    ['duplicate browser label', { labelsOverride: [browser, browser, renderer] }],
     [
-      'non-browser executable',
-      { processOverrides: { renderer: { args: ['/usr/bin/sleep --type=renderer'] } } },
+      'conflicting label',
+      { labelsOverride: [browser, renderer, { ...renderer, role: 'browser' }] },
     ],
     [
-      'NUL in raw argument',
-      { processOverrides: { renderer: { args: ['chrome\0--type=renderer'] } } },
+      'multiple browsers',
+      { labelsOverride: [browser, renderer, { pid: '83', startTicks: '8300', role: 'browser' }] },
     ],
-    ['missing renderer', { omitRenderer: true }],
-    ['zygote map range', { processOverrides: { zygote: { uidMap: '1001 1001 2' } } }],
-    ['zygote unnested PID', { processOverrides: { zygote: { nspid: '5' } } }],
+    ['unmatched renderer label', { labelsOverride: [browser, { ...renderer, pid: '250' }] }],
+    ['PID reuse label', { labelsOverride: [browser, { ...renderer, startTicks: '15801' }] }],
     [
-      'renderer SYS_ADMIN',
-      {
-        processOverrides: { renderer: { capEff: '0000000000200000', capPrm: '0000000000200000' } },
-      },
+      'zombie renderer label',
+      { labelsOverride: [browser, { pid: '119', startTicks: '11900', role: 'renderer' }] },
     ],
-  ] as const)
-    await t.test(String(name), async (t) => {
+    ['zombie browser', { processOverrides: { '24': { state: 'zombie' } } }],
+    ['missing parent', { omitPids: ['33'] }],
+    ['missing outer census record', { omitPids: ['2'] }],
+    ['cycle', { processOverrides: { '33': { ppid: '35', startTicks: '3500' } } }],
+    ['parent younger than child', { processOverrides: { '33': { startTicks: '3600' } } }],
+    ['duplicate PID', { duplicateProcess: true }],
+    ['census overflow', { censusOverflow: true }],
+  ];
+  for (const [name, change] of mutations)
+    await t.test(name, async (t) => {
       const f = await fixture(t);
       await writeFile(f.statePath, JSON.stringify({ ...(await f.state()), ...change }));
       const report = await f.validator.validate(f.request, signal());
@@ -976,6 +1016,25 @@ test('frozen browser rejects forged joined arguments and incomplete security wit
       assert.equal(report.evidence, null);
       assert.deepEqual(report.cleanup, { kind: 'owned-removed', cache: 'retained' });
     });
+});
+
+test('frozen browser accepts zero nested bounding masks without granting capabilities', async (t) => {
+  const f = await fixture(t);
+  await writeFile(
+    f.statePath,
+    JSON.stringify({
+      ...(await f.state()),
+      processOverrides: Object.fromEntries(
+        ['33', '35', '83', '119', '158', '176', '187'].map((pid) => [
+          pid,
+          { capBnd: '0000000000000000' },
+        ]),
+      ),
+    }),
+  );
+  assert.deepEqual((await f.validator.validate(f.request, signal())).outcome, {
+    kind: 'baseline-reproduced',
+  });
 });
 
 test('frozen browser cancellation and close remove the running container even without awaiting validation', async (t) => {

@@ -141,7 +141,7 @@ test(
   { timeout: 300000 },
   async (t) => {
     const f = await fixture(t);
-    const exported = await f.store.exportRevision(f.request.frozen);
+    const frozenBytes = await f.store.readFrozen(f.request.frozen, signal());
     const candidate = await f.revise(html('B'), 'candidate');
     const baseline = await f.validator.validate(f.request, signal());
     assert.equal(baseline.outcome.kind, 'baseline-reproduced');
@@ -202,7 +202,7 @@ test(
       (await f.validator.validate(overflow, signal())).outcome.kind,
       'infrastructure-failed',
     );
-    assert.deepEqual(await f.store.exportRevision(f.request.frozen), exported);
+    assert.deepEqual(await f.store.readFrozen(f.request.frozen, signal()), frozenBytes);
     assert.equal(
       Buffer.from(
         (await f.store.read(candidate.frozen.caseId, virtualPath('src/index.html'))).bytes,

@@ -771,11 +771,12 @@ function verifyImage(value: unknown, base = false): ObjectValue {
     fail('image-environment');
   return image;
 }
-function verifyWitness(value: unknown, initial: string, outer: boolean): ObjectValue {
+function verifyWitness(value: unknown, initial: string): ObjectValue {
   const r = exact(value, [
     'pid',
-    'role',
-    'args',
+    'startTicks',
+    'ppid',
+    'state',
     'uid',
     'capEff',
     'capPrm',
@@ -788,35 +789,18 @@ function verifyWitness(value: unknown, initial: string, outer: boolean): ObjectV
     'gidMap',
   ]);
   const pid = string(r.pid, 10),
-    role = string(r.role, 32),
     ns = string(r.userNamespace, 64);
   if (
     !/^[1-9]\d*$/.test(pid) ||
+    !/^[1-9]\d{0,19}$/.test(string(r.startTicks, 20)) ||
+    !/^(0|[1-9]\d*)$/.test(string(r.ppid, 10)) ||
+    !['live', 'zombie'].includes(string(r.state, 6)) ||
     !/^user:\[[1-9]\d*\]$/.test(ns) ||
-    ![
-      'driver',
-      'watchdog',
-      'browser',
-      'zygote',
-      'renderer',
-      'gpu-process',
-      'utility',
-      'crashpad-handler',
-    ].includes(role) ||
     !same(r.uid, [1001, 1001, 1001, 1001]) ||
     r.nnp !== '1' ||
     r.seccomp !== '2'
   )
     fail('process-security');
-  const args = array(r.args, 128).map((arg) => string(arg, 4096));
-  if (
-    args.some((arg) =>
-      /^(--no-sandbox|--disable-.*sandbox|--remote-debugging-port|--single-process|--no-zygote)(=|$)/.test(
-        arg,
-      ),
-    )
-  )
-    fail('browser-sandbox-flags');
   for (const cap of [r.capEff, r.capPrm, r.capBnd])
     if (!/^[0-9a-f]{16}$/.test(string(cap, 16))) fail('process-capability');
   for (const map of [r.uidMap, r.gidMap]) {
@@ -826,25 +810,100 @@ function verifyWitness(value: unknown, initial: string, outer: boolean): ObjectV
   const nspid = string(r.nspid, 64);
   if (!/^[1-9]\d*(?:[ \t]+[1-9]\d*)*$/.test(nspid) || nspid.split(/[ \t]+/)[0] !== pid)
     fail('namespace-pid');
-  if (r.capBnd !== '0000000000000000') fail('process-bounding-capability');
-  if (
-    outer &&
-    (ns !== initial || r.capEff !== '0000000000000000' || r.capPrm !== '0000000000000000')
-  )
-    fail('outer-capability');
-  if (r.capEff !== '0000000000000000' || r.capPrm !== '0000000000000000') {
+  if (ns === initial) {
+    if ([r.capEff, r.capPrm, r.capBnd].some((c) => c !== '0000000000000000'))
+      fail('initial-capability');
+  } else {
     if (
-      outer ||
-      role !== 'zygote' ||
-      ns === initial ||
-      r.capEff !== '0000000000200000' ||
-      r.capPrm !== '0000000000200000' ||
       ![r.uidMap, r.gidMap].every((m) => /^1001[ \t]+1001[ \t]+1$/.test(string(m).trim())) ||
       !/^[1-9]\d*(?:[ \t]+[1-9]\d*)+$/.test(nspid)
     )
-      fail('unwitnessed-zygote-capability');
+      fail('nested-namespace');
+    if (!['0000000000000000', '000001ffffffffff'].includes(string(r.capBnd)))
+      fail('process-bounding-capability');
   }
   return r;
+}
+function verifyCensus(r: ObjectValue) {
+  const initial = string(object(r.outer).userNamespace, 64);
+  const outer = verifyWitness(r.outer, initial),
+    watchdog = verifyWitness(r.watchdog, initial);
+  if (
+    watchdog.pid !== '1' ||
+    watchdog.ppid !== '0' ||
+    watchdog.userNamespace !== initial ||
+    outer.pid === '1' ||
+    outer.state !== 'live' ||
+    watchdog.state !== 'live'
+  )
+    fail('outer-identity');
+  const processes = array(r.processes, 256).map((p) => verifyWitness(p, initial));
+  const byPid = new Map<string, ObjectValue>();
+  for (const p of processes) {
+    const pid = string(p.pid);
+    if (byPid.has(pid)) fail('duplicate-process-witness');
+    byPid.set(pid, p);
+  }
+  if (!same(byPid.get(string(outer.pid)), outer) || !same(byPid.get('1'), watchdog))
+    fail('missing-outer');
+  for (const p of processes) {
+    const seen = new Set<string>();
+    let current = p;
+    while (current.pid !== '1') {
+      const pid = string(current.pid);
+      if (seen.has(pid)) fail('process-ancestry-cycle');
+      seen.add(pid);
+      const parent = byPid.get(string(current.ppid));
+      if (!parent || BigInt(string(parent.startTicks)) > BigInt(string(current.startTicks)))
+        return fail('process-parent');
+      current = parent;
+    }
+  }
+  const labels = array(r.labels, 256).map((raw) => {
+    const label = exact(raw, ['pid', 'startTicks', 'role']);
+    const p = byPid.get(string(label.pid, 10));
+    if (
+      !p ||
+      p.startTicks !== label.startTicks ||
+      p.state !== 'live' ||
+      !['browser', 'renderer'].includes(string(label.role, 8)) ||
+      p.pid === outer.pid ||
+      p.pid === '1'
+    )
+      return fail('invalid-cdp-label');
+    return { p, role: label.role };
+  });
+  if (new Set(labels.map((l) => l.p.pid)).size !== labels.length) fail('duplicate-cdp-label');
+  const browsers = labels.filter((l) => l.role === 'browser');
+  const renderers = labels.filter((l) => l.role === 'renderer').map((l) => l.p);
+  if (browsers.length !== 1 || !renderers.length) fail('missing-browser-witnesses');
+  const browser = browsers[0]!.p;
+  if (browser.ppid !== outer.pid || browser.userNamespace !== initial) fail('browser-identity');
+  for (const renderer of renderers) {
+    if (
+      renderer.userNamespace === initial ||
+      renderer.capEff !== '0000000000000000' ||
+      renderer.capPrm !== '0000000000000000'
+    )
+      fail('renderer-security');
+    let current = renderer;
+    while (current.pid !== browser.pid) {
+      if (current.pid === '1') fail('renderer-ancestry');
+      current = byPid.get(string(current.ppid))!;
+    }
+  }
+  for (const p of processes) {
+    if (p.capEff === '0000000000000000' && p.capPrm === '0000000000000000') continue;
+    if (
+      p.userNamespace === initial ||
+      p.state !== 'live' ||
+      p.capEff !== '0000000000200000' ||
+      p.capPrm !== '0000000000200000' ||
+      labels.some((l) => l.p === p) ||
+      !renderers.some((child) => child.ppid === p.pid && child.userNamespace === p.userNamespace)
+    )
+      fail('unwitnessed-renderer-parent-capability');
+  }
 }
 function observations(value: unknown, manifest: Manifest, assets: Assets): ObjectValue {
   const r = exact(value, [
@@ -855,6 +914,7 @@ function observations(value: unknown, manifest: Manifest, assets: Assets): Objec
     'outer',
     'watchdog',
     'processes',
+    'labels',
     'sandboxText',
     'budgets',
     'restrictions',
@@ -872,29 +932,8 @@ function observations(value: unknown, manifest: Manifest, assets: Assets): Objec
     !same(r.manifest, manifest)
   )
     fail('worker-provenance');
-  const initial = string(object(r.outer).userNamespace, 64);
-  const outer = verifyWitness(r.outer, initial, true),
-    watchdog = verifyWitness(r.watchdog, initial, true);
-  if (outer.role !== 'driver' || watchdog.role !== 'watchdog' || watchdog.pid !== '1')
-    fail('outer-role');
-  const processes = array(r.processes, 64);
-  if (!processes.length) fail('missing-browser-witnesses');
-  const seen = new Set<string>();
-  let pipe = false,
-    browser = false,
-    renderer = false;
-  for (const raw of processes) {
-    const p = verifyWitness(raw, initial, false);
-    const pid = string(p.pid);
-    if (seen.has(pid) || p.role === 'driver' || p.role === 'watchdog')
-      fail('duplicate-process-witness');
-    seen.add(pid);
-    browser ||= p.role === 'browser';
-    renderer ||= p.role === 'renderer';
-    pipe ||= array(p.args, 128).includes('--remote-debugging-pipe');
-  }
-  if (!pipe || !browser || !renderer || !isSandboxStatusVerified(string(r.sandboxText, 16384)))
-    fail('sandbox-status');
+  verifyCensus(r);
+  if (!isSandboxStatusVerified(string(r.sandboxText, 16384))) fail('sandbox-status');
   const b = exact(r.budgets, ['memory.max', 'memory.swap.max', 'pids.max', 'cpu.max']);
   const cpu = string(b['cpu.max'], 128).split(/\s+/);
   if (
