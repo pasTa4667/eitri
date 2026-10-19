@@ -255,7 +255,7 @@ async function runTrustedDriver(
 }
 
 const transcript = String.raw`
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { deflateSync, crc32 } from 'node:zlib';
 const hash = b => createHash('sha256').update(b).digest('hex');
@@ -264,7 +264,10 @@ const args = process.argv.slice(3);
 if (args.shift() !== '--context' || args.shift() !== 'orbstack') throw Error('context');
 const state = JSON.parse(readFileSync(path));
 state.calls.push(args);
-const save = () => writeFileSync(path, JSON.stringify(state));
+const save = () => {
+ writeFileSync(path+'.next', JSON.stringify(state));
+ renameSync(path+'.next', path);
+};
 const output = value => { save(); process.stdout.write(JSON.stringify(value)); };
 const plain = value => { save(); process.stdout.write(value); };
 const baseId = 'sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff';
