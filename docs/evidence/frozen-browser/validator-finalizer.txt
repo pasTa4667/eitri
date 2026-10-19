@@ -1,0 +1,2 @@
+Verified all fixture cleanup attempts, both failures, and partial-setup closure.
+Verified fixture child cleanup kills and awaits a real stopped helper.

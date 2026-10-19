@@ -1,0 +1,25 @@
+FIRST_CLOSE_ATTEMPTED
+✖ separate teardown hooks after a close failure (0.907667ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 79.377542
+
+✖ failing tests:
+
+test at .audit/teardown-probe.test.mjs:3:1
+✖ separate teardown hooks after a close failure (0.907667ms)
+  Error: synthetic close failure
+      at TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri/.audit/teardown-probe.test.mjs:6:11)
+      at TestHook.runInAsyncScope (node:async_hooks:226:14)
+      at TestHook.run (node:internal/test_runner/test:1382:25)
+      at TestHook.run (node:internal/test_runner/test:1726:18)
+      at TestHook.run (node:internal/util:581:20)
+      at Test.runHook (node:internal/test_runner/test:1269:20)
+      at after (node:internal/test_runner/test:1322:20)
+      at Test.run (node:internal/test_runner/test:1408:13)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)

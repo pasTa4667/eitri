@@ -1,0 +1,14 @@
+Protected retention target 88f89090de567fa6eb10afc9f5f196892a22731f at /Users/felix.langbein/projects/eitri-validator-acceptance
+RETENTION_ROOT="/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-YRM6wl"
+Fixture state retained at /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-YRM6wl (validator: /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-YRM6wl/validator)
+✔ actual Docker lost build client blocks further builds and retains unresolved ownership accounting (1356.090667ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1466.643708
+Verified retained unresolved ownership accounting at /private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-YRM6wl/validator
+Protected instrument retained at /Users/felix.langbein/projects/eitri-validator-acceptance/.audit/harness-retention-13c28b0f-88c6-4136-b403-c8843adca9c8.mjs

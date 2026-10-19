@@ -1,0 +1,29 @@
+FAILURE_ROOT="/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-br4F6F"
+Fixture state retained at /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-br4F6F (validator: /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-br4F6F/validator)
+Auxiliary container eitri-frozen-dependent-b843e3ac-174f-44d3-bb41-bd00789e36e8, fixture state retained at /private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-br4F6F
+▶ actual Docker crash boundaries preserve only committed outcomes and never replay
+  ✖ after-outcome-commit (3250.889875ms)
+✖ actual Docker crash boundaries preserve only committed outcomes and never replay (3251.793708ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3357.350625
+
+✖ failing tests:
+
+test at .audit/harness-dependent-c8bdb040-56eb-45f8-a42e-9a34889b885a.test.ts:592:15
+✖ after-outcome-commit (3250.889875ms)
+  Error: injected-dependent-assertion
+      at TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-validator-acceptance/.audit/harness-dependent-c8bdb040-56eb-45f8-a42e-9a34889b885a.test.ts:654:17)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-validator-acceptance/.audit/harness-dependent-c8bdb040-56eb-45f8-a42e-9a34889b885a.test.ts:592:7)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
+Verified dependent failure retains accounting and removes only owned resources.
+Recovered report {"outcome":{"kind":"baseline-reproduced"},"cleanup":{"kind":"owned-removed","cache":"retained"}}
+Retained fixture /private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-br4F6F

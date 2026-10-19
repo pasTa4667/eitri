@@ -1,0 +1,6 @@
+Original first-failure log .audit/validator-acceptance-docker.txt
+Committed normalized log docs/evidence/frozen-browser/validator-first-docker.txt
+Only blank-line padding differs at original lines [53, 55]
+Original SHA256 b115d83815024185b65b45a8b9170441f5e2dc2a26d6f94cb7a8a6790c082ee4
+Normalized SHA256 06023b921b89d07323249589a733e580227410e4a5aad0c18d0f9f50f8a99d7d
+Verified surviving red-run accounting {"root": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-SIjYIW", "owner": "74e3f773-0b76-4058-89ee-4df52d681f5f", "build": "unknown", "outcome": {"kind": "uncertain", "code": "daemon-build-unresolved"}, "cleanup": {"kind": "incomplete", "cache": "retained", "code": "daemon-build-unresolved"}}

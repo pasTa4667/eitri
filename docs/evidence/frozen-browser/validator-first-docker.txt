@@ -1,0 +1,66 @@
+Fixture state retained at /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-XztYou (validator: /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-XztYou/validator)
+✔ actual Docker frozen A after B, protected classifications, PNG and containment provenance (23401.780417ms)
+Fixture state retained at /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-Orqc0D (validator: /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-Orqc0D/validator)
+✔ actual Docker screenshot preparation is observed before late overflow rejects candidate B (7571.085625ms)
+Fixture state retained at /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-68LixQ (validator: /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-68LixQ/validator)
+▶ actual Docker popup console, errors and overflow cannot disappear before candidate B
+  ✔ bounded console (3508.790584ms)
+  ✔ console error (3415.56375ms)
+  ✔ page error (3464.959416ms)
+  ✔ overflow (3355.7475ms)
+✔ actual Docker popup console, errors and overflow cannot disappear before candidate B (14496.329208ms)
+Fixture state retained at /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-ujBNns (validator: /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-ujBNns/validator)
+▶ actual Docker dedicated and shared worker attempts cannot yield candidate success
+  ✔ Worker (3343.210417ms)
+  ✔ SharedWorker (3494.459208ms)
+✔ actual Docker dedicated and shared worker attempts cannot yield candidate success (7636.79725ms)
+Fixture state retained at /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-bPD5lx (validator: /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-bPD5lx/validator)
+Auxiliary container eitri-frozen-sentinel-0b894466-27bf-4561-9f60-7378a749c925, fixture state retained at /private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-bPD5lx
+✔ actual Docker cancellation removes owned running work and preserves an unrelated container (2683.968625ms)
+Fixture state retained at /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-2aeA1l (validator: /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-2aeA1l/validator)
+✖ actual Docker host SIGKILL after container acquisition leaves watchdog-bounded work and never replays (32185.198292ms)
+Fixture state retained at /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-XOjByx (validator: /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-XOjByx/validator)
+▶ actual Docker crash boundaries preserve only committed outcomes and never replay
+  ✔ intent (1480.400333ms)
+Fixture state retained at /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-R3dy0D (validator: /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-R3dy0D/validator)
+  ✔ before-outcome-commit (3473.268917ms)
+Fixture state retained at /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-15BbCt (validator: /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-15BbCt/validator)
+Auxiliary container eitri-frozen-dependent-3571a49e-7162-4d4d-bd0e-79ed06a9cdec, fixture state retained at /private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-15BbCt
+  ✔ after-outcome-commit (3983.228625ms)
+Fixture state retained at /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-eRtQHz (validator: /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-eRtQHz/validator)
+  ✔ before-acknowledgment (3526.193708ms)
+✔ actual Docker crash boundaries preserve only committed outcomes and never replay (12463.614417ms)
+Fixture state retained at /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-1YcsAD (validator: /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-1YcsAD/validator)
+✔ actual Docker completed run does not refund the persistent 16-attempt reservation limit (3339.157667ms)
+Fixture state retained at /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-du5pjk (validator: /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-du5pjk/validator)
+✔ actual Docker lost build client blocks further builds and retains unresolved ownership accounting (1240.035875ms)
+Fixture state retained at /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-uOmjBj (validator: /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-uOmjBj/validator)
+✔ actual Docker delayed start cannot reset the recorded absolute PID1 deadline (32484.183334ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 19
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 137617.610708
+
+✖ failing tests:
+
+test at test/integration/frozen-browser.test.ts:496:1
+✖ actual Docker host SIGKILL after container acquisition leaves watchdog-bounded work and never replays (32185.198292ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  1 !== 124
+
+      at TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-validator-acceptance/test/integration/frozen-browser.test.ts:541:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 124,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

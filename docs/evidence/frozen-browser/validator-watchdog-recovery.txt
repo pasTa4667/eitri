@@ -1,0 +1,1 @@
+{"root":"/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-2aeA1l","outcome":{"kind":"uncertain","code":"interrupted-run-no-replay"},"cleanup":{"kind":"owned-removed","cache":"retained"}}

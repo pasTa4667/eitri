@@ -1,0 +1,42 @@
+RETENTION_ROOT="/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-cIPtXS"
+✖ actual Docker lost build client blocks further builds and retains unresolved ownership accounting (1352.244375ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1469.417459
+
+✖ failing tests:
+
+test at .audit/harness-retention-fab2ff00-41ca-4b0e-841e-e314bd720ca6.test.ts:616:1
+✖ actual Docker lost build client blocks further builds and retains unresolved ownership accounting (1352.244375ms)
+  Error: fixture must retain ownership accounting without an opt-in call
+      at fs.rm (file:///Users/felix.langbein/projects/eitri-screenshot-preparation/.audit/harness-retention-fab2ff00-41ca-4b0e-841e-e314bd720ca6.mjs:15:11)
+      at TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-screenshot-preparation/.audit/harness-retention-fab2ff00-41ca-4b0e-841e-e314bd720ca6.test.ts:101:26)
+      at async TestHook.run (node:internal/test_runner/test:1389:7)
+      at async Test.runHook (node:internal/test_runner/test:1269:9)
+      at async after (node:internal/test_runner/test:1322:9)
+      at async Test.run (node:internal/test_runner/test:1408:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: protected lost-build test must pass without attempting fixture deletion
+
+1 !== 0
+
+    at file:///Users/felix.langbein/projects/eitri/docs/evidence/frozen-browser/check-harness-retention.mjs:67:10
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 1,
+  expected: 0,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v26.5.0

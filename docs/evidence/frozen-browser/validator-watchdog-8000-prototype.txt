@@ -1,0 +1,10 @@
+Fixture state retained at /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-6tGU8s (validator: /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-6tGU8s/validator)
+✔ actual Docker host SIGKILL after container acquisition leaves watchdog-bounded work and never replays (10831.89ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 10934.678

@@ -1,0 +1,31 @@
+FAILURE_ROOT="/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-JJUk57"
+Fixture state retained at /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-JJUk57 (validator: /var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-JJUk57/validator)
+Auxiliary container eitri-frozen-sentinel-5f55ba3a-9b48-4eed-8f6d-c77d9e9fd034, fixture state retained at /private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-JJUk57
+✖ actual Docker cancellation removes owned running work and preserves an unrelated container (9433.137292ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9547.629083
+
+✖ failing tests:
+
+test at .audit/harness-created-only-df6bef78-5f26-4ed2-beea-be3d120ff118.test.ts:425:1
+✖ actual Docker cancellation removes owned running work and preserves an unrelated container (9433.137292ms)
+  Error [AggregateError]: cancellation or validation drain failed
+      at TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-validator-acceptance/.audit/harness-created-only-df6bef78-5f26-4ed2-beea-be3d120ff118.test.ts:483:13)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    [errors]: [
+      AssertionError [ERR_ASSERTION]: owned container was not observed running before cancellation
+          at TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-validator-acceptance/.audit/harness-created-only-df6bef78-5f26-4ed2-beea-be3d120ff118.test.ts:466:14)
+          at async Test.run (node:internal/test_runner/test:1389:7)
+          at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
+    ]
+  }
+Verified created-only failure retains accounting and removes only owned resources.
+Recovered report {"outcome":{"kind":"cancelled","code":"cancelled-or-allowance-exhausted"},"cleanup":{"kind":"owned-removed","cache":"retained"}}
+Retained fixture /private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-JJUk57

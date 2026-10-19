@@ -1,0 +1,17 @@
+Captured 2026-10-19T19:26:22.521Z
+Checkout 88f89090de567fa6eb10afc9f5f196892a22731f
+Tested source 352bf1568b176d9afd4351aca5e2c9c8fc6731e4
+$ docker "--context" "orbstack" "container" "ls" "--all" "--no-trunc" "--filter" "name=eitri-frozen" "--format" "{{.ID}} {{.Names}} {{.Status}}"
+exit=0 signal=none
+stdout:
+<empty>
+
+stderr:
+<empty>
+$ docker "--context" "orbstack" "image" "ls" "--all" "--no-trunc" "--filter" "reference=eitri-frozen-browser:*" "--format" "{{.ID}} {{.Repository}}:{{.Tag}}"
+exit=0 signal=none
+stdout:
+<empty>
+
+stderr:
+<empty>

@@ -1,0 +1,4 @@
+Verified executable identity against supplied tested source 352bf1568b176d9afd4351aca5e2c9c8fc6731e4; current checkout 88f89090de567fa6eb10afc9f5f196892a22731f differs only outside executable source.
+Verified exported PNG byte integrity, literal A, 13 retained fixtures and 39 settled runs.
+Exactly one deliberate unknown-build case retains incomplete cleanup and ownership accounting.
+Current Docker engine and base image match the saved observation provenance.

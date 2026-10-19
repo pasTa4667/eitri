@@ -1,0 +1,2 @@
+{"Status":"exited","Running":false,"Paused":false,"Restarting":false,"OOMKilled":false,"Dead":false,"Pid":0,"ExitCode":1,"Error":"","StartedAt":"2026-10-19T18:49:57.887721779Z","FinishedAt":"2026-10-19T18:50:08.480657943Z"}
+frozen-driver-failed

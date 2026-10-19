@@ -1,0 +1,25 @@
+Captured 2026-10-19T19:26:22.521Z
+Checkout 88f89090de567fa6eb10afc9f5f196892a22731f
+Tested source 352bf1568b176d9afd4351aca5e2c9c8fc6731e4
+Node v26.5.0
+$ docker "--context" "orbstack" "version" "--format" "{{json .Server}}"
+exit=0 signal=none
+stdout:
+{"Platform":{"Name":"Docker Engine - Community"},"Version":"29.4.0","ApiVersion":"1.54","MinAPIVersion":"1.40","Os":"linux","Arch":"arm64","Components":[{"Name":"Engine","Version":"29.4.0","Details":{"ApiVersion":"1.54","Arch":"arm64","BuildTime":"Tue Apr  7 08:35:43 2026","Experimental":"true","GitCommit":"daa0cb7f","GoVersion":"go1.26.1","KernelVersion":"7.0.14-orbstack-00380-ga7e0a2dc9535","MinAPIVersion":"1.40","Module":"github.com/moby/moby/v2","ModuleVersion":"v2.0.0+unknown","Os":"linux"}},{"Name":"containerd","Version":"v2.2.2","Details":{"GitCommit":"301b2dac98f15c27117da5c8af12118a041a31d9"}},{"Name":"runc","Version":"1.5.1","Details":{"GitCommit":"bb14dabeb7185bb72c8c86735d090dcb20f36587"}},{"Name":"docker-init","Version":"0.19.0","Details":{"GitCommit":"de40ad0"}}],"GitCommit":"daa0cb7f","GoVersion":"go1.26.1","KernelVersion":"7.0.14-orbstack-00380-ga7e0a2dc9535","Experimental":true,"BuildTime":"2026-04-07T08:35:43.000000000+00:00"}
+
+stderr:
+<empty>
+$ docker "--context" "orbstack" "info" "--format" "{{json .SecurityOptions}}"
+exit=0 signal=none
+stdout:
+["name=seccomp,profile=builtin","name=cgroupns"]
+
+stderr:
+<empty>
+$ docker "--context" "orbstack" "image" "inspect" "eitri-chromium-probe:1.64.1-node26.5.0" "--format" "{\"Id\":{{json .Id}},\"Os\":{{json .Os}},\"Architecture\":{{json .Architecture}}}"
+exit=0 signal=none
+stdout:
+{"Id":"sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff","Os":"linux","Architecture":"arm64"}
+
+stderr:
+<empty>
