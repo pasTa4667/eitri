@@ -703,7 +703,6 @@ function tar(files: { path: string; bytes: Buffer; directory?: boolean }[]): Buf
   };
   for (const [index, file] of files.entries()) {
     const path = file.directory ? `${file.path}/` : file.path;
-    // Docker's stdin archive sniff needs a complete member header without PAX lookahead.
     const extended = Buffer.byteLength(path) > 100 || !/^[\x20-\x7e]+$/.test(path);
     if (extended) {
       let line = ` path=${path}\n`;

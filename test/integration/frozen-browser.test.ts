@@ -1,7 +1,7 @@
 import test from 'node:test';
 import type { TestContext } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, realpath, rm, readFile, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, realpath, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -12,7 +12,7 @@ import { ChildProcess } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
 import { checksum, validateOutput } from '../../src/artifacts.ts';
 import { FrozenBrowserValidator, frozenBrowserRequest } from '../../src/frozen-browser.ts';
-import type { FrozenBrowserRequest } from '../../src/frozen-browser.ts';
+import type { FrozenBrowserReport, FrozenBrowserRequest } from '../../src/frozen-browser.ts';
 import {
   WorkspaceStore,
   caseId,
@@ -47,7 +47,26 @@ async function docker(args: string[]): Promise<string> {
 const html = (value: string, extra = '') =>
   `<button id="run">Run</button><output id="result"></output><script>${extra};run.onclick=()=>result.textContent=${JSON.stringify(value)}</script>`;
 async function fixture(t: TestContext, initial = html('A')) {
-  const root = await realpath(await mkdtemp(join(tmpdir(), 'eitri-frozen-docker-')));
+  const temporaryRoot = await mkdtemp(join(tmpdir(), 'eitri-frozen-docker-'));
+  const cleanups: Array<() => void | Promise<unknown>> = [];
+  const defer = (cleanup: () => void | Promise<unknown>) => {
+    cleanups.push(cleanup);
+  };
+  t.after(async () => {
+    const failures: unknown[] = [];
+    for (const cleanup of cleanups.toReversed()) {
+      try {
+        await cleanup();
+      } catch (error) {
+        failures.push(error);
+      }
+    }
+    if (failures.length) throw new AggregateError(failures, 'fixture cleanup failed');
+  });
+  console.log(
+    `Fixture state retained at ${temporaryRoot} (validator: ${join(temporaryRoot, 'validator')})`,
+  );
+  const root = await realpath(temporaryRoot);
   const directory = join(root, 'validator'),
     workspaceDirectory = join(root, 'workspace');
   await mkdir(directory, { mode: 0o700 });
@@ -56,6 +75,7 @@ async function fixture(t: TestContext, initial = html('A')) {
     directory: workspaceDirectory,
     regressionDirectory: virtualPath('test/regression'),
   });
+  defer(() => store.close());
   const cid = caseId(randomUUID());
   const workspace = await store.provision({
     caseId: cid,
@@ -87,19 +107,13 @@ async function fixture(t: TestContext, initial = html('A')) {
   if (workspace.state !== 'ready') throw new Error('workspace-not-ready');
   const frozen = await store.freeze(cid, workspace.checkpoint.revision);
   const validator = await FrozenBrowserValidator.open({ workspace: store, directory });
+  defer(() => validator.close());
   const request = frozenBrowserRequest({
     frozen,
     action: { caseId: cid, actionId: randomUUID(), epoch: 0 },
     scenarioId: 'synthetic-click-v1',
     role: 'baseline',
     allowanceMs: 60000,
-  });
-  let retained = false;
-  t.after(async () => {
-    await validator.close();
-    await store.close();
-    if (!retained) await rm(root, { recursive: true, force: true });
-    else console.log(`Unresolved owned build accounting retained at ${directory}`);
   });
   async function revise(
     bytes: string,
@@ -129,10 +143,83 @@ async function fixture(t: TestContext, initial = html('A')) {
     validator,
     request,
     revise,
-    retainState() {
-      retained = true;
-    },
+    defer,
   };
+}
+async function auxiliaryContainer(
+  f: Awaited<ReturnType<typeof fixture>>,
+  purpose: 'sentinel' | 'dependent',
+  image: string,
+) {
+  const name = `eitri-frozen-${purpose}-${randomUUID()}`;
+  const owner = `unrelated-${purpose}`;
+  assert.match(image, /^sha256:[0-9a-f]{64}$/);
+  let acquiredId = '';
+  const listing = [
+    'container',
+    'ls',
+    '--all',
+    '--no-trunc',
+    '--quiet',
+    '--filter',
+    `name=^/${name}$`,
+  ];
+  const remove = async () => {
+    const context = `Auxiliary container ${name}, fixture state retained at ${f.root}`;
+    if (!acquiredId)
+      console.error(
+        `${context}. Create response unresolved. Delayed daemon effects remain possible.`,
+      );
+    const id = (await docker(listing)).trim();
+    assert.match(id, /^(?:[0-9a-f]{64})?$/, context);
+    if (id) {
+      if (acquiredId) assert.equal(id, acquiredId, context);
+      const inspected = JSON.parse(await docker(['container', 'inspect', id]));
+      assert.equal(inspected.length, 1, context);
+      const container = inspected[0];
+      assert.equal(container.Id, id, context);
+      assert.equal(container.Name, `/${name}`, context);
+      assert.equal(container.Config.Labels['eitri.frozen-browser.owner'], owner, context);
+      assert.equal(container.Image, image, context);
+      await docker(['container', 'rm', container.Id]);
+    }
+    if (acquiredId)
+      assert.equal(
+        await docker([
+          'container',
+          'ls',
+          '--all',
+          '--no-trunc',
+          '--quiet',
+          '--filter',
+          `id=${acquiredId}`,
+        ]),
+        '',
+        context,
+      );
+    assert.equal(await docker(listing), '', context);
+    assert.ok(
+      acquiredId,
+      `${context}. Lost create response remains unresolved despite an empty listing. Delayed daemon effects remain possible.`,
+    );
+  };
+  f.defer(remove);
+  console.log(`Auxiliary container ${name}, fixture state retained at ${f.root}`);
+  const id = (
+    await docker([
+      'create',
+      '--name',
+      name,
+      '--label',
+      `eitri.frozen-browser.owner=${owner}`,
+      '--network',
+      'none',
+      image,
+    ])
+  ).trim();
+  assert.match(id, /^[0-9a-f]{64}$/);
+  acquiredId = id;
+  return { id, remove };
 }
 const signal = () => new AbortController().signal;
 
@@ -340,45 +427,61 @@ test(
   { timeout: 90000 },
   async (t) => {
     const f = await fixture(t, html('A', 'run.addEventListener("click",()=>{while(true){}})'));
-    const sentinelName = `eitri-frozen-sentinel-${randomUUID()}`;
-    const sentinelId = (
-      await docker([
-        'create',
-        '--name',
-        sentinelName,
-        '--label',
-        'eitri.frozen-browser.owner=unrelated-sentinel',
-        '--network',
-        'none',
-        baseTag,
-      ])
+    const sentinelImage = (
+      await docker(['image', 'inspect', '--format', '{{.Id}}', baseTag])
     ).trim();
-    t.after(() => docker(['container', 'rm', sentinelId]));
+    const sentinelContainer = await auxiliaryContainer(f, 'sentinel', sentinelImage);
+    const sentinelId = sentinelContainer.id;
     const abort = new AbortController();
     const running = f.validator.validate(f.request, abort.signal);
+    void running.catch(() => {});
     let ownedId = '';
-    const deadline = Date.now() + 50000;
-    while (Date.now() < deadline) {
-      const db = new DatabaseSync(join(f.directory, 'journal.sqlite'), { readOnly: true });
-      try {
-        const row = db.prepare('SELECT body FROM runs LIMIT 1').get();
-        if (row && typeof row.body === 'string') {
-          const run = JSON.parse(row.body);
-          if (run.ledger.container.kind === 'acquired') {
-            ownedId = run.ledger.container.id;
-            const state = JSON.parse(await docker(['container', 'inspect', ownedId]));
-            if (state[0].State.Status === 'running') break;
+    let observedRunning = false;
+    let report: FrozenBrowserReport | undefined;
+    const failures: unknown[] = [];
+    try {
+      const deadline = Date.now() + 50000;
+      while (Date.now() < deadline) {
+        const db = new DatabaseSync(join(f.directory, 'journal.sqlite'), { readOnly: true });
+        try {
+          const row = db.prepare('SELECT body FROM runs LIMIT 1').get();
+          if (row && typeof row.body === 'string') {
+            const run = JSON.parse(row.body);
+            if (run.ledger.container.kind === 'acquired') {
+              ownedId = run.ledger.container.id;
+              const state = JSON.parse(await docker(['container', 'inspect', ownedId]));
+              assert.equal(state[0].Id, ownedId);
+              if (state[0].State.Status === 'running') {
+                observedRunning = true;
+                break;
+              }
+            }
           }
+        } finally {
+          db.close();
         }
-      } finally {
-        db.close();
+        await new Promise((resolve) => setTimeout(resolve, 50));
       }
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      assert.match(ownedId, /^[0-9a-f]{64}$/);
+      assert.ok(observedRunning, 'owned container was not observed running before cancellation');
+    } catch (error) {
+      failures.push(error);
+    } finally {
+      abort.abort();
+      try {
+        await f.validator.close();
+      } catch (error) {
+        failures.push(error);
+      }
+      try {
+        report = await running;
+      } catch (error) {
+        if (!failures.includes(error)) failures.push(error);
+      }
     }
-    assert.match(ownedId, /^[0-9a-f]{64}$/);
-    abort.abort();
-    await f.validator.close();
-    const report = await running;
+    if (failures.length)
+      throw new AggregateError(failures, 'cancellation or validation drain failed');
+    assert.ok(report);
     assert.equal(report.outcome.kind, 'cancelled');
     assert.equal(report.cleanup.kind, 'owned-removed');
     assert.equal(
@@ -414,10 +517,15 @@ test(
   `,
     );
     const child = spawn(process.execPath, [childScript], { stdio: ['ignore', 'pipe', 'pipe'] });
-    t.after(() => child.kill('SIGKILL'));
+    const childClosed = once(child, 'close');
+    void childClosed.catch(() => {});
+    f.defer(async () => {
+      child.kill('SIGKILL');
+      await childClosed;
+    });
     await once(child.stdout, 'data');
     child.kill('SIGKILL');
-    await once(child, 'close');
+    await childClosed;
     const db = new DatabaseSync(join(f.directory, 'journal.sqlite'), { readOnly: true });
     let run;
     try {
@@ -435,14 +543,12 @@ test(
       directory: f.workspaceDirectory,
       regressionDirectory: virtualPath('test/regression'),
     });
+    f.defer(() => store.close());
     const validator = await FrozenBrowserValidator.open({
       workspace: store,
       directory: f.directory,
     });
-    t.after(async () => {
-      await validator.close();
-      await store.close();
-    });
+    f.defer(() => validator.close());
     const report = await validator.validate(request, signal());
     assert.deepEqual(report.outcome, { kind: 'uncertain', code: 'interrupted-run-no-replay' });
     assert.equal(report.cleanup.kind, 'owned-removed');
@@ -502,9 +608,15 @@ test(
     `,
         );
         const child = spawn(process.execPath, [script], { stdio: ['ignore', 'pipe', 'pipe'] });
-        t.after(() => child.kill('SIGKILL'));
+        const childClosed = once(child, 'close');
+        void childClosed.catch(() => {});
+        f.defer(async () => {
+          child.kill('SIGKILL');
+          await childClosed;
+        });
         await once(child.stdout, 'data');
         let dependent = '';
+        let removeDependent: (() => Promise<void>) | undefined;
         if (phase === 'after-outcome-commit') {
           const db = new DatabaseSync(join(f.directory, 'journal.sqlite'), { readOnly: true });
           let image = '';
@@ -514,33 +626,22 @@ test(
           } finally {
             db.close();
           }
-          dependent = (
-            await docker([
-              'create',
-              '--name',
-              `eitri-frozen-dependent-${randomUUID()}`,
-              '--label',
-              'eitri.frozen-browser.owner=unrelated-dependent',
-              '--network',
-              'none',
-              image,
-            ])
-          ).trim();
+          const container = await auxiliaryContainer(f, 'dependent', image);
+          dependent = container.id;
+          removeDependent = container.remove;
         }
         child.kill('SIGKILL');
-        await once(child, 'close');
+        await childClosed;
         const store = await WorkspaceStore.open({
           directory: f.workspaceDirectory,
           regressionDirectory: virtualPath('test/regression'),
         });
+        f.defer(() => store.close());
         const validator = await FrozenBrowserValidator.open({
           workspace: store,
           directory: f.directory,
         });
-        t.after(async () => {
-          await validator.close();
-          await store.close();
-        });
+        f.defer(() => validator.close());
         const report = await validator.validate(f.request, signal());
         assert.equal(
           report.outcome.kind,
@@ -559,13 +660,14 @@ test(
             sentinel[0].Config.Labels['eitri.frozen-browser.owner'],
             'unrelated-dependent',
           );
-          await docker(['container', 'rm', dependent]);
+          assert.ok(removeDependent);
+          await removeDependent();
           await validator.close();
           const reconciled = await FrozenBrowserValidator.open({
             workspace: store,
             directory: f.directory,
           });
-          t.after(() => reconciled.close());
+          f.defer(() => reconciled.close());
           const final = await reconciled.validate(f.request, signal());
           assert.equal(final.outcome.kind, 'baseline-reproduced');
           assert.equal(final.cleanup.kind, 'owned-removed');
@@ -599,7 +701,7 @@ test(
       workspace: f.store,
       directory: f.directory,
     });
-    t.after(() => reopened.close());
+    f.defer(() => reopened.close());
     await assert.rejects(
       reopened.validate(
         frozenBrowserRequest({
@@ -618,7 +720,6 @@ test(
   { timeout: 90000 },
   async (t) => {
     const f = await fixture(t);
-    f.retainState();
     const listener = (message: unknown) => {
       if (
         !message ||
@@ -634,7 +735,9 @@ test(
       });
     };
     channel('child_process').subscribe(listener);
-    t.after(() => channel('child_process').unsubscribe(listener));
+    f.defer(() => {
+      channel('child_process').unsubscribe(listener);
+    });
     const report = await f.validator.validate(f.request, signal());
     assert.deepEqual(report.outcome, { kind: 'uncertain', code: 'daemon-build-unresolved' });
     assert.deepEqual(report.cleanup, {
@@ -642,12 +745,14 @@ test(
       cache: 'retained',
       code: 'daemon-build-unresolved',
     });
+    const owner = await readFile(join(f.directory, 'owner.json'), 'utf8');
     await f.validator.close();
+    assert.equal(await readFile(join(f.directory, 'owner.json'), 'utf8'), owner);
     const reopened = await FrozenBrowserValidator.open({
       workspace: f.store,
       directory: f.directory,
     });
-    t.after(() => reopened.close());
+    f.defer(() => reopened.close());
     await assert.rejects(
       reopened.validate(
         frozenBrowserRequest({
@@ -702,10 +807,15 @@ test(
   `,
     );
     const child = spawn(process.execPath, [script], { stdio: ['ignore', 'pipe', 'pipe'] });
-    t.after(() => child.kill('SIGKILL'));
+    const childClosed = once(child, 'close');
+    void childClosed.catch(() => {});
+    f.defer(async () => {
+      child.kill('SIGKILL');
+      await childClosed;
+    });
     await once(child.stdout, 'data');
     child.kill('SIGKILL');
-    await once(child, 'close');
+    await childClosed;
     const db = new DatabaseSync(join(f.directory, 'journal.sqlite'), { readOnly: true });
     let run;
     try {
@@ -733,14 +843,12 @@ test(
       directory: f.workspaceDirectory,
       regressionDirectory: virtualPath('test/regression'),
     });
+    f.defer(() => store.close());
     const validator = await FrozenBrowserValidator.open({
       workspace: store,
       directory: f.directory,
     });
-    t.after(async () => {
-      await validator.close();
-      await store.close();
-    });
+    f.defer(() => validator.close());
     const report = await validator.validate(request, signal());
     assert.equal(report.outcome.kind, 'uncertain');
     assert.equal(report.cleanup.kind, 'owned-removed');
