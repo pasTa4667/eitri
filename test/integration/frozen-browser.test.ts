@@ -500,7 +500,7 @@ test(
     const f = await fixture(t, html('A', 'run.addEventListener("click",()=>{while(true){}})'));
     await f.validator.close();
     await f.store.close();
-    const request = frozenBrowserRequest({ ...f.request, allowanceMs: 30000 });
+    const request = frozenBrowserRequest({ ...f.request, allowanceMs: 8000 });
     const childScript = join(f.root, 'owned-host.mjs');
     await writeFile(
       childScript,
@@ -533,10 +533,35 @@ test(
     } finally {
       db.close();
     }
+    assert.equal(run.ledger.container.kind, 'acquired');
+    const recordedId = String(run.ledger.container.id);
+    assert.match(recordedId, /^[0-9a-f]{64}$/);
+    let inspectionId = '';
+    let observedRunning = false;
+    while (Date.now() < run.intent.deadline) {
+      const inspected = JSON.parse(await docker(['container', 'inspect', recordedId]))[0];
+      inspectionId = inspected.Id;
+      assert.notEqual(
+        inspected.State.Status,
+        'exited',
+        'owned container exited before a pre-deadline running observation',
+      );
+      if (inspected.State.Status === 'running' && Date.now() < run.intent.deadline) {
+        observedRunning = true;
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    assert.equal(inspectionId, recordedId);
+    assert.equal(
+      observedRunning,
+      true,
+      'owned container was not observed running before its original deadline',
+    );
     await new Promise((resolve) =>
       setTimeout(resolve, Math.max(1, run.intent.deadline - Date.now() + 1000)),
     );
-    const stopped = JSON.parse(await docker(['container', 'inspect', run.ledger.container.id]));
+    const stopped = JSON.parse(await docker(['container', 'inspect', recordedId]));
     assert.equal(stopped[0].State.Status, 'exited');
     assert.equal(stopped[0].State.ExitCode, 124);
     const store = await WorkspaceStore.open({
