@@ -137,6 +137,14 @@ The scoped actual-Docker suite passed nine tests. A final-commit diagnostic also
 
 The process-discovery solution is implemented on its isolated branch, not merged into main. Full validator and M2 acceptance remain open. A separate actual-Docker screenshot-preparation test failed because the required Playwright marker was absent. That compatibility gate is preserved. No gate was weakened to claim full acceptance. [Process-discovery evidence](evidence/frozen-browser/process-discovery.md) records prototypes, rejected alternatives, test fixture corrections, final commits, runtime observations, review and limits.
 
+## Screenshot preparation continuation on October 19
+
+The separate screenshot-preparation blocker above is superseded by the test-only fix `09dd3372ca5c9966c47800b89cadcb4fc42b3ac7` on `fix/screenshot-preparation` in `../eitri-screenshot-preparation`, based on verified process-discovery commit `cdacccc`. The old test watched for a stylesheet insertion that pinned Playwright does not perform. The repaired fixture observes actual inline caret hiding on a textarea. Exact marker and late-overflow assertions remain unchanged.
+
+Parent actual-Docker reproduction failed before the fix. A paired prototype confirmed the mechanism. A mutation check removed only the final overflow guard and made the repaired regression fail, then restored the driver byte-for-byte. The focused Docker suite passes 10 tests. Parent `npm run verify` passes lint, formatting, type checks and all 311 Node tests. Fresh source and comment review found no issues. A separate cross-family audit by `anthropic/claude-opus-5-5` passed; its nonblocking record and provenance notes are documented in the evidence. Rust was unchanged and not retested. [Screenshot-preparation evidence](evidence/frozen-browser/screenshot-preparation.md) records the source identity, reproduction, prototypes, mutation and results.
+
+This requested next step is complete. The fix and process-discovery replacement remain unmerged. Full validator acceptance, M2, controller integration and later live gates remain open. No broader acceptance run or integration followed this step. The old validator worktree and its uncommitted parser attempt remain untouched.
+
 ## Checkpoint policy
 
 Update this file and `decisions.tsv` after each substantial unit. Record commands and actual results. Do not call a simulated run a live model result. No compaction tool is exposed by this harness. These files are the continuation record for automatic or operator-triggered compaction.

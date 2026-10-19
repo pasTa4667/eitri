@@ -1,0 +1,35 @@
+✖ actual Docker screenshot preparation is observed before late overflow rejects candidate B (5714.070042ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5822.898291
+
+✖ failing tests:
+
+test at test/integration/frozen-browser.test.ts:227:1
+✖ actual Docker screenshot preparation is observed before late overflow rejects candidate B (5714.070042ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   {
+  -     kind: 'console',
+  -     text: 'screenshot-preparation-observed'
+  -   }
+  - ]
+  
+      at TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-screenshot-preparation/test/integration/frozen-browser.test.ts:238:12)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [ { kind: 'console', text: 'screenshot-preparation-observed' } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

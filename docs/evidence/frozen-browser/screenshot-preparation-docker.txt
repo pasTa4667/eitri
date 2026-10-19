@@ -1,0 +1,20 @@
+✔ actual Docker frozen A after B, protected classifications, PNG and containment provenance (23106.162917ms)
+✔ actual Docker screenshot preparation is observed before late overflow rejects candidate B (8267.392834ms)
+▶ actual Docker popup console, errors and overflow cannot disappear before candidate B
+  ✔ bounded console (3438.167041ms)
+  ✔ console error (3462.26425ms)
+  ✔ page error (3451.467792ms)
+  ✔ overflow (3447.843209ms)
+✔ actual Docker popup console, errors and overflow cannot disappear before candidate B (14611.743709ms)
+▶ actual Docker dedicated and shared worker attempts cannot yield candidate success
+  ✔ Worker (3368.99525ms)
+  ✔ SharedWorker (3459.771625ms)
+✔ actual Docker dedicated and shared worker attempts cannot yield candidate success (7627.273ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 53721.61075

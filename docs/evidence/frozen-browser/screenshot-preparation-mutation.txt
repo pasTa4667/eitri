@@ -1,0 +1,32 @@
+Restored driver SHA256 0fcfdc7bca72ad7ef215ebaa4fee0de0060134fd0605978bc6876fb9571c3129
+✖ actual Docker screenshot preparation is observed before late overflow rejects candidate B (8266.058208ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8363.422875
+
+✖ failing tests:
+
+test at test/integration/frozen-browser.test.ts:228:1
+✖ actual Docker screenshot preparation is observed before late overflow rejects candidate B (8266.058208ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'candidate-passed'
+  - 'infrastructure-failed'
+  
+      at TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-screenshot-preparation/test/integration/frozen-browser.test.ts:249:12)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'candidate-passed',
+    expected: 'infrastructure-failed',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+Mutation detected. Removing the final sticky-failure check makes the regression fail.

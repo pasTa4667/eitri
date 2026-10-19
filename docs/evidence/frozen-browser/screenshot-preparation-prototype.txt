@@ -1,0 +1,12 @@
+{"variant":"legacy stylesheet observer","outcome":{"kind":"candidate-passed"},"events":[],"cleanup":{"kind":"owned-removed","cache":"retained"}}
+{"variant":"editable attribute observer","outcome":{"kind":"candidate-passed"},"events":[{"kind":"console","text":"screenshot-preparation-observed"}],"cleanup":{"kind":"owned-removed","cache":"retained"}}
+{"variant":"editable late overflow","outcome":{"kind":"infrastructure-failed","code":"frozen-browser-check-failed"},"cleanup":{"kind":"owned-removed","cache":"retained"}}
+✔ prototype screenshot preparation variants (12018.499166ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12125.096958
