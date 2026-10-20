@@ -34,19 +34,22 @@ const controller = await Controller.open({
     process.send?.({ stage: 'admitted', id });
     return hold();
   },
-  check: async (_id, kind) => ({
-    kind,
-    candidate: 'a'.repeat(40),
-    configuration: 'b'.repeat(64),
-    passed: true,
-    simulated: true,
-    outputs: [
-      {
-        label: 'Baseline log',
-        mime: 'text/plain',
-        bytes: Buffer.from('Simulated baseline reproduced.\n'),
-      },
-    ],
+  check: async ({ kind }) => ({
+    type: 'completed',
+    check: {
+      kind,
+      candidate: 'a'.repeat(40),
+      configuration: 'b'.repeat(64),
+      passed: true,
+      simulated: true,
+      outputs: [
+        {
+          label: 'Baseline log',
+          mime: 'text/plain',
+          bytes: Buffer.from('Simulated baseline reproduced.\n'),
+        },
+      ],
+    },
   }),
   fault: (point, id) => {
     if (point === mode || (mode === 'tool-receipt' && point === 'after-tool-action-receipt')) {

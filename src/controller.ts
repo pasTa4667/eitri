@@ -4,7 +4,7 @@ import { resolve, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { Provider } from '@earendil-works/pi-ai/models';
 import { NativeCase } from './native.ts';
-import { ArtifactStore } from './artifacts.ts';
+import { ArtifactStore, artifactLimits, validateOutput } from './artifacts.ts';
 import {
   ControlError,
   digest,
@@ -19,10 +19,12 @@ import {
 } from './domain.ts';
 import type {
   Action,
+  AdmittedCheckRequest,
+  ArtifactOutput,
   Assessment,
   Case,
   Check,
-  CheckResult,
+  CheckExecution,
   Issue,
   Receipt,
   Selection,
@@ -37,7 +39,7 @@ type Options = {
   capacity?: number;
   allowanceMs?: number;
   probe?: (id: string, signal: AbortSignal) => Promise<string>;
-  check?: (id: string, kind: Check['kind'], signal: AbortSignal) => Promise<CheckResult>;
+  check?: (request: AdmittedCheckRequest) => Promise<CheckExecution>;
   issues?: () => Promise<Issue[]>;
   fault?: (point: string, caseId: string) => void;
 };
@@ -201,13 +203,13 @@ export class Controller {
       )
       .run(c.id, c.issueKey, JSON.stringify(c));
   }
-  private charge(c: Case) {
+  private charge(c: Case, now = this.clock()) {
     if (c.accountedAt !== null) {
-      const elapsed = Math.max(0, this.clock() - c.accountedAt);
+      const elapsed = Math.max(0, now - c.accountedAt);
       const cost = Math.min(c.remainingMs, elapsed);
       c.remainingMs -= cost;
       c.usedMs += cost;
-      c.accountedAt = this.clock();
+      c.accountedAt = now;
     }
   }
   private attention(c: Case, reason: string) {
@@ -423,9 +425,7 @@ export class Controller {
             probe: (signal) =>
               this.options.probe?.(id, signal) ??
               Promise.resolve('Scripted probe; no external effect.'),
-            check: (kind, signal) =>
-              this.options.check?.(id, kind, signal) ??
-              Promise.reject(new ControlError('validation-not-configured')),
+            check: (action, kind, signal) => this.dispatchCheck(id, action, kind, signal),
             validateCheckAction: (action) => this.validateCheckAction(id, action),
             fault: (point) => this.options.fault?.(point, id),
             changed: this.changed,
@@ -510,27 +510,149 @@ export class Controller {
         fail('dispatch-denied');
     });
   }
-  private validateCheckAction(id: string, action: Action) {
+  private checkAllowance(id: string, action: Action, signal?: AbortSignal) {
+    if (this.closing || this.starting) fail('check-dispatch-denied');
+    const now = this.clock();
     const c = this.get(id);
+    const row = this.db
+      .prepare('SELECT value FROM actions WHERE id=? AND case_id=?')
+      .get(action.id, id);
+    const persisted: Action | undefined = row ? JSON.parse(String(row.value)) : undefined;
     if (
-      this.closing ||
-      this.starting ||
       action.caseId !== id ||
       action.kind !== 'tool' ||
       !['running', 'pause-requested'].includes(c.status) ||
       c.native !== 'ready' ||
       c.epoch !== action.epoch ||
-      !this.db.prepare('SELECT id FROM actions WHERE id=? AND case_id=?').get(action.id, id)
+      !persisted ||
+      !(['id', 'caseId', 'epoch', 'kind', 'startedAt', 'limitMs', 'usedAtStart'] as const).every(
+        (key) => action[key] === persisted[key],
+      )
     )
-      fail('dispatch-denied');
+      fail('check-dispatch-denied');
+    this.charge(c, now);
+    this.save(c);
+    const remainingMs = Math.min(
+      c.remainingMs,
+      action.limitMs - Math.max(0, now - action.startedAt),
+    );
+    if (remainingMs <= 0) fail('check-allowance-exhausted');
+    if (signal?.aborted) fail('check-cancelled');
+    return { c, remainingMs };
+  }
+  private validateCheckAction(id: string, action: Action) {
+    try {
+      this.checkAllowance(id, action);
+    } catch (error) {
+      this.stopCheck(
+        id,
+        action,
+        error instanceof ControlError ? error.code : 'check-dispatch-denied',
+      );
+      throw error;
+    }
+  }
+  private stopCheck(id: string, action: Action, reason: string): CheckExecution {
+    if (this.closing) return { type: 'uncertain' };
+    let stopped = false;
+    this.transaction(() => {
+      const c = this.get(id);
+      if (c.epoch !== action.epoch || !['running', 'pause-requested'].includes(c.status)) return;
+      if (c.status === 'pause-requested') {
+        this.charge(c);
+        c.reason = reason;
+        c.version++;
+      } else this.attention(c, reason);
+      this.save(c);
+      stopped = true;
+    });
+    if (stopped) {
+      this.changed();
+      this.options.fault?.('after-check-stop', id);
+    }
+    return { type: 'uncertain' };
+  }
+  private async dispatchCheck(
+    id: string,
+    action: Action,
+    kind: Check['kind'],
+    signal: AbortSignal,
+  ): Promise<CheckExecution> {
+    let request: AdmittedCheckRequest;
+    try {
+      this.options.fault?.('before-check-dispatch', id);
+      const { c, remainingMs } = this.checkAllowance(id, action, signal);
+      if (c.status !== 'running') fail('check-dispatch-denied');
+      request = Object.freeze({
+        caseId: id,
+        actionId: action.id,
+        epoch: action.epoch,
+        kind,
+        remainingMs,
+        signal,
+      });
+    } catch (error) {
+      return this.stopCheck(
+        id,
+        action,
+        error instanceof ControlError ? error.code : 'check-dispatch-denied',
+      );
+    }
+    const callback = this.options.check;
+    if (!callback) return this.stopCheck(id, action, 'validation-not-configured');
+    let execution: CheckExecution;
+    let abort!: () => void;
+    try {
+      const interrupted = new Promise<never>((_resolve, reject) => {
+        abort = () => {
+          this.stopCheck(id, action, 'check-allowance-exhausted');
+          reject(new ControlError('check-allowance-exhausted'));
+        };
+        signal.addEventListener('abort', abort, { once: true });
+      });
+      const result: unknown = await Promise.race([callback(request), interrupted]);
+      try {
+        execution = parseCheckExecution(result, kind);
+      } catch {
+        return this.stopCheck(id, action, 'invalid-check-execution');
+      }
+    } catch {
+      return signal.aborted
+        ? { type: 'uncertain' }
+        : this.stopCheck(id, action, 'check-callback-failed');
+    } finally {
+      signal.removeEventListener('abort', abort);
+    }
+    try {
+      this.checkAllowance(id, action, signal);
+    } catch (error) {
+      return this.stopCheck(
+        id,
+        action,
+        error instanceof ControlError ? error.code : 'check-dispatch-denied',
+      );
+    }
+    switch (execution.type) {
+      case 'completed':
+        return execution;
+      case 'infrastructure':
+      case 'unrelated-failure':
+      case 'cancelled':
+      case 'uncertain':
+      case 'cleanup-incomplete':
+        this.stopCheck(id, action, `check-${execution.type}`);
+        return execution;
+    }
   }
   private finishAction(action: Action, uncertain: boolean, failed = false) {
     this.transaction(() => {
       if (!this.db.prepare('SELECT id FROM actions WHERE id=?').get(action.id)) return;
       const c = this.get(action.caseId);
       this.charge(c);
-      if (uncertain) this.attention(c, `${action.kind}-action-timed-out`);
-      else if (failed && c.status === 'running') this.attention(c, `${action.kind}-action-failed`);
+      if (uncertain && c.status === 'running' && c.epoch === action.epoch)
+        this.attention(c, `${action.kind}-action-timed-out`);
+      else if (failed && c.status === 'running' && c.epoch === action.epoch)
+        this.attention(c, `${action.kind}-action-failed`);
       this.save(c);
       this.db.prepare('DELETE FROM actions WHERE id=?').run(action.id);
     });
@@ -765,7 +887,8 @@ export class Controller {
             c.remainingMs -= cost;
             c.usedMs += cost;
             c.accountedAt = null;
-            if (action.kind === 'tool') this.attention(c, 'interrupted-tool-effect-uncertain');
+            if (action.kind === 'tool' && c.status === 'running')
+              this.attention(c, 'interrupted-tool-effect-uncertain');
             this.db.prepare('DELETE FROM actions WHERE case_id=?').run(c.id);
           } else if (c.status === 'running' || c.status === 'pause-requested') this.charge(c);
           if (c.status === 'pause-requested') {
@@ -784,7 +907,9 @@ export class Controller {
         if (await native.hasUnsettledTool())
           this.transaction(() => {
             const latest = this.get(c.id);
-            if (latest.status !== 'terminal' && latest.status !== 'needs-attention') {
+            if (
+              !['terminal', 'needs-attention', 'paused', 'pause-requested'].includes(latest.status)
+            ) {
               this.attention(latest, 'incomplete-native-tool-checkpoint');
               this.save(latest);
             }
@@ -969,4 +1094,78 @@ export class Controller {
     openDirectories.delete(this.directory);
     if (closed.some((result) => result.status === 'rejected')) fail('native-close-failed');
   }
+}
+
+function parseCheckExecution(value: unknown, kind: Check['kind']): CheckExecution {
+  if (!value || typeof value !== 'object' || Array.isArray(value))
+    return fail('invalid-check-execution');
+  const record = value as Record<string, unknown>;
+  const type = record.type;
+  const keys = Reflect.ownKeys(record);
+  if (type !== 'completed') {
+    if (keys.length !== 1 || keys[0] !== 'type') return fail('invalid-check-execution');
+    switch (type) {
+      case 'infrastructure':
+      case 'unrelated-failure':
+      case 'cancelled':
+      case 'uncertain':
+      case 'cleanup-incomplete':
+        return { type };
+      default:
+        return fail('invalid-check-execution');
+    }
+  }
+  if (keys.length !== 2 || !keys.includes('check') || !keys.includes('type'))
+    return fail('invalid-check-execution');
+  const receipt = record.check;
+  if (!receipt || typeof receipt !== 'object' || Array.isArray(receipt))
+    return fail('invalid-check-execution');
+  const check = { ...receipt } as Record<string, unknown>;
+  const receiptKeys = Reflect.ownKeys(receipt);
+  if (
+    receiptKeys.length !== 6 ||
+    !['candidate', 'configuration', 'kind', 'outputs', 'passed', 'simulated'].every((key) =>
+      receiptKeys.includes(key),
+    ) ||
+    check.kind !== kind ||
+    typeof check.candidate !== 'string' ||
+    !/^[0-9a-f]{40,64}$/.test(check.candidate) ||
+    typeof check.configuration !== 'string' ||
+    !/^[0-9a-f]{64}$/.test(check.configuration) ||
+    typeof check.passed !== 'boolean' ||
+    check.simulated !== true ||
+    !Array.isArray(check.outputs) ||
+    check.outputs.length > artifactLimits.checkCount
+  )
+    return fail('invalid-check-execution');
+  const outputs: ArtifactOutput[] = [];
+  for (const value of check.outputs) {
+    if (!value || typeof value !== 'object' || Array.isArray(value))
+      return fail('invalid-check-execution');
+    const output = { ...value } as Record<string, unknown>;
+    const outputKeys = Reflect.ownKeys(value);
+    if (
+      outputKeys.length !== 3 ||
+      !['bytes', 'label', 'mime'].every((key) => outputKeys.includes(key)) ||
+      typeof output.label !== 'string' ||
+      (output.mime !== 'text/plain' && output.mime !== 'image/png') ||
+      !(output.bytes instanceof Uint8Array)
+    )
+      return fail('invalid-check-execution');
+    const copied: ArtifactOutput = { label: output.label, mime: output.mime, bytes: output.bytes };
+    outputs.push({ ...copied, bytes: validateOutput(copied) });
+  }
+  if (outputs.reduce((sum, output) => sum + output.bytes.byteLength, 0) > artifactLimits.checkBytes)
+    return fail('invalid-check-execution');
+  return {
+    type: 'completed',
+    check: {
+      kind,
+      candidate: check.candidate,
+      configuration: check.configuration,
+      passed: check.passed,
+      simulated: true,
+      outputs,
+    },
+  };
 }

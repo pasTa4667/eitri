@@ -186,16 +186,19 @@ test(
         directory,
         policy,
         providerForCase: () => ({ provider: faux.provider, modelId: faux.getModel().id }),
-        check: async (_id, kind) => ({
-          kind,
-          candidate: 'a'.repeat(40),
-          configuration: 'b'.repeat(64),
-          simulated: true,
-          passed: true,
-          outputs: [
-            { label: 'Screenshot', mime: 'image/png', bytes: png },
-            { label: 'Assertions', mime: 'text/plain', bytes: text },
-          ],
+        check: async ({ kind }) => ({
+          type: 'completed',
+          check: {
+            kind,
+            candidate: 'a'.repeat(40),
+            configuration: 'b'.repeat(64),
+            simulated: true,
+            passed: true,
+            outputs: [
+              { label: 'Screenshot', mime: 'image/png', bytes: png },
+              { label: 'Assertions', mime: 'text/plain', bytes: text },
+            ],
+          },
         }),
       }),
     );

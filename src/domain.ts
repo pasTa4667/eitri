@@ -118,6 +118,21 @@ export type Artifact = Readonly<{
 export type CheckResult = Omit<Check, 'id' | 'caseId' | 'actionId' | 'artifacts'> & {
   outputs: readonly ArtifactOutput[];
 };
+export type AdmittedCheckRequest = Readonly<{
+  caseId: string;
+  actionId: string;
+  epoch: number;
+  kind: Check['kind'];
+  remainingMs: number;
+  signal: AbortSignal;
+}>;
+export type CheckExecution =
+  | { type: 'completed'; check: CheckResult }
+  | { type: 'infrastructure' }
+  | { type: 'unrelated-failure' }
+  | { type: 'cancelled' }
+  | { type: 'uncertain' }
+  | { type: 'cleanup-incomplete' };
 export type Check = {
   id: string;
   caseId: string;

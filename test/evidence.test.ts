@@ -176,27 +176,30 @@ for (const mode of ['stored', 'stale', 'missing', 'corrupt', 'fabricated', 'empt
       directory,
       policy,
       providerForCase: () => ({ provider: faux.provider, modelId: faux.getModel().id }),
-      check: async (_id, kind) => ({
-        kind,
-        candidate:
-          kind === 'baseline'
-            ? base
-            : mode === 'stale' && kind === 'regression'
-              ? 'd'.repeat(40)
-              : candidate,
-        configuration: config,
-        passed: true,
-        simulated: true,
-        outputs:
-          kind === 'browser' && mode !== 'empty'
-            ? [
-                {
-                  label: 'Scripted browser assertions',
-                  mime: 'text/plain',
-                  bytes: Buffer.from('Target assertion passed in simulation.\n'),
-                },
-              ]
-            : [],
+      check: async ({ kind }) => ({
+        type: 'completed',
+        check: {
+          kind,
+          candidate:
+            kind === 'baseline'
+              ? base
+              : mode === 'stale' && kind === 'regression'
+                ? 'd'.repeat(40)
+                : candidate,
+          configuration: config,
+          passed: true,
+          simulated: true,
+          outputs:
+            kind === 'browser' && mode !== 'empty'
+              ? [
+                  {
+                    label: 'Scripted browser assertions',
+                    mime: 'text/plain',
+                    bytes: Buffer.from('Target assertion passed in simulation.\n'),
+                  },
+                ]
+              : [],
+        },
       }),
     });
     t.after(async () => {
@@ -269,15 +272,18 @@ test('initial failed validation permits two repair candidates, not two arbitrary
     directory,
     policy,
     providerForCase: () => ({ provider: faux.provider, modelId: faux.getModel().id }),
-    check: async (_id, kind) => {
+    check: async ({ kind }) => {
       if (kind === 'checkpoint') revision++;
       return {
-        kind,
-        candidate: kind === 'baseline' ? 'a'.repeat(40) : String(revision).repeat(40),
-        configuration: 'c'.repeat(64),
-        passed: kind !== 'regression',
-        simulated: true,
-        outputs: [],
+        type: 'completed',
+        check: {
+          kind,
+          candidate: kind === 'baseline' ? 'a'.repeat(40) : String(revision).repeat(40),
+          configuration: 'c'.repeat(64),
+          passed: kind !== 'regression',
+          simulated: true,
+          outputs: [],
+        },
       };
     },
   });

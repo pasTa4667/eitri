@@ -64,7 +64,7 @@ test('artifact reads stay passive across pagination, restart, missing directorie
     policy,
     clock: () => now,
     providerForCase: () => ({ provider: faux.provider, modelId: faux.getModel().id }),
-    check: async () => result(),
+    check: async () => ({ type: 'completed', check: result() }),
   });
   t.after(async () => {
     await controller.close();
@@ -187,7 +187,8 @@ for (const mode of [
       providerForCase: () => ({ provider: faux.provider, modelId: faux.getModel().id }),
       check: async () => {
         const check = result();
-        if (mode === 'forged-ids') return { ...check, artifacts: [randomUUID()] };
+        if (mode === 'forged-ids')
+          return { type: 'completed', check: { ...check, artifacts: [randomUUID()] } };
         if (mode === 'live-result') check.simulated = false;
         if (mode === 'check-count')
           check.outputs = Array.from({ length: 9 }, () => check.outputs[0]);
@@ -199,7 +200,7 @@ for (const mode of [
             mime: 'image/png',
             bytes: largePng(),
           }));
-        return check;
+        return { type: 'completed', check };
       },
     });
     t.after(async () => {
@@ -238,7 +239,7 @@ test('native manifests bind every evidence reference to its case, action, receip
     directory,
     policy,
     providerForCase: () => route,
-    check: async () => result(),
+    check: async () => ({ type: 'completed', check: result() }),
   });
   const receipt = await controller.command({
     requestId: randomUUID(),
