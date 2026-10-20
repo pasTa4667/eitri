@@ -1,0 +1,48 @@
+✔ baseline explicitly accepts exact retained intent with detached concurrent retries but no check or artifact (1706.058041ms)
+✔ browser explicitly accepts exact retained intent with detached concurrent retries but no check or artifact (1396.042583ms)
+▶ callback entry never automatically accepts and unsupported or disabled checks have no capability
+  ✔ true unit (907.767375ms)
+  ✔ false browser (986.750542ms)
+  ✔ true browser (863.778ms)
+✔ callback entry never automatically accepts and unsupported or disabled checks have no capability (2758.8685ms)
+✔ acceptance opt-in is absent or literal true with both prerequisites, snapshotted before awaits (949.089875ms)
+✔ authority revoked by pause during journal open cannot accept and close drains the operation (1020.635083ms)
+✔ authority revoked by allowance during journal open cannot accept and close drains the operation (1000.150125ms)
+✔ authority revoked by case-budget during journal open cannot accept and close drains the operation (912.204083ms)
+✔ authority revoked by epoch during journal open cannot accept and close drains the operation (910.526083ms)
+✔ authority revoked by delete-action during journal open cannot accept and close drains the operation (971.197917ms)
+✔ authority revoked by mutate-action during journal open cannot accept and close drains the operation (899.70375ms)
+✔ authority revoked by change-source during journal open cannot accept and close drains the operation (971.370417ms)
+✔ authority revoked by settle during journal open cannot accept and close drains the operation (897.321458ms)
+✔ authority revoked by close during journal open cannot accept and close drains the operation (957.635625ms)
+✔ signal timeout during acceptance await rejects without accepting and Retry cannot revive old capability (2293.451375ms)
+✔ the final synchronous guard denies revocation after candidate preparation and preserves a reusable journal (1033.599083ms)
+✔ revocation after COMMIT rejects delivery but leaves matched historical acceptance without native evidence (1056.175584ms)
+✔ SIGKILL before worker COMMIT recovers controller association without replay or new permission (1764.838417ms)
+✔ SIGKILL after worker COMMIT recovers controller association without replay or new permission (1732.745542ms)
+✔ acceptance retries detach requests and preserve identity, timestamps and execution accounting in every mode (210.225125ms)
+✔ ordinary authority denials roll back staged memory and lazy format upgrade without poisoning the handle (146.235042ms)
+✔ rejecting async authority for new acceptance does not leak a rejection (369.65275ms)
+✔ rejecting async authority for existing acceptance does not leak a rejection (335.007958ms)
+✔ rejecting promise authority for new acceptance does not leak a rejection (322.283459ms)
+✔ rejecting promise authority for existing acceptance does not leak a rejection (346.474167ms)
+✔ complete same-key conflicts and execution keys reject without worker effects or quota changes (53.338125ms)
+✔ metadata capacity is 256 independent of execution quota and exact retries remain available at capacity (1749.995833ms)
+✔ acceptance mode and identity snapshot before awaits, refuse provisioning and precede pending recovery writes (44.159791ms)
+▶ persistence failures fail closed even when COMMIT succeeded, and close shares completion and drains accepted operations
+  ✔ before COMMIT (69.562958ms)
+  ✔ after COMMIT (75.889625ms)
+✔ persistence failures fail closed even when COMMIT succeeded, and close shares completion and drains accepted operations (145.836792ms)
+✔ version 2 strictly validates the union, accounting, identities and bounded metadata (226.732292ms)
+✔ SIGKILL before acceptance COMMIT preserves atomic lazy migration and lost-result recovery (309.642292ms)
+✔ SIGKILL after acceptance COMMIT preserves atomic lazy migration and lost-result recovery (312.851041ms)
+✔ mixed version 2 history preserves execution accounting, recovery updates and cross-kind uniqueness (98.954958ms)
+✔ unsafe timestamp arithmetic rejects without upgrade and leaves the handle reusable (62.208792ms)
+ℹ tests 38
+ℹ suites 0
+ℹ pass 38
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 23559.810958

@@ -1,0 +1,32 @@
+Base
+7e0284609e75934bd15a37dc5dbd11c2444b3e9b
+
+Accepted source
+07646ae4af3f8c2f569d9e2e5e19f637712635e2
+
+Changed paths
+docs/worker-acceptance.md
+docs/worker-association.md
+src/controller.ts
+src/frozen-browser.ts
+test/controller-worker-acceptance-crash-worker.ts
+test/controller-worker-acceptance.test.ts
+test/controller-worker-association.test.ts
+test/frozen-browser-acceptance-authority-worker.ts
+test/frozen-browser-acceptance-crash-worker.ts
+test/frozen-browser-acceptance-fixture.ts
+test/frozen-browser-acceptance.test.ts
+test/frozen-browser.test.ts
+
+Protected paths unchanged
+
+Repaired and committed patch identities
+a2519fd14c528472a1d9915ef187d25a9b526d71c228ba2fc366162c56223f12  .audit/acceptance-repaired-review.patch
+a2519fd14c528472a1d9915ef187d25a9b526d71c228ba2fc366162c56223f12  .audit/acceptance-committed-review.patch
+
+Patch equality
+byte-identical
+
+Post-verification source diff
+
+Whitespace check

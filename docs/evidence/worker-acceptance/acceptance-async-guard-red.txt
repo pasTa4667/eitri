@@ -1,0 +1,23 @@
+{"unhandled":["Error: revoked-async-guard"],"attempts":0,"records":0}
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: invalid async authority guard must not leak an unhandled rejection
++ actual - expected
+
++ [
++   'Error: revoked-async-guard'
++ ]
+- []
+
+    at file:///Users/felix.langbein/projects/eitri/.audit/reproduce-async-acceptance-guard.mjs:19:8 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: [ 'Error: revoked-async-guard' ],
+  expected: [],
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v26.5.0

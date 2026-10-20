@@ -1,0 +1,164 @@
+✖ rejecting async authority for new acceptance does not leak a rejection (268.686ms)
+✖ rejecting async authority for existing acceptance does not leak a rejection (285.119209ms)
+✖ rejecting promise authority for new acceptance does not leak a rejection (278.229375ms)
+✖ rejecting promise authority for existing acceptance does not leak a rejection (289.284041ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 0
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1434.348958
+
+✖ failing tests:
+
+test at test/frozen-browser-acceptance.test.ts:112:5
+✖ rejecting async authority for new acceptance does not leak a rejection (268.686ms)
+  AssertionError [ERR_ASSERTION]: ✖ rejecting async authority for new acceptance is handled without changing history (60.164375ms)
+  ℹ tests 1
+  ℹ suites 0
+  ℹ pass 0
+  ℹ fail 1
+  ℹ cancelled 0
+  ℹ skipped 0
+  ℹ todo 0
+  ℹ duration_ms 62.305875
+
+  ✖ failing tests:
+
+  test at test/frozen-browser-acceptance-authority-worker.ts:8:1
+  ✖ rejecting async authority for new acceptance is handled without changing history (60.164375ms)
+    Error: revoked-async-guard
+        at file:///Users/felix.langbein/projects/eitri-worker-handoff/test/frozen-browser-acceptance-authority-worker.ts:22:17
+        at file:///Users/felix.langbein/projects/eitri-worker-handoff/src/frozen-browser.ts:1888:13
+
+
+  1 !== 0
+
+      at TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-handoff/test/frozen-browser-acceptance.test.ts:128:14)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.start (node:internal/test_runner/test:1242:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test/frozen-browser-acceptance.test.ts:112:5
+✖ rejecting async authority for existing acceptance does not leak a rejection (285.119209ms)
+  AssertionError [ERR_ASSERTION]: ✖ rejecting async authority for existing acceptance is handled without changing history (66.104083ms)
+  ℹ tests 1
+  ℹ suites 0
+  ℹ pass 0
+  ℹ fail 1
+  ℹ cancelled 0
+  ℹ skipped 0
+  ℹ todo 0
+  ℹ duration_ms 68.242416
+
+  ✖ failing tests:
+
+  test at test/frozen-browser-acceptance-authority-worker.ts:8:1
+  ✖ rejecting async authority for existing acceptance is handled without changing history (66.104083ms)
+    Error: revoked-async-guard
+        at file:///Users/felix.langbein/projects/eitri-worker-handoff/test/frozen-browser-acceptance-authority-worker.ts:22:17
+        at file:///Users/felix.langbein/projects/eitri-worker-handoff/src/frozen-browser.ts:1855:13
+
+
+  1 !== 0
+
+      at TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-handoff/test/frozen-browser-acceptance.test.ts:128:14)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test/frozen-browser-acceptance.test.ts:112:5
+✖ rejecting promise authority for new acceptance does not leak a rejection (278.229375ms)
+  AssertionError [ERR_ASSERTION]: ✖ rejecting promise authority for new acceptance is handled without changing history (58.691834ms)
+  ℹ tests 1
+  ℹ suites 0
+  ℹ pass 0
+  ℹ fail 1
+  ℹ cancelled 0
+  ℹ skipped 0
+  ℹ todo 0
+  ℹ duration_ms 61.062167
+
+  ✖ failing tests:
+
+  test at test/frozen-browser-acceptance-authority-worker.ts:8:1
+  ✖ rejecting promise authority for new acceptance is handled without changing history (58.691834ms)
+    Error: revoked-promise-guard
+        at invalid (file:///Users/felix.langbein/projects/eitri-worker-handoff/test/frozen-browser-acceptance-authority-worker.ts:24:30)
+        at file:///Users/felix.langbein/projects/eitri-worker-handoff/src/frozen-browser.ts:1888:13
+
+
+  1 !== 0
+
+      at TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-handoff/test/frozen-browser-acceptance.test.ts:128:14)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test/frozen-browser-acceptance.test.ts:112:5
+✖ rejecting promise authority for existing acceptance does not leak a rejection (289.284041ms)
+  AssertionError [ERR_ASSERTION]: ✖ rejecting promise authority for existing acceptance is handled without changing history (65.384959ms)
+  ℹ tests 1
+  ℹ suites 0
+  ℹ pass 0
+  ℹ fail 1
+  ℹ cancelled 0
+  ℹ skipped 0
+  ℹ todo 0
+  ℹ duration_ms 67.765292
+
+  ✖ failing tests:
+
+  test at test/frozen-browser-acceptance-authority-worker.ts:8:1
+  ✖ rejecting promise authority for existing acceptance is handled without changing history (65.384959ms)
+    Error: revoked-promise-guard
+        at invalid (file:///Users/felix.langbein/projects/eitri-worker-handoff/test/frozen-browser-acceptance-authority-worker.ts:24:30)
+        at file:///Users/felix.langbein/projects/eitri-worker-handoff/src/frozen-browser.ts:1855:13
+
+
+  1 !== 0
+
+      at TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-handoff/test/frozen-browser-acceptance.test.ts:128:14)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
