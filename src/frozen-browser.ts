@@ -1344,6 +1344,8 @@ export class FrozenBrowserValidator {
     directory: string;
     mode?: 'journal-only';
   }): Promise<FrozenBrowserValidator | FrozenBrowserJournal> {
+    const mode = options.mode;
+    if (mode !== undefined && mode !== 'journal-only') fail('invalid-validator-mode');
     const directory = resolve(options.directory);
     if (owners.has(directory)) fail('validator-already-open');
     owners.add(directory);
@@ -1410,7 +1412,7 @@ export class FrozenBrowserValidator {
         markerPath = join(directory, 'owner.json'),
         policyPath = join(directory, 'seccomp.json');
       if (
-        (options.mode === 'journal-only' || !fresh) &&
+        (mode === 'journal-only' || !fresh) &&
         (!names.includes('owner.json') ||
           !names.includes('journal.sqlite') ||
           !names.includes('seccomp.json'))
@@ -1566,13 +1568,13 @@ export class FrozenBrowserValidator {
           await validator.save(run);
         }
         if (
-          options.mode !== 'journal-only' &&
+          mode !== 'journal-only' &&
           (run.result.kind === 'recorded' ||
             (run.result.kind === 'settled' && run.result.report.cleanup.kind === 'incomplete'))
         )
           await validator.finalize(run);
       }
-      if (options.mode === 'journal-only')
+      if (mode === 'journal-only')
         return Object.freeze({
           inventory: () => validator.inventory(),
           close: () => validator.close(),
