@@ -46,7 +46,7 @@ This is an internal scripted adapter interface, not an agent-supplied execution 
 
 The dispatch allowance is a snapshot. A cancellation signal does not prove underlying work or worker cleanup has drained. Artifact persistence remains non-atomic across blobs, manifests and check receipts. This unit does not roll back evidence committed before a later cancellation.
 
-Docker dispatch, browser-report mapping, workspace ownership, non-simulated evidence admission and durable worker cleanup correlation remain separate work. The accepted browser validator stays unwired. HTTP and native operator protocols do not change.
+The optional [controller-owned offline workspace](controller-workspace.md) configuration adds case ownership and action-scoped frozen source selection. It does not change these simulated receipt semantics. Docker dispatch, browser-report mapping, non-simulated evidence admission and durable worker cleanup correlation remain separate work. The accepted browser validator stays unwired. HTTP and native operator protocols do not change.
 
 ## Design and verification
 

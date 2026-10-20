@@ -1,0 +1,12 @@
+{
+  "configured": "literal A\n",
+  "replacement": "literal C\n",
+  "callbacks": 0,
+  "observed": "",
+  "status": "needs-attention",
+  "reason": "workspace-initial-source-mismatch",
+  "native": "ready",
+  "binding": "uncertain"
+}
+
+REPRO_EXIT=0

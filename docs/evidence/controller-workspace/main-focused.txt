@@ -1,0 +1,48 @@
+✔ unconfigured callbacks still receive exactly one argument and simulated receipts (47.703917ms)
+✔ public implementation selects A, edits isolated B, reads A, and Retry selects B under fresh authority (7477.790208ms)
+✔ callback completion revokes handles before native settlement, and frozen metadata is detached (1184.149709ms)
+✔ live source handles reject after pause and cannot revive on Continue or Retry (1268.767ms)
+✔ live source handles reject after cancel and cannot revive on Continue or Retry (1114.9255ms)
+✔ pause and close drain an admitted edit without authorizing a late operation (2983.300042ms)
+✔ post-native-close injected failure still releases real workspace and controller ownership (1540.111875ms)
+✔ duplicate admission retains its binding and terminal Requeue creates a distinct workspace (2010.386209ms)
+✔ offline mode cannot silently downgrade, migrate scripted cases, or change configuration (1304.723416ms)
+✔ established missing workspace store is never recreated and failed open releases ownership (941.300291ms)
+✔ established empty workspace store is never recreated and failed open releases ownership (937.249417ms)
+✔ established tampered workspace store is never recreated and failed open releases ownership (980.622417ms)
+✔ foreign-frozen association parks without marking healthy native storage missing (1119.598166ms)
+✔ foreign-binding association parks without marking healthy native storage missing (1188.896292ms)
+✔ invalid-epoch association parks without marking healthy native storage missing (1218.865208ms)
+✔ unrecorded-frozen association parks without marking healthy native storage missing (1232.878333ms)
+✔ real allowance cancellation revokes a callback that has not returned (2599.096833ms)
+✔ foreign persisted action cannot select offline source or enter callback (773.328875ms)
+✔ stale persisted action cannot select offline source or enter callback (602.376375ms)
+✔ baseline is copied before Controller.open first awaits (1076.812709ms)
+✔ SIGKILL provisioning intent rejects pristine foreign changed-bytes under matching IDs (1765.399708ms)
+✔ SIGKILL provisioning intent rejects pristine foreign extra-path under matching IDs (1952.439292ms)
+✔ SIGKILL provisioning intent rejects pristine foreign missing-path under matching IDs (1064.31225ms)
+✔ SIGKILL after-command-commit preserves intent/effect/receipt without source or edit replay (852.231417ms)
+✔ SIGKILL after-workspace-provision-intent preserves intent/effect/receipt without source or edit replay (254.846542ms)
+✔ SIGKILL workspace-after-provision-intent preserves intent/effect/receipt without source or edit replay (233.211125ms)
+✔ SIGKILL workspace-after-provision-worktree preserves intent/effect/receipt without source or edit replay (545.261417ms)
+✔ SIGKILL after-workspace-provision-effect preserves intent/effect/receipt without source or edit replay (1589.453333ms)
+✔ SIGKILL before-check-dispatch preserves intent/effect/receipt without source or edit replay (1315.005791ms)
+✔ SIGKILL after-source-selection-intent preserves intent/effect/receipt without source or edit replay (1361.87825ms)
+✔ SIGKILL after-source-freeze preserves intent/effect/receipt without source or edit replay (1497.547958ms)
+✔ SIGKILL after-source-selection-receipt preserves intent/effect/receipt without source or edit replay (1550.849209ms)
+✔ SIGKILL workspace-after-intent preserves intent/effect/receipt without source or edit replay (2084.530917ms)
+✔ SIGKILL workspace-after-commit preserves intent/effect/receipt without source or edit replay (1969.420292ms)
+✔ SIGKILL workspace-after-checkpoint preserves intent/effect/receipt without source or edit replay (3002.017083ms)
+✔ SIGKILL after-source-edit-effect preserves intent/effect/receipt without source or edit replay (3261.702583ms)
+✔ SIGKILL after-check-receipt preserves intent/effect/receipt without source or edit replay (1531.957584ms)
+✔ SIGKILL after-tool-action-receipt preserves intent/effect/receipt without source or edit replay (1670.922042ms)
+ℹ tests 38
+ℹ suites 0
+ℹ pass 38
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 59587.740542
+
+FOCUSED_EXIT=0

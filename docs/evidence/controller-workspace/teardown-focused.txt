@@ -1,0 +1,128 @@
+BASE_COMMIT=da2f9f134cb0abe3198ed3b2da6a00a57dd2e1b0
+
+TEST_ONLY_DIFF
+diff --git a/test/controller-workspace.test.ts b/test/controller-workspace.test.ts
+index 420955e..bed13fd 100644
+--- a/test/controller-workspace.test.ts
++++ b/test/controller-workspace.test.ts
+@@ -195,6 +195,7 @@ test('public implementation selects A, edits isolated B, reads A, and Retry sele
+   let editCase = '';
+   const finish = gate();
+   const entered = gate();
++  t.after(() => finish.resolve());
+   const observations: string[] = [];
+   const f = await fixture(
+     t,
+@@ -274,7 +275,6 @@ test('public implementation selects A, edits isolated B, reads A, and Retry sele
+   );
+   const a = await f.add('A');
+   const b = await f.add('B');
+-  t.after(() => finish.resolve());
+   await entered.promise;
+   assert.deepEqual(observations, ['literal A\n', 'literal A\n']);
+   assert.equal(await f.add('A'), a);
+@@ -386,6 +386,7 @@ for (const mode of ['pause', 'cancel'] as const)
+   test(`live source handles reject after ${mode} and cannot revive on Continue or Retry`, async (t) => {
+     const entered = gate(),
+       release = gate();
++    t.after(() => release.resolve());
+     let captured: OfflineActionWorkspace;
+     let now = 1000;
+     const f = await fixture(t, {
+@@ -402,7 +403,6 @@ for (const mode of ['pause', 'cancel'] as const)
+         return { provider: faux.provider, modelId: faux.getModel().id };
+       },
+     });
+-    t.after(() => release.resolve());
+     const id = await f.add();
+     await entered.promise;
+     if (mode === 'pause') {
+@@ -434,6 +434,7 @@ test('pause and close drain an admitted edit without authorizing a late operatio
+   const entered = gate(),
+     release = gate(),
+     observed = gate();
++  t.after(() => release.resolve());
+   let captured: OfflineActionWorkspace;
+   let editError: unknown;
+   const f = await fixture(
+@@ -463,7 +464,6 @@ test('pause and close drain an admitted edit without authorizing a late operatio
+     },
+     true,
+   );
+-  t.after(() => release.resolve());
+   const id = await f.add();
+   await entered.promise;
+   const pausing = f.controller.command(command({ type: 'pause', caseId: id }));
+@@ -641,6 +641,7 @@ for (const mode of [
+ test('real allowance cancellation revokes a callback that has not returned', async (t) => {
+   const entered = gate(),
+     release = gate();
++  t.after(() => release.resolve());
+   let captured: OfflineActionWorkspace;
+   let request: AdmittedCheckRequest;
+   const f = await fixture(t, {
+@@ -654,7 +655,6 @@ test('real allowance cancellation revokes a callback that has not returned', asy
+       return receipt(input.kind);
+     },
+   });
+-  t.after(() => release.resolve());
+   const id = await f.add();
+   await entered.promise;
+   const c = await f.parked(id);
+
+COMMAND: npx oxfmt --check test/controller-workspace.test.ts
+npm notice run eitri@0.1.0 npx
+npm notice run 'oxfmt' --check test/controller-workspace.test.ts
+Checking formatting...
+
+All matched files use the correct format.
+Finished in 8ms on 1 files using 12 threads.
+npm notice run eitri@0.1.0 npx
+npm notice run 'oxlint' --deny-warnings src test scripts prototypes
+npm notice run eitri@0.1.0 npx
+npm notice run 'tsc' --noEmit
+✔ unconfigured callbacks still receive exactly one argument and simulated receipts (51.591334ms)
+✔ public implementation selects A, edits isolated B, reads A, and Retry selects B under fresh authority (6141.170041ms)
+✔ callback completion revokes handles before native settlement, and frozen metadata is detached (911.532416ms)
+✔ live source handles reject after pause and cannot revive on Continue or Retry (915.258083ms)
+✔ live source handles reject after cancel and cannot revive on Continue or Retry (805.591958ms)
+✔ pause and close drain an admitted edit without authorizing a late operation (2450.871333ms)
+✔ post-native-close injected failure still releases real workspace and controller ownership (1019.974958ms)
+✔ duplicate admission retains its binding and terminal Requeue creates a distinct workspace (1533.4145ms)
+✔ offline mode cannot silently downgrade, migrate scripted cases, or change configuration (1002.691167ms)
+✔ established missing workspace store is never recreated and failed open releases ownership (584.06325ms)
+✔ established empty workspace store is never recreated and failed open releases ownership (649.86925ms)
+✔ established tampered workspace store is never recreated and failed open releases ownership (613.911333ms)
+✔ foreign-frozen association parks without marking healthy native storage missing (968.04175ms)
+✔ foreign-binding association parks without marking healthy native storage missing (947.467375ms)
+✔ invalid-epoch association parks without marking healthy native storage missing (900.120208ms)
+✔ unrecorded-frozen association parks without marking healthy native storage missing (895.836792ms)
+✔ real allowance cancellation revokes a callback that has not returned (2343.908542ms)
+✔ foreign persisted action cannot select offline source or enter callback (371.958375ms)
+✔ stale persisted action cannot select offline source or enter callback (360.568917ms)
+✔ baseline is copied before Controller.open first awaits (778.231125ms)
+✔ SIGKILL after-command-commit preserves intent/effect/receipt without source or edit replay (715.085417ms)
+✔ SIGKILL after-workspace-provision-intent preserves intent/effect/receipt without source or edit replay (243.096125ms)
+✔ SIGKILL workspace-after-provision-intent preserves intent/effect/receipt without source or edit replay (541.876209ms)
+✔ SIGKILL workspace-after-provision-worktree preserves intent/effect/receipt without source or edit replay (578.351291ms)
+✔ SIGKILL after-workspace-provision-effect preserves intent/effect/receipt without source or edit replay (887.532875ms)
+✔ SIGKILL before-check-dispatch preserves intent/effect/receipt without source or edit replay (930.1735ms)
+✔ SIGKILL after-source-selection-intent preserves intent/effect/receipt without source or edit replay (1268.196042ms)
+✔ SIGKILL after-source-freeze preserves intent/effect/receipt without source or edit replay (1252.017542ms)
+✔ SIGKILL after-source-selection-receipt preserves intent/effect/receipt without source or edit replay (1351.135042ms)
+✔ SIGKILL workspace-after-intent preserves intent/effect/receipt without source or edit replay (1616.308917ms)
+✔ SIGKILL workspace-after-commit preserves intent/effect/receipt without source or edit replay (1570.30675ms)
+✔ SIGKILL workspace-after-checkpoint preserves intent/effect/receipt without source or edit replay (2807.374833ms)
+✔ SIGKILL after-source-edit-effect preserves intent/effect/receipt without source or edit replay (3067.227375ms)
+✔ SIGKILL after-check-receipt preserves intent/effect/receipt without source or edit replay (1368.23475ms)
+✔ SIGKILL after-tool-action-receipt preserves intent/effect/receipt without source or edit replay (1348.430791ms)
+ℹ tests 35
+ℹ suites 0
+ℹ pass 35
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 44158.122333
+
+FOCUSED_EXIT=0

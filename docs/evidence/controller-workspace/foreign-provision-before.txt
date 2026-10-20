@@ -1,0 +1,30 @@
+{
+  "configured": "literal A\n",
+  "replacement": "literal C\n",
+  "callbacks": 1,
+  "observed": "literal C\n",
+  "status": "needs-attention",
+  "reason": "check-infrastructure",
+  "native": "ready",
+  "binding": "ready"
+}
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Foreign initial source must not reach callback
+
+1 !== 0
+
+    at file:///Users/felix.langbein/projects/eitri/.audit/reproduce-foreign-provision.mjs:63:10 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 1,
+  expected: 0,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v26.5.0
+
+REPRO_EXIT=1

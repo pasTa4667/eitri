@@ -1,0 +1,22 @@
+Integrated source
+3026f47b6effa7d52dd28286506c6f9179023841
+
+Tested source
+1b73c768ea92e647fb3f38fe3f6cc62a842c2c88
+
+Executable source identity check
+IDENTICAL_EXIT=0
+
+Scope against inherited source
+M	src/controller.ts
+A	test/controller-workspace-crash-worker.ts
+A	test/controller-workspace.test.ts
+M	test/workspace.test.ts
+
+Unchanged protected modules
+PROTECTED_EXIT=0
+
+Runtime
+v26.5.0
+
+Remotes

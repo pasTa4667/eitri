@@ -1,0 +1,5 @@
+4c6bafec4638d77962bb0169d5f7954fc688ef65
+M	src/controller.ts
+A	test/controller-workspace-crash-worker.ts
+A	test/controller-workspace.test.ts
+M	test/workspace.test.ts
