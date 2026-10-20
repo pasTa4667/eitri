@@ -19,7 +19,7 @@ export function deferred<T = void>() {
   });
   return { promise, resolve };
 }
-const transcript = String.raw`
+export const transcript = String.raw`
 import { readFileSync, writeFileSync, renameSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { deflateSync, crc32 } from 'node:zlib';

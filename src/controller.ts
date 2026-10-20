@@ -30,8 +30,10 @@ import type {
   RecoveryInventory,
   RecoveryRecord,
   FrozenBrowserAcceptance,
+  FrozenBrowserConsumption,
 } from './frozen-browser.ts';
 import { NativeCase } from './native.ts';
+import { WorkerExecutionScope } from './worker-execution-scope.ts';
 import { ArtifactStore, artifactLimits, validateOutput } from './artifacts.ts';
 import {
   ControlError,
@@ -67,6 +69,7 @@ export type OfflineWorkspaceOptions = Readonly<{
 }>;
 export type OfflineActionWorkspace = Readonly<{
   workerAcceptance?: Readonly<{ accept(): Promise<FrozenBrowserAcceptance> }>;
+  workerConsumption?: Readonly<{ consume(): Promise<FrozenBrowserConsumption> }>;
   selection: FrozenRevision;
   readSelected(): Promise<readonly BaselineFile[]>;
   edit(expectedRevision: GitRevision, input: Omit<BrokerEdit, 'requestId'>): Promise<SavedReceipt>;
@@ -117,6 +120,7 @@ type Options = {
   offlineWorkspace?: OfflineWorkspaceOptions;
   offlineWorkerJournal?: OfflineWorkerJournalOptions;
   offlineWorkerAcceptance?: true;
+  offlineWorkerConsumption?: true;
   check?: (
     request: AdmittedCheckRequest,
     source?: OfflineActionWorkspace,
@@ -138,6 +142,10 @@ export class Controller {
   private watchers = new Set<() => void>();
   private queue: Promise<unknown> = Promise.resolve();
   private closing = false;
+  private closure?: Promise<void>;
+  private workerScopes = new Map<Action, WorkerExecutionScope>();
+  private workerDrains = new Set<Promise<void>>();
+  private workerInspections = new Set<Promise<WorkerAssociationObservation>>();
   private starting = true;
   private tickScheduled = false;
   private polling = false;
@@ -168,6 +176,15 @@ export class Controller {
   }
   static async open(options: Options) {
     options = { ...options };
+    if (options.offlineWorkerConsumption !== undefined && options.offlineWorkerConsumption !== true)
+      fail('invalid-offline-worker-consumption');
+    if (
+      options.offlineWorkerConsumption &&
+      (!options.offlineWorkspace ||
+        !options.offlineWorkerJournal ||
+        !options.offlineWorkerAcceptance)
+    )
+      fail('offline-worker-consumption-configuration-required');
     if (options.offlineWorkerAcceptance !== undefined && options.offlineWorkerAcceptance !== true)
       fail('invalid-offline-worker-acceptance');
     if (
@@ -374,37 +391,50 @@ export class Controller {
         .prepare('INSERT INTO metadata VALUES (?,?)')
         .run('offline_worker_journal', JSON.stringify(binding));
   }
-  async inspectWorkerAssociation(
+  inspectWorkerAssociation(id: string, actionId: string): Promise<WorkerAssociationObservation> {
+    const inspection = this.readWorkerAssociation(id, actionId);
+    this.workerInspections.add(inspection);
+    void inspection.finally(() => this.workerInspections.delete(inspection)).catch(() => {});
+    return inspection;
+  }
+  private async readWorkerAssociation(
     id: string,
     actionId: string,
   ): Promise<WorkerAssociationObservation> {
     if (!uuid(id) || !uuid(actionId)) fail('invalid-worker-association-id');
-    return this.workspaceSerial(async () => {
-      const configured =
-        this.options.offlineWorkerJournal ?? fail('offline-worker-journal-required');
-      const inventory = await this.workerInventory({ version: 1, ...configured });
-      const source = this.source(id, actionId);
-      const intent = source.workerIntent;
-      if (!intent) return { state: 'unrecorded' };
-      const runs = inventory.runs.filter(
-        (run) =>
-          run.request.action.caseId === intent.request.action.caseId &&
-          run.request.action.actionId === intent.request.action.actionId &&
-          run.request.action.epoch === intent.request.action.epoch,
-      );
-      if (runs.length === 0) return structuredClone({ state: 'absent', intent });
-      const run = runs[0];
-      if (
-        runs.length !== 1 ||
-        !isDeepStrictEqual(run.request, intent.request) ||
-        digest(run.request) !== intent.requestDigest ||
-        digest(intent.request) !== intent.requestDigest ||
-        run.requestDigest !== intent.requestDigest ||
-        run.configurationDigest !== configured.configurationDigest
-      )
-        return structuredClone({ state: 'conflict', intent, runs });
-      return structuredClone({ state: 'matched', intent, run });
+    if (this.closing) fail('controller-closed');
+    const configured = this.options.offlineWorkerJournal ?? fail('offline-worker-journal-required');
+    const reading = await this.workspaceSerial(async () => {
+      for (const scope of this.workerScopes.values()) {
+        const inventory = scope.inventory();
+        if (inventory) return { inventory };
+      }
+      return {
+        inventory: Promise.resolve(await this.workerInventory({ version: 1, ...configured })),
+      };
     });
+    const inventory = await reading.inventory;
+    const source = this.source(id, actionId);
+    const intent = source.workerIntent;
+    if (!intent) return { state: 'unrecorded' };
+    const runs = inventory.runs.filter(
+      (run) =>
+        run.request.action.caseId === intent.request.action.caseId &&
+        run.request.action.actionId === intent.request.action.actionId &&
+        run.request.action.epoch === intent.request.action.epoch,
+    );
+    if (runs.length === 0) return structuredClone({ state: 'absent', intent });
+    const run = runs[0];
+    if (
+      runs.length !== 1 ||
+      !isDeepStrictEqual(run.request, intent.request) ||
+      digest(run.request) !== intent.requestDigest ||
+      digest(intent.request) !== intent.requestDigest ||
+      run.requestDigest !== intent.requestDigest ||
+      run.configurationDigest !== configured.configurationDigest
+    )
+      return structuredClone({ state: 'conflict', intent, runs });
+    return structuredClone({ state: 'matched', intent, run });
   }
   private workspaceSerial<T>(work: () => Promise<T>): Promise<T> {
     if (this.closing) return Promise.reject(new ControlError('controller-closed'));
@@ -818,6 +848,15 @@ export class Controller {
         'INSERT INTO cases VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET value=excluded.value',
       )
       .run(c.id, c.issueKey, JSON.stringify(c));
+    for (const [action, scope] of this.workerScopes)
+      if (
+        action.caseId === c.id &&
+        (c.status !== 'running' ||
+          c.epoch !== action.epoch ||
+          c.native !== 'ready' ||
+          c.remainingMs <= 0)
+      )
+        this.revokeWorkerScope(action, scope);
   }
   private charge(c: Case, now = this.clock()) {
     if (c.accountedAt !== null) {
@@ -1250,7 +1289,13 @@ export class Controller {
     let request: AdmittedCheckRequest;
     let source: OfflineActionWorkspace | undefined;
     let live = true;
+    let workerScope: WorkerExecutionScope | undefined;
+    let callbackSettled = false;
     const callback = this.options.check;
+    const revoke = () => {
+      live = false;
+      if (workerScope) this.revokeWorkerScope(action, workerScope);
+    };
     try {
       this.options.fault?.('before-check-dispatch', id);
       let allowance = this.checkAllowance(id, action, signal);
@@ -1286,35 +1331,64 @@ export class Controller {
               fail('worker-acceptance-source-changed');
             return true;
           };
-          source = Object.freeze({
-            ...source!,
-            workerAcceptance: Object.freeze({
-              accept: () =>
+          if (this.options.offlineWorkerConsumption) {
+            workerScope = new WorkerExecutionScope(
+              workerRequest,
+              () =>
                 this.workspaceSerial(async () => {
                   assertCurrentAuthority();
                   const binding = this.options.offlineWorkerJournal!;
-                  const journal = await FrozenBrowserValidator.open({
+                  return FrozenBrowserValidator.open({
                     directory: binding.directory,
                     workspace: this.workspaces!,
-                    mode: 'acceptance-only',
+                    mode: 'consumption-only',
                     expectedIdentity: {
                       ownerId: binding.ownerId,
                       configurationDigest: sha256(binding.configurationDigest),
                     },
                   });
-                  let accepted: FrozenBrowserAcceptance;
-                  try {
-                    assertCurrentAuthority();
-                    accepted = await journal.accept(workerRequest, assertCurrentAuthority);
-                    assertCurrentAuthority();
-                  } finally {
-                    await journal.close();
-                  }
-                  assertCurrentAuthority();
-                  return accepted;
                 }),
-            }),
-          });
+              () => {
+                assertCurrentAuthority();
+                return this.checkAllowance(id, action, signal).remainingMs;
+              },
+            );
+            this.workerScopes.set(action, workerScope);
+            source = Object.freeze({
+              ...source!,
+              workerAcceptance: Object.freeze({ accept: workerScope.accept }),
+              workerConsumption: Object.freeze({ consume: workerScope.consume }),
+            });
+          } else
+            source = Object.freeze({
+              ...source!,
+              workerAcceptance: Object.freeze({
+                accept: () =>
+                  this.workspaceSerial(async () => {
+                    assertCurrentAuthority();
+                    const binding = this.options.offlineWorkerJournal!;
+                    const journal = await FrozenBrowserValidator.open({
+                      directory: binding.directory,
+                      workspace: this.workspaces!,
+                      mode: 'acceptance-only',
+                      expectedIdentity: {
+                        ownerId: binding.ownerId,
+                        configurationDigest: sha256(binding.configurationDigest),
+                      },
+                    });
+                    let accepted: FrozenBrowserAcceptance;
+                    try {
+                      assertCurrentAuthority();
+                      accepted = await journal.accept(workerRequest, assertCurrentAuthority);
+                      assertCurrentAuthority();
+                    } finally {
+                      await journal.close();
+                    }
+                    assertCurrentAuthority();
+                    return accepted;
+                  }),
+              }),
+            });
         }
       }
       const entry = this.checkAllowance(id, action, signal);
@@ -1329,7 +1403,7 @@ export class Controller {
         signal,
       });
     } catch (error) {
-      live = false;
+      revoke();
       return this.stopCheck(
         id,
         action,
@@ -1338,9 +1412,12 @@ export class Controller {
     }
     let execution: CheckExecution;
     let abort!: () => void;
+    let workerAbort!: () => void;
     try {
       const interrupted = new Promise<never>((_resolve, reject) => {
         abort = () => {
+          if (callbackSettled) return;
+          revoke();
           try {
             this.stopCheck(id, action, 'check-allowance-exhausted');
           } catch (error) {
@@ -1349,16 +1426,28 @@ export class Controller {
           }
           reject(new ControlError('check-allowance-exhausted'));
         };
+        workerAbort = () => {
+          if (callbackSettled) return;
+          live = false;
+          reject(new ControlError('action-source-revoked'));
+        };
         signal.addEventListener('abort', abort, { once: true });
+        workerScope?.signal.addEventListener('abort', workerAbort, { once: true });
       });
       if (signal.aborted) {
         abort();
         await interrupted;
       }
       const result: unknown = await Promise.race([
-        Promise.resolve(source ? callback(request, source) : callback(request)).finally(() => {
-          live = false;
-        }),
+        (async () => {
+          try {
+            if (!live) fail('action-source-revoked');
+            return await (source ? callback(request, source) : callback(request));
+          } finally {
+            callbackSettled = true;
+            revoke();
+          }
+        })(),
         interrupted,
       ]);
       try {
@@ -1371,8 +1460,9 @@ export class Controller {
         ? { type: 'uncertain' }
         : this.stopCheck(id, action, 'check-callback-failed');
     } finally {
-      live = false;
+      revoke();
       signal.removeEventListener('abort', abort);
+      workerScope?.signal.removeEventListener('abort', workerAbort);
     }
     try {
       this.checkAllowance(id, action, signal);
@@ -1889,19 +1979,39 @@ export class Controller {
       this.watchers.delete(update);
     };
   }
-  async close() {
+  private revokeWorkerScope(action: Action, scope: WorkerExecutionScope) {
+    scope.revoke();
+    const drainage = scope.close();
+    if (this.workerDrains.has(drainage)) return;
+    this.workerDrains.add(drainage);
+    void drainage
+      .finally(() => {
+        if (this.workerScopes.get(action) === scope) this.workerScopes.delete(action);
+        this.workerDrains.delete(drainage);
+      })
+      .catch(() => {});
+  }
+  close(): Promise<void> {
+    if (this.closure) return this.closure;
     this.closing = true;
+    for (const [action, scope] of this.workerScopes) this.revokeWorkerScope(action, scope);
+    return (this.closure = this.drainClose());
+  }
+  private async drainClose() {
     await this.queue;
     const closed = await Promise.allSettled(
       [...this.runtimes.values()].map(async (p) => (await p).close()),
     );
     await Promise.allSettled(this.runners.values());
     await this.workspaceQueue;
+    const workersClosed = await Promise.allSettled(this.workerDrains);
+    await Promise.allSettled(this.workerInspections);
     const workspaceClosed = await Promise.allSettled([this.workspaces?.close()]);
     this.watchers.clear();
     this.db.close();
     openDirectories.delete(this.directory);
     if (closed.some((result) => result.status === 'rejected')) fail('native-close-failed');
+    if (workersClosed.some((result) => result.status === 'rejected')) fail('worker-close-failed');
     if (workspaceClosed.some((result) => result.status === 'rejected'))
       fail('workspace-close-failed');
   }
