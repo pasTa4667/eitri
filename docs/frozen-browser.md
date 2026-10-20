@@ -12,6 +12,31 @@ This module is unwired. It produces observations for an importing colleague, not
 
 `close()` refuses admission, cancels active work, drains finalization, and closes only validation storage. Callers need not await a validation promise for its finalization to run. Cleanup removes the actual owned container with `container rm --force`, not merely the attached Docker client.
 
+## Pure report conversion
+
+`admitFrozenBrowserReport(expected, value: unknown)` synchronously converts report claims without execution, workspace access, persistence, or controller admission. `FrozenBrowserExpectation` pairs `kind: 'baseline'` with a baseline-role request, or `kind: 'browser'` with a candidate-role request. Both require an independently supplied `configurationDigest: Sha256`. Other kinds and role/kind pairs are invalid.
+
+`FrozenBrowserAdmission` has two variants:
+
+- `type: 'behavioral'` contains a detached report with non-null evidence, one of the four behavioral outcomes, and `owned-removed` cleanup. It contains `passed` and exactly one `image/png` output labeled `Frozen browser screenshot`.
+- `type: 'blocked'` contains a detached report and a reason of `cleanup-incomplete`, `infrastructure`, `unrelated-failure`, `cancelled`, or `uncertain`. It has no `passed` or `outputs`, even when diagnostic evidence is retained.
+
+The converter validates the entire report before choosing a result. Valid incomplete cleanup takes precedence over the recorded outcome. Evidence paired with `not-needed` cleanup is invalid. The four behavioral outcomes and `unrelated-failure` require evidence, matching scenario classification, and completion by the deadline. Infrastructure failure, cancellation, and uncertainty can retain evidence without matching its scenario classification or meeting its deadline. They never become behavioral results. These three outcomes can also have null evidence. A null-evidence report establishes no report-side configuration match beyond its echoed request.
+
+`passed` is true only for `baseline-reproduced` and `candidate-passed`. Baseline pass means reproduction. Candidate pass means this scenario observed B. Neither establishes that a Sentry issue stopped or a general test suite passed.
+
+Malformed, contradictory, or mismatched data throws `ControlError('invalid-frozen-browser-admission')`. The converter checks complete request equality, lowercase run UUID, configuration and request digests, the frozen tuple, safe integer timestamps, exact allowance/deadline arithmetic, nonnegative duration, exit zero, and absence of OOM. It checks canonical and unique transfer paths, existing file/count/total bounds, exact observation-manifest agreement, stage/literal/event rules, and PNG MIME, canonical base64, size, checksum, and bytes. Ordinary console messages are allowed. Page and console errors prevent behavioral classification. The workspace manifest digest is not recomputed from transfer entries, which omit workspace fields.
+
+Before parsing or serializing either argument, the converter creates a detached own-data snapshot. It accepts plain or null-prototype records, dense ordinary arrays, null, booleans, finite numbers, and well-formed strings. Properties must be enumerable own data. Arrays have only their indexed entries and intrinsic length. It rejects accessors, symbols, executable values, exotic objects, inherited fields, hidden properties, sparse or decorated arrays, cycles, undefined, bigint, and proxies. Proxy detection precedes reflection and invokes no traps. Fixed conversion shapes reject extra keys. Each argument has a maximum depth of 32, 100000 visited values, and a conservative byte budget of 8 MiB plus 256 KiB before serialization. Retained evidence still has its existing 8 MiB serialized limit. Repeated calls return equal values without sharing mutable reports or output bytes.
+
+### Validation limits
+
+Matching digests prove consistency with supplied expectations, not authorship. The helper does not verify containment, resource ownership, cleanup execution, or complete process history. A copied `owned-removed` value remains a report claim. The function name grants no controller permission, and native non-simulated receipt rejection is unchanged.
+
+Trusted-asset, policy, engine, base-image, applied Docker configuration, process census, namespace, sandbox, budget, and restriction records remain bounded, detached claimed data. Arbitrary claimed containment fields are not authenticated or verified. Even reported unsafe settings such as privileged execution or host networking can pass this narrow converter. Retained opaque provenance is not sanitized or attested.
+
+Context, stdout, stderr, and build-output hashes receive format checks only. The converter checks `applied.inspectionSha256` format when present, but does not require that field or verify other applied settings. It cannot recompute these hashes without their preimages. The direct synthetic tests include a fabricated unsafe report that passes without establishing execution or containment. A consumer that needs those guarantees requires a stronger verifier in a separate reviewed unit.
+
 ## Outcome and cleanup
 
 The protected scenario loads `src/index.html`, requires exactly one `#run` button and one initially empty `#result`, clicks the button, and reads the literal output. Startup and action must succeed without page or console errors before an observation can reproduce the target failure.

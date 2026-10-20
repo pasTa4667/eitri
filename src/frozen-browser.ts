@@ -5,10 +5,11 @@ import { fileURLToPath } from 'node:url';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
+import { types } from 'node:util';
 import { checksum, validateOutput } from './artifacts.ts';
 import { digest, fail, uuid } from './domain.ts';
 import { caseId, gitRevision, sha256, virtualPath } from './workspace.ts';
-import type { WorkspaceStore, FrozenRevision, CaseId } from './workspace.ts';
+import type { WorkspaceStore, FrozenRevision, CaseId, Sha256 } from './workspace.ts';
 import {
   namespaceChrootPolicy,
   engineCommit,
@@ -78,6 +79,44 @@ export type FrozenBrowserReport = Readonly<{
   cleanup: FrozenBrowserCleanup;
   evidence: FrozenBrowserEvidence | null;
 }>;
+export type FrozenBrowserExpectation =
+  | Readonly<{
+      configurationDigest: Sha256;
+      kind: 'baseline';
+      request: FrozenBrowserRequest & Readonly<{ role: 'baseline' }>;
+    }>
+  | Readonly<{
+      configurationDigest: Sha256;
+      kind: 'browser';
+      request: FrozenBrowserRequest & Readonly<{ role: 'candidate' }>;
+    }>;
+type BehavioralOutcome = Readonly<{
+  kind: 'baseline-reproduced' | 'baseline-not-reproduced' | 'candidate-passed' | 'candidate-failed';
+}>;
+export type FrozenBrowserAdmission =
+  | Readonly<{
+      type: 'behavioral';
+      report: FrozenBrowserReport &
+        Readonly<{
+          outcome: BehavioralOutcome;
+          evidence: FrozenBrowserEvidence;
+          cleanup: Readonly<{ kind: 'owned-removed'; cache: 'retained' }>;
+        }>;
+      passed: boolean;
+      outputs: readonly [
+        Readonly<{ label: 'Frozen browser screenshot'; mime: 'image/png'; bytes: Uint8Array }>,
+      ];
+    }>
+  | Readonly<{
+      type: 'blocked';
+      report: FrozenBrowserReport;
+      reason:
+        | 'cleanup-incomplete'
+        | 'infrastructure'
+        | 'unrelated-failure'
+        | 'cancelled'
+        | 'uncertain';
+    }>;
 const limits = Object.freeze({
   attempts: 16,
   context: 40 * 1024 ** 2,
@@ -392,6 +431,167 @@ function evidence(value: unknown): FrozenBrowserEvidence | null {
     png: { mime: 'image/png', size: bytes.length, sha256: checksum(bytes), base64 },
   };
 }
+function admissionSnapshot(value: unknown): Json {
+  let nodes = 0;
+  let bytes = 0;
+  const ancestors = new Set<object>();
+  const charge = (count: number) => {
+    bytes += count;
+    if (bytes > limits.evidence + limits.control) fail('invalid-frozen-browser-admission');
+  };
+  const text = (value: string) => {
+    charge(Buffer.byteLength(value) + 2);
+    if (!value.isWellFormed()) fail('invalid-frozen-browser-admission');
+    for (const char of value) {
+      const code = char.charCodeAt(0);
+      if (code < 32) charge([8, 9, 10, 12, 13].includes(code) ? 1 : 5);
+      else if (char === '"' || char === '\\') charge(1);
+    }
+    return value;
+  };
+  const copy = (value: unknown, depth: number): Json => {
+    if (++nodes > 100000 || depth > 32) fail('invalid-frozen-browser-admission');
+    if (typeof value === 'string') return text(value);
+    if (value === null || typeof value === 'boolean') {
+      charge(5);
+      return value;
+    }
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      charge(32);
+      return value;
+    }
+    if (typeof value !== 'object' || value === null || types.isProxy(value))
+      return fail('invalid-frozen-browser-admission');
+    if (ancestors.has(value)) fail('invalid-frozen-browser-admission');
+    const isArray = Array.isArray(value);
+    const prototype = Object.getPrototypeOf(value);
+    if (
+      isArray ? prototype !== Array.prototype : prototype !== Object.prototype && prototype !== null
+    )
+      fail('invalid-frozen-browser-admission');
+    const keys = Reflect.ownKeys(value);
+    if (keys.length > 100000) fail('invalid-frozen-browser-admission');
+    const result: Json[] | ObjectValue = isArray ? [] : {};
+    const length = isArray ? Object.getOwnPropertyDescriptor(value, 'length')!.value : 0;
+    if (isArray && (length > 100000 || keys.length !== length + 1))
+      fail('invalid-frozen-browser-admission');
+    charge(2);
+    ancestors.add(value);
+    for (const key of keys) {
+      if (isArray && key === 'length') continue;
+      if (typeof key !== 'string') return fail('invalid-frozen-browser-admission');
+      const descriptor = Object.getOwnPropertyDescriptor(value, key)!;
+      if (!descriptor.enumerable || !Object.hasOwn(descriptor, 'value'))
+        fail('invalid-frozen-browser-admission');
+      if (isArray && key !== String((result as Json[]).length))
+        fail('invalid-frozen-browser-admission');
+      if (!isArray) text(key);
+      charge(2);
+      Object.defineProperty(result, key, {
+        value: copy(descriptor.value, depth + 1),
+        enumerable: true,
+        writable: true,
+        configurable: true,
+      });
+    }
+    ancestors.delete(value);
+    return result;
+  };
+  return copy(value, 0);
+}
+
+/** Converts detached report claims into scenario data, not controller admission or a receipt.
+ * Matching digests establish consistency, not authorship, containment, or executed cleanup.
+ */
+export function admitFrozenBrowserReport(
+  expected: FrozenBrowserExpectation,
+  value: unknown,
+): FrozenBrowserAdmission {
+  try {
+    const expectedData = admissionSnapshot(expected);
+    const reportData = admissionSnapshot(value);
+    const e = exact(expectedData, ['configurationDigest', 'kind', 'request']);
+    const r = exact(reportData, ['runId', 'request', 'outcome', 'cleanup', 'evidence']);
+    const request = frozenBrowserRequest(e.request);
+    const returnedRequest = frozenBrowserRequest(r.request);
+    const configurationDigest = sha256(e.configurationDigest);
+    if (
+      !(
+        (e.kind === 'baseline' && request.role === 'baseline') ||
+        (e.kind === 'browser' && request.role === 'candidate')
+      ) ||
+      !same(request, returnedRequest)
+    )
+      fail('invalid-frozen-browser-admission');
+    const report: FrozenBrowserReport = {
+      runId: id(r.runId),
+      request: returnedRequest,
+      outcome: outcome(r.outcome),
+      cleanup: cleanup(r.cleanup),
+      evidence: evidence(r.evidence),
+    };
+    const observedOutcome = !['infrastructure-failed', 'cancelled', 'uncertain'].includes(
+      report.outcome.kind,
+    );
+    if (report.evidence) {
+      const p = report.evidence.provenance;
+      const observed = report.evidence.observations;
+      scenarioObservations(observed);
+      if (Object.hasOwn(p.applied, 'inspectionSha256')) sha256(p.applied.inspectionSha256);
+      if (
+        p.requestDigest !== digest(request) ||
+        p.configurationDigest !== configurationDigest ||
+        !same(p.frozen, request.frozen) ||
+        !Number.isSafeInteger(p.admittedAt + request.allowanceMs) ||
+        p.deadline !== p.admittedAt + request.allowanceMs ||
+        p.finishedAt < p.admittedAt ||
+        p.exitCode !== 0 ||
+        new Set(p.transfer.map((f) => f.path)).size !== p.transfer.length ||
+        p.transfer.reduce((n, f) => n + f.size, 0) > 32 * 1024 ** 2 ||
+        !same(p.transfer, observed.manifest) ||
+        (observedOutcome &&
+          (p.finishedAt > p.deadline || !same(classify(request, observed), report.outcome))) ||
+        report.cleanup.kind === 'not-needed'
+      )
+        fail('invalid-frozen-browser-admission');
+    } else if (observedOutcome) fail('invalid-frozen-browser-admission');
+    if (report.cleanup.kind === 'incomplete')
+      return { type: 'blocked', report, reason: 'cleanup-incomplete' };
+    switch (report.outcome.kind) {
+      case 'infrastructure-failed':
+        return { type: 'blocked', report, reason: 'infrastructure' };
+      case 'unrelated-failure':
+      case 'cancelled':
+      case 'uncertain':
+        return { type: 'blocked', report, reason: report.outcome.kind };
+      default: {
+        const retained = report.evidence;
+        if (!retained || report.cleanup.kind !== 'owned-removed')
+          return fail('invalid-frozen-browser-admission');
+        return {
+          type: 'behavioral',
+          report: {
+            ...report,
+            outcome: { kind: report.outcome.kind },
+            cleanup: { kind: report.cleanup.kind, cache: report.cleanup.cache },
+            evidence: retained,
+          },
+          passed: ['baseline-reproduced', 'candidate-passed'].includes(report.outcome.kind),
+          outputs: [
+            {
+              label: 'Frozen browser screenshot',
+              mime: 'image/png',
+              bytes: Buffer.from(retained.png.base64, 'base64'),
+            },
+          ],
+        };
+      }
+    }
+  } catch {
+    return fail('invalid-frozen-browser-admission');
+  }
+}
+
 function validateRecorded(
   result: Exclude<Result, { kind: 'pending' }>,
   intent: Intent,
@@ -962,6 +1162,10 @@ function observations(value: unknown, manifest: Manifest, assets: Assets): Objec
     r.canaryAfter !== 'ENOENT'
   )
     fail('runtime-restrictions');
+  scenarioObservations(r);
+  return r;
+}
+function scenarioObservations(r: ObjectValue) {
   if (
     !['startup-failed', 'action-failed', 'complete'].includes(string(r.stage)) ||
     (r.stage === 'complete' ? typeof r.literal !== 'string' : r.literal !== null)
@@ -976,7 +1180,6 @@ function observations(value: unknown, manifest: Manifest, assets: Assets): Objec
     eventBytes += Buffer.byteLength(string(event.text, 1024));
   }
   if (eventBytes > 8192) fail('page-event-overflow');
-  return r;
 }
 function protocol(bytes: Buffer, intent: Intent, manifest: Manifest, assets: Assets) {
   if (bytes.length > limits.stdout) fail('wire-overflow');
