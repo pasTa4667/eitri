@@ -1,0 +1,36 @@
+▶ frozen browser opening mode keeps journal-only immutable across immediate caller mutation
+  ✔ empty, valid journal-only (666.695125ms)
+  ✔ empty, deleted mode (658.971ms)
+  ✔ populated, valid journal-only (2294.983708ms)
+  ✔ populated, deleted mode (2275.1335ms)
+✔ frozen browser opening mode keeps journal-only immutable across immediate caller mutation (5896.532458ms)
+▶ frozen browser opening mode keeps default execution across immediate caller mutation
+  ✔ empty, valid default (700.29075ms)
+  ✔ empty, added journal-only (660.453667ms)
+  ✔ populated, valid default (2653.494667ms)
+  ✔ populated, added journal-only (2766.4405ms)
+✔ frozen browser opening mode keeps default execution across immediate caller mutation (6781.235917ms)
+▶ frozen browser opening mode rejects malformed runtime values without effects or leaked ownership
+  ✔ empty, mode="journal-onyl" (674.916625ms)
+  ✔ empty, mode=null (672.568ms)
+  ✔ empty, mode=true (690.023625ms)
+  ✔ empty, mode=false (671.76925ms)
+  ✔ empty, mode={} (681.048208ms)
+  ✔ empty, mode=0 (689.717583ms)
+  ✔ empty, mode=1 (722.099708ms)
+  ✔ populated, mode="journal-onyl" (2303.081208ms)
+  ✔ populated, mode=null (2203.77375ms)
+  ✔ populated, mode=true (2311.132041ms)
+  ✔ populated, mode=false (2262.622ms)
+  ✔ populated, mode={} (2228.509791ms)
+  ✔ populated, mode=0 (2254.473584ms)
+  ✔ populated, mode=1 (2237.521916ms)
+✔ frozen browser opening mode rejects malformed runtime values without effects or leaked ownership (20604.563291ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 33397.932

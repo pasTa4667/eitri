@@ -1,0 +1,14 @@
+[
+  {
+    "scenario": "mutated-mode",
+    "error": "unowned-validator-directory",
+    "exposedExecution": false,
+    "files": []
+  },
+  {
+    "scenario": "unknown-mode",
+    "error": "invalid-validator-mode",
+    "exposedExecution": false,
+    "files": []
+  }
+]

@@ -1,0 +1,40 @@
+[
+  {
+    "scenario": "mutated-mode",
+    "error": null,
+    "exposedExecution": true,
+    "files": [
+      "journal.sqlite",
+      "owner.json",
+      "seccomp.json"
+    ]
+  },
+  {
+    "scenario": "unknown-mode",
+    "error": null,
+    "exposedExecution": true,
+    "files": [
+      "journal.sqlite",
+      "owner.json",
+      "seccomp.json"
+    ]
+  }
+]
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: mutated-mode must not expose execution
+
+true !== false
+
+    at file:///Users/felix.langbein/projects/eitri/.audit/reproduce-journal-mode.mjs:26:10 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: true,
+  expected: false,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v26.5.0

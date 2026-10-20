@@ -1,0 +1,352 @@
+▶ frozen browser opening mode keeps journal-only immutable across immediate caller mutation
+  ✔ empty, valid journal-only (689.73775ms)
+  ✖ empty, deleted mode (667.918791ms)
+  ✔ populated, valid journal-only (2387.657ms)
+  ✖ populated, deleted mode (2746.858167ms)
+✖ frozen browser opening mode keeps journal-only immutable across immediate caller mutation (6493.044708ms)
+▶ frozen browser opening mode keeps default execution across immediate caller mutation
+  ✔ empty, valid default (633.154209ms)
+  ✖ empty, added journal-only (648.897916ms)
+  ✔ populated, valid default (2727.954792ms)
+  ✖ populated, added journal-only (2323.019625ms)
+✖ frozen browser opening mode keeps default execution across immediate caller mutation (6333.6035ms)
+▶ frozen browser opening mode rejects malformed runtime values without effects or leaked ownership
+  ✖ empty, mode="journal-onyl" (648.179417ms)
+  ✖ empty, mode=null (655.723ms)
+  ✖ empty, mode=true (706.685291ms)
+  ✖ empty, mode=false (694.905584ms)
+  ✖ empty, mode={} (708.561333ms)
+  ✖ empty, mode=0 (657.239417ms)
+  ✖ empty, mode=1 (658.986542ms)
+  ✖ populated, mode="journal-onyl" (2733.15ms)
+  ✖ populated, mode=null (2682.072875ms)
+  ✖ populated, mode=true (2700.545792ms)
+  ✖ populated, mode=false (2727.913292ms)
+  ✖ populated, mode={} (2709.950708ms)
+  ✖ populated, mode=0 (2630.395291ms)
+  ✖ populated, mode=1 (2649.992125ms)
+✖ frozen browser opening mode rejects malformed runtime values without effects or leaked ownership (23565.670834ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 4
+ℹ fail 21
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 36506.453
+
+✖ failing tests:
+
+test at test/frozen-browser.test.ts:1521:15
+✖ empty, deleted mode (667.918791ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1551:13)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1521:7)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /unowned-validator-directory/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test/frozen-browser.test.ts:1521:15
+✖ populated, deleted mode (2746.858167ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+    [
+  +   'directory',
+  +   'workspace',
+  +   'db',
+  +   'meta',
+  +   'runs',
+  +   'assets',
+  +   'marker',
+  +   'identities',
+  +   'active',
+  +   'reads',
+  +   'closing',
+  +   'broken'
+  -   'inventory',
+  -   'close'
+    ]
+
+      at TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1544:20)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1521:7)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [
+      'directory', 'workspace',
+      'db',        'meta',
+      'runs',      'assets',
+      'marker',    'identities',
+      'active',    'reads',
+      'closing',   'broken'
+    ],
+    expected: [ 'inventory', 'close' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/frozen-browser.test.ts:1562:15
+✖ empty, added journal-only (648.897916ms)
+  Error: unowned-validator-directory
+      at fail (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/src/domain.ts:164:9)
+      at FrozenBrowserValidator.open (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/src/frozen-browser.ts:1418:9)
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1583:29)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1562:7)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    code: 'unowned-validator-directory'
+  }
+
+test at test/frozen-browser.test.ts:1562:15
+✖ populated, added journal-only (2323.019625ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  false !== true
+
+      at TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1584:18)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1562:7)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test/frozen-browser.test.ts:1617:15
+✖ empty, mode="journal-onyl" (648.179417ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1633:11)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1617:7)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /invalid-validator-mode/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test/frozen-browser.test.ts:1617:15
+✖ empty, mode=null (655.723ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1633:11)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1617:7)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /invalid-validator-mode/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test/frozen-browser.test.ts:1617:15
+✖ empty, mode=true (706.685291ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1633:11)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1617:7)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /invalid-validator-mode/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test/frozen-browser.test.ts:1617:15
+✖ empty, mode=false (694.905584ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1633:11)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1617:7)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /invalid-validator-mode/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test/frozen-browser.test.ts:1617:15
+✖ empty, mode={} (708.561333ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1633:11)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1617:7)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /invalid-validator-mode/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test/frozen-browser.test.ts:1617:15
+✖ empty, mode=0 (657.239417ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1633:11)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1617:7)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /invalid-validator-mode/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test/frozen-browser.test.ts:1617:15
+✖ empty, mode=1 (658.986542ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1633:11)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1617:7)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /invalid-validator-mode/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test/frozen-browser.test.ts:1617:15
+✖ populated, mode="journal-onyl" (2733.15ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1633:11)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1617:7)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /invalid-validator-mode/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test/frozen-browser.test.ts:1617:15
+✖ populated, mode=null (2682.072875ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1633:11)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1617:7)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /invalid-validator-mode/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test/frozen-browser.test.ts:1617:15
+✖ populated, mode=true (2700.545792ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1633:11)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1617:7)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /invalid-validator-mode/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test/frozen-browser.test.ts:1617:15
+✖ populated, mode=false (2727.913292ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1633:11)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1617:7)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /invalid-validator-mode/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test/frozen-browser.test.ts:1617:15
+✖ populated, mode={} (2709.950708ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1633:11)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1617:7)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /invalid-validator-mode/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test/frozen-browser.test.ts:1617:15
+✖ populated, mode=0 (2630.395291ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1633:11)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1617:7)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /invalid-validator-mode/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at test/frozen-browser.test.ts:1617:15
+✖ populated, mode=1 (2649.992125ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1633:11)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-worker-recovery-inventory/test/frozen-browser.test.ts:1617:7)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /invalid-validator-mode/,
+    operator: 'rejects',
+    diff: 'simple'
+  }

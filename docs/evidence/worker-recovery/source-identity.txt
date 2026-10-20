@@ -1,0 +1,32 @@
+Source baseline
+d932d8c1ab8f171721f5798e7d51ee2a545afc65
+
+Implementation
+6d94d000122539e44f063c1aa5a2ef9e04adcbf3
+
+Red regressions
+a3c31a614cc7c5b2cdfd110dccf9d765a7ebc69c
+
+Green correction
+27f56f14b7039f345372ce0741bf8b510ba954ff
+
+Integrated tested HEAD
+447f0d07e038d174b1ceed430e42188f1b8b3485
+
+Command: git diff --name-only d932d8c 27f56f1
+src/frozen-browser.ts
+test/frozen-browser.test.ts
+
+Command: git diff --exit-code 27f56f1 HEAD -- src test worker operator package.json package-lock.json
+Exit 0
+
+Command: git diff --exit-code d932d8c HEAD -- src/controller.ts src/domain.ts src/workspace.ts src/native.ts src/artifacts.ts src/http.ts src/main.ts worker operator package.json package-lock.json tsconfig.json prototypes
+Exit 0
+
+Command: git diff --check d932d8c HEAD -- src test
+Exit 0
+
+Post-audit command: git diff HEAD -- src test worker operator package.json package-lock.json
+Exit 0
+
+Post-audit command: git ls-files --others --exclude-standard -- src test worker operator package.json package-lock.json

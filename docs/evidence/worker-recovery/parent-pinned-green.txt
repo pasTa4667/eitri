@@ -1,0 +1,44 @@
+Command: git rev-parse HEAD
+447f0d07e038d174b1ceed430e42188f1b8b3485
+
+Command: git diff HEAD -- src test
+
+Command: node --test --test-name-pattern="frozen browser opening mode" test/frozen-browser.test.ts
+▶ frozen browser opening mode keeps journal-only immutable across immediate caller mutation
+  ✔ empty, valid journal-only (694.878709ms)
+  ✔ empty, deleted mode (663.622875ms)
+  ✔ populated, valid journal-only (2286.841292ms)
+  ✔ populated, deleted mode (2268.742208ms)
+✔ frozen browser opening mode keeps journal-only immutable across immediate caller mutation (5914.849542ms)
+▶ frozen browser opening mode keeps default execution across immediate caller mutation
+  ✔ empty, valid default (677.571292ms)
+  ✔ empty, added journal-only (726.879042ms)
+  ✔ populated, valid default (2670.556083ms)
+  ✔ populated, added journal-only (2730.7965ms)
+✔ frozen browser opening mode keeps default execution across immediate caller mutation (6806.369708ms)
+▶ frozen browser opening mode rejects malformed runtime values without effects or leaked ownership
+  ✔ empty, mode="journal-onyl" (686.822458ms)
+  ✔ empty, mode=null (663.385584ms)
+  ✔ empty, mode=true (686.62525ms)
+  ✔ empty, mode=false (709.531791ms)
+  ✔ empty, mode={} (586.538958ms)
+  ✔ empty, mode=0 (665.405625ms)
+  ✔ empty, mode=1 (670.734542ms)
+  ✔ populated, mode="journal-onyl" (2313.904208ms)
+  ✔ populated, mode=null (2257.569458ms)
+  ✔ populated, mode=true (2250.518208ms)
+  ✔ populated, mode=false (2332.678875ms)
+  ✔ populated, mode={} (2305.795833ms)
+  ✔ populated, mode=0 (2242.433292ms)
+  ✔ populated, mode=1 (2355.705083ms)
+✔ frozen browser opening mode rejects malformed runtime values without effects or leaked ownership (20728.974833ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 33567.600375
+
+Expected green exit 0; actual exit 0

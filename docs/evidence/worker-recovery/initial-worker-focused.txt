@@ -1,0 +1,46 @@
+✔ frozen browser journal inventory preserves literal identity, accounting, ledgers and historical cleanup without effects (2794.04ms)
+✔ frozen browser journal snapshots detach nested requests, resources, cleanup, outcomes and arrays (2419.216416ms)
+✔ frozen browser journal handle is runtime narrow and close drains admitted inventory before releasing ownership (2272.523875ms)
+✔ frozen browser journal recovers SIGKILL after durable admission without renewing identity, timing or accounting (794.865709ms)
+▶ frozen browser journal recovery survives SIGKILL on either side of recovery COMMIT
+  ✔ recovery-before-commit (2438.957917ms)
+  ✔ recovery-after-commit (2439.329875ms)
+✔ frozen browser journal recovery survives SIGKILL on either side of recovery COMMIT (4878.6575ms)
+✔ frozen browser journal rejects recovery save failure before returning a handle and releases ownership (2401.527958ms)
+▶ frozen browser journal retains all existing integrity checks without adopting corrupt journals
+  ✔ schema (2254.378667ms)
+  ✔ row-digest (2302.996833ms)
+  ✔ marker (2320.381667ms)
+  ✔ journal-identity (2374.866542ms)
+  ✔ configuration (2271.85525ms)
+  ✔ request-digest (2241.14575ms)
+  ✔ action-uniqueness (2218.40175ms)
+  ✔ run-uniqueness (2304.892833ms)
+  ✔ accounting (2319.826625ms)
+  ✔ missing-accounting (2225.408875ms)
+  ✔ policy (2217.04775ms)
+  ✔ committed-evidence (2230.542667ms)
+  ✔ resource-id (2312.047166ms)
+  ✔ ledger (2266.469167ms)
+✔ frozen browser journal retains all existing integrity checks without adopting corrupt journals (31861.760417ms)
+▶ frozen browser journal requires existing complete ownership and never initializes missing files
+  ✔ directory (633.663375ms)
+  ✔ empty (691.624209ms)
+  ✔ owner.json (639.129834ms)
+  ✔ journal.sqlite (631.494333ms)
+  ✔ seccomp.json (675.484041ms)
+✔ frozen browser journal requires existing complete ownership and never initializes missing files (3271.862583ms)
+▶ frozen browser journal guards protected identities after opening and closes failed reads before owner release
+  ✔ root (2249.959917ms)
+  ✔ journal.sqlite (2324.940875ms)
+  ✔ owner.json (2306.56ms)
+  ✔ seccomp.json (2384.331583ms)
+✔ frozen browser journal guards protected identities after opening and closes failed reads before owner release (9266.274541ms)
+ℹ tests 34
+ℹ suites 0
+ℹ pass 34
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 60073.742625
