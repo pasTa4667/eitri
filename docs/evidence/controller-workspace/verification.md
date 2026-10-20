@@ -46,12 +46,17 @@ The parent also found test cleanup could close a fixture before releasing a held
 | `node --test test/controller-workspace.test.ts` on merged main. | 38 pass, zero failures, cancellations or skips. [Log](main-focused.txt). |
 | `node docs/evidence/controller-workspace/reproduce-foreign-provision.mjs` on merged main. | Zero callbacks and uncertain binding. [Log](main-reproduction.txt). |
 | Source comparison between `1b73c76` and merge `3026f47`. | Executable/test bytes match. Protected modules match inherited main. [Identity](source-identity.txt). |
+| `npm run check`, `npm run lint:ts`, `npm run format:check:ts` and reproduction syntax check on main after documentation. | All pass. [Log](main-static.txt). |
 
 Full verification sets `CARGO_TARGET_DIR=/Users/felix.langbein/projects/eitri/operator/target` to reuse the existing build cache. It does not change dependencies or toolchains. Rust reports existing future-compatibility notices for `block` and `proc-macro-error2`. The commands still exit successfully.
 
 The standalone reproduction accepts an optional source repository path. It uses only synthetic owned temporary state, faux inference, real Git and SQLite. It awaits child termination before cleanup. Its final form adds a bounded IPC wait and default repository resolution to the initial scratch instrument. Both retain the same behavioral assertions.
 
 Raw command logs remain in `.audit` in the parent or implementation worktree. Only trailing whitespace in the checked-in red regression log is removed. The first worker verify command timed out and is not counted as a pass. The adequate-timeout worker run and parent final run are separate evidence. The later [focused fix log](provision-focused.txt) covers 38 tests.
+
+## Evidence audit
+
+The fresh [evidence audit](evidence-audit.md) passes with no blocking or material flags. It compares actual Git and raw-log bytes, confirms inherited decision rows and earlier evidence remain unchanged, and independently runs the final protected reproduction. The auditor reports zero callbacks, an uncertain binding and healthy native storage. It does not rerun the full suite.
 
 ## Remaining limits
 
