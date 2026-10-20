@@ -13,6 +13,7 @@ import {
   symlink,
   link,
   stat,
+  rename,
 } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -23,6 +24,7 @@ import { once } from 'node:events';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { FrozenBrowserValidator, frozenBrowserRequest } from '../src/frozen-browser.ts';
+import type { FrozenBrowserJournal, RecoveryInventory } from '../src/frozen-browser.ts';
 import { digest } from '../src/domain.ts';
 import { WorkspaceStore, caseId, repositoryId, requestId, virtualPath } from '../src/workspace.ts';
 
@@ -1353,4 +1355,731 @@ test('frozen browser refuses an eligible committed outcome without its complete 
     /missing-committed-evidence/,
   );
   assert.deepEqual(await readFile(join(f.directory, 'owner.json')), marker);
+});
+
+function journalRows(directory: string) {
+  const db = new DatabaseSync(join(directory, 'journal.sqlite'), { readOnly: true });
+  try {
+    return {
+      meta: JSON.parse(String(db.prepare('SELECT body FROM meta').get()?.body)),
+      runs: db
+        .prepare('SELECT body FROM runs ORDER BY id')
+        .all()
+        .map((r) => JSON.parse(String(r.body))),
+    };
+  } finally {
+    db.close();
+  }
+}
+
+async function journalSentinel(f: Awaited<ReturnType<typeof fixture>>) {
+  const log = join(f.root, 'forbidden-docker.json');
+  await writeFile(
+    join(f.root, 'bin', 'docker'),
+    `#!${process.execPath}\nimport {writeFileSync} from 'node:fs'; writeFileSync(${JSON.stringify(log)},JSON.stringify(process.argv.slice(2))); process.exitCode=97;\n`,
+    { mode: 0o700 },
+  );
+  return log;
+}
+
+const forbiddenWorkspace = new Proxy({} as WorkspaceStore, {
+  get() {
+    throw Error('journal-touched-workspace');
+  },
+});
+
+async function seedRecoveryInventory(
+  f: Awaited<ReturnType<typeof fixture>>,
+  pending: readonly number[] = [0],
+) {
+  const report = await f.validator.validate(f.request, signal());
+  assert.deepEqual(report.outcome, { kind: 'baseline-reproduced' });
+  assert.deepEqual(report.cleanup, { kind: 'owned-removed', cache: 'retained' });
+  assert.equal((await f.state()).started, true);
+  await f.validator.close();
+  const { meta, runs } = journalRows(f.directory);
+  const template = runs[0];
+  const configurations = [
+    { build: 'not-started', image: { kind: 'none' }, container: { kind: 'none' } },
+    { build: 'unknown', image: { kind: 'intent' }, container: { kind: 'none' } },
+    { build: 'completed', image: { kind: 'intent' }, container: { kind: 'none' } },
+    {
+      build: 'completed',
+      image: { kind: 'acquired', id: `sha256:${'d'.repeat(64)}` },
+      container: { kind: 'none' },
+    },
+    {
+      build: 'completed',
+      image: { kind: 'acquired', id: `sha256:${'d'.repeat(64)}` },
+      container: { kind: 'intent' },
+    },
+    ...Array.from({ length: 4 }, () => ({
+      build: 'completed',
+      image: { kind: 'acquired', id: `sha256:${'d'.repeat(64)}` },
+      container: { kind: 'acquired', id: 'c'.repeat(64) },
+    })),
+  ] as const;
+  const expectedRuns = configurations.map((ledger, index) => {
+    const run = structuredClone(template);
+    const runId = `10000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`;
+    const request = frozenBrowserRequest({
+      ...f.request,
+      action: {
+        ...f.request.action,
+        actionId: `20000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+      },
+    });
+    Object.assign(run.intent, {
+      runId,
+      request,
+      requestDigest: digest(request),
+      admittedAt: 1000 + index,
+      deadline: 61000 + index,
+      imageTag: `eitri-frozen-browser:${runId}`,
+      containerName: `eitri-frozen-browser-${runId}`,
+    });
+    run.ledger = ledger;
+    const outcome =
+      index < 6
+        ? {
+            kind: 'uncertain',
+            code: pending.includes(index) ? 'interrupted-run-no-replay' : 'fixture-uncertain',
+          }
+        : { kind: 'baseline-reproduced' };
+    const cleanup =
+      index === 7
+        ? { kind: 'incomplete', cache: 'retained', code: 'owned-cleanup-unconfirmed' }
+        : { kind: 'owned-removed', cache: 'retained' };
+    if (pending.includes(index)) run.result = { kind: 'pending' };
+    else if (index < 6) run.result = { kind: 'recorded', outcome, evidence: null };
+    else {
+      const saved = run.result.report;
+      Object.assign(saved, { runId, request, outcome, cleanup });
+      const p = saved.evidence.provenance;
+      Object.assign(p, {
+        requestDigest: digest(request),
+        admittedAt: 1000 + index,
+        deadline: 61000 + index,
+        finishedAt: 2000 + index,
+      });
+      p.applied.config.Labels['eitri.frozen-browser.run'] = runId;
+      p.applied.config.Env = p.applied.config.Env.map((v: string) =>
+        v.startsWith('EITRI_DEADLINE=')
+          ? `EITRI_DEADLINE=${61000 + index}`
+          : v.startsWith('EITRI_REQUEST=')
+            ? `EITRI_REQUEST=${digest(request)}`
+            : v,
+      );
+      if (index === 6) run.result = { kind: 'recorded', outcome, evidence: saved.evidence };
+    }
+    runs[index] = run;
+    return {
+      runId,
+      request,
+      requestDigest: digest(request),
+      configurationDigest: meta.configurationDigest,
+      admittedAt: 1000 + index,
+      deadline: 61000 + index,
+      ...ledger,
+      state: index < 7 ? 'recorded' : 'settled',
+      outcome,
+      cleanup: index < 7 ? 'unresolved' : cleanup,
+    };
+  });
+  meta.attempts = 9;
+  meta.contribution = 377487360;
+  const db = new DatabaseSync(join(f.directory, 'journal.sqlite'));
+  try {
+    db.exec('BEGIN IMMEDIATE; DELETE FROM runs;');
+    db.prepare('UPDATE meta SET body=?,digest=?').run(JSON.stringify(meta), digest(meta));
+    for (const [index, run] of runs.entries())
+      db.prepare('INSERT INTO runs VALUES(?,?,?)').run(index + 1, JSON.stringify(run), digest(run));
+    db.exec('COMMIT');
+  } finally {
+    db.close();
+  }
+  return {
+    ownerId: meta.owner,
+    configurationDigest: meta.configurationDigest,
+    attempts: 9,
+    contribution: 377487360,
+    runs: expectedRuns,
+  };
+}
+
+function openJournal(directory: string) {
+  return FrozenBrowserValidator.open({
+    directory,
+    workspace: forbiddenWorkspace,
+    mode: 'journal-only',
+  });
+}
+
+test('frozen browser opening mode keeps journal-only immutable across immediate caller mutation', async (t) => {
+  for (const populated of [false, true])
+    for (const mutate of [false, true])
+      await t.test(
+        `${populated ? 'populated' : 'empty'}, ${mutate ? 'deleted mode' : 'valid journal-only'}`,
+        async (t) => {
+          const f = await fixture(t);
+          const expected = populated ? await seedRecoveryInventory(f) : null;
+          if (!populated) {
+            await f.validator.close();
+            await rm(f.directory, { recursive: true });
+            await mkdir(f.directory, { mode: 0o700 });
+          }
+          const log = await journalSentinel(f);
+          const options = {
+            directory: f.directory,
+            workspace: forbiddenWorkspace,
+            mode: 'journal-only' as const,
+          };
+          const opening = FrozenBrowserValidator.open(options).then((handle) => {
+            t.after(() => handle.close());
+            return handle;
+          });
+          if (mutate) Reflect.deleteProperty(options, 'mode');
+          if (populated) {
+            const journal = await opening;
+            assert.deepEqual(Reflect.ownKeys(journal), ['inventory', 'close']);
+            assert.equal(Object.getPrototypeOf(journal), Object.prototype);
+            assert.equal(Object.isFrozen(journal), true);
+            for (const method of ['validate', 'reserve', 'finalize', 'save', 'report', 'execute'])
+              assert.equal(method in journal, false);
+            assert.deepEqual(await journal.inventory(), expected);
+          } else {
+            await assert.rejects(opening, /unowned-validator-directory/);
+            assert.deepEqual(await readdir(f.directory), []);
+          }
+          await assert.rejects(readFile(log), { code: 'ENOENT' });
+        },
+      );
+});
+
+test('frozen browser opening mode keeps default execution across immediate caller mutation', async (t) => {
+  for (const populated of [false, true])
+    for (const mutate of [false, true])
+      await t.test(
+        `${populated ? 'populated' : 'empty'}, ${mutate ? 'added journal-only' : 'valid default'}`,
+        async (t) => {
+          const f = await fixture(t);
+          if (populated) await seedRecoveryInventory(f);
+          else {
+            await f.validator.close();
+            await rm(f.directory, { recursive: true });
+            await mkdir(f.directory, { mode: 0o700 });
+          }
+          const log = await journalSentinel(f);
+          const options: {
+            directory: string;
+            workspace: WorkspaceStore;
+            mode?: 'journal-only';
+          } = { directory: f.directory, workspace: f.store };
+          const opening = FrozenBrowserValidator.open(options).then((handle) => {
+            t.after(() => handle.close());
+            return handle;
+          });
+          if (mutate) options.mode = 'journal-only';
+          const validator = await opening;
+          assert.equal(validator instanceof FrozenBrowserValidator, true);
+          assert.equal(typeof validator.validate, 'function');
+          if (populated)
+            assert.deepEqual(JSON.parse(await readFile(log, 'utf8')), [
+              '--context',
+              'orbstack',
+              'container',
+              'ls',
+              '--all',
+              '--no-trunc',
+              '--quiet',
+              '--filter',
+              `id=${'c'.repeat(64)}`,
+            ]);
+          else {
+            assert.deepEqual((await readdir(f.directory)).sort(), [
+              'journal.sqlite',
+              'owner.json',
+              'seccomp.json',
+            ]);
+            const { meta, runs } = journalRows(f.directory);
+            assert.equal(meta.attempts, 0);
+            assert.equal(meta.contribution, 0);
+            assert.deepEqual(runs, []);
+            await assert.rejects(readFile(log), { code: 'ENOENT' });
+          }
+        },
+      );
+});
+
+test('frozen browser opening mode rejects malformed runtime values without effects or leaked ownership', async (t) => {
+  for (const populated of [false, true])
+    for (const mode of ['journal-onyl', null, true, false, {}, 0, 1])
+      await t.test(
+        `${populated ? 'populated' : 'empty'}, mode=${JSON.stringify(mode)}`,
+        async (t) => {
+          const f = await fixture(t);
+          const expected = populated ? await seedRecoveryInventory(f) : null;
+          if (!populated) {
+            await f.validator.close();
+            await rm(f.directory, { recursive: true });
+            await mkdir(f.directory, { mode: 0o700 });
+          }
+          const log = await journalSentinel(f);
+          const names = (await readdir(f.directory)).sort();
+          const bytes = await Promise.all(names.map((name) => readFile(join(f.directory, name))));
+          const before = populated ? journalRows(f.directory) : null;
+          const options = { directory: f.directory, workspace: forbiddenWorkspace };
+          Reflect.set(options, 'mode', mode);
+          await assert.rejects(
+            FrozenBrowserValidator.open(options).then((handle) => {
+              t.after(() => handle.close());
+              return handle;
+            }),
+            /invalid-validator-mode/,
+          );
+          assert.deepEqual((await readdir(f.directory)).sort(), names);
+          assert.deepEqual(
+            await Promise.all(names.map((name) => readFile(join(f.directory, name)))),
+            bytes,
+          );
+          if (populated) {
+            assert.deepEqual(journalRows(f.directory), before);
+            const journal = await openJournal(f.directory);
+            t.after(() => journal.close());
+            assert.deepEqual(await journal.inventory(), expected);
+          } else {
+            Reflect.deleteProperty(options, 'mode');
+            const validator = await FrozenBrowserValidator.open(options);
+            t.after(() => validator.close());
+            assert.equal(validator instanceof FrozenBrowserValidator, true);
+            const { meta, runs } = journalRows(f.directory);
+            assert.equal(meta.attempts, 0);
+            assert.equal(meta.contribution, 0);
+            assert.deepEqual(runs, []);
+          }
+          await assert.rejects(readFile(log), { code: 'ENOENT' });
+        },
+      );
+});
+
+test('frozen browser journal inventory preserves literal identity, accounting, ledgers and historical cleanup without effects', async (t) => {
+  const f = await fixture(t);
+  const expected = await seedRecoveryInventory(f);
+  const log = await journalSentinel(f);
+  const before = journalRows(f.directory);
+  const journal = await openJournal(f.directory);
+  t.after(() => journal.close());
+  assert.deepEqual(await journal.inventory(), expected);
+  assert.deepEqual(await journal.inventory(), expected);
+  const after = journalRows(f.directory);
+  assert.deepEqual(after.meta, before.meta);
+  assert.deepEqual(after.runs[0], {
+    ...before.runs[0],
+    result: {
+      kind: 'recorded',
+      outcome: { kind: 'uncertain', code: 'interrupted-run-no-replay' },
+      evidence: null,
+    },
+  });
+  assert.deepEqual(after.runs.slice(1), before.runs.slice(1));
+  await journal.close();
+  const reopened = await openJournal(f.directory);
+  t.after(() => reopened.close());
+  assert.deepEqual(await reopened.inventory(), expected);
+  await reopened.close();
+  await assert.rejects(readFile(log), { code: 'ENOENT' });
+  const execute = await FrozenBrowserValidator.open({ directory: f.directory, workspace: f.store });
+  t.after(() => execute.close());
+  assert.deepEqual(JSON.parse(await readFile(log, 'utf8')), [
+    '--context',
+    'orbstack',
+    'container',
+    'ls',
+    '--all',
+    '--no-trunc',
+    '--quiet',
+    '--filter',
+    `id=${'c'.repeat(64)}`,
+  ]);
+});
+
+test('frozen browser journal snapshots detach nested requests, resources, cleanup, outcomes and arrays', async (t) => {
+  const f = await fixture(t);
+  const expected = await seedRecoveryInventory(f);
+  await journalSentinel(f);
+  const journal = await openJournal(f.directory);
+  t.after(() => journal.close());
+  const snapshot = await journal.inventory();
+  Object.assign(snapshot.runs[0]!.request.action, { epoch: 99 });
+  Object.assign(snapshot.runs[0]!.request.frozen, { revision: 'f'.repeat(40) });
+  Object.assign(snapshot.runs[0]!.outcome, { code: 'forged' });
+  Object.assign(snapshot.runs[1]!.image, { kind: 'acquired', id: 'forged' });
+  Object.assign(snapshot.runs[5]!.container, { id: 'forged' });
+  Object.assign(snapshot.runs[7]!.cleanup, { code: 'forged' });
+  Reflect.set(snapshot.runs, 'length', 0);
+  assert.deepEqual(await journal.inventory(), expected);
+  await journal.close();
+  const reopened = await openJournal(f.directory);
+  t.after(() => reopened.close());
+  assert.deepEqual(await reopened.inventory(), expected);
+});
+
+test('frozen browser journal handle is runtime narrow and close drains admitted inventory before releasing ownership', async (t) => {
+  const f = await fixture(t);
+  const expected = await seedRecoveryInventory(f);
+  await journalSentinel(f);
+  const journal = await openJournal(f.directory);
+  t.after(() => journal.close());
+  const onlyJournalMethods: Exclude<keyof typeof journal, 'inventory' | 'close'> extends never
+    ? true
+    : false = true;
+  const inventoryType: Awaited<
+    ReturnType<FrozenBrowserJournal['inventory']>
+  > extends RecoveryInventory
+    ? true
+    : false = true;
+  assert.equal(onlyJournalMethods, true);
+  assert.equal(inventoryType, true);
+  assert.deepEqual(Reflect.ownKeys(journal), ['inventory', 'close']);
+  assert.equal(Object.getPrototypeOf(journal), Object.prototype);
+  assert.equal(Object.isFrozen(journal), true);
+  for (const method of ['validate', 'reserve', 'finalize', 'save', 'report', 'execute'])
+    assert.equal(method in journal, false);
+  let completed = 0;
+  const reads = [journal.inventory(), journal.inventory()].map((read) =>
+    read.then((inventory) => {
+      completed++;
+      return inventory;
+    }),
+  );
+  const closing = journal.close();
+  assert.equal(journal.close(), closing);
+  await assert.rejects(journal.inventory(), /validator-closed/);
+  await assert.rejects(openJournal(f.directory), /validator-already-open/);
+  await closing;
+  assert.equal(completed, 2);
+  assert.deepEqual(await Promise.all(reads), [expected, expected]);
+  await assert.rejects(journal.inventory(), /validator-closed/);
+  const reopened = await openJournal(f.directory);
+  assert.deepEqual(await reopened.inventory(), expected);
+  await reopened.close();
+});
+
+async function killJournalChild(
+  t: TestContext,
+  f: Awaited<ReturnType<typeof fixture>>,
+  boundary: 'admission' | 'recovery-before-commit' | 'recovery-after-commit',
+) {
+  const script = join(f.root, `${boundary}.mjs`);
+  await writeFile(
+    script,
+    `
+    import { DatabaseSync } from 'node:sqlite';
+    import { FrozenBrowserValidator, frozenBrowserRequest } from ${JSON.stringify(new URL('../src/frozen-browser.ts', import.meta.url).href)};
+    const boundary = ${JSON.stringify(boundary)};
+    let saving = '';
+    const checkpoint = () => { process.stdout.write('checkpoint'); process.kill(process.pid, 'SIGSTOP'); };
+    const prepare = DatabaseSync.prototype.prepare;
+    DatabaseSync.prototype.prepare = function(sql) {
+      const statement = Reflect.apply(prepare, this, [sql]);
+      if (!sql.startsWith('INSERT INTO runs')) return statement;
+      return new Proxy(statement, { get(target, prop) {
+        if (prop === 'run') return (...args) => {
+          saving = JSON.parse(args[1]).result.kind;
+          return Reflect.apply(target.run, target, args);
+        };
+        return Reflect.get(target, prop, target);
+      }});
+    };
+    const exec = DatabaseSync.prototype.exec;
+    DatabaseSync.prototype.exec = function(sql) {
+      if (sql === 'COMMIT' && saving === 'recorded' && boundary === 'recovery-before-commit') checkpoint();
+      const result = Reflect.apply(exec, this, [sql]);
+      if (sql === 'COMMIT' && ((saving === 'pending' && boundary === 'admission') ||
+          (saving === 'recorded' && boundary === 'recovery-after-commit'))) checkpoint();
+      return result;
+    };
+    const options = {directory:${JSON.stringify(f.directory)}, workspace:new Proxy({}, {get() { throw Error('workspace-effect'); }})};
+    if (boundary === 'admission') {
+      const validator = await FrozenBrowserValidator.open(options);
+      await validator.validate(frozenBrowserRequest(${JSON.stringify(f.request)}), new AbortController().signal);
+    } else await FrozenBrowserValidator.open({...options,mode:'journal-only'});
+    throw Error('missed-checkpoint');
+  `,
+  );
+  const child = spawn(process.execPath, [script], { stdio: ['ignore', 'pipe', 'pipe'] });
+  t.after(() => child.kill('SIGKILL'));
+  const errors: Buffer[] = [];
+  child.stderr.on('data', (bytes: Buffer) => errors.push(bytes));
+  const exited = once(child, 'close');
+  const checkpoint = await Promise.race([
+    once(child.stdout, 'data').then(([bytes]) => String(bytes)),
+    exited.then(() => {
+      throw Error(Buffer.concat(errors).toString() || 'child-exited-before-checkpoint');
+    }),
+  ]);
+  assert.equal(checkpoint, 'checkpoint');
+  child.kill('SIGKILL');
+  assert.deepEqual(await exited, [null, 'SIGKILL']);
+}
+
+test(
+  'frozen browser journal recovers SIGKILL after durable admission without renewing identity, timing or accounting',
+  { timeout: 30000 },
+  async (t) => {
+    const f = await fixture(t);
+    await f.validator.close();
+    const log = await journalSentinel(f);
+    await killJournalChild(t, f, 'admission');
+    const { meta, runs } = journalRows(f.directory);
+    assert.equal(meta.attempts, 1);
+    assert.equal(meta.contribution, 41943040);
+    assert.deepEqual(runs[0].result, { kind: 'pending' });
+    assert.deepEqual(runs[0].intent.request, f.request);
+    const expected = {
+      ownerId: meta.owner,
+      configurationDigest: meta.configurationDigest,
+      attempts: 1,
+      contribution: 41943040,
+      runs: [
+        {
+          runId: runs[0].intent.runId,
+          request: f.request,
+          requestDigest: digest(f.request),
+          configurationDigest: meta.configurationDigest,
+          admittedAt: runs[0].intent.admittedAt,
+          deadline: runs[0].intent.admittedAt + 60000,
+          build: 'not-started',
+          image: { kind: 'none' },
+          container: { kind: 'none' },
+          state: 'recorded',
+          outcome: { kind: 'uncertain', code: 'interrupted-run-no-replay' },
+          cleanup: 'unresolved',
+        },
+      ],
+    };
+    for (let i = 0; i < 2; i++) {
+      const journal = await openJournal(f.directory);
+      t.after(() => journal.close());
+      assert.deepEqual(await journal.inventory(), expected);
+      await journal.close();
+      assert.deepEqual(journalRows(f.directory), {
+        meta,
+        runs: [
+          {
+            ...runs[0],
+            result: {
+              kind: 'recorded',
+              outcome: { kind: 'uncertain', code: 'interrupted-run-no-replay' },
+              evidence: null,
+            },
+          },
+        ],
+      });
+    }
+    await assert.rejects(readFile(log), { code: 'ENOENT' });
+  },
+);
+
+test(
+  'frozen browser journal recovery survives SIGKILL on either side of recovery COMMIT',
+  { timeout: 30000 },
+  async (t) => {
+    for (const boundary of ['recovery-before-commit', 'recovery-after-commit'] as const)
+      await t.test(boundary, async (t) => {
+        const f = await fixture(t);
+        const expected = await seedRecoveryInventory(f, [0, 1, 5]);
+        const log = await journalSentinel(f);
+        await killJournalChild(t, f, boundary);
+        const journal = await openJournal(f.directory);
+        t.after(() => journal.close());
+        assert.deepEqual(await journal.inventory(), expected);
+        assert.deepEqual(journalRows(f.directory).runs[0].result, {
+          kind: 'recorded',
+          outcome: { kind: 'uncertain', code: 'interrupted-run-no-replay' },
+          evidence: null,
+        });
+        await journal.close();
+        const reopened = await openJournal(f.directory);
+        t.after(() => reopened.close());
+        assert.deepEqual(await reopened.inventory(), expected);
+        await assert.rejects(readFile(log), { code: 'ENOENT' });
+      });
+  },
+);
+
+test('frozen browser journal rejects recovery save failure before returning a handle and releases ownership', async (t) => {
+  const f = await fixture(t);
+  const expected = await seedRecoveryInventory(f);
+  const log = await journalSentinel(f);
+  const before = journalRows(f.directory);
+  const original = DatabaseSync.prototype.exec;
+  DatabaseSync.prototype.exec = function (sql: string) {
+    if (sql === 'COMMIT') throw Error('injected-recovery-save-failure');
+    return Reflect.apply(original, this, [sql]);
+  };
+  try {
+    await assert.rejects(openJournal(f.directory), /injected-recovery-save-failure/);
+  } finally {
+    DatabaseSync.prototype.exec = original;
+  }
+  assert.deepEqual(journalRows(f.directory), before);
+  const journal = await openJournal(f.directory);
+  t.after(() => journal.close());
+  assert.deepEqual(await journal.inventory(), expected);
+  await assert.rejects(readFile(log), { code: 'ENOENT' });
+});
+
+test('frozen browser journal retains all existing integrity checks without adopting corrupt journals', async (t) => {
+  const corruptions = [
+    ['schema', /corrupt-validator-schema/],
+    ['row-digest', /corrupt-validator-journal/],
+    ['marker', /validator-owner-mismatch/],
+    ['journal-identity', /validator-owner-mismatch/],
+    ['configuration', /corrupt-validator-accounting/],
+    ['request-digest', /corrupt-validator-intent/],
+    ['action-uniqueness', /corrupt-validator-identities/],
+    ['run-uniqueness', /corrupt-validator-identities/],
+    ['accounting', /corrupt-validator-accounting/],
+    ['missing-accounting', /missing-validator-accounting/],
+    ['policy', /validator-policy-changed/],
+    ['committed-evidence', /missing-committed-evidence/],
+    ['resource-id', /invalid-image-id/],
+    ['ledger', /corrupt-validator-ledger/],
+  ] as const;
+  for (const [corruption, error] of corruptions)
+    await t.test(corruption, async (t) => {
+      const f = await fixture(t);
+      await seedRecoveryInventory(f);
+      const log = await journalSentinel(f);
+      const journalPath = join(f.directory, 'journal.sqlite');
+      if (corruption === 'marker') {
+        const marker = JSON.parse(await readFile(join(f.directory, 'owner.json'), 'utf8'));
+        marker.version = 2;
+        await writeFile(join(f.directory, 'owner.json'), JSON.stringify(marker));
+      } else if (corruption === 'journal-identity') {
+        const replacement = join(f.root, 'replacement.sqlite');
+        await writeFile(replacement, await readFile(journalPath), { mode: 0o600 });
+        await rename(replacement, journalPath);
+      } else if (corruption === 'policy') {
+        await writeFile(join(f.directory, 'seccomp.json'), '{}');
+      } else {
+        const { meta, runs } = journalRows(f.directory);
+        const db = new DatabaseSync(journalPath);
+        try {
+          if (corruption === 'schema') db.exec('CREATE TABLE extra (id INTEGER) STRICT');
+          if (corruption === 'row-digest') db.exec("UPDATE runs SET digest='bad' WHERE id=1");
+          if (corruption === 'configuration') meta.configurationDigest = '0'.repeat(64);
+          if (corruption === 'accounting') meta.contribution--;
+          if (corruption === 'missing-accounting') db.exec('DELETE FROM meta');
+          if (['configuration', 'accounting'].includes(corruption))
+            db.prepare('UPDATE meta SET body=?,digest=?').run(JSON.stringify(meta), digest(meta));
+          if (corruption === 'request-digest') runs[0].intent.requestDigest = '0'.repeat(64);
+          if (corruption === 'action-uniqueness') {
+            runs[1].intent.request = runs[0].intent.request;
+            runs[1].intent.requestDigest = digest(runs[0].intent.request);
+          }
+          if (corruption === 'run-uniqueness') {
+            for (const name of ['runId', 'imageTag', 'containerName'])
+              runs[1].intent[name] = runs[0].intent[name];
+          }
+          if (corruption === 'committed-evidence') runs[6].result.evidence = null;
+          if (corruption === 'resource-id') runs[3].ledger.image.id = 'bad';
+          if (corruption === 'ledger') runs[1].ledger.build = 'not-started';
+          if (
+            [
+              'request-digest',
+              'action-uniqueness',
+              'run-uniqueness',
+              'committed-evidence',
+              'resource-id',
+              'ledger',
+            ].includes(corruption)
+          )
+            for (const [index, run] of runs.entries())
+              db.prepare('UPDATE runs SET body=?,digest=? WHERE id=?').run(
+                JSON.stringify(run),
+                digest(run),
+                index + 1,
+              );
+        } finally {
+          db.close();
+        }
+      }
+      const marker = await readFile(join(f.directory, 'owner.json'));
+      const journalBytes = await readFile(journalPath);
+      for (let i = 0; i < 2; i++) await assert.rejects(openJournal(f.directory), error);
+      assert.deepEqual(await readFile(join(f.directory, 'owner.json')), marker);
+      assert.deepEqual(await readFile(journalPath), journalBytes);
+      await assert.rejects(readFile(log), { code: 'ENOENT' });
+    });
+});
+
+test('frozen browser journal requires existing complete ownership and never initializes missing files', async (t) => {
+  for (const missing of ['directory', 'empty', 'owner.json', 'journal.sqlite', 'seccomp.json'])
+    await t.test(missing, async (t) => {
+      const f = await fixture(t);
+      await f.validator.close();
+      const log = await journalSentinel(f);
+      if (missing === 'empty' || missing === 'directory') {
+        await rm(f.directory, { recursive: true });
+        if (missing === 'empty') await mkdir(f.directory, { mode: 0o700 });
+      } else await rm(join(f.directory, missing));
+      if (missing === 'directory') {
+        await assert.rejects(openJournal(f.directory), { code: 'ENOENT' });
+        await assert.rejects(readdir(f.directory), { code: 'ENOENT' });
+      } else {
+        const names = (await readdir(f.directory)).sort();
+        const bytes = await Promise.all(names.map((name) => readFile(join(f.directory, name))));
+        await assert.rejects(openJournal(f.directory), /unowned-validator-directory/);
+        assert.deepEqual((await readdir(f.directory)).sort(), names);
+        assert.deepEqual(
+          await Promise.all(names.map((name) => readFile(join(f.directory, name)))),
+          bytes,
+        );
+      }
+      await assert.rejects(readFile(log), { code: 'ENOENT' });
+    });
+});
+
+test('frozen browser journal guards protected identities after opening and closes failed reads before owner release', async (t) => {
+  for (const replaced of ['root', 'journal.sqlite', 'owner.json', 'seccomp.json'])
+    await t.test(replaced, async (t) => {
+      const f = await fixture(t);
+      const expected = await seedRecoveryInventory(f);
+      const log = await journalSentinel(f);
+      const journal = await openJournal(f.directory);
+      t.after(() => journal.close());
+      assert.deepEqual(await journal.inventory(), expected);
+      if (replaced === 'root') {
+        await rename(f.directory, join(f.root, 'old-validator'));
+        await mkdir(f.directory, { mode: 0o700 });
+      } else {
+        const path = join(f.directory, replaced);
+        const replacement = join(f.root, 'replacement');
+        await writeFile(replacement, await readFile(path), { mode: 0o600 });
+        await rename(replacement, path);
+      }
+      const reading = journal.inventory();
+      const closing = journal.close();
+      await assert.rejects(openJournal(f.directory), /validator-already-open/);
+      await assert.rejects(
+        reading,
+        replaced === 'root' ? /validator-root-replaced/ : /validator-file-replaced/,
+      );
+      await closing;
+      await assert.rejects(journal.inventory(), /validator-closed/);
+      if (replaced === 'root' || replaced === 'journal.sqlite')
+        await assert.rejects(
+          openJournal(f.directory),
+          replaced === 'root' ? /unowned-validator-directory/ : /validator-owner-mismatch/,
+        );
+      else {
+        const reopened = await openJournal(f.directory);
+        t.after(() => reopened.close());
+        assert.deepEqual(await reopened.inventory(), expected);
+        await reopened.close();
+      }
+      await assert.rejects(readFile(log), { code: 'ENOENT' });
+    });
 });
