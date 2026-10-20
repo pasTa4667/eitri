@@ -1,0 +1,44 @@
+✔ staged action-result transaction commits without Retry (57.398959ms)
+✖ staged action-result transaction rolls back after persisted Retry (43.464875ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 1
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 515.261041
+
+✖ failing tests:
+
+test at test/action-deadline.test.ts:596:3
+✖ staged action-result transaction rolls back after persisted Retry (43.464875ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+    {
+  +   entries: [
+  +     {
+  +       actionId: '9f460c08-70e0-40d7-ae4a-d40f53fab991',
+  +       result: null
+  +     }
+  +   ],
+  +   submissions: [
+  +     'done'
+  +   ]
+  -   entries: [],
+  -   submissions: []
+    }
+
+      at TestContext.<anonymous> (file:///private/tmp/eitri-deadline-red.ddZrSz/test/action-deadline.test.ts:703:12)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { entries: [ [Object] ], submissions: [ 'done' ] },
+    expected: { entries: [], submissions: [] },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+EXIT_CODE=1

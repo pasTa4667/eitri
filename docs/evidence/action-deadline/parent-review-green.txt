@@ -1,0 +1,13 @@
+✔ queued action-result admission preserves confirmed completion without Retry (53.854209ms)
+✔ queued action-result admission rejects persisted Retry revocation (38.289792ms)
+✔ run_check invalid-clock subprocess detects deferred abort exceptions and hanging interruption controls (1491.399209ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1991.135625
+
+EXIT_CODE=0

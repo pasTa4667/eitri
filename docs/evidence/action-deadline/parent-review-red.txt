@@ -1,0 +1,76 @@
+✔ queued action-result admission preserves confirmed completion without Retry (51.322125ms)
+✖ queued action-result admission rejects persisted Retry revocation (38.721458ms)
+✖ run_check invalid-clock subprocess detects deferred abort exceptions and hanging interruption controls (1476.465541ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 1
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1790.690125
+
+✖ failing tests:
+
+test at test/action-deadline.test.ts:453:3
+✖ queued action-result admission rejects persisted Retry revocation (38.721458ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+  + [
+  +   {
+  +     actionId: '7a003ab1-0615-4929-8460-d1cd3a8a6dba',
+  +     result: null
+  +   }
+  + ]
+  - []
+
+      at TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri/test/action-deadline.test.ts:564:12)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ { actionId: '7a003ab1-0615-4929-8460-d1cd3a8a6dba', result: null } ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/action-deadline.test.ts:787:1
+✖ run_check invalid-clock subprocess detects deferred abort exceptions and hanging interruption controls (1476.465541ms)
+  AssertionError [ERR_ASSERTION]: node:internal/event_target:1136
+    process.nextTick(() => { throw err; });
+                             ^
+
+  ControlError: invalid-clock
+      at fail (file:///Users/felix.langbein/projects/eitri/src/domain.ts:177:9)
+      at Controller.clock (file:///Users/felix.langbein/projects/eitri/src/controller.ts:163:60)
+      at Controller.charge (file:///Users/felix.langbein/projects/eitri/src/controller.ts:822:38)
+      at Controller.attention (file:///Users/felix.langbein/projects/eitri/src/controller.ts:832:10)
+      at file:///Users/felix.langbein/projects/eitri/src/controller.ts:1233:19
+      at Controller.transaction (file:///Users/felix.langbein/projects/eitri/src/controller.ts:761:21)
+      at Controller.stopCheck (file:///Users/felix.langbein/projects/eitri/src/controller.ts:1225:26)
+      at AbortSignal.abort (file:///Users/felix.langbein/projects/eitri/src/controller.ts:1344:16)
+      at [nodejs.internal.kHybridDispatch] (node:internal/event_target:856:20)
+      at AbortSignal.dispatchEvent (node:internal/event_target:789:26) {
+    code: 'invalid-clock'
+  }
+
+  Node.js v26.5.0
+
+
+  1 !== 0
+
+      at TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri/test/action-deadline.test.ts:807:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+EXIT_CODE=1

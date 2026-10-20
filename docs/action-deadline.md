@@ -21,6 +21,8 @@ The controller authenticates the complete persisted action and its epoch before 
 
 A committed assessment, checkpoint, or check stop can revoke its own action epoch. A private completion marker binds that exact admitted action object to the committed case epoch, attempt, status, and version. `mayRecordCompletion()` permits only the existing bounded action-result bookkeeping and retirement. It does not authorize evidence, execution, source access, acceptance, or another control effect. Retry or another superseding control change invalidates the marker. Old retirement can remove only its exact action and settle its source history; it cannot charge or save a newer case epoch.
 
+Action-result bookkeeping checks authority on the native mutation line before appending an entry and after awaited entry and submission preparation. Revocation during preparation rejects the transaction and discards both staged records. Existing request IDs reuse their original settled submission. A check abort listener settles interruption even if stopping fails, including a persistently invalid controller clock.
+
 Successful model terminal publication follows synchronous controller authorization and retirement without an intervening watcher or fault hook. Receipt notification now follows terminal publication and stream closure. Notification errors cannot retract an already-published model result. Tool receipt hooks remain after retirement and before tool completion returns. Retirement is attempted once on each native path.
 
 ## Clock and wakeups

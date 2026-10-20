@@ -1,0 +1,15 @@
+✔ queued action-result admission preserves confirmed completion without Retry (46.50775ms)
+✔ queued action-result admission rejects persisted Retry revocation (39.142875ms)
+✔ staged action-result transaction commits without Retry (26.676208ms)
+✔ staged action-result transaction rolls back after persisted Retry (35.763208ms)
+✔ run_check invalid-clock subprocess detects deferred abort exceptions and hanging interruption controls (1470.81825ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1940.714667
+
+EXIT_CODE=0

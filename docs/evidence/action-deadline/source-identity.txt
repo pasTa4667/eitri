@@ -1,0 +1,30 @@
+BASE
+69c54854938f096719d4aaa4a17e7bc84f645071
+FINAL_SOURCE
+90df0ea519d8b3fff8550105ba27727bb272eea3
+COMMIT_SEQUENCE
+e4bca20 test(controller): reproduce admitted-action deadline races
+f388f20 test(controller): cover deadline retirement and legacy recovery
+2d5a4ec feat(controller): enforce absolute admitted-action deadlines
+c4c1c5b test(native): reproduce model publication notification gap
+4a38713 test(controller): verify identity before accounting and source recovery
+c2259f7 fix(native): publish terminal results before receipt notifications
+11dfe86 docs(controller): define admitted-action deadline semantics
+96b0b9b test(native): preserve confirmed completion during delayed cleanup
+c806269 fix(native): preserve confirmed completion across action wakeups
+321b69c test(native): reproduce invalid-clock abort and queued result revocation
+db76cd3 fix(native): guard queued results and settle check abort failures
+cae7826 test(native): reproduce Retry during staged result preparation
+0bc9f06 test(native): query request IDs from durable submission records
+90df0ea fix(native): revalidate result authority before transaction settlement
+PROTECTED_PATH_DIFF_EXPECT_EMPTY
+REVIEWED_DELTA
+reviewed and committed delta byte-identical
+PARENT_TESTED_UNCOMMITTED_DELTA
+parent-tested working-tree delta and final commit byte-identical
+EXECUTABLE_WORKING_DIFF_EXPECT_EMPTY
+PARENT_FULL_SOURCE_REVISION_AFTER
+90df0ea519d8b3fff8550105ba27727bb272eea3
+REMOTE_EXPECT_EMPTY
+FINAL_DELTA_HASH
+4941ee251325a3c4f29d912b347a25b8caa4c7cb
