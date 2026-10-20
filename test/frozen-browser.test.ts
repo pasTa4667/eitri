@@ -1515,6 +1515,153 @@ function openJournal(directory: string) {
   });
 }
 
+test('frozen browser opening mode keeps journal-only immutable across immediate caller mutation', async (t) => {
+  for (const populated of [false, true])
+    for (const mutate of [false, true])
+      await t.test(
+        `${populated ? 'populated' : 'empty'}, ${mutate ? 'deleted mode' : 'valid journal-only'}`,
+        async (t) => {
+          const f = await fixture(t);
+          const expected = populated ? await seedRecoveryInventory(f) : null;
+          if (!populated) {
+            await f.validator.close();
+            await rm(f.directory, { recursive: true });
+            await mkdir(f.directory, { mode: 0o700 });
+          }
+          const log = await journalSentinel(f);
+          const options = {
+            directory: f.directory,
+            workspace: forbiddenWorkspace,
+            mode: 'journal-only' as const,
+          };
+          const opening = FrozenBrowserValidator.open(options).then((handle) => {
+            t.after(() => handle.close());
+            return handle;
+          });
+          if (mutate) Reflect.deleteProperty(options, 'mode');
+          if (populated) {
+            const journal = await opening;
+            assert.deepEqual(Reflect.ownKeys(journal), ['inventory', 'close']);
+            assert.equal(Object.getPrototypeOf(journal), Object.prototype);
+            assert.equal(Object.isFrozen(journal), true);
+            for (const method of ['validate', 'reserve', 'finalize', 'save', 'report', 'execute'])
+              assert.equal(method in journal, false);
+            assert.deepEqual(await journal.inventory(), expected);
+          } else {
+            await assert.rejects(opening, /unowned-validator-directory/);
+            assert.deepEqual(await readdir(f.directory), []);
+          }
+          await assert.rejects(readFile(log), { code: 'ENOENT' });
+        },
+      );
+});
+
+test('frozen browser opening mode keeps default execution across immediate caller mutation', async (t) => {
+  for (const populated of [false, true])
+    for (const mutate of [false, true])
+      await t.test(
+        `${populated ? 'populated' : 'empty'}, ${mutate ? 'added journal-only' : 'valid default'}`,
+        async (t) => {
+          const f = await fixture(t);
+          if (populated) await seedRecoveryInventory(f);
+          else {
+            await f.validator.close();
+            await rm(f.directory, { recursive: true });
+            await mkdir(f.directory, { mode: 0o700 });
+          }
+          const log = await journalSentinel(f);
+          const options: {
+            directory: string;
+            workspace: WorkspaceStore;
+            mode?: 'journal-only';
+          } = { directory: f.directory, workspace: f.store };
+          const opening = FrozenBrowserValidator.open(options).then((handle) => {
+            t.after(() => handle.close());
+            return handle;
+          });
+          if (mutate) options.mode = 'journal-only';
+          const validator = await opening;
+          assert.equal(validator instanceof FrozenBrowserValidator, true);
+          assert.equal(typeof validator.validate, 'function');
+          if (populated)
+            assert.deepEqual(JSON.parse(await readFile(log, 'utf8')), [
+              '--context',
+              'orbstack',
+              'container',
+              'ls',
+              '--all',
+              '--no-trunc',
+              '--quiet',
+              '--filter',
+              `id=${'c'.repeat(64)}`,
+            ]);
+          else {
+            assert.deepEqual((await readdir(f.directory)).sort(), [
+              'journal.sqlite',
+              'owner.json',
+              'seccomp.json',
+            ]);
+            const { meta, runs } = journalRows(f.directory);
+            assert.equal(meta.attempts, 0);
+            assert.equal(meta.contribution, 0);
+            assert.deepEqual(runs, []);
+            await assert.rejects(readFile(log), { code: 'ENOENT' });
+          }
+        },
+      );
+});
+
+test('frozen browser opening mode rejects malformed runtime values without effects or leaked ownership', async (t) => {
+  for (const populated of [false, true])
+    for (const mode of ['journal-onyl', null, true, false, {}, 0, 1])
+      await t.test(
+        `${populated ? 'populated' : 'empty'}, mode=${JSON.stringify(mode)}`,
+        async (t) => {
+          const f = await fixture(t);
+          const expected = populated ? await seedRecoveryInventory(f) : null;
+          if (!populated) {
+            await f.validator.close();
+            await rm(f.directory, { recursive: true });
+            await mkdir(f.directory, { mode: 0o700 });
+          }
+          const log = await journalSentinel(f);
+          const names = (await readdir(f.directory)).sort();
+          const bytes = await Promise.all(names.map((name) => readFile(join(f.directory, name))));
+          const before = populated ? journalRows(f.directory) : null;
+          const options = { directory: f.directory, workspace: forbiddenWorkspace };
+          Reflect.set(options, 'mode', mode);
+          await assert.rejects(
+            FrozenBrowserValidator.open(options).then((handle) => {
+              t.after(() => handle.close());
+              return handle;
+            }),
+            /invalid-validator-mode/,
+          );
+          assert.deepEqual((await readdir(f.directory)).sort(), names);
+          assert.deepEqual(
+            await Promise.all(names.map((name) => readFile(join(f.directory, name)))),
+            bytes,
+          );
+          if (populated) {
+            assert.deepEqual(journalRows(f.directory), before);
+            const journal = await openJournal(f.directory);
+            t.after(() => journal.close());
+            assert.deepEqual(await journal.inventory(), expected);
+          } else {
+            Reflect.deleteProperty(options, 'mode');
+            const validator = await FrozenBrowserValidator.open(options);
+            t.after(() => validator.close());
+            assert.equal(validator instanceof FrozenBrowserValidator, true);
+            const { meta, runs } = journalRows(f.directory);
+            assert.equal(meta.attempts, 0);
+            assert.equal(meta.contribution, 0);
+            assert.deepEqual(runs, []);
+          }
+          await assert.rejects(readFile(log), { code: 'ENOENT' });
+        },
+      );
+});
+
 test('frozen browser journal inventory preserves literal identity, accounting, ledgers and historical cleanup without effects', async (t) => {
   const f = await fixture(t);
   const expected = await seedRecoveryInventory(f);
