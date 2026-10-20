@@ -127,7 +127,15 @@ test('callback receives its actual admitted action and a frozen scalar request w
       }
       assert.equal(Object.isFrozen(input), true);
       assert.equal(Object.isFrozen(input.signal), false);
-      for (const key of ['caseId', 'actionId', 'epoch', 'kind', 'remainingMs', 'signal'])
+      for (const key of [
+        'caseId',
+        'actionId',
+        'epoch',
+        'kind',
+        'deadlineAt',
+        'remainingMs',
+        'signal',
+      ])
         assert.equal(Reflect.set(input, key, null), false);
       mutateOnClock = true;
       return { type: 'completed', check: source };
@@ -147,6 +155,7 @@ test('callback receives its actual admitted action and a frozen scalar request w
     actionId: admitted!.id,
     epoch: admitted!.epoch,
     kind: 'browser',
+    deadlineAt: 61250,
     remainingMs: 59875,
     signal: undefined,
   });
