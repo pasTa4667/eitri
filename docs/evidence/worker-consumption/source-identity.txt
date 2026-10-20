@@ -1,0 +1,31 @@
+Final source commit
+6778eabc5af9831e098b627fb61728ed8934d6ad
+
+Ordered source commits
+86e7433f718c34a2320ba5a486d27e63742999fd feat(worker): consume accepted requests with atomic guarded admission
+9b4869349b4de91b0cc43dd77547df157eb479fe test(worker): verify consumption ownership and crash recovery
+7da32fa39aecfd1b104c18a943c8c4d3fdc5711e Add callback-scoped offline worker consumption
+55616e677eaf3091798934138ddf2870a478c9d8 test: reproduce consumption sampler latency and default-clock denial
+6778eabc5af9831e098b627fb61728ed8934d6ad fix: bound consumption with ordered nonrenewable clock samples
+
+Main and verified branch source difference
+
+Protected paths changed since baseline
+
+Reviewed final source hashes
+b4ba3ca98fb2f9ace4ea55f73f9831f2187e9d438511ce3265be08d77cc8a432  src/controller.ts
+e0920efc87c2682c2f82b5fb20cdc2147c9015de51ed811972fa97ec41003c37  src/frozen-browser.ts
+2575444b89ccaee4cabe910b688871eeda6cfffb27ec8971a6f753980aaa3894  src/worker-execution-scope.ts
+
+Parent pre-verification identity
+6778eabc5af9831e098b627fb61728ed8934d6ad
+100644 blob fb34217b3a16adc7079bee9130c103101eabe6df	operator/Cargo.lock
+
+Parent post-verification identity
+6778eabc5af9831e098b627fb61728ed8934d6ad
+
+Default-clock reproducer hash
+dd04b3b13910b5dde1bd4635f9f9690d98f6e1a354aadc8d70a77f587b3975f2  .audit/worker-consumption-next-default-clock.test.ts
+
+Retained red worktree
+/tmp/eitri-consumption-red.wwTs0Z

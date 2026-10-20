@@ -1,0 +1,36 @@
+✔ consumption runs the existing pipeline once with detached pending inventory and shortened timing (2187.258125ms)
+✔ complete captured identity and synchronous allowance denials preserve acceptance and accounting (526.627583ms)
+✔ rejecting async consumption sampler is observed at entry and after staging (772.450083ms)
+✔ rejecting promise consumption sampler is observed at entry and after staging (775.077833ms)
+✔ final staging at D-1 cannot renew admission (2080.339417ms)
+✔ final staging at D+0 cannot renew admission (516.114042ms)
+✔ final staging at D+1 cannot renew admission (542.323417ms)
+✔ post-staging budget shrink, unsafe and backward clocks roll back without poisoning (526.398167ms)
+✔ asynchronous preparation consumes authority before the initial translated endpoint (497.960084ms)
+✔ close owns preparation registered before awaits and retains the lease until drainage (534.638625ms)
+✔ close owns execution registered before awaits and retains the lease until drainage (709.601291ms)
+✔ ambiguous consumption COMMIT before storage confirmation poisons without replay (546.768875ms)
+✔ ambiguous consumption COMMIT after storage confirmation poisons without replay (509.879667ms)
+✔ actual SIGKILL before consumption COMMIT preserves one atomic charge and no replay (821.552375ms)
+✔ actual SIGKILL after consumption COMMIT preserves one atomic charge and no replay (740.751666ms)
+✔ actual SIGKILL after execution preserves nested recovery without cleanup or replay (2032.544666ms)
+✔ actual SIGKILL after recorded preserves nested recovery without cleanup or replay (2002.41825ms)
+✔ consumption-only requires independently pinned complete storage and snapshots mode before opening (572.106459ms)
+✔ nested format rejects malformed bindings, timing, evidence, UUIDs and accounting while keeping legacy timing strict (2224.817916ms)
+✔ unknown build and unresolved cleanup remain durable and block a different acceptance (1205.356791ms)
+✔ signal revocation after awaited preparation suppresses forward work but drains owned settlement (734.872208ms)
+✔ sampler revocation after awaited preparation suppresses forward work but drains owned settlement (742.219292ms)
+✔ failed settlement writes poison the handle and reopening never replays committed consumption (2049.495292ms)
+✔ incomplete cleanup is retained without re-finalization and blocks fresh consumption (1932.658209ms)
+✔ preparation delays shorten admission and request allowance remains an upper bound (3670.028ms)
+✔ close drains cleanup without requiring forward authority or arbitrary caller completion (2319.2095ms)
+✔ failed rollback poisons admission and reopening remains the only recovery path (524.239584ms)
+✔ consumption charges the ordinary lifetime limits once and preserves exact history at capacity (1157.1215ms)
+ℹ tests 28
+ℹ suites 0
+ℹ pass 28
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 33700.057792

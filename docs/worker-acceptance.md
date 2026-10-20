@@ -46,4 +46,4 @@ Acceptance is not an execution reservation or permission to execute. It creates 
 
 History is finite, the format upgrade is one-way, and association requires the original trusted journal and supported configuration. Same-UID hostile writers remain outside the trust boundary. COMMIT can cross a deadline after the final synchronous authority sample. This is not distributed atomic authorization.
 
-Future execution authority, cancellation drainage, cleanup reconciliation, containment, and native real-check admission remain separate work. [Admitted-action deadlines](action-deadline.md) bound current controller authority without changing acceptance bytes.
+[Admitted-action deadlines](action-deadline.md) bound current controller authority without changing acceptance bytes. Subsequent opt-in [accepted-request consumption](worker-consumption.md) adds guarded execution and callback-owned drainage while preserving this acknowledgment. Trusted live cleanup reconciliation, real fixture validation, and native real-check admission remain separate work.

@@ -1,0 +1,12 @@
+55616e677eaf3091798934138ddf2870a478c9d8
+e0920efc87c2682c2f82b5fb20cdc2147c9015de51ed811972fa97ec41003c37  ../eitri-worker-consumption-next/src/frozen-browser.ts
+6a1699852094f5553868e1065411e268fbe8eeaba6b68c7a4fd56957f285c22a  ../eitri-worker-consumption-next/test/frozen-browser-consumption-authority-worker.ts
+2470443770a8ee47b708bd7931fdb9873a48fc0c519ad5ab29556fe23e61eba8  ../eitri-worker-consumption-next/test/frozen-browser-consumption-clock.test.ts
+ff5236a63203c34ca7df55c83c76ac00b2f202631da9d940c08df9d552e12162  ../eitri-worker-consumption-next/test/frozen-browser-consumption-crash-worker.ts
+67c7fde643169a6e90f1a6a8beb27ccd0776a8ae695218049a321e595effeb3a  ../eitri-worker-consumption-next/test/frozen-browser-consumption-fixture.ts
+eb6f3bc01ef460a9a6a71cd9fcee9648d519fec547ebe4f00f3067d17841186c  ../eitri-worker-consumption-next/test/frozen-browser-consumption.test.ts
+10c4fb4d7acb2f6c7c476ad10f9f5f82559d28ad7fafb508b0f1665f35ba396b  ../eitri-worker-consumption-next/test/controller-worker-consumption-clock.test.ts
+1cfcad5cced31b981f818e370e557893d1cd31e35f0e53415cfcee595f6c52b5  ../eitri-worker-consumption-next/test/controller-worker-consumption-fixture.ts
+d5817ccebc2798fca10059418212f8ce26e4cd4ccf15b9e59a1d4df1935f929e  ../eitri-worker-consumption-next/test/controller-worker-consumption-lifetime.test.ts
+5abffd7011ffe8d97aca661afb7fe7151e073024cdfb9287fd8a708bae6a4393  ../eitri-worker-consumption-next/test/controller-worker-consumption.test.ts
+e96279f8d15169894bcc18ffbba7a89b57a6f84e16f92aea40fa0ec15b2a10a9  ../eitri-worker-consumption-next/.audit/clock-review.patch

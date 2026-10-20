@@ -1,0 +1,33 @@
+{"observed":{"error":"Error: worker-authority-denied"},"samples":[{"before":1792520216487,"after":1792520216488,"allowance":59614},{"before":1792520216488,"after":1792520216488,"allowance":59614},{"before":1792520216496,"after":1792520216497,"allowance":59605},{"before":1792520216497,"after":1792520216497,"allowance":59605},{"before":1792520216498,"after":1792520216498,"allowance":59604},{"before":1792520216735,"after":1792520216735,"allowance":59367},{"before":1792520216736,"after":1792520216736,"allowance":59366},{"before":1792520216736,"after":1792520216736,"allowance":59366},{"before":1792520218603,"after":1792520218604,"allowance":57498},{"before":1792520218604,"after":1792520218604,"allowance":57498},{"before":1792520218604,"after":1792520218604,"allowance":57498},{"before":1792520218703,"after":1792520218704,"allowance":57398},{"before":1792520218704,"after":1792520218704,"allowance":57398},{"before":1792520218704,"after":1792520218704,"allowance":57398},{"before":1792520218791,"after":1792520218791,"allowance":57311},{"before":1792520218811,"after":1792520218812,"allowance":57290},{"before":1792520218812,"after":1792520218812,"allowance":57290},{"before":1792520219007,"after":1792520219008,"allowance":57094}],"journal":{"meta":{"version":3,"owner":"53473759-87dc-4ee2-8075-3a97bff40905","configurationDigest":"ae3f8fec27e58505496f35e1a299d96b55d94084469ff0f0e0d7ed639e63c38a","attempts":1,"contribution":41943040},"runs":[{"kind":"consumed-acceptance","acceptance":{"kind":"offline-acceptance","acceptanceId":"513c3ff1-e330-4c0f-a904-5c56f3fee115","request":{"frozen":{"caseId":"e823e339-70ce-4d95-950e-bd8f435d273b","revision":"6f70f29f164ff4064015dbc5107791eddf10eb83","manifestDigest":"10769a447d2999364a5bba56c96b9808a13d728517e1e5200263f2b32b70884c"},"action":{"caseId":"e823e339-70ce-4d95-950e-bd8f435d273b","actionId":"88257b1d-f527-4ad6-af8c-c401edbb008c","epoch":1},"scenarioId":"synthetic-click-v1","role":"baseline","allowanceMs":59647},"requestDigest":"2591403967754b6226d69b0bbb3165478a0dacf0348758139aa08ff29598c2a1","configurationDigest":"ae3f8fec27e58505496f35e1a299d96b55d94084469ff0f0e0d7ed639e63c38a","ownerId":"53473759-87dc-4ee2-8075-3a97bff40905","acceptedAt":1792520216484,"deadline":1792520276131},"execution":{"admission":{"kind":"current-action-allowance","translatedAt":1792520216496,"translatedAllowanceMs":59605},"run":{"intent":{"runId":"16e90cc9-beea-4659-a59e-15adf62ab188","request":{"frozen":{"caseId":"e823e339-70ce-4d95-950e-bd8f435d273b","revision":"6f70f29f164ff4064015dbc5107791eddf10eb83","manifestDigest":"10769a447d2999364a5bba56c96b9808a13d728517e1e5200263f2b32b70884c"},"action":{"caseId":"e823e339-70ce-4d95-950e-bd8f435d273b","actionId":"88257b1d-f527-4ad6-af8c-c401edbb008c","epoch":1},"scenarioId":"synthetic-click-v1","role":"baseline","allowanceMs":59647},"requestDigest":"2591403967754b6226d69b0bbb3165478a0dacf0348758139aa08ff29598c2a1","configurationDigest":"ae3f8fec27e58505496f35e1a299d96b55d94084469ff0f0e0d7ed639e63c38a","nonce":"fd47e1ea0a86896bdae87d39813cab57306aa702ca2a430c852525f3e3a2fde4","owner":"53473759-87dc-4ee2-8075-3a97bff40905","imageTag":"eitri-frozen-browser:16e90cc9-beea-4659-a59e-15adf62ab188","containerName":"eitri-frozen-browser-16e90cc9-beea-4659-a59e-15adf62ab188","admittedAt":1792520216496,"deadline":1792520276101,"reservation":41943040},"ledger":{"build":"completed","image":{"kind":"acquired","id":"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"},"container":{"kind":"none"}},"result":{"kind":"settled","report":{"runId":"16e90cc9-beea-4659-a59e-15adf62ab188","request":{"frozen":{"caseId":"e823e339-70ce-4d95-950e-bd8f435d273b","revision":"6f70f29f164ff4064015dbc5107791eddf10eb83","manifestDigest":"10769a447d2999364a5bba56c96b9808a13d728517e1e5200263f2b32b70884c"},"action":{"caseId":"e823e339-70ce-4d95-950e-bd8f435d273b","actionId":"88257b1d-f527-4ad6-af8c-c401edbb008c","epoch":1},"scenarioId":"synthetic-click-v1","role":"baseline","allowanceMs":59647},"outcome":{"kind":"cancelled","code":"cancelled-or-allowance-exhausted"},"evidence":null,"cleanup":{"kind":"owned-removed","cache":"retained"}}}}}}]}}
+✖ record default clock admission and authority samples (5136.0805ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5909.772333
+
+✖ failing tests:
+
+test at .audit/worker-consumption-next-clock-diagnostic.test.ts:7:1
+✖ record default clock admission and authority samples (5136.0805ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+    {
+  +   error: 'Error: worker-authority-denied'
+  -   kind: 'baseline-reproduced'
+    }
+
+      at TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri/.audit/worker-consumption-next-clock-diagnostic.test.ts:35:10)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { error: 'Error: worker-authority-denied' },
+    expected: { kind: 'baseline-reproduced' },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

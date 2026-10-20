@@ -1,0 +1,40 @@
+✖ consumption charges nonzero staging sampler latency without denying live authority (480.057083ms)
+✖ consumption charges nonzero forward sampler latency without denying live authority (488.542917ms)
+✖ consumption charges nonzero after-observation sampler latency without denying live authority (452.596709ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 0
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1810.062042
+
+✖ failing tests:
+
+test at ../../../../private/tmp/eitri-consumption-red.wwTs0Z/test/frozen-browser-consumption-clock.test.ts:14:3
+✖ consumption charges nonzero staging sampler latency without denying live authority (480.057083ms)
+  Error: worker-authority-denied
+      at fail (file:///private/tmp/eitri-consumption-red.wwTs0Z/src/domain.ts:177:9)
+      at file:///private/tmp/eitri-consumption-red.wwTs0Z/src/frozen-browser.ts:2206:60 {
+    code: 'worker-authority-denied'
+  }
+
+test at ../../../../private/tmp/eitri-consumption-red.wwTs0Z/test/frozen-browser-consumption-clock.test.ts:14:3
+✖ consumption charges nonzero forward sampler latency without denying live authority (488.542917ms)
+  Error: worker-authority-denied
+      at fail (file:///private/tmp/eitri-consumption-red.wwTs0Z/src/domain.ts:177:9)
+      at file:///private/tmp/eitri-consumption-red.wwTs0Z/src/frozen-browser.ts:2225:62
+      at forward (file:///private/tmp/eitri-consumption-red.wwTs0Z/src/frozen-browser.ts:2441:50)
+      at FrozenBrowserValidator.executeAdmitted (file:///private/tmp/eitri-consumption-red.wwTs0Z/src/frozen-browser.ts:2452:7)
+      at file:///private/tmp/eitri-consumption-red.wwTs0Z/src/frozen-browser.ts:2235:53 {
+    code: 'worker-authority-denied'
+  }
+
+test at ../../../../private/tmp/eitri-consumption-red.wwTs0Z/test/frozen-browser-consumption-clock.test.ts:14:3
+✖ consumption charges nonzero after-observation sampler latency without denying live authority (452.596709ms)
+  Error: worker-authority-denied
+      at fail (file:///private/tmp/eitri-consumption-red.wwTs0Z/src/domain.ts:177:9)
+      at file:///private/tmp/eitri-consumption-red.wwTs0Z/src/frozen-browser.ts:2206:60 {
+    code: 'worker-authority-denied'
+  }

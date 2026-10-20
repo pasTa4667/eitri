@@ -1,0 +1,12 @@
+✔ default-clock consumption 1 (2337.688916ms)
+✔ default-clock consumption 2 (2368.6345ms)
+✔ default-clock consumption 3 (2361.219708ms)
+✔ default-clock consumption 4 (2208.121583ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9499.027083

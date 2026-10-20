@@ -1,0 +1,13 @@
+6778eabc5af9831e098b627fb61728ed8934d6ad
+npm notice run eitri@0.1.0 check
+npm notice run tsc --noEmit && node --check scripts/doctor.mjs && node --check scripts/check-sdk.mjs && node --check prototypes/sdk-compatibility.mjs && node --check prototypes/chromium/probe.mjs && node --check prototypes/chromium/run.mjs && node --check prototypes/chromium/policy.mjs
+✔ default-clock baseline consumption settles once and preserves immutable history (3035.943042ms)
+✔ default-clock browser consumption settles once and preserves immutable history (2926.896083ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6199.690417

@@ -1,0 +1,29 @@
+✔ return explicitly revokes unawaited consumption and Retry cannot restore old authority (1599.144ms)
+✔ throw explicitly revokes unawaited consumption and Retry cannot restore old authority (1549.853959ms)
+✔ pause explicitly revokes unawaited consumption and Retry cannot restore old authority (1554.937667ms)
+✔ interrupt explicitly revokes unawaited consumption and Retry cannot restore old authority (1539.179375ms)
+✔ controller close drains gated open and releases worker and workspace leases after settlement, not callback completion (1274.768291ms)
+✔ controller close drains gated client and releases worker and workspace leases after settlement, not callback completion (1401.410958ms)
+✔ controller close drains gated cleanup and releases worker and workspace leases after settlement, not callback completion (2604.163375ms)
+✔ delivery rechecks complete current authority after terminal worker result (2264.758459ms)
+✔ baseline callback consumes captured acceptance once and inspection observes pending without waiting for execution (2655.49325ms)
+✔ browser callback consumes captured acceptance once and inspection observes pending without waiting for execution (2659.106167ms)
+✔ consumption requires explicit completed acceptance and never opens implicitly (866.034709ms)
+✔ literal consumption opt-in requires all prerequisites and is captured before awaits (846.658917ms)
+✔ disabled capability remains compatible for false false browser (826.338417ms)
+✔ disabled capability remains compatible for true false browser (834.406166ms)
+✔ disabled capability remains compatible for true true unit (802.708542ms)
+✔ current controller D-1 with withheld wakeups uses distinct worker time (898.718042ms)
+✔ current controller D+0 with withheld wakeups uses distinct worker time (866.409584ms)
+✔ current controller D+1 with withheld wakeups uses distinct worker time (876.277625ms)
+✔ delayed pinned opening consumes only D-now after 12345ms preparation (2244.83625ms)
+✔ delayed pinned opening consumes only D-now after 60000ms preparation (1029.145416ms)
+✔ authority loss after worker staging rolls back consumption without charge or upgrade (1015.175417ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 16769.870833

@@ -43,4 +43,4 @@ Inspection writes no acknowledgment, observed run ID, or association state. A ma
 
 Historical inspection requires the original journal and a supported validator configuration. No durable record of earlier observations survives independently of that journal. Same-UID hostile filesystem writers remain outside the existing trust boundary.
 
-Inspection does not dispatch workers, reserve execution capacity, drain cancellation, reconcile live cleanup, or authorize native real-check receipts. Matched offline acceptance is historical acknowledgment, not execution permission. It does not connect production main to validator execution. These protocols remain separate work.
+Inspection does not dispatch workers, reserve execution capacity, drain cancellation, reconcile live cleanup, or authorize native real-check receipts. Matched offline acceptance is historical acknowledgment, not execution permission. Subsequent opt-in [accepted-request consumption](worker-consumption.md) adds a separate current-authority handoff and optional nested consumption history. Production main remains unwired.

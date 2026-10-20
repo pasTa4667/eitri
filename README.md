@@ -53,9 +53,11 @@ The [workspace library](docs/workspace.md) adds managed Git, guarded one-file ed
 
 ## Unwired browser validation
 
-The [frozen browser validator](docs/frozen-browser.md) is integrated as a callable module, without controller execution permissions. It checks recorded frozen bytes through the protected synthetic browser scenario. Its fast tests run in `npm run verify`; actual Docker acceptance remains an explicit separate command. The [integration record](docs/evidence/validator-integration/verification.md) records 311 Node, 30 Rust and 20 Docker tests passing. This is not M2 completion or real fixture validation.
+The [frozen browser validator](docs/frozen-browser.md) is integrated as a callable module. Production entry points do not enable it. It checks recorded frozen bytes through the protected synthetic browser scenario. Its fast tests run in `npm run verify`; actual Docker acceptance remains an explicit separate command. The [integration record](docs/evidence/validator-integration/verification.md) records 311 Node, 30 Rust and 20 Docker tests passing. This is not M2 completion or real fixture validation.
 
-The [admitted check interface](docs/check-execution.md) now supplies scripted adapters with the actual action identity and remaining allowance. Non-behavior outcomes stop conservatively without fabricated failed checks or repair work. Final verification passes 382 Node and 30 Rust tests. Real browser reports and Docker dispatch remain unwired.
+The [admitted check interface](docs/check-execution.md) now supplies scripted adapters with the actual action identity and remaining allowance. Non-behavior outcomes stop conservatively without fabricated failed checks or repair work. Final verification passes 382 Node and 30 Rust tests. Production browser dispatch and real native receipts remain unwired.
+
+The opt-in [accepted-request handoff](docs/worker-consumption.md) now consumes the exact accepted request once under current callback authority. It retains ownership through cancellation and settlement, with no native real receipt. Parent and writer verification each pass 812 Node and 30 Rust tests. Default-clock regressions reproduce and correct a sampling-boundary defect. Production main remains unwired. See the [consumption verification record](docs/evidence/worker-consumption/verification.md).
 
 ## Containment gate
 
