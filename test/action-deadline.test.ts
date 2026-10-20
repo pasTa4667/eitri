@@ -352,6 +352,7 @@ for (const transition of ['assessment', 'baseline-stop'] as const)
     const confirmed = gate(),
       release = gate();
     t.after(() => release.resolve());
+    const scheduled = scheduler();
     if (transition === 'assessment') {
       const original = NativeCase.prototype.metadata;
       let wrapped = false;
@@ -384,7 +385,7 @@ for (const transition of ['assessment', 'baseline-stop'] as const)
       t,
       {
         clock: () => now,
-        actionWakeup: scheduler().wakeup,
+        actionWakeup: scheduled.wakeup,
         check: async ({ kind }) => ({
           type: 'completed',
           check: {
@@ -428,6 +429,9 @@ for (const transition of ['assessment', 'baseline-stop'] as const)
     const queued = (await f.view(id)).case;
     assert.equal(queued.status, 'queued');
     assert.equal(queued.remainingMs, 600000);
+    const oldWake = scheduled.wakes.at(-1)!;
+    oldWake.callback();
+    assert.deepEqual((await f.view(id)).case, queued);
     release.resolve();
     const newer = await until(
       () => f.view(id),
@@ -438,6 +442,8 @@ for (const transition of ['assessment', 'baseline-stop'] as const)
     assert.equal(newer.case.usedMs, 0);
     assert.equal(newer.messages.filter((m) => m.kind === 'eitri.action-result').length, 0);
     assert.equal(f.faux.state.callCount, 2);
+    oldWake.callback();
+    assert.deepEqual((await f.view(id)).case, newer.case);
   });
 
 for (const kind of ['model', 'tool'] as const)
@@ -930,7 +936,12 @@ for (const transition of ['progress', 'no-fix', 'baseline-stop'] as const)
     await confirmed.promise;
     now = 61000;
     const wake = scheduled.wakes.at(-1)!;
+    const wakeCount = scheduled.wakes.length;
     wake.callback();
+    assert.equal(wake.cancelled, true);
+    assert.equal(scheduled.wakes.length, wakeCount);
+    wake.callback();
+    assert.equal(scheduled.wakes.length, wakeCount);
     release.resolve();
     await retired.promise;
     const view = await f.parked(id);

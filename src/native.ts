@@ -674,8 +674,15 @@ function actionLifetime(host: RuntimeHost, action: Action) {
     cancel = host.wakeup(delay, () => {
       if (disposed || expected !== generation || abort.signal.aborted) return;
       try {
+        if (host.mayRecordCompletion(action)) {
+          clear();
+          return;
+        }
         arm(remaining());
-      } catch {}
+      } catch (error) {
+        clear();
+        abort.abort(error);
+      }
     });
   };
   return {

@@ -27,7 +27,7 @@ Successful model terminal publication follows synchronous controller authorizati
 
 Controller clock values are nonnegative safe integers and nondecreasing within one controller instance. Invalid or backward samples fail with `invalid-clock`. There is no persisted monotonic clock comparison across restarts. Artifact, note, and worker acceptance timestamps retain their existing clock conventions.
 
-Native model and tool actions share one private lifetime helper. It owns the cancellation signal, a cancellable wakeup, synchronous allowance guards, and disposal. Wakeups use fresh remaining time. Early wakeups rearm rather than manufacture expiry. Canceled or duplicate delivery cannot affect another generation or action. Sampling errors abort only that lifetime.
+Native model and tool actions share one private lifetime helper. It owns the cancellation signal, a cancellable wakeup, synchronous allowance guards, and disposal. Wakeups use fresh remaining time. Early wakeups rearm rather than manufacture expiry. Canceled or duplicate delivery cannot affect another generation or action. Sampling errors abort only that lifetime. A wakeup for a controller-confirmed self-transition cancels itself while bounded completion bookkeeping remains. It grants no new execution allowance.
 
 `Controller.open()` accepts an optional deterministic wakeup dependency.
 
