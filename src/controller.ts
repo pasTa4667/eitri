@@ -2,6 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { mkdir, chmod, lstat, open, realpath, rm } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
 import type { Provider } from '@earendil-works/pi-ai/models';
 import {
   WorkspaceStore,
@@ -23,6 +24,8 @@ import type {
   FrozenRevision,
   WorkspaceCheckpoint,
 } from './workspace.ts';
+import { FrozenBrowserValidator, frozenBrowserRequest } from './frozen-browser.ts';
+import type { FrozenBrowserRequest, RecoveryInventory, RecoveryRun } from './frozen-browser.ts';
 import { NativeCase } from './native.ts';
 import { ArtifactStore, artifactLimits, validateOutput } from './artifacts.ts';
 import {
@@ -61,6 +64,18 @@ export type OfflineActionWorkspace = Readonly<{
   readSelected(): Promise<readonly BaselineFile[]>;
   edit(expectedRevision: GitRevision, input: Omit<BrokerEdit, 'requestId'>): Promise<SavedReceipt>;
 }>;
+export type OfflineWorkerJournalOptions = Readonly<{
+  directory: string;
+  ownerId: string;
+  configurationDigest: string;
+}>;
+type WorkerJournalBinding = OfflineWorkerJournalOptions & Readonly<{ version: 1 }>;
+type WorkerIntent = Readonly<{ request: FrozenBrowserRequest; requestDigest: string }>;
+export type WorkerAssociationObservation =
+  | Readonly<{ state: 'unrecorded' }>
+  | Readonly<{ state: 'absent'; intent: WorkerIntent }>
+  | Readonly<{ state: 'conflict'; intent: WorkerIntent; runs: readonly RecoveryRun[] }>
+  | Readonly<{ state: 'matched'; intent: WorkerIntent; run: RecoveryRun }>;
 type WorkspaceBinding = Readonly<{
   caseId: string;
   repositoryId: RepositoryId;
@@ -72,7 +87,11 @@ type WorkspaceBinding = Readonly<{
     | Readonly<{ state: 'ready'; baseRevision: GitRevision }>
     | Readonly<{ state: 'uncertain'; reason: string }>
   );
-type ActionSource = Readonly<{ action: Readonly<Action>; kind: Check['kind'] }> &
+type ActionSource = Readonly<{
+  action: Readonly<Action>;
+  kind: Check['kind'];
+  workerIntent?: WorkerIntent;
+}> &
   (
     | Readonly<{ state: 'selecting'; expected: WorkspaceCheckpoint }>
     | Readonly<{ state: 'selected'; frozen: FrozenRevision }>
@@ -88,6 +107,7 @@ type Options = {
   allowanceMs?: number;
   probe?: (id: string, signal: AbortSignal) => Promise<string>;
   offlineWorkspace?: OfflineWorkspaceOptions;
+  offlineWorkerJournal?: OfflineWorkerJournalOptions;
   check?: (
     request: AdmittedCheckRequest,
     source?: OfflineActionWorkspace,
@@ -132,6 +152,26 @@ export class Controller {
     this.allowance = Math.min(options.allowanceMs ?? 600_000, 600_000);
   }
   static async open(options: Options) {
+    options = { ...options };
+    if (options.offlineWorkerJournal !== undefined) {
+      const journal = options.offlineWorkerJournal;
+      if (
+        !journal ||
+        typeof journal !== 'object' ||
+        Array.isArray(journal) ||
+        !options.offlineWorkspace ||
+        !hasFields(journal, ['directory', 'ownerId', 'configurationDigest']) ||
+        !text(journal.directory, 4096) ||
+        !uuid(journal.ownerId) ||
+        journal.ownerId !== journal.ownerId.toLowerCase()
+      )
+        fail('invalid-offline-worker-journal');
+      options.offlineWorkerJournal = {
+        directory: resolve(journal.directory),
+        ownerId: journal.ownerId,
+        configurationDigest: sha256(journal.configurationDigest),
+      };
+    }
     if (options.offlineWorkspace) {
       const offline = options.offlineWorkspace;
       if (!Array.isArray(offline.baseline) || offline.baseline.length > workspaceLimits.files)
@@ -206,6 +246,7 @@ export class Controller {
         fail('unsupported-schema');
       controller = new Controller(directory, db, options);
       await controller.openWorkspaces();
+      await controller.openWorkerJournalBinding();
       await controller.recover();
       controller.starting = false;
       controller.schedule();
@@ -276,6 +317,74 @@ export class Controller {
         state: 'ready',
       }),
     );
+  }
+  private async workerInventory(binding: WorkerJournalBinding): Promise<RecoveryInventory> {
+    const journal = await FrozenBrowserValidator.open({
+      directory: binding.directory,
+      workspace: this.workspaces!,
+      mode: 'journal-only',
+    });
+    try {
+      const inventory = await journal.inventory();
+      if (
+        inventory.ownerId !== binding.ownerId ||
+        inventory.configurationDigest !== binding.configurationDigest
+      )
+        fail('worker-journal-identity-mismatch');
+      return inventory;
+    } finally {
+      await journal.close();
+    }
+  }
+  private async openWorkerJournalBinding() {
+    const row = this.db
+      .prepare("SELECT value FROM metadata WHERE key='offline_worker_journal'")
+      .get();
+    const configured = this.options.offlineWorkerJournal;
+    if (!configured) {
+      if (row) fail('offline-worker-journal-required');
+      return;
+    }
+    const binding: WorkerJournalBinding = { version: 1, ...configured };
+    if (row && digest(JSON.parse(String(row.value))) !== digest(binding))
+      fail('offline-worker-journal-configuration-mismatch');
+    await this.workerInventory(binding);
+    if (!row)
+      this.db
+        .prepare('INSERT INTO metadata VALUES (?,?)')
+        .run('offline_worker_journal', JSON.stringify(binding));
+  }
+  async inspectWorkerAssociation(
+    id: string,
+    actionId: string,
+  ): Promise<WorkerAssociationObservation> {
+    if (!uuid(id) || !uuid(actionId)) fail('invalid-worker-association-id');
+    return this.workspaceSerial(async () => {
+      const configured =
+        this.options.offlineWorkerJournal ?? fail('offline-worker-journal-required');
+      const inventory = await this.workerInventory({ version: 1, ...configured });
+      const source = this.source(id, actionId);
+      const intent = source.workerIntent;
+      if (!intent) return { state: 'unrecorded' };
+      const runs = inventory.runs.filter(
+        (run) =>
+          run.request.action.caseId === intent.request.action.caseId &&
+          run.request.action.actionId === intent.request.action.actionId &&
+          run.request.action.epoch === intent.request.action.epoch,
+      );
+      if (runs.length === 0) return structuredClone({ state: 'absent', intent });
+      const run = runs[0];
+      if (
+        runs.length !== 1 ||
+        !isDeepStrictEqual(run.request, intent.request) ||
+        digest(run.request) !== intent.requestDigest ||
+        digest(intent.request) !== intent.requestDigest ||
+        run.requestDigest !== intent.requestDigest ||
+        run.configurationDigest !== configured.configurationDigest
+      )
+        return structuredClone({ state: 'conflict', intent, runs });
+      return structuredClone({ state: 'matched', intent, run });
+    });
   }
   private workspaceSerial<T>(work: () => Promise<T>): Promise<T> {
     if (this.closing) return Promise.reject(new ControlError('controller-closed'));
@@ -414,6 +523,7 @@ export class Controller {
         'action',
         'kind',
         'state',
+        ...(s.workerIntent === undefined ? [] : ['workerIntent']),
         ...(s.state === 'selecting'
           ? ['expected']
           : s.state === 'interrupted'
@@ -443,6 +553,29 @@ export class Controller {
       sha256(s.frozen.manifestDigest);
     } else if (s.state !== 'interrupted') fail('invalid-action-source');
     if (s.state === 'interrupted' && !text(s.reason, 512)) fail('invalid-action-source');
+    if (s.workerIntent !== undefined) {
+      const intent = s.workerIntent;
+      if (
+        !this.options.offlineWorkerJournal ||
+        !intent ||
+        !hasFields(intent, ['request', 'requestDigest']) ||
+        s.state === 'selecting' ||
+        !s.frozen ||
+        (s.kind !== 'baseline' && s.kind !== 'browser')
+      )
+        return fail('invalid-worker-intent');
+      const request = frozenBrowserRequest(intent.request);
+      if (
+        digest(request) !== intent.requestDigest ||
+        digest(request.frozen) !== digest(s.frozen) ||
+        request.action.caseId !== s.action.caseId ||
+        request.action.actionId !== s.action.id ||
+        request.action.epoch !== s.action.epoch ||
+        request.role !== (s.kind === 'baseline' ? 'baseline' : 'candidate') ||
+        request.allowanceMs > s.action.limitMs
+      )
+        fail('invalid-worker-intent');
+    }
     return s;
   }
   private sourceAuthority(id: string, action: Action, signal: AbortSignal, live: () => boolean) {
@@ -581,6 +714,7 @@ export class Controller {
           this.saveSource({
             action: s.action,
             kind: s.kind,
+            ...(s.workerIntent ? { workerIntent: s.workerIntent } : {}),
             state: 'interrupted',
             reason: 'interrupted-source-selection',
             frozen: s.state === 'selected' ? s.frozen : null,
@@ -1079,6 +1213,23 @@ export class Controller {
       }
       const { c, remainingMs } = allowance;
       if (c.status !== 'running') fail('check-dispatch-denied');
+      if (this.options.offlineWorkerJournal && (kind === 'baseline' || kind === 'browser')) {
+        const selected = this.source(id, action.id);
+        if (selected.state !== 'selected' || selected.workerIntent)
+          return fail('invalid-worker-intent');
+        const workerRequest = frozenBrowserRequest({
+          frozen: selected.frozen,
+          action: { caseId: id, actionId: action.id, epoch: action.epoch },
+          scenarioId: 'synthetic-click-v1',
+          role: kind === 'baseline' ? 'baseline' : 'candidate',
+          allowanceMs: Math.min(60_000, remainingMs),
+        });
+        this.saveSource({
+          ...selected,
+          workerIntent: { request: workerRequest, requestDigest: digest(workerRequest) },
+        });
+        this.options.fault?.('after-worker-intent', id);
+      }
       request = Object.freeze({
         caseId: id,
         actionId: action.id,
@@ -1171,6 +1322,7 @@ export class Controller {
             this.saveSource({
               action: s.action,
               kind: s.kind,
+              ...(s.workerIntent ? { workerIntent: s.workerIntent } : {}),
               state: 'interrupted',
               reason: 'source-action-interrupted',
               frozen: s.state === 'selected' ? s.frozen : null,
