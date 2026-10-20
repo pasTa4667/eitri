@@ -508,6 +508,252 @@ for (const [index, value] of malformed.entries())
     assert.equal(faux.state.callCount, 1);
   });
 
+const failedReceipt = { ...receipt(), passed: false };
+const malformedOwnKeys = [
+  {
+    name: 'comma-joined envelope key with inherited type and check',
+    value: Object.assign(Object.create({ type: 'completed', check: failedReceipt }), {
+      'check,type': true,
+    }),
+  },
+  {
+    name: 'inherited completed envelope keys',
+    value: Object.create({ type: 'completed', check: failedReceipt }),
+  },
+  {
+    name: 'extra comma-containing completed envelope key',
+    value: { type: 'completed', check: failedReceipt, 'check,type': true },
+  },
+  {
+    name: 'inherited non-behavior type with a comma-containing key',
+    value: Object.assign(Object.create({ type: 'infrastructure' }), { 'type,': true }),
+  },
+  {
+    name: 'extra comma-containing non-behavior key',
+    value: { type: 'infrastructure', ',': true },
+  },
+  {
+    name: 'comma-joined receipt key with inherited candidate and configuration',
+    value: {
+      type: 'completed',
+      check: Object.assign(
+        Object.create({
+          candidate: failedReceipt.candidate,
+          configuration: failedReceipt.configuration,
+        }),
+        {
+          'candidate,configuration': true,
+          kind: 'browser',
+          outputs: failedReceipt.outputs,
+          passed: false,
+          simulated: true,
+        },
+      ),
+    },
+  },
+  {
+    name: 'extra comma-containing receipt key',
+    value: { type: 'completed', check: { ...failedReceipt, 'candidate,configuration': true } },
+  },
+  {
+    name: 'inherited receipt fields',
+    value: { type: 'completed', check: Object.create(failedReceipt) },
+  },
+  {
+    name: 'comma-joined output key with inherited bytes and label',
+    value: {
+      type: 'completed',
+      check: {
+        ...failedReceipt,
+        outputs: [
+          Object.assign(
+            Object.create({ bytes: receipt().outputs[0].bytes, label: 'Inherited observation' }),
+            { 'bytes,label': true, mime: 'text/plain' },
+          ),
+        ],
+      },
+    },
+  },
+  {
+    name: 'extra comma-containing output key',
+    value: {
+      type: 'completed',
+      check: {
+        ...failedReceipt,
+        outputs: [{ ...receipt().outputs[0], 'bytes,label': true }],
+      },
+    },
+  },
+  {
+    name: 'inherited output fields',
+    value: {
+      type: 'completed',
+      check: { ...failedReceipt, outputs: [Object.create(receipt().outputs[0])] },
+    },
+  },
+  {
+    name: 'symbol completed envelope key',
+    value: { type: 'completed', check: failedReceipt, [Symbol('extra')]: true },
+  },
+  {
+    name: 'symbol receipt key',
+    value: { type: 'completed', check: { ...failedReceipt, [Symbol('extra')]: true } },
+  },
+  {
+    name: 'symbol output key',
+    value: {
+      type: 'completed',
+      check: {
+        ...failedReceipt,
+        outputs: [{ ...receipt().outputs[0], [Symbol('extra')]: true }],
+      },
+    },
+  },
+];
+for (const { name, value } of malformedOwnKeys)
+  test(`${name} stops without evidence or speculative repair`, async (t) => {
+    const directory = await realpath(await mkdtemp(join(tmpdir(), 'eitri-check-own-keys-')));
+    const faux = fauxProvider({ tokensPerSecond: 100000 });
+    faux.setResponses([checkCall(), fauxAssistantMessage('Done')]);
+    const controller = await Controller.open({
+      directory,
+      policy,
+      providerForCase: () => ({ provider: faux.provider, modelId: faux.getModel().id }),
+      check: async () => value as CheckExecution,
+    });
+    t.after(async () => {
+      await controller.close();
+      await rm(directory, { recursive: true });
+    });
+    const command = await controller.command({
+      requestId: randomUUID(),
+      intent: { type: 'investigate', issue },
+    });
+    const selected = await disposition(controller, command.caseId!, 'needs-attention');
+    assert.deepEqual(
+      {
+        reason: selected.case.reason,
+        phase: selected.case.phase,
+        base: selected.case.base,
+        candidate: selected.case.candidate,
+        failedCandidate: selected.case.failedCandidate,
+        repairs: selected.case.repairs,
+      },
+      {
+        reason: 'invalid-check-execution',
+        phase: 'triage',
+        base: null,
+        candidate: null,
+        failedCandidate: null,
+        repairs: 0,
+      },
+    );
+    assert.deepEqual(selected.checks, []);
+    assert.deepEqual(selected.artifacts, []);
+    assert.equal(faux.state.callCount, 1);
+  });
+
+test('timed-out callback cannot change a completed result from a newer Retry epoch', async (t) => {
+  const directory = await realpath(await mkdtemp(join(tmpdir(), 'eitri-check-retry-epoch-')));
+  const faux = fauxProvider({ tokensPerSecond: 100000 });
+  faux.setResponses([checkCall(), checkCall(), fauxAssistantMessage('Done')]);
+  const release = deferred<CheckExecution>();
+  const returned = deferred<void>();
+  const requests: AdmittedCheckRequest[] = [];
+  const controller = await Controller.open({
+    directory,
+    policy,
+    allowanceMs: 500,
+    providerForCase: () => ({ provider: faux.provider, modelId: faux.getModel().id }),
+    check: async (request) => {
+      requests.push(request);
+      if (requests.length === 1) {
+        const result = await release.promise;
+        returned.resolve();
+        return result;
+      }
+      return {
+        type: 'completed',
+        check: {
+          ...receipt(request.kind),
+          candidate: 'c'.repeat(40),
+          outputs: [
+            {
+              label: 'New epoch observation',
+              mime: 'text/plain',
+              bytes: Buffer.from('New epoch.\n'),
+            },
+          ],
+        },
+      };
+    },
+  });
+  t.after(async () => {
+    release.resolve({ type: 'completed', check: failedReceipt });
+    await controller.close();
+    await rm(directory, { recursive: true });
+  });
+  const command = await controller.command({
+    requestId: randomUUID(),
+    intent: { type: 'investigate', issue },
+  });
+  const stopped = await disposition(controller, command.caseId!, 'needs-attention');
+  assert.equal(stopped.case.reason, 'check-allowance-exhausted');
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].signal.aborted, true);
+  assert.deepEqual(stopped.checks, []);
+  assert.deepEqual(stopped.artifacts, []);
+  await controller.command({
+    requestId: randomUUID(),
+    expectedControlVersion: stopped.case.version,
+    intent: { type: 'retry', caseId: command.caseId!, note: 'Retry with fresh validation.' },
+  });
+  const newer = await disposition(controller, command.caseId!, 'needs-attention');
+  assert.equal(requests.length, 2);
+  assert.ok(requests[1].epoch > requests[0].epoch);
+  assert.notEqual(requests[1].actionId, requests[0].actionId);
+  assert.equal(newer.case.reason, 'assessment-required');
+  assert.equal(newer.case.phase, 'triage');
+  assert.equal(newer.case.base, null);
+  assert.equal(newer.case.candidate, null);
+  assert.equal(newer.case.failedCandidate, null);
+  assert.equal(newer.case.repairs, 0);
+  assert.equal(newer.case.attempt, 2);
+  assert.equal(newer.checks.length, 1);
+  assert.deepEqual(
+    newer.checks.map((check) => ({
+      caseId: check.caseId,
+      actionId: check.actionId,
+      candidate: check.candidate,
+      passed: check.passed,
+    })),
+    [
+      {
+        caseId: command.caseId,
+        actionId: requests[1].actionId,
+        candidate: 'c'.repeat(40),
+        passed: true,
+      },
+    ],
+  );
+  assert.equal(newer.artifacts.length, 1);
+  assert.equal(newer.artifacts[0].caseId, command.caseId);
+  assert.equal(newer.artifacts[0].actionId, requests[1].actionId);
+  assert.equal(newer.artifacts[0].label, 'New epoch observation');
+  release.resolve({ type: 'completed', check: failedReceipt });
+  await returned.promise;
+  await new Promise((r) => setImmediate(r));
+  const after = (await controller.snapshot({ selected: command.caseId! })).selected!;
+  assert.deepEqual(after.case, newer.case);
+  assert.deepEqual(after.checks, newer.checks);
+  assert.deepEqual(after.artifacts, newer.artifacts);
+  assert.deepEqual(
+    (await controller.artifact(command.caseId!, after.artifacts[0].id)).bytes,
+    Buffer.from('New epoch.\n'),
+  );
+  assert.equal(faux.state.callCount, 3);
+});
+
 for (const mode of [
   'missing',
   'reject',
