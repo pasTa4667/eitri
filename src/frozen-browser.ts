@@ -43,7 +43,7 @@ export type JournalResource =
   | Readonly<{ kind: 'none' }>
   | Readonly<{ kind: 'intent' }>
   | Readonly<{ kind: 'acquired'; id: string }>;
-export type RecoveryRun = Readonly<{
+type RecoveryRunIdentity = Readonly<{
   runId: string;
   request: FrozenBrowserRequest;
   requestDigest: Sha256;
@@ -53,7 +53,9 @@ export type RecoveryRun = Readonly<{
   build: 'not-started' | 'unknown' | 'completed';
   image: JournalResource;
   container: JournalResource;
-}> &
+}>;
+export type PendingFrozenBrowserConsumption = RecoveryRunIdentity & Readonly<{ state: 'pending' }>;
+export type RecoveryRun = RecoveryRunIdentity &
   (
     | Readonly<{
         state: 'recorded';
@@ -81,6 +83,7 @@ export type RecoveryRecord =
       Readonly<{
         kind: 'offline-acceptance';
         state: 'accepted';
+        consumption?: PendingFrozenBrowserConsumption | RecoveryRun;
       }>);
 export type FrozenBrowserAcceptanceJournal = FrozenBrowserJournal &
   Readonly<{
@@ -88,6 +91,19 @@ export type FrozenBrowserAcceptanceJournal = FrozenBrowserJournal &
       request: FrozenBrowserRequest,
       assertCurrentAuthority: () => true,
     ): Promise<FrozenBrowserAcceptance>;
+  }>;
+export type FrozenBrowserCurrentAllowance = () => number;
+export type FrozenBrowserConsumption = Readonly<{
+  acceptanceId: string;
+  run: RecoveryRun;
+}>;
+export type FrozenBrowserConsumptionJournal = FrozenBrowserAcceptanceJournal &
+  Readonly<{
+    consume(
+      acceptance: FrozenBrowserAcceptance,
+      sampleCurrentAllowance: FrozenBrowserCurrentAllowance,
+      signal: AbortSignal,
+    ): Promise<FrozenBrowserConsumption>;
   }>;
 export type FrozenBrowserJournalIdentity = Readonly<{
   ownerId: string;
@@ -226,12 +242,23 @@ type Result =
   | { kind: 'recorded'; outcome: FrozenBrowserOutcome; evidence: FrozenBrowserEvidence | null }
   | { kind: 'settled'; report: FrozenBrowserReport };
 type Run = { intent: Intent; ledger: Ledger; result: Result };
-type JournalRecord =
-  | { kind: 'execution'; run: Run }
-  | ({ kind: 'offline-acceptance' } & FrozenBrowserAcceptance);
+type AcceptanceRecord = { kind: 'offline-acceptance' } & FrozenBrowserAcceptance;
+type ConsumedAcceptanceRecord = {
+  kind: 'consumed-acceptance';
+  acceptance: AcceptanceRecord;
+  execution: {
+    admission: {
+      kind: 'current-action-allowance';
+      translatedAt: number;
+      translatedAllowanceMs: number;
+    };
+    run: Run;
+  };
+};
+type JournalRecord = { kind: 'execution'; run: Run } | AcceptanceRecord | ConsumedAcceptanceRecord;
 const acceptanceCapacity = 256;
 type Meta = {
-  version: 1 | 2;
+  version: 1 | 2 | 3;
   owner: string;
   configurationDigest: string;
   attempts: number;
@@ -853,6 +880,14 @@ function validateRecorded(
     fail('corrupt-committed-outcome');
 }
 function parseRun(value: unknown, meta: Meta, assets: Assets): Run {
+  return parseRunWithAllowance(value, meta, assets);
+}
+function parseRunWithAllowance(
+  value: unknown,
+  meta: Meta,
+  assets: Assets,
+  allowanceMs?: number,
+): Run {
   const r = exact(value, ['intent', 'ledger', 'result']);
   const i = exact(r.intent, [
     'runId',
@@ -889,7 +924,8 @@ function parseRun(value: unknown, meta: Meta, assets: Assets): Run {
     intent.imageTag !== `eitri-frozen-browser:${runId}` ||
     intent.containerName !== `eitri-frozen-browser-${runId}` ||
     intent.reservation !== limits.context ||
-    intent.deadline !== intent.admittedAt + request.allowanceMs
+    !Number.isSafeInteger(intent.admittedAt + (allowanceMs ?? request.allowanceMs)) ||
+    intent.deadline !== intent.admittedAt + (allowanceMs ?? request.allowanceMs)
   )
     fail('corrupt-validator-intent');
   const l = exact(r.ledger, ['build', 'image', 'container']);
@@ -981,17 +1017,83 @@ function parseAcceptance(
     fail('corrupt-validator-acceptance');
   return record;
 }
+function parseConsumedAcceptance(
+  value: unknown,
+  meta: Meta,
+  assets: Assets,
+): ConsumedAcceptanceRecord {
+  const r = exact(value, ['kind', 'acceptance', 'execution']);
+  if (r.kind !== 'consumed-acceptance' || meta.version !== 3) fail('corrupt-validator-consumption');
+  const acceptance = parseAcceptance(r.acceptance, meta);
+  const e = exact(r.execution, ['admission', 'run']);
+  const a = exact(e.admission, ['kind', 'translatedAt', 'translatedAllowanceMs']);
+  const translatedAt = integer(a.translatedAt);
+  const translatedAllowanceMs = integer(a.translatedAllowanceMs, 1, acceptance.request.allowanceMs);
+  const run = parseRunWithAllowance(e.run, meta, assets, translatedAllowanceMs);
+  if (
+    a.kind !== 'current-action-allowance' ||
+    translatedAt !== run.intent.admittedAt ||
+    !same(run.intent.request, acceptance.request)
+  )
+    fail('corrupt-validator-consumption');
+  return {
+    kind: 'consumed-acceptance',
+    acceptance,
+    execution: {
+      admission: { kind: 'current-action-allowance', translatedAt, translatedAllowanceMs },
+      run,
+    },
+  };
+}
+function recordRun(record: JournalRecord): Run | undefined {
+  return record.kind === 'execution'
+    ? record.run
+    : record.kind === 'consumed-acceptance'
+      ? record.execution.run
+      : undefined;
+}
+function recordAcceptance(record: JournalRecord): AcceptanceRecord | undefined {
+  return record.kind === 'offline-acceptance'
+    ? record
+    : record.kind === 'consumed-acceptance'
+      ? record.acceptance
+      : undefined;
+}
 function recordRequest(record: JournalRecord): FrozenBrowserRequest {
-  return record.kind === 'execution' ? record.run.intent.request : record.request;
+  return record.kind === 'execution'
+    ? record.run.intent.request
+    : recordAcceptance(record)!.request;
 }
-function recordId(record: JournalRecord): string {
-  return record.kind === 'execution' ? record.run.intent.runId : record.acceptanceId;
-}
-function acknowledgment(
-  record: Extract<JournalRecord, { kind: 'offline-acceptance' }>,
-): FrozenBrowserAcceptance {
+function acknowledgment(record: AcceptanceRecord): FrozenBrowserAcceptance {
   const { kind: _kind, ...accepted } = record;
   return structuredClone(accepted);
+}
+function recoveryRun(run: Run): PendingFrozenBrowserConsumption | RecoveryRun {
+  const { intent, ledger, result } = run;
+  return structuredClone({
+    runId: intent.runId,
+    request: intent.request,
+    requestDigest: sha256(intent.requestDigest),
+    configurationDigest: sha256(intent.configurationDigest),
+    admittedAt: intent.admittedAt,
+    deadline: intent.deadline,
+    ...ledger,
+    ...(result.kind === 'pending'
+      ? { state: 'pending' as const }
+      : result.kind === 'recorded'
+        ? { state: 'recorded' as const, outcome: result.outcome, cleanup: 'unresolved' as const }
+        : {
+            state: 'settled' as const,
+            outcome: result.report.outcome,
+            cleanup: result.report.cleanup,
+          }),
+  });
+}
+function currentAllowance(sample: FrozenBrowserCurrentAllowance): number {
+  const value: unknown = sample();
+  if (typeof value === 'number' && Number.isSafeInteger(value) && value > 0) return value;
+  if (types.isPromise(value)) void Promise.prototype.then.call(value, undefined, () => {});
+  return fail('worker-authority-denied');
 }
 function requireCurrentAuthority(assertCurrentAuthority: () => true): void {
   const result: unknown = assertCurrentAuthority();
@@ -1386,7 +1488,10 @@ export class FrozenBrowserValidator {
   private records: JournalRecord[];
   private journalQueue: Promise<unknown> = Promise.resolve();
   private get runs(): Run[] {
-    return this.records.flatMap((record) => (record.kind === 'execution' ? [record.run] : []));
+    return this.records.flatMap((record) => {
+      const run = recordRun(record);
+      return run ? [run] : [];
+    });
   }
   private assets: Assets;
   private marker: Buffer;
@@ -1397,6 +1502,12 @@ export class FrozenBrowserValidator {
     controller: AbortController;
     promise: Promise<FrozenBrowserReport>;
   } | null = null;
+  private consumption: {
+    acceptance: FrozenBrowserAcceptance;
+    controller: AbortController;
+    promise: Promise<FrozenBrowserConsumption>;
+  } | null = null;
+  private forwardGuards = new Map<AbortSignal, () => void>();
   private reads = new Set<Promise<RecoveryInventory>>();
   private closing: Promise<void> | null = null;
   private broken = false;
@@ -1435,17 +1546,33 @@ export class FrozenBrowserValidator {
   static open(options: {
     workspace: WorkspaceStore;
     directory: string;
+    mode: 'consumption-only';
+    expectedIdentity: FrozenBrowserJournalIdentity;
+  }): Promise<FrozenBrowserConsumptionJournal>;
+  static open(options: {
+    workspace: WorkspaceStore;
+    directory: string;
     expectedIdentity?: FrozenBrowserJournalIdentity;
   }): Promise<FrozenBrowserValidator>;
   static async open(options: {
     workspace: WorkspaceStore;
     directory: string;
-    mode?: 'journal-only' | 'acceptance-only';
+    mode?: 'journal-only' | 'acceptance-only' | 'consumption-only';
     expectedIdentity?: FrozenBrowserJournalIdentity;
-  }): Promise<FrozenBrowserValidator | FrozenBrowserAcceptanceJournal | FrozenBrowserJournal> {
+  }): Promise<
+    | FrozenBrowserValidator
+    | FrozenBrowserConsumptionJournal
+    | FrozenBrowserAcceptanceJournal
+    | FrozenBrowserJournal
+  > {
     const mode = options.mode;
     const workspace = options.workspace;
-    if (mode !== undefined && mode !== 'journal-only' && mode !== 'acceptance-only')
+    if (
+      mode !== undefined &&
+      mode !== 'journal-only' &&
+      mode !== 'acceptance-only' &&
+      mode !== 'consumption-only'
+    )
       fail('invalid-validator-mode');
     const expected =
       options.expectedIdentity === undefined
@@ -1454,7 +1581,8 @@ export class FrozenBrowserValidator {
     const expectedIdentity = expected
       ? { ownerId: id(expected.ownerId), configurationDigest: sha256(expected.configurationDigest) }
       : undefined;
-    if (mode === 'acceptance-only' && !expectedIdentity) fail('worker-journal-identity-required');
+    if ((mode === 'acceptance-only' || mode === 'consumption-only') && !expectedIdentity)
+      fail('worker-journal-identity-required');
     const directory = resolve(options.directory);
     if (owners.has(directory)) fail('validator-already-open');
     owners.add(directory);
@@ -1618,14 +1746,14 @@ export class FrozenBrowserValidator {
           'contribution',
         ]);
         meta = {
-          version: m.version === 2 ? 2 : 1,
+          version: m.version === 3 ? 3 : m.version === 2 ? 2 : 1,
           owner: id(m.owner),
           configurationDigest: sha256(m.configurationDigest),
           attempts: integer(m.attempts, 0, limits.attempts),
           contribution: integer(m.contribution, 0, limits.contribution),
         };
         if (
-          (m.version !== 1 && m.version !== 2) ||
+          (m.version !== 1 && m.version !== 2 && m.version !== 3) ||
           meta.owner !== owner ||
           meta.configurationDigest !== configurationDigest ||
           meta.contribution !== meta.attempts * limits.context
@@ -1645,16 +1773,28 @@ export class FrozenBrowserValidator {
             exact(record, ['kind', 'run']);
             return { kind: 'execution', run: parseRun(record.run, meta, assets) };
           }
+          if (record.kind === 'consumed-acceptance')
+            return parseConsumedAcceptance(record, meta, assets);
           return parseAcceptance(record, meta);
         });
         if (
-          parsed.filter((r) => r.kind === 'execution').length !== meta.attempts ||
-          parsed.filter((r) => r.kind === 'offline-acceptance').length > acceptanceCapacity
+          parsed.filter((r) => recordRun(r)).length !== meta.attempts ||
+          parsed.filter((r) => recordAcceptance(r)).length > acceptanceCapacity
         )
           fail('missing-validator-accounting');
         if (
           new Set(parsed.map((r) => key(recordRequest(r)))).size !== parsed.length ||
-          new Set(parsed.map(recordId)).size !== parsed.length
+          new Set(
+            parsed.flatMap((r) => {
+              const acceptance = recordAcceptance(r),
+                run = recordRun(r);
+              return [
+                ...(acceptance ? [acceptance.acceptanceId] : []),
+                ...(run ? [run.intent.runId] : []),
+              ];
+            }),
+          ).size !==
+            parsed.length + parsed.filter((r) => r.kind === 'consumed-acceptance').length
         )
           fail('corrupt-validator-identities');
         records = parsed;
@@ -1705,6 +1845,18 @@ export class FrozenBrowserValidator {
         )
           await validator.finalize(run);
       }
+      if (mode === 'consumption-only')
+        return Object.freeze({
+          accept: (request: FrozenBrowserRequest, assertCurrentAuthority: () => true) =>
+            validator.accept(request, assertCurrentAuthority),
+          consume: (
+            acceptance: FrozenBrowserAcceptance,
+            sample: FrozenBrowserCurrentAllowance,
+            signal: AbortSignal,
+          ) => validator.consume(acceptance, sample, signal),
+          inventory: () => validator.inventory(),
+          close: () => validator.close(),
+        });
       if (mode === 'acceptance-only')
         return Object.freeze({
           accept: (request: FrozenBrowserRequest, assertCurrentAuthority: () => true) =>
@@ -1729,24 +1881,18 @@ export class FrozenBrowserValidator {
     const read = this.journalQueue.then(async () => {
       await this.guard();
       const runs = this.records.map((record): RecoveryRecord => {
-        if (record.kind === 'offline-acceptance')
-          return { kind: record.kind, state: 'accepted', ...acknowledgment(record) };
-        const run = record.run;
-        const { intent, ledger, result } = run;
-        if (result.kind === 'pending') return fail('validator-result-not-recorded');
-        const saved = result.kind === 'recorded' ? result : result.report;
-        return {
-          runId: intent.runId,
-          request: intent.request,
-          requestDigest: sha256(intent.requestDigest),
-          configurationDigest: sha256(intent.configurationDigest),
-          admittedAt: intent.admittedAt,
-          deadline: intent.deadline,
-          ...ledger,
-          ...(result.kind === 'recorded'
-            ? { state: 'recorded', outcome: saved.outcome, cleanup: 'unresolved' }
-            : { state: 'settled', outcome: result.report.outcome, cleanup: result.report.cleanup }),
-        };
+        const acceptance = recordAcceptance(record),
+          run = recordRun(record);
+        if (acceptance)
+          return {
+            kind: 'offline-acceptance',
+            state: 'accepted',
+            ...acknowledgment(acceptance),
+            ...(run ? { consumption: recoveryRun(run) } : {}),
+          };
+        const observation = recoveryRun(run!);
+        if (observation.state === 'pending') return fail('validator-result-not-recorded');
+        return observation;
       });
       return structuredClone({
         ownerId: this.meta.owner,
@@ -1795,9 +1941,22 @@ export class FrozenBrowserValidator {
       );
     }
   }
-  private async save(run?: Run, signal?: AbortSignal) {
+  private save(run?: Run, signal?: AbortSignal): Promise<void> {
+    const operation = this.journalQueue.then(() => this.saveNow(run, signal));
+    this.journalQueue = operation.catch(() => {});
+    return operation;
+  }
+  private async saveNow(run?: Run, signal?: AbortSignal) {
     try {
       await this.guard();
+      if (signal) {
+        try {
+          this.forwardGuards.get(signal)?.();
+        } catch {
+          if (run?.result.kind === 'recorded' && run.result.outcome.kind !== 'uncertain')
+            run.result.outcome = { kind: 'cancelled', code: 'cancelled-or-allowance-exhausted' };
+        }
+      }
       if (
         run?.result.kind === 'recorded' &&
         run.result.outcome.kind !== 'uncertain' &&
@@ -1812,7 +1971,8 @@ export class FrozenBrowserValidator {
         )
         .run(body, digest(this.meta));
       if (run) {
-        const record: JournalRecord = { kind: 'execution', run };
+        const record =
+          this.records.find((r) => recordRun(r) === run) ?? fail('missing-validator-run');
         const saved = this.meta.version === 1 ? run : record;
         const value = JSON.stringify(saved);
         if (Buffer.byteLength(value) > limits.evidence + limits.control)
@@ -1821,11 +1981,7 @@ export class FrozenBrowserValidator {
           .prepare(
             'INSERT INTO runs VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body,digest=excluded.digest',
           )
-          .run(
-            this.records.findIndex((r) => r.kind === 'execution' && r.run === run) + 1,
-            value,
-            digest(saved),
-          );
+          .run(this.records.indexOf(record) + 1, value, digest(saved));
       }
       this.db.exec('COMMIT');
     } catch (error) {
@@ -1849,17 +2005,14 @@ export class FrozenBrowserValidator {
     const operation = this.journalQueue.then(async () => {
       if (this.broken) fail('validator-journal-failed');
       const existing = this.records.find((r) => key(recordRequest(r)) === key(request));
-      if (existing && (existing.kind !== 'offline-acceptance' || !same(existing.request, request)))
+      if (existing && (!recordAcceptance(existing) || !same(recordRequest(existing), request)))
         fail('validator-identity-conflict');
-      if (
-        !existing &&
-        this.records.filter((r) => r.kind === 'offline-acceptance').length >= acceptanceCapacity
-      )
+      if (!existing && this.records.filter((r) => recordAcceptance(r)).length >= acceptanceCapacity)
         fail('validator-acceptance-limit');
       await this.guard();
-      if (existing?.kind === 'offline-acceptance') {
+      if (existing && recordAcceptance(existing)) {
         requireCurrentAuthority(assertCurrentAuthority);
-        return acknowledgment(existing);
+        return acknowledgment(recordAcceptance(existing)!);
       }
       const acceptedAt = integer(Date.now());
       const deadline = integer(acceptedAt + request.allowanceMs);
@@ -1873,7 +2026,7 @@ export class FrozenBrowserValidator {
         acceptedAt,
         deadline,
       };
-      const meta: Meta = { ...this.meta, version: 2 };
+      const meta: Meta = { ...this.meta, version: this.meta.version === 3 ? 3 : 2 };
       const records = [...this.records, record];
       const values = (this.meta.version === 1 ? records : [record]).map((r) => ({
         index: records.indexOf(r) + 1,
@@ -1911,14 +2064,198 @@ export class FrozenBrowserValidator {
     this.journalQueue = operation.catch(() => {});
     return operation;
   }
+  private consume(
+    value: FrozenBrowserAcceptance,
+    sample: FrozenBrowserCurrentAllowance,
+    signal: AbortSignal,
+  ): Promise<FrozenBrowserConsumption> {
+    let accepted: FrozenBrowserAcceptance;
+    try {
+      if (this.closing || this.broken) fail('validator-closed');
+      const snapshot = exact(admissionSnapshot(value), [
+        'acceptanceId',
+        'request',
+        'requestDigest',
+        'configurationDigest',
+        'ownerId',
+        'acceptedAt',
+        'deadline',
+      ]);
+      accepted = acknowledgment(
+        parseAcceptance({ kind: 'offline-acceptance', ...snapshot }, this.meta),
+      );
+      const retained = this.records.find((r) => key(recordRequest(r)) === key(accepted.request));
+      if (
+        !retained ||
+        !recordAcceptance(retained) ||
+        !same(acknowledgment(recordAcceptance(retained)!), accepted)
+      )
+        fail('validator-identity-conflict');
+      if (typeof sample !== 'function') fail('invalid-worker-authority-guard');
+      signal.throwIfAborted();
+      currentAllowance(sample);
+      if (this.consumption) {
+        if (!same(this.consumption.acceptance, accepted)) fail('validator-busy');
+        return this.consumption.promise.then((result) => {
+          signal.throwIfAborted();
+          currentAllowance(sample);
+          return structuredClone(result);
+        });
+      }
+      if (this.active) fail('validator-busy');
+    } catch (error) {
+      return Promise.reject(error);
+    }
+    const controller = new AbortController();
+    const abort = () => controller.abort(new Error('action-cancelled'));
+    signal.addEventListener('abort', abort, { once: true });
+    if (signal.aborted) abort();
+    let lastWorkerTime: number | undefined;
+    const workerTime = () => {
+      const now = integer(Date.now());
+      if (lastWorkerTime !== undefined && now < lastWorkerTime) fail('invalid-worker-clock');
+      lastWorkerTime = now;
+      return now;
+    };
+    const authority = () => {
+      if (this.closing || this.broken) fail('validator-closed');
+      controller.signal.throwIfAborted();
+      const remaining = currentAllowance(sample);
+      if (this.closing || this.broken) fail('validator-closed');
+      controller.signal.throwIfAborted();
+      return remaining;
+    };
+    const admission = this.journalQueue.then(async () => {
+      authority();
+      await this.guard();
+      const record =
+        this.records.find((r) => recordAcceptance(r)?.acceptanceId === accepted.acceptanceId) ??
+        fail('validator-identity-conflict');
+      if (!same(acknowledgment(recordAcceptance(record)!), accepted))
+        fail('validator-identity-conflict');
+      if (record.kind === 'consumed-acceptance') {
+        authority();
+        return record.execution.run;
+      }
+      if (this.runs.some((r) => r.ledger.build === 'unknown'))
+        fail('validator-daemon-build-unresolved');
+      if (
+        this.runs.some(
+          (r) => r.result.kind !== 'settled' || r.result.report.cleanup.kind === 'incomplete',
+        )
+      )
+        fail('validator-unsettled');
+      if (
+        this.meta.attempts >= limits.attempts ||
+        this.meta.contribution + limits.context > limits.contribution
+      )
+        fail('validator-lifetime-limit');
+      const runId = randomUUID();
+      const nonce = randomBytes(32).toString('hex');
+      const admittedAt = workerTime();
+      const allowance = Math.min(authority(), accepted.request.allowanceMs);
+      const deadline = integer(admittedAt + allowance);
+      const run: Run = {
+        intent: {
+          runId,
+          request: accepted.request,
+          requestDigest: accepted.requestDigest,
+          configurationDigest: accepted.configurationDigest,
+          nonce,
+          owner: accepted.ownerId,
+          imageTag: `eitri-frozen-browser:${runId}`,
+          containerName: `eitri-frozen-browser-${runId}`,
+          admittedAt,
+          deadline,
+          reservation: limits.context,
+        },
+        ledger: { build: 'not-started', image: { kind: 'none' }, container: { kind: 'none' } },
+        result: { kind: 'pending' },
+      };
+      const consumed: ConsumedAcceptanceRecord = {
+        kind: 'consumed-acceptance',
+        acceptance: recordAcceptance(record)!,
+        execution: {
+          admission: {
+            kind: 'current-action-allowance',
+            translatedAt: admittedAt,
+            translatedAllowanceMs: allowance,
+          },
+          run,
+        },
+      };
+      const meta: Meta = {
+        ...this.meta,
+        version: 3,
+        attempts: this.meta.attempts + 1,
+        contribution: this.meta.contribution + limits.context,
+      };
+      const index = this.records.indexOf(record);
+      let checkingAuthority = false;
+      try {
+        this.db.exec('BEGIN IMMEDIATE');
+        this.db
+          .prepare('UPDATE meta SET body=?,digest=? WHERE id=1')
+          .run(JSON.stringify(meta), digest(meta));
+        this.db
+          .prepare('UPDATE runs SET body=?,digest=? WHERE id=?')
+          .run(JSON.stringify(consumed), digest(consumed), index + 1);
+        checkingAuthority = true;
+        const now = workerTime();
+        const remaining = authority();
+        if (now >= deadline || deadline - now > remaining) fail('worker-authority-denied');
+        checkingAuthority = false;
+        this.db.exec('COMMIT');
+      } catch (error) {
+        if (!checkingAuthority) this.broken = true;
+        try {
+          if (this.db.isTransaction) this.db.exec('ROLLBACK');
+        } catch (rollbackError) {
+          this.broken = true;
+          throw rollbackError;
+        }
+        throw error;
+      }
+      this.meta = meta;
+      this.records[index] = consumed;
+      this.forwardGuards.set(controller.signal, () => {
+        try {
+          const now = workerTime();
+          const remaining = authority();
+          if (now >= deadline || deadline - now > remaining) fail('worker-authority-denied');
+        } catch (error) {
+          controller.abort(error);
+          throw error;
+        }
+      });
+      return run;
+    });
+    this.journalQueue = admission.catch(() => {});
+    const promise = admission.then(async (run) => {
+      if (run.result.kind === 'pending') await this.executeAdmitted(run, controller);
+      authority();
+      this.forwardGuards.get(controller.signal)?.();
+      const observation = recoveryRun(run);
+      if (observation.state === 'pending') return fail('validator-result-not-recorded');
+      return { acceptanceId: accepted.acceptanceId, run: observation };
+    });
+    const owned = { acceptance: accepted, controller, promise };
+    this.consumption = owned;
+    void promise
+      .finally(() => {
+        signal.removeEventListener('abort', abort);
+        this.forwardGuards.delete(controller.signal);
+        if (this.consumption === owned) this.consumption = null;
+      })
+      .catch(() => {});
+    return promise.then((result) => structuredClone(result));
+  }
   validate(value: FrozenBrowserRequest, signal: AbortSignal): Promise<FrozenBrowserReport> {
     try {
       if (this.closing || this.broken) fail('validator-closed');
       const request = frozenBrowserRequest(value),
         requestDigest = digest(request);
-      if (
-        this.records.some((r) => r.kind === 'offline-acceptance' && key(r.request) === key(request))
-      )
+      if (this.records.some((r) => recordAcceptance(r) && key(recordRequest(r)) === key(request)))
         fail('validator-acceptance-not-executable');
       const existing = this.runs.find((r) => key(r.intent.request) === key(request));
       if (existing && existing.intent.requestDigest !== requestDigest)
@@ -1932,7 +2269,7 @@ export class FrozenBrowserValidator {
         if (existing.result.kind !== 'settled') return fail('validator-unsettled');
         return Promise.resolve(structuredClone(existing.result.report));
       }
-      if (this.active) fail('validator-busy');
+      if (this.active || this.consumption) fail('validator-busy');
       if (this.runs.some((r) => r.ledger.build === 'unknown'))
         fail('validator-daemon-build-unresolved');
       if (
@@ -1969,6 +2306,7 @@ export class FrozenBrowserValidator {
     input?: Buffer,
     stdoutLimit = limits.control,
   ): Promise<ClientResult> {
+    if (signal) this.forwardGuards.get(signal)?.();
     if (signal?.aborted) return Promise.resolve({ kind: 'lost', code: 'client-aborted' });
     if (deadline <= Date.now()) return Promise.resolve({ kind: 'lost', code: 'client-timeout' });
     return new Promise((resolveResult) => {
@@ -2023,7 +2361,9 @@ export class FrozenBrowserValidator {
     });
   }
   private async checked(args: string[], deadline: number, signal?: AbortSignal): Promise<Buffer> {
+    if (signal) this.forwardGuards.get(signal)?.();
     const result = await this.client(args, deadline, signal);
+    if (signal) this.forwardGuards.get(signal)?.();
     if (result.kind !== 'exited' || result.status !== 0) return fail('docker-operation-failed');
     return result.stdout;
   }
@@ -2081,10 +2421,25 @@ export class FrozenBrowserValidator {
       ledger: { build: 'not-started', image: { kind: 'none' }, container: { kind: 'none' } },
       result: { kind: 'pending' },
     };
-    this.records.push({ kind: 'execution', run });
-    this.meta.attempts++;
-    this.meta.contribution += limits.context;
-    await this.save(run);
+    const admission = this.journalQueue.then(async () => {
+      this.records.push({ kind: 'execution', run });
+      this.meta.attempts++;
+      this.meta.contribution += limits.context;
+      await this.saveNow(run);
+    });
+    this.journalQueue = admission.catch(() => {});
+    await admission;
+    return this.executeAdmitted(run, controller);
+  }
+  private async executeAdmitted(
+    run: Run,
+    controller: AbortController,
+  ): Promise<FrozenBrowserReport> {
+    const { request, admittedAt, runId } = run.intent;
+    const forward = () => {
+      controller.signal.throwIfAborted();
+      this.forwardGuards.get(controller.signal)?.();
+    };
     const timer = setTimeout(
       () => controller.abort(new Error('allowance-exhausted')),
       Math.max(1, run.intent.deadline - Date.now()),
@@ -2094,8 +2449,9 @@ export class FrozenBrowserValidator {
     let reportEvidence: FrozenBrowserEvidence | null = null;
     let result: FrozenBrowserOutcome;
     try {
+      forward();
       const files = await this.workspace.readFrozen(request.frozen, signal);
-      signal.throwIfAborted();
+      forward();
       const manifest: Manifest = files
         .map((f) => ({ path: f.virtualPath, size: f.bytes.length, sha256: checksum(f.bytes) }))
         .sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
@@ -2144,7 +2500,7 @@ export class FrozenBrowserValidator {
       run.ledger.build = 'unknown';
       run.ledger.image = { kind: 'intent' };
       await this.save(run);
-      signal.throwIfAborted();
+      forward();
       const build = await this.client(
         [
           'build',
@@ -2167,6 +2523,7 @@ export class FrozenBrowserValidator {
       if (build.kind === 'lost') return fail('daemon-build-unresolved');
       run.ledger.build = 'completed';
       await this.save(run);
+      forward();
       if (
         build.status !== 0 ||
         /\[auth\]|\bpulling\b|pull access|https?:\/\/|failed to (?:authorize|fetch .*token)|dial tcp|proxyconnect|no such host/i.test(
@@ -2196,6 +2553,7 @@ export class FrozenBrowserValidator {
         fail('derived-image-binding');
       run.ledger.image = { kind: 'acquired', id: derivedId };
       await this.save(run);
+      forward();
       const bindings = [
         `EITRI_DEADLINE=${deadline}`,
         `EITRI_NONCE=${run.intent.nonce}`,
@@ -2204,7 +2562,7 @@ export class FrozenBrowserValidator {
       const expectedEnv = envSet([...before.env, ...bindings]);
       run.ledger.container = { kind: 'intent' };
       await this.save(run);
-      signal.throwIfAborted();
+      forward();
       const created = containerId(
         (
           await this.checked(
@@ -2259,9 +2617,10 @@ export class FrozenBrowserValidator {
       );
       run.ledger.container = { kind: 'acquired', id: created };
       await this.save(run);
+      forward();
       const container = await this.inspect('container', created, deadline, signal);
       const applied = this.applied(run, container, derivedId, expectedEnv);
-      signal.throwIfAborted();
+      forward();
       const execution = await this.client(
         ['start', '-a', created],
         deadline,
@@ -2317,6 +2676,7 @@ export class FrozenBrowserValidator {
         observations: parsed.observed,
         png: parsed.png,
       });
+      forward();
       result = classify(request, parsed.observed);
     } catch {
       result =
@@ -2328,9 +2688,19 @@ export class FrozenBrowserValidator {
     } finally {
       clearTimeout(timer);
     }
+    try {
+      forward();
+    } catch {
+      controller.abort(new Error('worker-authority-denied'));
+    }
     if (signal.aborted && result.kind !== 'uncertain')
       result = { kind: 'cancelled', code: 'cancelled-or-allowance-exhausted' };
     await this.guard();
+    try {
+      forward();
+    } catch {
+      controller.abort(new Error('worker-authority-denied'));
+    }
     if (signal.aborted && result.kind !== 'uncertain')
       result = { kind: 'cancelled', code: 'cancelled-or-allowance-exhausted' };
     run.result = { kind: 'recorded', outcome: result, evidence: reportEvidence };
@@ -2600,10 +2970,14 @@ export class FrozenBrowserValidator {
   close(): Promise<void> {
     if (this.closing) return this.closing;
     const active = this.active;
+    const consumption = this.consumption;
     this.closing = Promise.resolve().then(async () => {
       active?.controller.abort(new Error('validator-closing'));
+      consumption?.controller.abort(new Error('validator-closing'));
       try {
-        await active?.promise;
+        const drained = await Promise.allSettled([active?.promise, consumption?.promise]);
+        if (drained.some((r) => r.status === 'rejected') && this.broken)
+          fail('validator-journal-failed');
       } finally {
         await this.journalQueue;
         await Promise.allSettled(this.reads);
