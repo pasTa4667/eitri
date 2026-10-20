@@ -1,0 +1,5 @@
+6890e679a025e341f387f5e78bb5f7f05abdf37809be57b6a16e5e3879528dad  ../eitri-worker-cleanup-next/src/frozen-browser.ts
+351ea7da0686f52ffe5843f3ee43a8d4416d55d7a15f0f688f2e3ed0c056637a  ../eitri-worker-cleanup-next/test/frozen-browser-cleanup-crash-worker.ts
+f82e3fc52bb059d2ceb178974ac74aa0f517a6f8f2feb5a028d7f61e15b671fa  ../eitri-worker-cleanup-next/test/frozen-browser-cleanup-crash.test.ts
+a0bc5820d7194778077248a6f411cdfffd7019463ff7d9659f2f6b4c3af3a465  ../eitri-worker-cleanup-next/test/frozen-browser-cleanup-fixture.ts
+8dec53d309beb29a4808e7975aef11310c9b09d06033ac9f37bf1314ff68def0  ../eitri-worker-cleanup-next/test/frozen-browser-cleanup-reconciliation.test.ts

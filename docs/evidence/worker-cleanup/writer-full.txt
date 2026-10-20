@@ -1,0 +1,1865 @@
+npm notice run eitri@0.1.0 verify:all
+npm notice run npm run verify && npm run lint:rust && npm run format:check:rust && npm run test:operator
+npm notice run eitri@0.1.0 verify
+npm notice run npm run lint:ts && npm run format:check:ts && npm run check && npm test
+npm notice run eitri@0.1.0 lint:ts
+npm notice run oxlint --deny-warnings src test scripts prototypes
+npm notice run eitri@0.1.0 format:check:ts
+npm notice run oxfmt --check '**/*.{ts,mjs}' package.json tsconfig.json .oxfmtrc.json
+Checking formatting...
+
+All matched files use the correct format.
+Finished in 8ms on 77 files using 12 threads.
+npm notice run eitri@0.1.0 check
+npm notice run tsc --noEmit && node --check scripts/doctor.mjs && node --check scripts/check-sdk.mjs && node --check prototypes/sdk-compatibility.mjs && node --check prototypes/chromium/probe.mjs && node --check prototypes/chromium/run.mjs && node --check prototypes/chromium/policy.mjs
+npm notice run eitri@0.1.0 test
+npm notice run node --test test/*.test.ts test/*.test.mjs
+✔ after-source-freeze callback entry at D-1 with withheld wakeups (2052.069ms)
+✔ after-source-freeze callback entry at D+0 with withheld wakeups (1844.658875ms)
+✔ after-source-freeze callback entry at D+1 with withheld wakeups (2041.870042ms)
+✔ after-source-selection-receipt callback entry at D-1 with withheld wakeups (2123.496458ms)
+✔ after-source-selection-receipt callback entry at D+0 with withheld wakeups (2374.775125ms)
+✔ after-source-selection-receipt callback entry at D+1 with withheld wakeups (2694.22225ms)
+✔ after-worker-intent callback entry at D-1 with withheld wakeups (3565.027416ms)
+✔ after-worker-intent callback entry at D+0 with withheld wakeups (2364.05475ms)
+✔ after-worker-intent callback entry at D+1 with withheld wakeups (2628.594833ms)
+✔ controller expiry and reopening preserve canonical request and historical acceptance bytes (3694.057333ms)
+✔ unsafe nested action-source endpoint parks recovery without rewriting its JSON (3077.7ms)
+✔ model delayed wakeup registration at 75 never renews the admitted endpoint (88.648416ms)
+✔ model delayed wakeup registration at 100 never renews the admitted endpoint (54.844333ms)
+✔ tool delayed wakeup registration at 75 never renews the admitted endpoint (100.842375ms)
+✔ tool delayed wakeup registration at 100 never renews the admitted endpoint (76.334125ms)
+✔ model completion at D-1 with withheld wakeups (42.518708ms)
+✔ model completion at D+0 with withheld wakeups (37.752958ms)
+✔ model completion at D+1 with withheld wakeups (35.163959ms)
+✔ tool completion at D-1 with withheld wakeups (57.758208ms)
+✔ tool completion at D+0 with withheld wakeups (40.110875ms)
+✔ tool completion at D+1 with withheld wakeups (52.990541ms)
+✔ model early wakeup rearms against controller time and old canceled delivery cannot affect Retry (41.878584ms)
+✔ tool early wakeup rearms against controller time and old canceled delivery cannot affect Retry (71.464583ms)
+✔ progress assessment allows confirmed self-transition bookkeeping (93.62625ms)
+✔ progress assessment denies expiry during metadata (62.888625ms)
+✔ no-fix assessment allows confirmed self-transition bookkeeping (68.256208ms)
+✔ no-fix assessment denies expiry during metadata (103.788958ms)
+✔ invalid or backward controller clock -1 denies new effects (44.681209ms)
+✔ invalid or backward controller clock 1.5 denies new effects (45.014958ms)
+✔ invalid or backward controller clock NaN denies new effects (49.222292ms)
+✔ invalid or backward controller clock 9007199254740992 denies new effects (42.468625ms)
+✔ invalid or backward controller clock 999 denies new effects (34.961959ms)
+✔ Retry supersedes confirmed assessment before old bookkeeping and retirement (75.035875ms)
+✔ Retry supersedes confirmed baseline-stop before old bookkeeping and retirement (66.192333ms)
+✔ queued action-result admission preserves confirmed completion without Retry (51.30975ms)
+✔ queued action-result admission rejects persisted Retry revocation (72.729333ms)
+✔ staged action-result transaction commits without Retry (65.022709ms)
+✔ staged action-result transaction rolls back after persisted Retry (70.925167ms)
+✔ model final retirement sample at D-1 rejects late success (78.258709ms)
+✔ model final retirement sample at D+0 rejects late success (34.162125ms)
+✔ model final retirement sample at D+1 rejects late success (29.637709ms)
+✔ tool final retirement sample at D-1 rejects late success (61.333583ms)
+✔ tool final retirement sample at D+0 rejects late success (40.57625ms)
+✔ tool final retirement sample at D+1 rejects late success (43.619208ms)
+✔ derived action endpoint validates safe integer addition without changing the persisted tuple (0.63625ms)
+✔ admission uses one charge/start sample with 200 case allowance and fixed clock (57.725834ms)
+✔ admission uses one charge/start sample with 600000 case allowance and fixed clock (73.468875ms)
+✔ admission uses one charge/start sample with 200 case allowance and advancing clock (50.525292ms)
+✔ admission uses one charge/start sample with 600000 case allowance and advancing clock (49.220833ms)
+✔ legacy model action conservatively recovers at 500 without reconstructing a lifetime (48.844ms)
+✔ legacy model action conservatively recovers at 61000 without reconstructing a lifetime (45.018834ms)
+✔ legacy model action conservatively recovers at 999999 without reconstructing a lifetime (39.897666ms)
+✔ legacy tool action conservatively recovers at 500 without reconstructing a lifetime (43.175875ms)
+✔ legacy tool action conservatively recovers at 61000 without reconstructing a lifetime (45.864083ms)
+✔ legacy tool action conservatively recovers at 999999 without reconstructing a lifetime (50.119125ms)
+✔ unsafe recovered endpoint fails closed without replay or rewriting the legacy action (41.985166ms)
+✔ provider permission at D-1 is checked after native setup (36.51875ms)
+✔ provider permission at D+0 is checked after native setup (25.184917ms)
+✔ provider permission at D+1 is checked after native setup (26.22175ms)
+✔ run_check invalid-clock subprocess detects deferred abort exceptions and hanging interruption controls (2041.98275ms)
+✔ model asynchronous wakeup sampling errors abort only that lifetime (42.542667ms)
+✔ tool asynchronous wakeup sampling errors abort only that lifetime (43.397167ms)
+✔ model receipt notification follows terminal publication before deadline revocation (28.001459ms)
+✔ model receipt notification follows terminal publication before epoch revocation (28.126084ms)
+✔ id mismatch denies permission, sampling, stop and finish before charging (41.917958ms)
+✔ caseId mismatch denies permission, sampling, stop and finish before charging (33.544167ms)
+✔ epoch mismatch denies permission, sampling, stop and finish before charging (45.044625ms)
+✔ kind mismatch denies permission, sampling, stop and finish before charging (42.865792ms)
+✔ startedAt mismatch denies permission, sampling, stop and finish before charging (39.704291ms)
+✔ limitMs mismatch denies permission, sampling, stop and finish before charging (48.26325ms)
+✔ usedAtStart mismatch denies permission, sampling, stop and finish before charging (69.004792ms)
+✔ case-epoch mismatch denies permission, sampling, stop and finish before charging (46.828708ms)
+✔ confirmed progress cancels its execution wakeup while only bookkeeping remains (43.858333ms)
+✔ confirmed no-fix cancels its execution wakeup while only bookkeeping remains (42.107459ms)
+✔ confirmed baseline-stop cancels its execution wakeup while only bookkeeping remains (28.135583ms)
+✔ artifact reads stay passive across pagination, restart, missing directories, and serialized expiry (451.332958ms)
+✔ trusted check output rejects forged-ids without accepting evidence (48.066959ms)
+✔ trusted check output rejects live-result without accepting evidence (37.622084ms)
+✔ trusted check output rejects check-count without accepting evidence (34.89ms)
+✔ trusted check output rejects case-count without accepting evidence (1902.488833ms)
+✔ trusted check output rejects check-bytes without accepting evidence (53.444916ms)
+✔ trusted check output rejects case-bytes without accepting evidence (409.338125ms)
+✔ native manifests bind every evidence reference to its case, action, receipt, revision and configuration (107.407375ms)
+✔ artifact MIME validation bounds UTF-8, labels, PNG structure, dimensions and decompression (13.396416ms)
+✔ private immutable blobs reject unsafe identities, corruption, links and replaced directories (65.247458ms)
+✔ callback receives its actual admitted action and a frozen scalar request with the remaining action limit (152.344917ms)
+✔ capacity two dispatches separate requests and records only each owning case and action (174.258792ms)
+✔ dispatch denies id authority before callback effects (51.031875ms)
+✔ dispatch denies caseId authority before callback effects (51.210583ms)
+✔ dispatch denies epoch authority before callback effects (37.112ms)
+✔ dispatch denies kind authority before callback effects (51.209542ms)
+✔ dispatch denies startedAt authority before callback effects (40.304583ms)
+✔ dispatch denies limitMs authority before callback effects (28.321208ms)
+✔ dispatch denies usedAtStart authority before callback effects (47.588292ms)
+✔ dispatch denies expired authority before callback effects (99.974166ms)
+✔ infrastructure retains existing repair history across restart (334.401292ms)
+✔ infrastructure retains existing repair history and pending pause across restart (278.691583ms)
+✔ unrelated-failure retains existing repair history across restart (268.251ms)
+✔ unrelated-failure retains existing repair history and pending pause across restart (263.269ms)
+✔ cancelled retains existing repair history across restart (257.515791ms)
+✔ cancelled retains existing repair history and pending pause across restart (249.299625ms)
+✔ uncertain retains existing repair history across restart (239.131ms)
+✔ uncertain retains existing repair history and pending pause across restart (279.775792ms)
+✔ cleanup-incomplete retains existing repair history across restart (295.504459ms)
+✔ cleanup-incomplete retains existing repair history and pending pause across restart (201.015167ms)
+✔ malformed callback result 0 stops without evidence or speculative repair (35.993292ms)
+✔ malformed callback result 1 stops without evidence or speculative repair (31.779958ms)
+✔ malformed callback result 2 stops without evidence or speculative repair (31.303584ms)
+✔ malformed callback result 3 stops without evidence or speculative repair (39.283708ms)
+✔ malformed callback result 4 stops without evidence or speculative repair (34.595791ms)
+✔ malformed callback result 5 stops without evidence or speculative repair (69.118917ms)
+✔ malformed callback result 6 stops without evidence or speculative repair (40.969875ms)
+✔ malformed callback result 7 stops without evidence or speculative repair (43.846084ms)
+✔ malformed callback result 8 stops without evidence or speculative repair (40.390625ms)
+✔ malformed callback result 9 stops without evidence or speculative repair (51.811291ms)
+✔ malformed callback result 10 stops without evidence or speculative repair (43.167458ms)
+✔ malformed callback result 11 stops without evidence or speculative repair (78.924542ms)
+✔ malformed callback result 12 stops without evidence or speculative repair (32.887333ms)
+✔ malformed callback result 13 stops without evidence or speculative repair (31.479ms)
+✔ malformed callback result 14 stops without evidence or speculative repair (50.847417ms)
+✔ malformed callback result 15 stops without evidence or speculative repair (33.297125ms)
+✔ malformed callback result 16 stops without evidence or speculative repair (45.09825ms)
+✔ malformed callback result 17 stops without evidence or speculative repair (47.261167ms)
+✔ malformed callback result 18 stops without evidence or speculative repair (81.33325ms)
+✔ malformed callback result 19 stops without evidence or speculative repair (58.581459ms)
+✔ malformed callback result 20 stops without evidence or speculative repair (39.971958ms)
+✔ malformed callback result 21 stops without evidence or speculative repair (43.966291ms)
+✔ malformed callback result 22 stops without evidence or speculative repair (35.324708ms)
+✔ malformed callback result 23 stops without evidence or speculative repair (36.854792ms)
+✔ comma-joined envelope key with inherited type and check stops without evidence or speculative repair (46.480958ms)
+✔ inherited completed envelope keys stops without evidence or speculative repair (33.764334ms)
+✔ extra comma-containing completed envelope key stops without evidence or speculative repair (33.385708ms)
+✔ inherited non-behavior type with a comma-containing key stops without evidence or speculative repair (53.805042ms)
+✔ extra comma-containing non-behavior key stops without evidence or speculative repair (39.070333ms)
+✔ comma-joined receipt key with inherited candidate and configuration stops without evidence or speculative repair (52.336041ms)
+✔ extra comma-containing receipt key stops without evidence or speculative repair (29.498208ms)
+✔ inherited receipt fields stops without evidence or speculative repair (30.417291ms)
+✔ comma-joined output key with inherited bytes and label stops without evidence or speculative repair (30.846292ms)
+✔ extra comma-containing output key stops without evidence or speculative repair (33.7965ms)
+✔ inherited output fields stops without evidence or speculative repair (30.9535ms)
+✔ symbol completed envelope key stops without evidence or speculative repair (45.45ms)
+✔ symbol receipt key stops without evidence or speculative repair (32.641625ms)
+✔ symbol output key stops without evidence or speculative repair (27.96225ms)
+✔ timed-out callback cannot change a completed result from a newer Retry epoch (561.057125ms)
+✔ missing callback cannot admit evidence or override pause (30.014459ms)
+✔ reject callback cannot admit evidence or override pause (44.056917ms)
+✔ paused-reject callback cannot admit evidence or override pause (42.078833ms)
+✔ expired-return callback cannot admit evidence or override pause (31.183166ms)
+✔ paused-expired-return callback cannot admit evidence or override pause (54.886708ms)
+✔ late callback cannot admit evidence or override pause (531.845625ms)
+✔ paused-late callback cannot admit evidence or override pause (527.731042ms)
+✔ SIGKILL after durable check stop before tool settlement preserves disposition without replay (483.276041ms)
+✔ SIGKILL after durable check stop before tool settlement with pending pause preserves disposition without replay (444.2205ms)
+✔ completed passing baseline retains ordinary checkpoint behavior during pending pause (35.644208ms)
+✔ completed failing baseline retains ordinary checkpoint behavior during pending pause (35.156083ms)
+✔ native write guard rejects expiry between callback admission and evidence persistence (36.490416ms)
+✔ captured Chromium 156 sandbox status is positively verified (0.694875ms)
+✔ sandbox status accepts multiple-space columns and CRLF line endings (0.0935ms)
+✔ sandbox status requires the rows rather than the summary or optional protections (0.071542ms)
+✔ sandbox status rejects missing Layer 1 Sandbox (0.067625ms)
+✔ sandbox status rejects negative Layer 1 Sandbox (0.058666ms)
+✔ sandbox status rejects duplicate Layer 1 Sandbox (0.064292ms)
+✔ sandbox status rejects conflicting Layer 1 Sandbox in either order (0.054959ms)
+✔ sandbox status rejects ambiguous Layer 1 Sandbox values (0.089042ms)
+✔ sandbox status rejects missing PID namespaces (0.053291ms)
+✔ sandbox status rejects negative PID namespaces (0.092083ms)
+✔ sandbox status rejects duplicate PID namespaces (0.056708ms)
+✔ sandbox status rejects conflicting PID namespaces in either order (0.046ms)
+✔ sandbox status rejects ambiguous PID namespaces values (0.049792ms)
+✔ sandbox status rejects missing Network namespaces (0.040042ms)
+✔ sandbox status rejects negative Network namespaces (0.508625ms)
+✔ sandbox status rejects duplicate Network namespaces (0.038833ms)
+✔ sandbox status rejects conflicting Network namespaces in either order (0.035291ms)
+✔ sandbox status rejects ambiguous Network namespaces values (0.0455ms)
+✔ sandbox status rejects missing Seccomp-BPF sandbox (0.036041ms)
+✔ sandbox status rejects negative Seccomp-BPF sandbox (0.034416ms)
+✔ sandbox status rejects duplicate Seccomp-BPF sandbox (0.030042ms)
+✔ sandbox status rejects conflicting Seccomp-BPF sandbox in either order (0.037417ms)
+✔ sandbox status rejects ambiguous Seccomp-BPF sandbox values (0.033375ms)
+✔ sandbox status rejects nonexact positive values (0.045792ms)
+✔ summary and kernel seccomp evidence cannot establish Chromium sandbox status (0.061ms)
+✔ namespace candidate preserves the pinned daemon baseline and adds only six exact ARM64 rules (15.261333ms)
+✔ namespace chroot candidate adds only one ARM64 chroot rule to the six-rule namespace candidate (2.504458ms)
+✔ baseline explicitly accepts exact retained intent with detached concurrent retries but no check or artifact (2961.726167ms)
+✔ browser explicitly accepts exact retained intent with detached concurrent retries but no check or artifact (3164.906292ms)
+▶ callback entry never automatically accepts and unsupported or disabled checks have no capability
+  ✔ true unit (2135.176834ms)
+  ✔ false browser (2271.669209ms)
+  ✔ true browser (2677.486ms)
+✔ callback entry never automatically accepts and unsupported or disabled checks have no capability (7085.182458ms)
+✔ acceptance opt-in is absent or literal true with both prerequisites, snapshotted before awaits (3530.4645ms)
+✔ authority revoked by pause during journal open cannot accept and close drains the operation (2790.392125ms)
+✔ authority revoked by allowance during journal open cannot accept and close drains the operation (2481.503292ms)
+✔ authority revoked by case-budget during journal open cannot accept and close drains the operation (2499.926792ms)
+✔ authority revoked by epoch during journal open cannot accept and close drains the operation (2416.85175ms)
+✔ authority revoked by delete-action during journal open cannot accept and close drains the operation (2375.234209ms)
+✔ authority revoked by mutate-action during journal open cannot accept and close drains the operation (2655.039708ms)
+✔ authority revoked by change-source during journal open cannot accept and close drains the operation (2732.882917ms)
+✔ authority revoked by settle during journal open cannot accept and close drains the operation (2739.526792ms)
+✔ authority revoked by close during journal open cannot accept and close drains the operation (2783.809916ms)
+✔ signal timeout during acceptance await rejects without accepting and Retry cannot revive old capability (3397.124ms)
+✔ the final synchronous guard denies revocation after candidate preparation and preserves a reusable journal (2205.060792ms)
+✔ revocation after COMMIT rejects delivery but leaves matched historical acceptance without native evidence (2815.548ms)
+✔ SIGKILL before worker COMMIT recovers controller association without replay or new permission (3646.310125ms)
+✔ SIGKILL after worker COMMIT recovers controller association without replay or new permission (2921.134708ms)
+✔ baseline retains the original allowance and derives detached history without changing either owner (2937.369166ms)
+✔ browser retains the original allowance and derives detached history without changing either owner (3099.496042ms)
+✔ selected A remains the candidate intent after an edit to B and Retry cannot revive the old action (7860.483083ms)
+✔ same-key request mismatches conflict while another action key is absent (3768.400708ms)
+✔ pre-await configuration snapshot and immutable binding reject changed or omitted reopen options (173.143333ms)
+✔ new bindings require independent verified ownership before persistence or startup recovery (168.514875ms)
+✔ legacy and unsupported selections stay unrecorded without backfill (3498.551666ms)
+▶ unsupported check has no intent and final authority loss cannot record one
+  ✔ unit (2518.224791ms)
+  ✔ exhausted (2384.933459ms)
+  ✔ paused (2622.778417ms)
+✔ unsupported check has no intent and final authority loss cannot record one (7527.0525ms)
+✔ inspection reports missing, corrupt, busy and foreign journals as errors and always releases ownership (3046.145292ms)
+✔ accepted inspections serialize and close drains them before releasing storage (4624.601958ms)
+✔ SIGKILL after-worker-intent retains exact history without callback replay (5698.67975ms)
+✔ SIGKILL after-source-selection-receipt retains exact history without callback replay (4748.251125ms)
+✔ malformed binding options reject before any directory is created (116.67325ms)
+✔ retained intent parsing rejects source and digest mutations without changing history (2524.274167ms)
+✔ settled historical cleanup is detached and startup journal failure precedes case recovery (3470.407833ms)
+✔ default-clock baseline consumption settles once and preserves immutable history (5398.058542ms)
+✔ default-clock browser consumption settles once and preserves immutable history (5466.317916ms)
+✔ return explicitly revokes unawaited consumption and Retry cannot restore old authority (3563.3035ms)
+✔ throw explicitly revokes unawaited consumption and Retry cannot restore old authority (3709.810334ms)
+✔ pause explicitly revokes unawaited consumption and Retry cannot restore old authority (4174.430167ms)
+✔ interrupt explicitly revokes unawaited consumption and Retry cannot restore old authority (6029.037833ms)
+✔ controller close drains gated open and releases worker and workspace leases after settlement, not callback completion (3831.251166ms)
+✔ controller close drains gated client and releases worker and workspace leases after settlement, not callback completion (4279.51575ms)
+✔ controller close drains gated cleanup and releases worker and workspace leases after settlement, not callback completion (5966.368083ms)
+✔ delivery rechecks complete current authority after terminal worker result (5202.914166ms)
+✔ baseline callback consumes captured acceptance once and inspection observes pending without waiting for execution (5626.30875ms)
+✔ browser callback consumes captured acceptance once and inspection observes pending without waiting for execution (5441.644417ms)
+✔ consumption requires explicit completed acceptance and never opens implicitly (3150.602084ms)
+✔ literal consumption opt-in requires all prerequisites and is captured before awaits (2877.524208ms)
+✔ disabled capability remains compatible for false false browser (2473.359375ms)
+✔ disabled capability remains compatible for true false browser (2575.915584ms)
+✔ disabled capability remains compatible for true true unit (2439.903292ms)
+✔ current controller D-1 with withheld wakeups uses distinct worker time (2660.206708ms)
+✔ current controller D+0 with withheld wakeups uses distinct worker time (2575.510166ms)
+✔ current controller D+1 with withheld wakeups uses distinct worker time (2576.291667ms)
+✔ delayed pinned opening consumes only D-now after 12345ms preparation (5462.2785ms)
+✔ delayed pinned opening consumes only D-now after 60000ms preparation (2638.533375ms)
+✔ authority loss after worker staging rolls back consumption without charge or upgrade (2476.514958ms)
+✔ unconfigured callbacks still receive exactly one argument and simulated receipts (154.920792ms)
+✔ public implementation selects A, edits isolated B, reads A, and Retry selects B under fresh authority (16419.783458ms)
+✔ callback completion revokes handles before native settlement, and frozen metadata is detached (2954.927166ms)
+✔ live source handles reject after pause and cannot revive on Continue or Retry (3004.110625ms)
+✔ live source handles reject after cancel and cannot revive on Continue or Retry (2771.710208ms)
+✔ pause and close drain an admitted edit without authorizing a late operation (7193.682417ms)
+✔ post-native-close injected failure still releases real workspace and controller ownership (4168.799917ms)
+✔ duplicate admission retains its binding and terminal Requeue creates a distinct workspace (5767.044416ms)
+✔ offline mode cannot silently downgrade, migrate scripted cases, or change configuration (3077.847583ms)
+✔ established missing workspace store is never recreated and failed open releases ownership (2146.051292ms)
+✔ established empty workspace store is never recreated and failed open releases ownership (1993.731083ms)
+✔ established tampered workspace store is never recreated and failed open releases ownership (2318.064875ms)
+✔ foreign-frozen association parks without marking healthy native storage missing (2117.549042ms)
+✔ foreign-binding association parks without marking healthy native storage missing (1820.548333ms)
+✔ invalid-epoch association parks without marking healthy native storage missing (1732.800833ms)
+✔ unrecorded-frozen association parks without marking healthy native storage missing (1660.814083ms)
+✔ controller-clock allowance cancellation revokes a callback that has not returned (1433.842208ms)
+✔ foreign persisted action cannot select offline source or enter callback (887.332875ms)
+✔ stale persisted action cannot select offline source or enter callback (807.553625ms)
+✔ baseline is copied before Controller.open first awaits (1382.651417ms)
+✔ SIGKILL provisioning intent rejects pristine foreign changed-bytes under matching IDs (2189.829708ms)
+✔ SIGKILL provisioning intent rejects pristine foreign extra-path under matching IDs (2596.721625ms)
+✔ SIGKILL provisioning intent rejects pristine foreign missing-path under matching IDs (1185.135167ms)
+✔ SIGKILL after-command-commit preserves intent/effect/receipt without source or edit replay (972.257042ms)
+✔ SIGKILL after-workspace-provision-intent preserves intent/effect/receipt without source or edit replay (302.636125ms)
+✔ SIGKILL workspace-after-provision-intent preserves intent/effect/receipt without source or edit replay (289.291625ms)
+✔ SIGKILL workspace-after-provision-worktree preserves intent/effect/receipt without source or edit replay (611.947458ms)
+✔ SIGKILL after-workspace-provision-effect preserves intent/effect/receipt without source or edit replay (1770.171792ms)
+✔ SIGKILL before-check-dispatch preserves intent/effect/receipt without source or edit replay (1342.57475ms)
+✔ SIGKILL after-source-selection-intent preserves intent/effect/receipt without source or edit replay (1507.696125ms)
+✔ SIGKILL after-source-freeze preserves intent/effect/receipt without source or edit replay (1480.156292ms)
+✔ SIGKILL after-source-selection-receipt preserves intent/effect/receipt without source or edit replay (1554.461166ms)
+✔ SIGKILL workspace-after-intent preserves intent/effect/receipt without source or edit replay (1926.032083ms)
+✔ SIGKILL workspace-after-commit preserves intent/effect/receipt without source or edit replay (1949.677166ms)
+✔ SIGKILL workspace-after-checkpoint preserves intent/effect/receipt without source or edit replay (3036.879416ms)
+✔ SIGKILL after-source-edit-effect preserves intent/effect/receipt without source or edit replay (3121.975083ms)
+✔ SIGKILL after-check-receipt preserves intent/effect/receipt without source or edit replay (1489.661625ms)
+✔ SIGKILL after-tool-action-receipt preserves intent/effect/receipt without source or edit replay (1482.710459ms)
+✔ atomic ownership, durable request receipts, policy checks and compact catalogue (164.706917ms)
+✔ pause lets an admitted tool finish, denies follow-up inference, and releases capacity (121.65375ms)
+✔ pause during model auth/response denies the next tool and native SDK follow-up (49.547167ms)
+✔ parked notes, duplicate delivery, views, reconnect watches and restart never infer (58.92125ms)
+✔ interrupted provisioning recovers the same owner and native file (48.511125ms)
+✔ structured triage can advance; a stale completion cannot advance or use a phase setter (100.122917ms)
+✔ No fix needed suppresses intake; explicit requeue links a new session (113.06625ms)
+✔ budget exhaustion makes no summary call; Retry is explicit, bounded, and cumulative (71.6985ms)
+✔ capacity-two scripted cases have distinct databases, messages, counters and IDs (134.429625ms)
+✔ per-file expiry preserves guards, cannot wake or recreate details, and protects unfinished work (60.583458ms)
+✔ missing native details and cleanup failure are surfaced without recreating history (100.974667ms)
+✔ active notes are steered at the SDK boundary without a handler starting inference (48.406958ms)
+✔ corrupt durable allowance fails closed rather than allowing another model call (42.369125ms)
+✔ pause during asynchronous auth is checked at the actual provider dispatch (67.068166ms)
+✔ auth waiting is bounded by the allowance and cannot dispatch after timeout (81.039833ms)
+✔ revision-bound scripted checks with stored artifacts fail closed at the expected phase (455.109209ms)
+✔ revision-bound scripted checks with stale artifacts fail closed at the expected phase (208.745541ms)
+✔ revision-bound scripted checks with missing artifacts fail closed at the expected phase (378.9085ms)
+✔ revision-bound scripted checks with corrupt artifacts fail closed at the expected phase (369.808917ms)
+✔ revision-bound scripted checks with fabricated artifacts fail closed at the expected phase (273.180417ms)
+✔ revision-bound scripted checks with empty artifacts fail closed at the expected phase (376.70975ms)
+✔ initial failed validation permits two repair candidates, not two arbitrary check failures (248.200583ms)
+✔ acceptance retries detach requests and preserve identity, timestamps and execution accounting in every mode (314.167875ms)
+✔ ordinary authority denials roll back staged memory and lazy format upgrade without poisoning the handle (277.29625ms)
+✔ rejecting async authority for new acceptance does not leak a rejection (695.120125ms)
+✔ rejecting async authority for existing acceptance does not leak a rejection (731.047625ms)
+✔ rejecting promise authority for new acceptance does not leak a rejection (529.045ms)
+✔ rejecting promise authority for existing acceptance does not leak a rejection (533.085084ms)
+✔ complete same-key conflicts and execution keys reject without worker effects or quota changes (86.007167ms)
+✔ metadata capacity is 256 independent of execution quota and exact retries remain available at capacity (3290.4645ms)
+✔ acceptance mode and identity snapshot before awaits, refuse provisioning and precede pending recovery writes (92.728333ms)
+▶ persistence failures fail closed even when COMMIT succeeded, and close shares completion and drains accepted operations
+  ✔ before COMMIT (134.628291ms)
+  ✔ after COMMIT (124.32175ms)
+✔ persistence failures fail closed even when COMMIT succeeded, and close shares completion and drains accepted operations (259.637709ms)
+✔ version 2 strictly validates the union, accounting, identities and bounded metadata (481.239458ms)
+✔ SIGKILL before acceptance COMMIT preserves atomic lazy migration and lost-result recovery (638.779834ms)
+✔ SIGKILL after acceptance COMMIT preserves atomic lazy migration and lost-result recovery (474.60975ms)
+✔ mixed version 2 history preserves execution accounting, recovery updates and cross-kind uniqueness (145.913916ms)
+✔ unsafe timestamp arithmetic rejects without upgrade and leaves the handle reusable (88.119917ms)
+✔ admitFrozenBrowserReport maps baseline-reproduced to a complete detached result (7.46125ms)
+✔ admitFrozenBrowserReport maps baseline-not-reproduced to a complete detached result (1.5995ms)
+✔ admitFrozenBrowserReport maps candidate-passed to a complete detached result (1.180084ms)
+✔ admitFrozenBrowserReport maps candidate-failed to a complete detached result (0.678584ms)
+✔ admitFrozenBrowserReport blocks unrelated literal and rejects promotion (1.253625ms)
+✔ admitFrozenBrowserReport blocks startup failure and rejects promotion (1.431083ms)
+✔ admitFrozenBrowserReport blocks action failure and rejects promotion (0.749125ms)
+✔ admitFrozenBrowserReport blocks page error and rejects promotion (1.310792ms)
+✔ admitFrozenBrowserReport blocks console error and rejects promotion (1.270709ms)
+✔ admitFrozenBrowserReport permits ordinary console messages (0.521542ms)
+✔ admitFrozenBrowserReport rejects mismatched request frozen case identity in either argument (0.562209ms)
+✔ admitFrozenBrowserReport rejects mismatched request action case identity in either argument (0.685ms)
+✔ admitFrozenBrowserReport rejects mismatched request both case identities in either argument (0.980541ms)
+✔ admitFrozenBrowserReport rejects mismatched request action identity in either argument (0.830833ms)
+✔ admitFrozenBrowserReport rejects mismatched request epoch in either argument (1.210666ms)
+✔ admitFrozenBrowserReport rejects mismatched request scenario in either argument (1.046125ms)
+✔ admitFrozenBrowserReport rejects mismatched request role in either argument (0.464125ms)
+✔ admitFrozenBrowserReport rejects mismatched request allowance in either argument (0.670291ms)
+✔ admitFrozenBrowserReport rejects mismatched request revision in either argument (0.633042ms)
+✔ admitFrozenBrowserReport rejects mismatched request manifest digest in either argument (0.384875ms)
+✔ admitFrozenBrowserReport rejects mismatched evidence request digest (0.388333ms)
+✔ admitFrozenBrowserReport rejects mismatched evidence configuration digest (0.354333ms)
+✔ admitFrozenBrowserReport rejects mismatched evidence frozen case identity (0.258083ms)
+✔ admitFrozenBrowserReport rejects mismatched evidence frozen revision (0.255625ms)
+✔ admitFrozenBrowserReport rejects mismatched evidence frozen manifest digest (0.637958ms)
+✔ admitFrozenBrowserReport rejects candidate expectation kind checkpoint (0.519375ms)
+✔ admitFrozenBrowserReport rejects candidate expectation kind unit (0.459208ms)
+✔ admitFrozenBrowserReport rejects candidate expectation kind regression (0.381417ms)
+✔ admitFrozenBrowserReport rejects candidate expectation kind build (0.303042ms)
+✔ admitFrozenBrowserReport rejects candidate expectation kind unknown (0.937458ms)
+✔ admitFrozenBrowserReport rejects candidate expectation kind null (0.424125ms)
+✔ admitFrozenBrowserReport rejects candidate expectation kind baseline (0.393792ms)
+✔ admitFrozenBrowserReport rejects browser kind with baseline role and malformed expectation digest (0.723042ms)
+✔ admitFrozenBrowserReport rejects deadline arithmetic (0.474834ms)
+✔ admitFrozenBrowserReport rejects deadline overflow (0.742167ms)
+✔ admitFrozenBrowserReport rejects negative admitted time (0.592875ms)
+✔ admitFrozenBrowserReport rejects fractional admitted time (0.631042ms)
+✔ admitFrozenBrowserReport rejects unsafe deadline (0.391375ms)
+✔ admitFrozenBrowserReport rejects fractional finished time (0.727625ms)
+✔ admitFrozenBrowserReport rejects finish before admission (0.672042ms)
+✔ admitFrozenBrowserReport rejects late completion (0.638667ms)
+✔ admitFrozenBrowserReport rejects nonzero exit (0.531084ms)
+✔ admitFrozenBrowserReport rejects OOM (0.522875ms)
+✔ admitFrozenBrowserReport rejects duplicate transfer path (0.735834ms)
+✔ admitFrozenBrowserReport rejects noncanonical path (0.657875ms)
+✔ admitFrozenBrowserReport rejects oversized transfer file (0.60925ms)
+✔ admitFrozenBrowserReport rejects too many transfer files (4.993667ms)
+✔ admitFrozenBrowserReport rejects total transfer size (1.093833ms)
+✔ admitFrozenBrowserReport rejects manifest disagreement (0.5295ms)
+✔ admitFrozenBrowserReport rejects manifest comma-key substitute (0.631459ms)
+✔ admitFrozenBrowserReport rejects wrong PNG MIME (0.456208ms)
+✔ admitFrozenBrowserReport rejects PNG checksum mismatch (0.544166ms)
+✔ admitFrozenBrowserReport rejects PNG size mismatch (0.474ms)
+✔ admitFrozenBrowserReport rejects PNG corrupt bytes (0.486792ms)
+✔ admitFrozenBrowserReport rejects noncanonical base64 whitespace (0.477333ms)
+✔ admitFrozenBrowserReport rejects noncanonical base64 padding (0.819833ms)
+✔ admitFrozenBrowserReport rejects empty PNG (0.497291ms)
+✔ admitFrozenBrowserReport rejects oversized PNG (68.884791ms)
+✔ admitFrozenBrowserReport rejects unknown stage (0.428709ms)
+✔ admitFrozenBrowserReport rejects missing literal (0.171875ms)
+✔ admitFrozenBrowserReport rejects null complete literal (0.236125ms)
+✔ admitFrozenBrowserReport rejects non-null failed literal (0.207875ms)
+✔ admitFrozenBrowserReport rejects oversized literal (0.21825ms)
+✔ admitFrozenBrowserReport rejects unknown event kind (0.233709ms)
+✔ admitFrozenBrowserReport rejects extra event field (0.869166ms)
+✔ admitFrozenBrowserReport rejects oversized event text (0.290708ms)
+✔ admitFrozenBrowserReport rejects event count (0.295917ms)
+✔ admitFrozenBrowserReport rejects event total bytes (1.530791ms)
+✔ admitFrozenBrowserReport rejects malformed present inspection hash (0.738208ms)
+✔ admitFrozenBrowserReport rejects outcome contradiction (0.8975ms)
+✔ admitFrozenBrowserReport rejects uppercase run UUID (0.216625ms)
+✔ admitFrozenBrowserReport rejects invalid run UUID (0.488375ms)
+✔ admitFrozenBrowserReport validates contextSha256 format without its preimage (0.60675ms)
+✔ admitFrozenBrowserReport validates stdoutSha256 format without its preimage (0.691292ms)
+✔ admitFrozenBrowserReport validates stderrSha256 format without its preimage (0.591791ms)
+✔ admitFrozenBrowserReport validates buildStdoutSha256 format without its preimage (0.723792ms)
+✔ admitFrozenBrowserReport validates buildStderrSha256 format without its preimage (0.822458ms)
+✔ admitFrozenBrowserReport rejects late unrelated failure (0.388625ms)
+✔ admitFrozenBrowserReport accepts exact deadline completion (0.360334ms)
+✔ admitFrozenBrowserReport handles baseline-reproduced only after full validation (1.309584ms)
+✔ admitFrozenBrowserReport handles baseline-not-reproduced only after full validation (0.65175ms)
+✔ admitFrozenBrowserReport handles candidate-passed only after full validation (1.047875ms)
+✔ admitFrozenBrowserReport handles candidate-failed only after full validation (1.551792ms)
+✔ admitFrozenBrowserReport handles unrelated-failure only after full validation (0.743375ms)
+✔ admitFrozenBrowserReport handles infrastructure-failed only after full validation (2.258834ms)
+✔ admitFrozenBrowserReport handles cancelled only after full validation (1.37825ms)
+✔ admitFrozenBrowserReport handles uncertain only after full validation (1.601708ms)
+✔ admitFrozenBrowserReport does not promote cancelled B or require timely classification for retained diagnostic evidence (2.313792ms)
+✔ admitFrozenBrowserReport rejects extra keys on fixed report shape (0.216166ms)
+✔ admitFrozenBrowserReport rejects extra keys on fixed request shape (0.157916ms)
+✔ admitFrozenBrowserReport rejects extra keys on fixed frozen tuple shape (0.125833ms)
+✔ admitFrozenBrowserReport rejects extra keys on fixed action shape (0.35325ms)
+✔ admitFrozenBrowserReport rejects extra keys on fixed outcome shape (0.662375ms)
+✔ admitFrozenBrowserReport rejects extra keys on fixed cleanup shape (0.699791ms)
+✔ admitFrozenBrowserReport rejects extra keys on fixed evidence shape (0.683875ms)
+✔ admitFrozenBrowserReport rejects extra keys on fixed provenance shape (0.330667ms)
+✔ admitFrozenBrowserReport rejects extra keys on fixed evidence frozen tuple shape (0.406375ms)
+✔ admitFrozenBrowserReport rejects extra keys on fixed transfer entry shape (0.630917ms)
+✔ admitFrozenBrowserReport rejects extra keys on fixed PNG shape (0.425ms)
+✔ admitFrozenBrowserReport rejects extra keys on fixed expectation shape (0.144666ms)
+✔ admitFrozenBrowserReport rejects comma-key substitutes (0.273208ms)
+✔ admitFrozenBrowserReport rejects undefined before parsing either argument (0.158833ms)
+✔ admitFrozenBrowserReport rejects bigint before parsing either argument (0.128667ms)
+✔ admitFrozenBrowserReport rejects NaN before parsing either argument (0.118667ms)
+✔ admitFrozenBrowserReport rejects infinity before parsing either argument (0.115667ms)
+✔ admitFrozenBrowserReport rejects function before parsing either argument (0.118958ms)
+✔ admitFrozenBrowserReport rejects symbol value before parsing either argument (0.116375ms)
+✔ admitFrozenBrowserReport rejects ill-formed string before parsing either argument (0.12ms)
+✔ admitFrozenBrowserReport rejects ill-formed key before parsing either argument (0.124375ms)
+✔ admitFrozenBrowserReport rejects date before parsing either argument (0.716042ms)
+✔ admitFrozenBrowserReport rejects buffer before parsing either argument (0.440208ms)
+✔ admitFrozenBrowserReport rejects map before parsing either argument (0.449791ms)
+✔ admitFrozenBrowserReport rejects boxed number before parsing either argument (0.390167ms)
+✔ admitFrozenBrowserReport rejects custom prototype before parsing either argument (0.52675ms)
+✔ admitFrozenBrowserReport rejects sparse array before parsing either argument (0.193334ms)
+✔ admitFrozenBrowserReport rejects decorated array before parsing either argument (0.160583ms)
+✔ admitFrozenBrowserReport rejects array with hidden property before parsing either argument (0.207792ms)
+✔ admitFrozenBrowserReport rejects array with symbol before parsing either argument (0.2005ms)
+✔ admitFrozenBrowserReport rejects array subclass before parsing either argument (0.183125ms)
+✔ admitFrozenBrowserReport rejects null-prototype array before parsing either argument (0.29ms)
+✔ admitFrozenBrowserReport rejects hidden property before parsing either argument (0.439042ms)
+✔ admitFrozenBrowserReport rejects symbol key before parsing either argument (0.459541ms)
+✔ admitFrozenBrowserReport rejects cycle before parsing either argument (0.431167ms)
+✔ admitFrozenBrowserReport rejects depth limit before parsing either argument (1.383459ms)
+✔ admitFrozenBrowserReport rejects node limit before parsing either argument (49.227334ms)
+✔ admitFrozenBrowserReport rejects byte limit before parsing either argument (4.616667ms)
+✔ admitFrozenBrowserReport rejects escaped byte limit before parsing either argument (116.553166ms)
+✔ admitFrozenBrowserReport rejects inherited required fields (0.8415ms)
+✔ admitFrozenBrowserReport never invokes getters, serialization hooks, or proxy traps in either argument (1.733125ms)
+✔ admitFrozenBrowserReport safely copies null prototypes and own __proto__ data (1.253917ms)
+✔ admitFrozenBrowserReport detaches inputs, reports, and bytes across repeated calls (1.7565ms)
+✔ admitFrozenBrowserReport detaches blocked diagnostic evidence and never exposes outputs (0.791292ms)
+✔ admitFrozenBrowserReport does not require an inspection hash in opaque applied claims (0.58925ms)
+✔ admitFrozenBrowserReport accepts fabricated unsafe containment claims without authenticating them (0.389125ms)
+✔ actual SIGKILL after consumption execution is reconciled without execution replay (4079.5135ms)
+✔ actual SIGKILL after consumption recorded is reconciled without execution replay (4412.459042ms)
+✔ actual SIGKILL at cleanup normalized permits exact durable retry with one charge (3522.991167ms)
+✔ actual SIGKILL at cleanup acquired permits exact durable retry with one charge (2944.87775ms)
+✔ actual SIGKILL at cleanup removed permits exact durable retry with one charge (2820.62825ms)
+✔ actual SIGKILL at cleanup settlement-before permits exact durable retry with one charge (2821.798458ms)
+✔ actual SIGKILL at cleanup settlement-after permits exact durable retry with one charge (2681.218542ms)
+✔ reconcileConsumed repairs one nested record with evidence, exhausted quota and unrelated pending rows intact (3624.495375ms)
+✔ pending selection normalizes only its own run and never replays or spends allowance (2253.2035ms)
+✔ independent identity pins and exact consumed selectors reject before any recovery write or workspace access (2746.33975ms)
+✔ strict selectors and identity snapshots reject exotic inputs without invoking accessors or proxies (3379.739792ms)
+✔ all selected inputs are snapshotted before the first await (2247.602542ms)
+✔ existing-only acquisition rejects missing, unsafe and replaced storage without provisioning or cleanup (2503.229917ms)
+✔ directory ownership covers guard and rejects duplicates, other selectors and every opening mode (2331.579542ms)
+✔ directory ownership covers removal and rejects duplicates, other selectors and every opening mode (2176.193791ms)
+✔ directory ownership covers settlement and rejects duplicates, other selectors and every opening mode (2272.990459ms)
+✔ directory ownership covers close and rejects duplicates, other selectors and every opening mode (2482.011459ms)
+✔ held owners prevent reconciliation until explicitly closed (2417.41225ms)
+✔ restricted modes retain recorded history and ordinary opening still finalizes (2429.448292ms)
+✔ restricted modes retain incomplete history and ordinary opening still finalizes (2603.337ms)
+✔ restricted modes retain pending history and ordinary opening still finalizes (2167.353709ms)
+✔ cleanup preserves fail-closed owner-label and explicit retries remain bounded (2384.743458ms)
+✔ cleanup preserves fail-closed run-label and explicit retries remain bounded (2355.692833ms)
+✔ cleanup preserves fail-closed container-name and explicit retries remain bounded (2251.005708ms)
+✔ cleanup preserves fail-closed extra-tags and explicit retries remain bounded (2452.002959ms)
+✔ cleanup preserves fail-closed base-image and explicit retries remain bounded (2238.817792ms)
+✔ cleanup preserves fail-closed multiple and explicit retries remain bounded (1767.659708ms)
+✔ cleanup preserves fail-closed absent-intent and explicit retries remain bounded (904.487375ms)
+✔ cleanup preserves fail-closed unknown-build and explicit retries remain bounded (1319.81975ms)
+✔ cleanup preserves fail-closed timeout and explicit retries remain bounded (1579.8795ms)
+✔ cleanup preserves fail-closed client-failure and explicit retries remain bounded (2041.143042ms)
+✔ not-needed history has no persistence or Docker effects on retry (790.098625ms)
+✔ persistence failure before normalization COMMIT rejects, closes and permits exact repair (1520.921084ms)
+✔ persistence failure after normalization COMMIT rejects, closes and permits exact repair (1556.238166ms)
+✔ persistence failure before acquisition COMMIT rejects, closes and permits exact repair (1633.033291ms)
+✔ persistence failure after acquisition COMMIT rejects, closes and permits exact repair (1596.547791ms)
+✔ persistence failure before settlement COMMIT rejects, closes and permits exact repair (1637.704ms)
+✔ persistence failure after settlement COMMIT rejects, closes and permits exact repair (1344.601125ms)
+✔ failed reconciliation retains ownership until private close drains (1315.09525ms)
+✔ ownership replacement after acquisition rejects before selected normalization and cleanup (1477.75775ms)
+✔ persistence rejection is not observed until private close releases ownership (1486.529625ms)
+✔ legacy version 1 storage cannot become a consumed cleanup target (635.680625ms)
+✔ legacy version 2 storage cannot become a consumed cleanup target (657.496375ms)
+✔ consumption charges nonzero staging sampler latency without denying live authority (3534.78375ms)
+✔ consumption charges nonzero forward sampler latency without denying live authority (4269.563625ms)
+✔ consumption charges nonzero after-observation sampler latency without denying live authority (3371.448042ms)
+✔ post-staging sampler return at effective endpoint -1ms preserves exclusive expiry (3533.724958ms)
+✔ post-staging sampler return at effective endpoint 0ms preserves exclusive expiry (1368.372084ms)
+✔ post-staging sampler return at effective endpoint 1ms preserves exclusive expiry (1345.522917ms)
+✔ ordered post-staging bracket rejects backward worker time without charge (1284.833834ms)
+✔ ordered post-staging bracket rejects fractional worker time without charge (1304.057833ms)
+✔ ordered post-staging bracket rejects nonfinite worker time without charge (1160.44925ms)
+✔ ordered post-staging bracket rejects unsafe worker time without charge (1346.938542ms)
+✔ ordered post-staging bracket rejects overflow worker time without charge (1433.6215ms)
+✔ shortened allowance bounds actual held clients and cancellation (3685.449166ms)
+✔ shortened allowance bounds actual held clients and cancellation despite later larger allowance (4037.121833ms)
+✔ positive post-staging allowance shrink admits without rewriting the durable ceiling (3544.617875ms)
+✔ consumption cancellation timer survives client completion (3529.851458ms)
+✔ consumption cancellation timer survives client completion and cannot extend for larger authority (3203.462209ms)
+✔ client setup exhausting H stops immediately instead of extending its timeout (1713.667583ms)
+✔ consumption runs the existing pipeline once with detached pending inventory and shortened timing (4532.008125ms)
+✔ complete captured identity and synchronous allowance denials preserve acceptance and accounting (1269.742334ms)
+✔ rejecting async consumption sampler is observed at entry and after staging (1728.886084ms)
+✔ rejecting promise consumption sampler is observed at entry and after staging (2073.002833ms)
+✔ final staging at D-1 cannot renew admission (3423.650375ms)
+✔ final staging at D+0 cannot renew admission (1247.659833ms)
+✔ final staging at D+1 cannot renew admission (1420.147917ms)
+✔ post-staging exhausted allowance, unsafe and backward clocks roll back without poisoning (1294.520166ms)
+✔ asynchronous preparation consumes authority before the initial translated endpoint (1204.060458ms)
+✔ close owns preparation registered before awaits and retains the lease until drainage (1410.913875ms)
+✔ close owns execution registered before awaits and retains the lease until drainage (1923.157ms)
+✔ ambiguous consumption COMMIT before storage confirmation poisons without replay (1570.737708ms)
+✔ ambiguous consumption COMMIT after storage confirmation poisons without replay (1480.389375ms)
+✔ actual SIGKILL before consumption COMMIT preserves one atomic charge and no replay (2056.763125ms)
+✔ actual SIGKILL after consumption COMMIT preserves one atomic charge and no replay (1734.305959ms)
+✔ actual SIGKILL after execution preserves nested recovery without cleanup or replay (3746.672083ms)
+✔ actual SIGKILL after recorded preserves nested recovery without cleanup or replay (3613.90025ms)
+✔ consumption-only requires independently pinned complete storage and snapshots mode before opening (1243.879208ms)
+✔ nested format rejects malformed bindings, timing, evidence, UUIDs and accounting while keeping legacy timing strict (3314.981833ms)
+✔ unknown build and unresolved cleanup remain durable and block a different acceptance (2078.119833ms)
+✔ signal revocation after awaited preparation suppresses forward work but drains owned settlement (1106.684292ms)
+✔ sampler revocation after awaited preparation suppresses forward work but drains owned settlement (1053.967334ms)
+✔ failed settlement writes poison the handle and reopening never replays committed consumption (2586.657125ms)
+✔ incomplete cleanup is retained without re-finalization and blocks fresh consumption (2371.191917ms)
+✔ preparation delays shorten admission and request allowance remains an upper bound (3659.678666ms)
+✔ close drains cleanup without requiring forward authority or arbitrary caller completion (2368.628625ms)
+✔ failed rollback poisons admission and reopening remains the only recovery path (620.014792ms)
+✔ consumption charges the ordinary lifetime limits once and preserves exact history at capacity (1529.009333ms)
+✔ trusted frozen driver retains complete B and shutdown observations without faults (99.759541ms)
+✔ trusted frozen driver inventories every process without argv or executable reads (102.66425ms)
+✔ trusted frozen driver retries a disappearing scan without omitting a helper (101.224ms)
+▶ trusted frozen driver rejects unstable, inaccessible and invalid CDP censuses
+  ✔ disappearing (93.078625ms)
+  ✔ access-error (88.432584ms)
+  ✔ zombie-unreadable (90.267666ms)
+  ✔ pid-reuse (103.581833ms)
+  ✔ state-churn (91.278459ms)
+  ✔ reparent-churn (92.676625ms)
+  ✔ security-churn (103.41025ms)
+  ✔ entries-churn (115.967084ms)
+  ✔ cdp-missing-browser (106.092667ms)
+  ✔ cdp-missing-renderer (107.123209ms)
+  ✔ cdp-duplicate (101.572334ms)
+  ✔ cdp-unmatched (100.0525ms)
+  ✔ cdp-churn (96.597125ms)
+  ✔ census-overflow (94.560667ms)
+✔ trusted frozen driver rejects unstable, inaccessible and invalid CDP censuses (1386.794792ms)
+▶ trusted frozen driver fails closed on overflow through final shutdown
+  ✔ screenshot overflow (101.823375ms)
+  ✔ screenshot count-overflow (104.741834ms)
+  ✔ screenshot bytes-overflow (91.135875ms)
+  ✔ census overflow (101.5455ms)
+  ✔ census count-overflow (94.264709ms)
+  ✔ census bytes-overflow (95.046583ms)
+  ✔ browser-close overflow (93.698ms)
+  ✔ browser-close count-overflow (98.177ms)
+  ✔ browser-close bytes-overflow (94.133042ms)
+  ✔ server-close overflow (101.8915ms)
+  ✔ server-close count-overflow (105.908833ms)
+  ✔ server-close bytes-overflow (126.3ms)
+✔ trusted frozen driver fails closed on overflow through final shutdown (1210.641834ms)
+▶ trusted frozen driver collects popup and shutdown errors instead of clean B
+  ✔ popup-error (92.123292ms)
+  ✔ popup-console-error (90.228666ms)
+  ✔ popup-crash (90.460125ms)
+  ✔ late-browser-close-error (102.465875ms)
+  ✔ late-server-close-error (111.648333ms)
+✔ trusted frozen driver collects popup and shutdown errors instead of clean B (487.63225ms)
+▶ trusted frozen driver rejects popup overflow and unexpected dedicated workers
+  ✔ popup-overflow (102.852125ms)
+  ✔ worker (101.505875ms)
+✔ trusted frozen driver rejects popup overflow and unexpected dedicated workers (204.893667ms)
+▶ trusted frozen driver serves a worker restriction and retains worker denial errors
+  ✔ dedicated-worker (94.353458ms)
+  ✔ shared-worker (109.091667ms)
+✔ trusted frozen driver serves a worker restriction and retains worker denial errors (203.886791ms)
+✔ frozen browser COPY context has a short first header recognizable without PAX lookahead (4281.339917ms)
+✔ frozen browser COPY context fixes trusted asset mode 0555 and preserves snapshot modes and paths (6487.962041ms)
+✔ frozen browser literal A after B has host evidence, detached cache and persistent idempotency (7156.456625ms)
+▶ frozen browser empty inspected Cmd forms persist canonically and reopen without effects
+  ✔ image omitted, container omitted (4695.884459ms)
+  ✔ image omitted, container null (4192.205ms)
+  ✔ image omitted, container empty array (3954.566542ms)
+  ✔ image null, container omitted (3894.534875ms)
+  ✔ image null, container null (3534.560916ms)
+  ✔ image null, container empty array (3125.621709ms)
+  ✔ image empty array, container omitted (3061.305375ms)
+  ✔ image empty array, container null (2724.412833ms)
+  ✔ image empty array, container empty array (2624.460084ms)
+✔ frozen browser empty inspected Cmd forms persist canonically and reopen without effects (31808.838291ms)
+▶ frozen browser rejects nonempty and malformed raw Cmd before container start
+  ✔ image Cmd ["--unexpected"] (2399.954125ms)
+  ✔ image Cmd [null] (2222.709541ms)
+  ✔ image Cmd [1] (1985.932542ms)
+  ✔ image Cmd [[]] (1864.20275ms)
+  ✔ image Cmd "" (1989.568708ms)
+  ✔ image Cmd "node" (1798.59775ms)
+  ✔ image Cmd {} (1745.037667ms)
+  ✔ image Cmd {"length":0} (1766.526041ms)
+  ✔ image Cmd false (1835.650375ms)
+  ✔ image Cmd 0 (1775.515709ms)
+  ✔ container Cmd ["--unexpected"] (2176.343125ms)
+  ✔ container Cmd [null] (2120.253292ms)
+  ✔ container Cmd [1] (2005.033959ms)
+  ✔ container Cmd [[]] (2016.728584ms)
+  ✔ container Cmd "" (2016.577042ms)
+  ✔ container Cmd "node" (1934.528083ms)
+  ✔ container Cmd {} (1995.241875ms)
+  ✔ container Cmd {"length":0} (1957.649542ms)
+  ✔ container Cmd false (2029.823209ms)
+  ✔ container Cmd 0 (1991.829833ms)
+✔ frozen browser rejects nonempty and malformed raw Cmd before container start (39629.822708ms)
+▶ frozen browser reopen rejects noncanonical persisted Cmd in recorded and settled evidence
+  ✔ recorded (2208.696666ms)
+  ✔ settled (2160.475042ms)
+✔ frozen browser reopen rejects noncanonical persisted Cmd in recorded and settled evidence (4369.464708ms)
+▶ frozen browser classifies protected roles and unrelated startup or literal failures
+  ✔ baseline B normal (2102.187042ms)
+  ✔ candidate B normal (2145.19425ms)
+  ✔ candidate B console-error (2214.544417ms)
+  ✔ candidate B page-error (2106.9345ms)
+  ✔ candidate A normal (2137.301708ms)
+  ✔ baseline C normal (2060.385792ms)
+  ✔ baseline A startup-error (2000.643917ms)
+  ✔ baseline A console-forgery (2074.205084ms)
+✔ frozen browser classifies protected roles and unrelated startup or literal failures (16842.232584ms)
+▶ frozen browser rejects malformed protocol and containment transcripts before classification
+  ✔ trailing (2324.25575ms)
+  ✔ duplicate (2271.986292ms)
+  ✔ nonce (2248.768083ms)
+  ✔ overflow (2260.129667ms)
+  ✔ bad-mime (2406.867125ms)
+  ✔ bad-png (2362.109334ms)
+  ✔ unknown-namespace (2283.580875ms)
+  ✔ outer-sysadmin (2329.302083ms)
+  ✔ bad-env (2164.985625ms)
+  ✔ bad-mount (2199.633041ms)
+✔ frozen browser rejects malformed protocol and containment transcripts before classification (22852.5655ms)
+✔ frozen browser accepts the nested census including an unknown helper and zombie (2354.185125ms)
+▶ frozen browser rejects invalid kernel identity, labels and security on every process
+  ✔ initial 1 capEff (2448.535958ms)
+  ✔ initial 1 capPrm (2498.063125ms)
+  ✔ initial 1 capBnd (2278.554417ms)
+  ✔ initial 2 capEff (2306.599584ms)
+  ✔ initial 2 capPrm (2265.905625ms)
+  ✔ initial 2 capBnd (2262.141375ms)
+  ✔ initial 24 capEff (2300.292417ms)
+  ✔ initial 24 capPrm (2412.374833ms)
+  ✔ initial 24 capBnd (2294.132209ms)
+  ✔ initial 200 capEff (2280.534209ms)
+  ✔ initial 200 capPrm (2298.5375ms)
+  ✔ initial 200 capBnd (2322.298334ms)
+  ✔ nested 33 bounding (2390.023209ms)
+  ✔ nested 35 bounding (2295.646041ms)
+  ✔ nested 83 bounding (2382.20175ms)
+  ✔ nested 119 bounding (2480.413417ms)
+  ✔ nested 158 bounding (2274.382541ms)
+  ✔ unknown helper SYS_ADMIN (2353.3725ms)
+  ✔ nested service SYS_ADMIN (2295.096667ms)
+  ✔ indirect renderer ancestor SYS_ADMIN (2413.650916ms)
+  ✔ renderer SYS_ADMIN (2233.8275ms)
+  ✔ zombie SYS_ADMIN (2260.220375ms)
+  ✔ parent zombie (2361.735833ms)
+  ✔ parent namespace mismatch (2299.815916ms)
+  ✔ parent effective only (2383.35825ms)
+  ✔ parent other capability (2276.695875ms)
+  ✔ browser not direct driver child (2383.263417ms)
+  ✔ browser nested (2255.858ms)
+  ✔ renderer outside browser ancestry (2249.617125ms)
+  ✔ nested 33 uid map (2396.967333ms)
+  ✔ nested 33 gid map (2274.05125ms)
+  ✔ nested 33 NSpid (2329.061542ms)
+  ✔ nested 35 uid map (2384.462875ms)
+  ✔ nested 35 gid map (2231.190042ms)
+  ✔ nested 35 NSpid (2236.521375ms)
+  ✔ nested 83 uid map (2352.65625ms)
+  ✔ nested 83 gid map (2281.203541ms)
+  ✔ nested 83 NSpid (2365.745042ms)
+  ✔ nested 119 uid map (2363.840292ms)
+  ✔ nested 119 gid map (2289.116541ms)
+  ✔ nested 119 NSpid (2467.124125ms)
+  ✔ nested 158 uid map (2280.384917ms)
+  ✔ nested 158 gid map (2314.746875ms)
+  ✔ nested 158 NSpid (2311.309917ms)
+  ✔ helper UID (2302.637167ms)
+  ✔ helper NNP (2274.308125ms)
+  ✔ zombie seccomp (2319.126ms)
+  ✔ helper namespace (2399.183042ms)
+  ✔ missing browser label (2374.643041ms)
+  ✔ missing renderer label (2424.309333ms)
+  ✔ duplicate browser label (2265.249667ms)
+  ✔ conflicting label (2361.339917ms)
+  ✔ multiple browsers (2282.929666ms)
+  ✔ unmatched renderer label (2326.1275ms)
+  ✔ PID reuse label (2270.761167ms)
+  ✔ zombie renderer label (2298.497667ms)
+  ✔ zombie browser (2360.8405ms)
+  ✔ missing parent (2234.466333ms)
+  ✔ missing outer census record (2340.977208ms)
+  ✔ cycle (2227.997541ms)
+  ✔ parent younger than child (2233.164542ms)
+  ✔ duplicate PID (2347.904458ms)
+  ✔ census overflow (2211.387042ms)
+✔ frozen browser rejects invalid kernel identity, labels and security on every process (146296.869ms)
+✔ frozen browser accepts zero nested bounding masks without granting capabilities (2291.526584ms)
+✔ frozen browser cancellation and close remove the running container even without awaiting validation (2253.912667ms)
+✔ frozen browser lost build remains uncertain and blocks new attempts across reopen (1472.408166ms)
+✔ frozen browser exact boundary rejects extra fields and unrecorded revisions without Docker effects (667.831167ms)
+✔ frozen browser reservations are nonrefundable and persist through all 16 failed attempts (1207.339542ms)
+▶ frozen browser rejects unowned, linked, missing-accounting and replaced stores without adoption
+  ✔ unowned (657.894666ms)
+  ✔ symlink (668.282167ms)
+  ✔ hardlink (635.097625ms)
+  ✔ accounting (706.086458ms)
+✔ frozen browser rejects unowned, linked, missing-accounting and replaced stores without adoption (2667.737583ms)
+✔ frozen browser allows native SQLite hot-journal rollback before recovery validation (2355.773959ms)
+▶ frozen browser actual host death distinguishes pending, committed and acknowledged outcomes without replay
+  ✔ before-outcome-commit (2760.264083ms)
+  ✔ after-outcome-commit (2878.390792ms)
+  ✔ before-acknowledgment (2719.8255ms)
+✔ frozen browser actual host death distinguishes pending, committed and acknowledged outcomes without replay (8358.826542ms)
+✔ frozen browser committed observation survives failed cleanup and exact repeats do not rerun (2193.793042ms)
+✔ frozen browser lost create response does not misreport a still-pending named effect as removed (1841.426042ms)
+✔ frozen browser refuses an eligible committed outcome without its complete durable evidence (2345.613584ms)
+▶ frozen browser opening mode keeps journal-only immutable across immediate caller mutation
+  ✔ empty, valid journal-only (617.847084ms)
+  ✔ empty, deleted mode (668.341ms)
+  ✔ populated, valid journal-only (2334.223208ms)
+  ✔ populated, deleted mode (2251.667792ms)
+✔ frozen browser opening mode keeps journal-only immutable across immediate caller mutation (5872.484291ms)
+▶ frozen browser opening mode keeps default execution across immediate caller mutation
+  ✔ empty, valid default (691.111708ms)
+  ✔ empty, added journal-only (676.646917ms)
+  ✔ populated, valid default (2717.935958ms)
+  ✔ populated, added journal-only (2717.765834ms)
+✔ frozen browser opening mode keeps default execution across immediate caller mutation (6803.859834ms)
+▶ frozen browser opening mode rejects malformed runtime values without effects or leaked ownership
+  ✔ empty, mode="journal-onyl" (686.676083ms)
+  ✔ empty, mode=null (661.033459ms)
+  ✔ empty, mode=true (693.336459ms)
+  ✔ empty, mode=false (646.962ms)
+  ✔ empty, mode={} (682.847167ms)
+  ✔ empty, mode=0 (655.91025ms)
+  ✔ empty, mode=1 (698.842375ms)
+  ✔ populated, mode="journal-onyl" (2306.295084ms)
+  ✔ populated, mode=null (2369.463708ms)
+  ✔ populated, mode=true (2321.555208ms)
+  ✔ populated, mode=false (2303.904333ms)
+  ✔ populated, mode={} (2359.469292ms)
+  ✔ populated, mode=0 (2396.641458ms)
+  ✔ populated, mode=1 (2268.344291ms)
+✔ frozen browser opening mode rejects malformed runtime values without effects or leaked ownership (21052.444083ms)
+✔ frozen browser journal inventory preserves literal identity, accounting, ledgers and historical cleanup without effects (2843.62275ms)
+✔ frozen browser journal snapshots detach nested requests, resources, cleanup, outcomes and arrays (2279.028708ms)
+✔ frozen browser journal handle is runtime narrow and close drains admitted inventory before releasing ownership (2369.624917ms)
+✔ frozen browser journal recovers SIGKILL after durable admission without renewing identity, timing or accounting (844.884667ms)
+▶ frozen browser journal recovery survives SIGKILL on either side of recovery COMMIT
+  ✔ recovery-before-commit (2485.968584ms)
+  ✔ recovery-after-commit (2568.484083ms)
+✔ frozen browser journal recovery survives SIGKILL on either side of recovery COMMIT (5054.720667ms)
+✔ frozen browser journal rejects recovery save failure before returning a handle and releases ownership (2315.373583ms)
+▶ frozen browser journal retains all existing integrity checks without adopting corrupt journals
+  ✔ schema (2304.205ms)
+  ✔ row-digest (2357.956958ms)
+  ✔ marker (2261.952333ms)
+  ✔ journal-identity (2321.322ms)
+  ✔ configuration (2403.32875ms)
+  ✔ request-digest (2315.195084ms)
+  ✔ action-uniqueness (2282.723ms)
+  ✔ run-uniqueness (2376.4245ms)
+  ✔ accounting (2351.831417ms)
+  ✔ missing-accounting (2262.736125ms)
+  ✔ policy (2372.233833ms)
+  ✔ committed-evidence (2356.601ms)
+  ✔ resource-id (2302.5525ms)
+  ✔ ledger (2255.959167ms)
+✔ frozen browser journal retains all existing integrity checks without adopting corrupt journals (32526.24875ms)
+▶ frozen browser journal requires existing complete ownership and never initializes missing files
+  ✔ directory (677.643542ms)
+  ✔ empty (655.124666ms)
+  ✔ owner.json (611.835542ms)
+  ✔ journal.sqlite (696.7355ms)
+  ✔ seccomp.json (639.762458ms)
+✔ frozen browser journal requires existing complete ownership and never initializes missing files (3281.524875ms)
+▶ frozen browser journal guards protected identities after opening and closes failed reads before owner release
+  ✔ root (2250.794417ms)
+  ✔ journal.sqlite (2397.790291ms)
+  ✔ owner.json (2317.163875ms)
+  ✔ seccomp.json (2405.146708ms)
+✔ frozen browser journal guards protected identities after opening and closes failed reads before owner release (9371.361417ms)
+✔ authenticated HTTP/SSE, singleton-before-storage, idempotency and hostile input (148.817042ms)
+✔ authenticated strict artifact resources return verified exact bytes and honest unavailable states (149.099458ms)
+✔ SIGKILL during model conservatively preserves allowance and intent (533.076ms)
+✔ SIGKILL during paused-model conservatively preserves allowance and intent (514.250666ms)
+✔ SIGKILL during tool conservatively preserves allowance and intent (384.63025ms)
+✔ SIGKILL during tool-receipt conservatively preserves allowance and intent (429.124834ms)
+✔ SIGKILL after-artifact-blobs preserves storage ordering without replay or invented checkpoint (402.582208ms)
+✔ SIGKILL after-artifact-manifests preserves storage ordering without replay or invented checkpoint (463.105375ms)
+✔ SIGKILL after-check-receipt preserves storage ordering without replay or invented checkpoint (537.711875ms)
+✔ workspace boundary accepts copied bytes and one edit only, never source paths or extra operations (1739.2145ms)
+✔ readFrozen returns literal A after B with fresh buffers and no store writes or exports (6964.093ms)
+✔ readFrozen rejects unrecorded, foreign, forged and extra frozen fields without writes (4354.7815ms)
+✔ readFrozen already-aborted and queued cancellation reject before the owner is released (3863.403917ms)
+✔ readFrozen kills a spawned real Git read and waits for close before cancellation settles (1626.42275ms)
+✔ readFrozen cancellation between Git stages returns no partial files and leaves the owner usable (2143.639708ms)
+✔ readFrozen rejects corrupt config without changing source, refs, journal or exports (1775.999167ms)
+✔ readFrozen rejects corrupt object without changing source, refs, journal or exports (1223.707708ms)
+✔ readFrozen rejects corrupt mode without changing source, refs, journal or exports (1110.894333ms)
+✔ readFrozen rejects corrupt pointer without changing source, refs, journal or exports (1101.230875ms)
+✔ readFrozen fails closed on recorded hash corruption in real SQLite (1439.96925ms)
+✔ readFrozen fails closed on recorded size corruption in real SQLite (1466.653917ms)
+✔ readFrozen fails closed on recorded file-limit corruption in real SQLite (916.842208ms)
+✔ readFrozen fails closed on recorded count-limit corruption in real SQLite (850.622875ms)
+✔ readFrozen fails closed on recorded aggregate-limit corruption in real SQLite (1017.311792ms)
+✔ workspace ownership rejects marker mismatch before catalogue mutation (38.907375ms)
+✔ workspace ownership rejects catalogue mismatch before catalogue mutation (35.724375ms)
+✔ workspace ownership rejects rollback-symlink mismatch before catalogue mutation (23.3385ms)
+✔ workspace ownership rejects rollback-hardlink mismatch before catalogue mutation (44.08425ms)
+✔ workspace ownership rejects rollback-mode mismatch before catalogue mutation (31.866542ms)
+✔ workspace rejects hot-journal marker identity mismatch without rollback or source mutation (2229.051ms)
+✔ workspace rejects hot-journal catalogue identity mismatch without rollback or source mutation (2225.422292ms)
+✔ workspace rejects hot-journal root identity mismatch without rollback or source mutation (1775.67125ms)
+✔ workspace incomplete store creation is never adopted or reinitialized (3.088917ms)
+✔ workspace owns real independent worktrees and literal raw checkpoints without runtime wiring (8466.922583ms)
+✔ workspace protects baseline tests and configuration even nested under src (14241.596792ms)
+✔ workspace rejects sensitive imports, noncanonical paths, unicode and case collisions without writes (21.569583ms)
+✔ workspace bounds file, manifest count, aggregate bytes and canonical path bytes (6205.999375ms)
+✔ workspace copies bytes before awaits and serializes edit compare-and-swap (1364.26575ms)
+✔ workspace stale checks and conflicting request reuse do not mutate source or refs (1952.885209ms)
+✔ workspace detects and preserves unexpected tracked changes before edit and freeze (779.350291ms)
+✔ workspace detects and preserves unexpected untracked changes before edit and freeze (842.6405ms)
+✔ workspace detects and preserves unexpected ignored changes before edit and freeze (799.206833ms)
+✔ workspace detects and preserves unexpected protected changes before edit and freeze (865.120125ms)
+✔ workspace detects and preserves unexpected mode changes before edit and freeze (804.359458ms)
+✔ workspace detects and preserves unexpected directory changes before edit and freeze (748.952875ms)
+✔ workspace detects and preserves unexpected ancestor-identity changes before edit and freeze (845.957125ms)
+✔ workspace detects and preserves unexpected symlink changes before edit and freeze (804.960708ms)
+✔ workspace detects and preserves unexpected hardlink changes before edit and freeze (848.92625ms)
+✔ workspace detects and preserves unexpected socket changes before edit and freeze (708.896333ms)
+✔ workspace detects and preserves unexpected pointer changes before edit and freeze (806.074208ms)
+✔ workspace detects and preserves unexpected ref changes before edit and freeze (739.529167ms)
+✔ workspace freeze independently rejects dirty bytes and exports only recorded case-owned A after B (2445.443042ms)
+✔ workspace rejects unowned nonempty and unsafe roots without changing bytes or permissions (2.758375ms)
+✔ workspace fails closed reopening corrupt journal (548.723625ms)
+✔ workspace fails closed reopening corrupt config (508.852584ms)
+✔ workspace fails closed reopening corrupt metadata-directory (474.573041ms)
+✔ workspace fails closed reopening corrupt source-directory (549.163708ms)
+✔ workspace never inherits hostile Git configuration, execution canaries or parent environment (1421.322667ms)
+✔ workspace owns one serialized store and bounds failed-attempt objects and export orphans (34851.0095ms)
+✔ workspace SIGKILL after-provision-intent preserves intents or replays the durable receipt (115.215084ms)
+✔ workspace SIGKILL after-provision-repository preserves intents or replays the durable receipt (157.928584ms)
+✔ workspace SIGKILL after-provision-worktree preserves intents or replays the durable receipt (445.240167ms)
+✔ workspace SIGKILL after-intent preserves intents or replays the durable receipt (665.278208ms)
+✔ workspace SIGKILL after-file preserves intents or replays the durable receipt (613.258875ms)
+✔ workspace SIGKILL after-commit preserves intents or replays the durable receipt (913.122834ms)
+✔ workspace SIGKILL after-ref preserves intents or replays the durable receipt (833.378417ms)
+✔ workspace SIGKILL after-checkpoint preserves intents or replays the durable receipt (1124.059042ms)
+✔ workspace SIGKILL before-response preserves intents or replays the durable receipt (1109.339958ms)
+✔ workspace SIGKILL inside-journal-transaction preserves intents or replays the durable receipt (688.285959ms)
+ℹ tests 855
+ℹ suites 0
+ℹ pass 855
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 421245.531209
+npm notice run eitri@0.1.0 lint:rust
+npm notice run DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer cargo clippy --locked --manifest-path operator/Cargo.toml --all-targets -- -D warnings
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.27
+   Compiling quote v1.0.47
+   Compiling libc v0.2.191
+    Checking cfg-if v1.0.5
+   Compiling serde_core v1.0.228
+   Compiling autocfg v1.5.1
+    Checking bitflags v2.13.2
+   Compiling libm v0.2.16
+   Compiling typeid v1.0.3
+   Compiling erased-serde v0.4.10
+    Checking pin-project-lite v0.2.17
+    Checking memchr v2.8.3
+    Checking futures-core v0.3.34
+   Compiling crossbeam-utils v0.8.23
+   Compiling num-traits v0.2.19
+    Checking futures-io v0.3.34
+   Compiling shlex v2.0.1
+   Compiling find-msvc-tools v0.1.14
+    Checking stable_deref_trait v1.2.1
+    Checking core-foundation-sys v0.8.7
+    Checking slab v0.4.12
+    Checking smallvec v1.16.3
+    Checking arrayvec v0.7.8
+    Checking parking v2.2.1
+   Compiling version_check v0.9.5
+   Compiling zerocopy v0.8.63
+   Compiling cfg_aliases v0.2.2
+    Checking simd-adler32 v0.3.10
+    Checking once_cell v1.21.4
+    Checking adler2 v2.0.1
+    Checking fastrand v2.5.0
+    Checking bytes v1.12.1
+   Compiling rustversion v1.0.23
+    Checking itoa v1.0.18
+    Checking hashbrown v0.17.1
+    Checking equivalent v1.0.3
+   Compiling syn v2.0.119
+   Compiling syn v3.0.9
+    Checking atomic-waker v1.1.2
+   Compiling crc32fast v1.5.2
+    Checking futures-sink v0.3.34
+    Checking futures-lite v2.6.1
+    Checking concurrent-queue v2.5.0
+   Compiling aho-corasick v1.1.5
+    Checking typenum v1.20.1
+    Checking serde_fmt v1.1.0
+    Checking indexmap v2.14.2
+    Checking errno v0.3.14
+    Checking core-foundation v0.10.0
+   Compiling regex-syntax v0.8.11
+    Checking value-bag-serde1 v1.14.1
+   Compiling jobserver v0.1.35
+    Checking value-bag v1.14.1
+   Compiling rustix v1.1.5
+   Compiling cc v1.8.0
+    Checking log v0.4.34
+    Checking miniz_oxide v0.9.1
+    Checking event-listener v5.4.2
+   Compiling serde v1.0.228
+   Compiling synstructure v0.14.0
+    Checking either v1.19.0
+    Checking flate2 v1.1.10
+    Checking event-listener-strategy v0.5.4
+    Checking futures-channel v0.3.34
+   Compiling crossbeam-epoch v0.9.21
+   Compiling heck v0.5.0
+   Compiling thiserror v2.0.21
+   Compiling regex-automata v0.4.18
+    Checking socket2 v0.6.5
+    Checking mio v1.2.4
+   Compiling async-io v2.6.0
+    Checking writeable v0.6.4
+   Compiling crossbeam-deque v0.8.8
+   Compiling unicase v2.10.0
+    Checking futures-task v0.3.34
+    Checking litemap v0.8.3
+   Compiling rustc-hash v2.1.3
+   Compiling anyhow v1.0.104
+    Checking tokio v1.53.3
+    Checking http v1.5.0
+   Compiling icu_properties_data v2.3.0
+   Compiling serde_derive v1.0.228
+   Compiling zerocopy-derive v0.8.63
+   Compiling zerofrom-derive v0.1.8
+   Compiling yoke-derive v0.8.4
+   Compiling zerovec-derive v0.11.6
+   Compiling thiserror-impl v2.0.21
+   Compiling bytemuck_derive v1.12.1
+   Compiling displaydoc v0.2.7
+   Compiling futures-macro v0.3.34
+    Checking polling v3.11.0
+   Compiling objc2 v0.6.4
+   Compiling glob v0.3.4
+   Compiling getrandom v0.4.3
+    Checking async-task v4.7.1
+    Checking futures-util v0.3.34
+    Checking zerofrom v0.1.8
+    Checking utf8_iter v1.0.4
+    Checking bytemuck v1.25.2
+   Compiling rayon-core v1.13.0
+   Compiling icu_normalizer_data v2.3.0
+   Compiling paste v1.0.15
+    Checking yoke v0.8.3
+   Compiling hybrid-array v0.4.15
+   Compiling clang-sys v1.9.1
+   Compiling ring v0.17.14
+    Checking async-channel v2.5.0
+    Checking piper v0.2.5
+   Compiling prettyplease v0.2.37
+   Compiling serde_json v1.0.145
+   Compiling httparse v1.10.1
+    Checking zeroize v1.9.1
+   Compiling pkg-config v0.3.34
+    Checking objc2-encode v4.1.0
+    Checking rustls-pki-types v1.15.1
+    Checking blocking v1.7.0
+    Checking zerovec v0.11.8
+    Checking zerotrie v0.2.5
+   Compiling foreign-types-macros v0.2.4
+   Compiling equator-macro v0.4.2
+   Compiling strum_macros v0.26.4
+    Checking async-lock v3.4.2
+    Checking foreign-types-shared v0.3.1
+   Compiling vcpkg v0.2.15
+   Compiling thiserror v1.0.69
+   Compiling object v0.39.1
+    Checking percent-encoding v2.3.2
+   Compiling getrandom v0.3.4
+   Compiling ryu v1.0.23
+   Compiling minimal-lexical v0.2.1
+   Compiling nom v7.1.3
+   Compiling libz-sys v1.1.30
+    Checking equator v0.4.2
+    Checking foreign-types v0.5.0
+   Compiling crypto-common v0.2.2
+   Compiling block-buffer v0.12.1
+   Compiling thiserror-impl v1.0.69
+    Checking num-integer v0.1.47
+    Checking signal-hook-registry v1.4.8
+    Checking getrandom v0.2.17
+    Checking core-foundation v0.9.4
+    Checking tinystr v0.8.4
+    Checking potential_utf v0.1.6
+    Checking miniz_oxide v0.8.9
+    Checking icu_locale_core v2.3.0
+    Checking icu_collections v2.3.0
+    Checking tracing-core v0.1.36
+   Compiling generic-array v0.14.7
+   Compiling libloading v0.8.9
+    Checking bitflags v1.3.2
+   Compiling bindgen v0.71.1
+    Checking untrusted v0.9.0
+   Compiling const-oid v0.10.2
+    Checking icu_provider v2.3.1
+   Compiling digest v0.11.3
+    Checking icu_properties v2.3.0
+    Checking icu_normalizer v2.3.0
+   Compiling itertools v0.13.0
+    Checking aligned-vec v0.6.4
+    Checking tracing v0.1.44
+    Checking idna_adapter v1.2.2
+    Checking async-signal v0.2.14
+    Checking num-bigint v0.4.8
+   Compiling cexpr v0.6.0
+    Checking form_urlencoded v1.2.2
+    Checking objc2-core-foundation v0.3.2
+    Checking half v2.7.1
+    Checking rayon v1.12.0
+    Checking tokio-util v0.7.20
+    Checking async-executor v1.14.0
+   Compiling regex v1.13.1
+    Checking http-body v1.1.0
+   Compiling pin-project-internal v1.1.13
+   Compiling mime_guess v2.0.5
+    Checking euclid v0.22.14
+   Compiling cpufeatures v0.3.1
+    Checking malloc_buf v0.0.6
+   Compiling slotmap v1.1.1
+   Compiling bstr v1.13.1
+   Compiling shlex v1.3.0
+    Checking block v0.1.6
+    Checking fnv v1.0.7
+    Checking try-lock v0.2.5
+   Compiling rustls v0.23.46
+    Checking base64 v0.22.1
+    Checking scopeguard v1.2.0
+   Compiling same-file v1.0.6
+   Compiling semver v1.0.28
+    Checking want v0.3.2
+    Checking h2 v0.4.20
+    Checking walkdir v2.5.0
+   Compiling globset v0.4.20
+   Compiling ar_archive_writer v0.5.3
+   Compiling rustc_version v0.4.1
+    Checking pin-project v1.1.13
+    Checking rustls-webpki v0.103.15
+    Checking objc v0.2.7
+   Compiling sha2 v0.11.1
+    Checking objc2-foundation v0.3.2
+    Checking num-rational v0.4.2
+    Checking async-process v2.5.0
+    Checking idna v1.1.0
+    Checking v_frame v0.3.9
+    Checking block2 v0.6.2
+   Compiling toml_datetime v0.6.11
+   Compiling serde_spanned v0.6.9
+   Compiling libgit2-sys v0.18.8+1.9.7
+   Compiling profiling-procmacros v1.0.18
+    Checking itertools v0.14.0
+    Checking core-graphics-types v0.2.0
+    Checking security-framework-sys v2.17.0
+    Checking core_maths v0.1.1
+    Checking fdeflate v0.3.7
+   Compiling nix v0.31.3
+    Checking as-slice v0.2.1
+   Compiling system-configuration-sys v0.6.0
+   Compiling mime v0.3.17
+    Checking tower-service v0.3.3
+    Checking subtle v2.6.1
+    Checking deflate64 v0.1.12
+   Compiling syn v1.0.109
+    Checking float-cmp v0.9.0
+   Compiling av-scenechange v0.14.1
+   Compiling ref-cast v1.0.27
+   Compiling rustix v0.38.44
+   Compiling toml_write v0.1.2
+    Checking compression-core v0.4.34
+   Compiling winnow v0.7.15
+   Compiling built v0.8.1
+   Compiling parking_lot_core v0.9.12
+    Checking compression-codecs v0.4.46
+    Checking hyper v1.12.0
+   Compiling rav1e v0.8.1
+    Checking objc2-metal v0.3.2
+    Checking strict-num v0.1.1
+    Checking profiling v1.0.18
+   Compiling toml_edit v0.22.27
+    Checking aligned v0.4.3
+    Checking security-framework v3.7.0
+    Checking ttf-parser v0.25.1
+    Checking url v2.5.8
+   Compiling rust-embed-utils v8.13.0
+   Compiling psm v0.1.32
+   Compiling pathfinder_simd v0.5.6
+    Checking lyon_geom v1.0.19
+    Checking rand_core v0.9.5
+    Checking ppv-lite86 v0.2.21
+    Checking futures-executor v0.3.34
+   Compiling gpui_collections v0.2.2
+   Compiling ref-cast-impl v1.0.27
+   Compiling arg_enum_proc_macro v0.3.4
+   Compiling encoding_rs v0.8.42
+   Compiling serde_derive_internals v0.30.0
+   Compiling pulp v0.22.3
+   Compiling nix v0.29.0
+   Compiling naga v25.0.1
+    Checking no_std_io2 v0.9.4
+    Checking nom v8.0.0
+    Checking unicode-width v0.2.2
+   Compiling termcolor v1.4.1
+    Checking arrayref v0.3.9
+    Checking quick-error v2.0.1
+    Checking bit-vec v0.8.0
+   Compiling cbindgen v0.28.0
+   Compiling foldhash v0.1.5
+    Checking y4m v0.8.0
+    Checking event-listener v2.5.3
+   Compiling pastey v0.1.1
+    Checking leak v0.1.2
+   Compiling serde_json_lenient v0.2.4
+   Compiling bit-set v0.8.0
+    Checking hashbrown v0.15.5
+    Checking codespan-reporting v0.12.0
+    Checking leaky-cow v0.1.1
+   Compiling schemars_derive v1.2.3
+   Compiling tempfile v3.27.0
+    Checking async-channel v1.9.0
+    Checking tiny-skia-path v0.11.4
+    Checking bitstream-io v4.10.0
+    Checking tokio-rustls v0.26.6
+    Checking objc2-quartz-core v0.3.2
+    Checking rand_chacha v0.9.0
+    Checking futures v0.3.34
+    Checking lyon_path v1.0.19
+   Compiling gpui_perf v0.2.2
+   Compiling toml v0.8.23
+    Checking av1-grain v0.2.5
+   Compiling rust-embed-impl v8.13.0
+    Checking rustls-native-certs v0.8.5
+    Checking hyper-util v0.1.21
+    Checking async-compression v0.4.51
+    Checking core-graphics v0.24.0
+    Checking crypto-common v0.1.7
+    Checking block-buffer v0.10.4
+    Checking maybe-rayon v0.1.1
+    Checking lock_api v0.4.14
+    Checking async-global-executor v2.4.1
+    Checking strum v0.26.3
+    Checking core-graphics-types v0.1.3
+    Checking async-fs v2.2.0
+    Checking async-net v2.0.0
+    Checking num-complex v0.4.6
+    Checking rgb v0.8.53
+   Compiling stacker v0.1.25
+   Compiling num-derive v0.4.2
+    Checking kv-log-macro v1.0.7
+    Checking dirs-sys v0.3.7
+    Checking memmap2 v0.9.11
+    Checking cgl v0.3.2
+   Compiling proc-macro-error-attr2 v2.0.0
+   Compiling simd_helpers v0.1.0
+    Checking kurbo v0.11.3
+    Checking sync_wrapper v1.0.2
+    Checking tower-layer v0.3.3
+    Checking home v0.5.12
+    Checking weezl v0.1.12
+    Checking unicode-bidi-mirroring v0.4.0
+    Checking fastrand v1.9.0
+    Checking pin-utils v0.1.1
+    Checking new_debug_unreachable v1.0.6
+    Checking imgref v1.12.3
+    Checking tinyvec v1.13.3
+    Checking pulp-wasm-simd-flag v0.1.1
+   Compiling dtor-proc-macro v0.0.5
+    Checking rustc-hash v1.1.0
+    Checking dyn-clone v1.0.20
+    Checking simdutf8 v0.1.5
+    Checking unicode-script v0.5.8
+   Compiling heck v0.4.1
+   Compiling multiversion_no_op v1.0.0
+   Compiling hexf-parse v0.2.1
+    Checking unicode-ccc v0.4.0
+    Checking zune-core v0.5.3
+   Compiling object v0.37.3
+    Checking reborrow v0.5.5
+    Checking siphasher v1.0.4
+    Checking option-ext v0.2.0
+    Checking unicode-properties v0.1.4
+   Compiling noop_proc_macro v0.3.0
+    Checking waker-fn v1.2.0
+    Checking dirs-sys v0.4.1
+    Checking futures-lite v1.13.0
+    Checking zune-jpeg v0.5.15
+    Checking svgtypes v0.15.3
+    Checking rustybuzz v0.20.1
+    Checking dtor v0.0.6
+    Checking fontdb v0.23.0
+    Checking loop9 v0.1.5
+    Checking schemars v1.2.3
+   Compiling proc-macro-error2 v2.0.1
+    Checking async-std v1.13.2
+    Checking tower v0.5.3
+    Checking which v6.0.3
+    Checking io-surface v0.16.1
+    Checking dirs v4.0.0
+    Checking hyper-rustls v0.27.10
+   Compiling hidden-trait v0.1.2
+    Checking smol v2.0.2
+    Checking metal v0.29.0
+    Checking parking_lot v0.12.5
+    Checking async_zip v0.0.17
+    Checking digest v0.10.7
+    Checking rust-embed v8.13.0
+    Checking command-fds v0.3.3
+    Checking system-configuration v0.6.1
+   Compiling gpui_util_macros v0.2.2
+    Checking rand v0.9.5
+    Checking objc2-app-kit v0.3.2
+   Compiling gpui_media v0.2.2
+    Checking png v0.17.16
+    Checking core-graphics2 v0.4.1
+    Checking http-body-util v0.1.5
+    Checking tokio-socks v0.5.3
+    Checking serde_urlencoded v0.7.1
+    Checking rustls-pemfile v2.2.0
+    Checking simplecss v0.2.2
+    Checking xattr v0.2.3
+    Checking filetime v0.2.29
+    Checking cpufeatures v0.2.17
+    Checking zune-inflate v0.2.54
+    Checking avif-serialize v0.8.9
+    Checking raw-window-handle v0.6.2
+    Checking fax v0.2.7
+    Checking take-until v0.2.0
+    Checking pico-args v0.5.0
+    Checking color_quant v1.1.0
+    Checking byteorder-lite v0.1.0
+    Checking data-url v0.3.2
+    Checking unicode-vo v0.1.0
+    Checking bit_field v0.10.3
+    Checking unicode-bidi v0.3.18
+    Checking lebe v0.5.3
+   Compiling convert_case v0.4.0
+    Checking float_next_after v1.0.0
+    Checking dunce v1.0.5
+    Checking mint v0.5.9
+    Checking imagesize v0.13.0
+    Checking xmlwriter v0.1.0
+   Compiling zed-font-kit v0.14.1-zed
+    Checking gimli v0.32.3
+   Compiling ctor-proc-macro v0.0.6
+    Checking pxfm v0.1.30
+    Checking roxmltree v0.20.0
+    Checking ipnet v2.12.2
+    Checking blade-graphics v0.7.1
+    Checking zed-reqwest v0.12.15-zed
+    Checking ctor v0.4.3
+    Checking usvg v0.45.1
+    Checking core-video v0.4.3
+   Compiling derive_more v0.99.20
+    Checking lyon_tessellation v1.0.22
+    Checking exr v1.74.2
+    Checking image-webp v0.2.4
+    Checking gif v0.14.2
+    Checking tiff v0.11.3
+    Checking sha2 v0.10.9
+    Checking zed-async-tar v0.5.0-zed
+    Checking tiny-skia v0.11.4
+    Checking addr2line v0.25.1
+    Checking ravif v0.13.0
+    Checking moxcms v0.8.1
+   Compiling stacksafe-macro v0.1.4
+    Checking pathfinder_geometry v0.5.1
+    Checking dirs v5.0.1
+    Checking core-text v21.0.0
+    Checking lyon_algorithms v1.0.21
+    Checking png v0.18.1
+    Checking cocoa-foundation v0.2.0
+    Checking qoi v0.4.1
+   Compiling gpui_derive_refineable v0.2.2
+   Compiling strum_macros v0.27.2
+    Checking crossbeam-queue v0.3.14
+    Checking svg_fmt v0.4.5
+    Checking grid v0.18.0
+    Checking rustc-demangle v0.1.28
+    Checking lazy_static v1.5.1
+    Checking atomic v0.5.3
+    Checking pollster v0.2.5
+    Checking byteorder v1.5.0
+    Checking static_assertions v1.1.0
+    Checking float-ord v0.3.2
+    Checking sha1_smol v1.0.1
+    Checking postage v0.5.0
+    Checking gpui_refineable v0.2.2
+    Checking uuid v1.18.1
+    Checking taffy v0.9.0
+    Checking cocoa v0.26.0
+    Checking etagere v0.2.15
+    Checking lyon v1.0.19
+    Checking stacksafe v0.1.4
+    Checking resvg v0.45.1
+    Checking blade-util v0.3.0
+    Checking gpui_sum_tree v0.2.2
+    Checking ureq-proto v0.5.3
+    Checking gpui_semantic_version v0.2.2
+   Compiling gpui-macros v0.2.2
+   Compiling blade-macros v0.3.0
+    Checking num_cpus v1.17.0
+    Checking utf-8 v0.7.6
+    Checking inventory v0.3.25
+    Checking seahash v4.1.0
+    Checking ureq v3.1.2
+    Checking unicode-segmentation v1.12.0
+    Checking strum v0.27.2
+    Checking backtrace v0.3.76
+    Checking image v0.25.10
+   Compiling gpui v0.2.2
+    Checking git2 v0.20.4
+    Checking gpui_util v0.2.2
+    Checking gpui_http_client v0.2.2
+    Checking eitri-operator v0.1.0 (/Users/felix.langbein/projects/eitri-worker-cleanup-next/operator)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 42.44s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6, proc-macro-error2 v2.0.1
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+npm notice run eitri@0.1.0 format:check:rust
+npm notice run cargo fmt --manifest-path operator/Cargo.toml --all -- --check
+npm notice run eitri@0.1.0 test:operator
+npm notice run DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer cargo test --locked --manifest-path operator/Cargo.toml
+   Compiling unicode-ident v1.0.27
+   Compiling cfg-if v1.0.5
+   Compiling bitflags v2.13.2
+   Compiling pin-project-lite v0.2.17
+   Compiling memchr v2.8.3
+   Compiling libc v0.2.191
+   Compiling serde_core v1.0.228
+   Compiling typeid v1.0.3
+   Compiling libm v0.2.16
+   Compiling futures-core v0.3.34
+   Compiling crossbeam-utils v0.8.23
+   Compiling futures-io v0.3.34
+   Compiling proc-macro2 v1.0.107
+   Compiling equivalent v1.0.3
+   Compiling hashbrown v0.17.1
+   Compiling stable_deref_trait v1.2.1
+   Compiling itoa v1.0.18
+   Compiling core-foundation-sys v0.8.7
+   Compiling slab v0.4.12
+   Compiling arrayvec v0.7.8
+   Compiling smallvec v1.16.3
+   Compiling fastrand v2.5.0
+   Compiling parking v2.2.1
+   Compiling simd-adler32 v0.3.10
+   Compiling once_cell v1.21.4
+   Compiling typenum v1.20.1
+   Compiling quote v1.0.47
+   Compiling adler2 v2.0.1
+   Compiling bytes v1.12.1
+   Compiling concurrent-queue v2.5.0
+   Compiling futures-sink v0.3.34
+   Compiling atomic-waker v1.1.2
+   Compiling futures-lite v2.6.1
+   Compiling syn v2.0.119
+   Compiling syn v3.0.9
+   Compiling aho-corasick v1.1.5
+   Compiling crc32fast v1.5.2
+   Compiling miniz_oxide v0.9.1
+   Compiling event-listener v5.4.2
+   Compiling num-traits v0.2.19
+   Compiling either v1.19.0
+   Compiling errno v0.3.14
+   Compiling core-foundation v0.10.0
+   Compiling ryu v1.0.23
+   Compiling rustix v1.1.5
+   Compiling flate2 v1.1.10
+   Compiling event-listener-strategy v0.5.4
+   Compiling futures-channel v0.3.34
+   Compiling indexmap v2.14.2
+   Compiling rustc-hash v2.1.3
+   Compiling hybrid-array v0.4.15
+   Compiling mio v1.2.4
+   Compiling socket2 v0.6.5
+   Compiling unicase v2.10.0
+   Compiling futures-task v0.3.34
+   Compiling regex-automata v0.4.18
+   Compiling writeable v0.6.4
+   Compiling litemap v0.8.3
+   Compiling tokio v1.53.3
+   Compiling crossbeam-epoch v0.9.21
+   Compiling http v1.5.0
+   Compiling async-task v4.7.1
+   Compiling utf8_iter v1.0.4
+   Compiling anyhow v1.0.104
+   Compiling serde_fmt v1.1.0
+   Compiling erased-serde v0.4.10
+   Compiling crossbeam-deque v0.8.8
+   Compiling block-buffer v0.12.1
+   Compiling crypto-common v0.2.2
+   Compiling async-channel v2.5.0
+   Compiling piper v0.2.5
+   Compiling zeroize v1.9.1
+   Compiling const-oid v0.10.2
+   Compiling objc2-encode v4.1.0
+   Compiling value-bag-serde1 v1.14.1
+   Compiling value-bag v1.14.1
+   Compiling rustls-pki-types v1.15.1
+   Compiling blocking v1.7.0
+   Compiling objc2 v0.6.4
+   Compiling rayon-core v1.13.0
+   Compiling log v0.4.34
+   Compiling icu_normalizer_data v2.3.0
+   Compiling icu_properties_data v2.3.0
+   Compiling async-lock v3.4.2
+   Compiling polling v3.11.0
+   Compiling digest v0.11.3
+   Compiling async-io v2.6.0
+   Compiling same-file v1.0.6
+   Compiling shlex v1.3.0
+   Compiling termcolor v1.4.1
+   Compiling percent-encoding v2.3.2
+   Compiling foreign-types-shared v0.3.1
+   Compiling unicode-width v0.2.2
+   Compiling walkdir v2.5.0
+   Compiling serde_json v1.0.145
+   Compiling httparse v1.10.1
+   Compiling num-integer v0.1.47
+   Compiling signal-hook-registry v1.4.8
+   Compiling synstructure v0.14.0
+   Compiling getrandom v0.2.17
+   Compiling core-foundation v0.9.4
+   Compiling miniz_oxide v0.8.9
+   Compiling tracing-core v0.1.36
+   Compiling libloading v0.8.9
+   Compiling foldhash v0.1.5
+   Compiling untrusted v0.9.0
+   Compiling bit-vec v0.8.0
+   Compiling regex-syntax v0.8.11
+   Compiling bitflags v1.3.2
+   Compiling mime v0.3.17
+   Compiling ring v0.17.14
+   Compiling bit-set v0.8.0
+   Compiling clang-sys v1.9.1
+   Compiling hashbrown v0.15.5
+   Compiling tracing v0.1.44
+   Compiling num-bigint v0.4.8
+   Compiling async-signal v0.2.14
+   Compiling objc2-core-foundation v0.3.2
+   Compiling prettyplease v0.2.37
+   Compiling form_urlencoded v1.2.2
+   Compiling getrandom v0.3.4
+   Compiling regex v1.13.1
+   Compiling rayon v1.12.0
+   Compiling zerofrom-derive v0.1.8
+   Compiling yoke-derive v0.8.4
+   Compiling serde_derive v1.0.228
+   Compiling zerocopy-derive v0.8.63
+   Compiling thiserror-impl v2.0.21
+   Compiling zerovec-derive v0.11.6
+   Compiling bytemuck_derive v1.12.1
+   Compiling displaydoc v0.2.7
+   Compiling zerofrom v0.1.8
+   Compiling futures-macro v0.3.34
+   Compiling yoke v0.8.3
+   Compiling equator-macro v0.4.2
+   Compiling foreign-types-macros v0.2.4
+   Compiling bytemuck v1.25.2
+   Compiling strum_macros v0.26.4
+   Compiling futures-util v0.3.34
+   Compiling thiserror v2.0.21
+   Compiling zerovec v0.11.8
+   Compiling zerotrie v0.2.5
+   Compiling zerocopy v0.8.63
+   Compiling equator v0.4.2
+   Compiling foreign-types v0.5.0
+   Compiling thiserror-impl v1.0.69
+   Compiling tokio-util v0.7.20
+   Compiling pin-project-internal v1.1.13
+   Compiling serde v1.0.228
+   Compiling thiserror v1.0.69
+   Compiling tinystr v0.8.4
+   Compiling potential_utf v0.1.6
+   Compiling strum v0.26.3
+   Compiling icu_locale_core v2.3.0
+   Compiling icu_collections v2.3.0
+   Compiling http-body v1.1.0
+   Compiling async-executor v1.14.0
+   Compiling aligned-vec v0.6.4
+   Compiling mime_guess v2.0.5
+   Compiling euclid v0.22.14
+   Compiling malloc_buf v0.0.6
+   Compiling bstr v1.13.1
+   Compiling icu_provider v2.3.1
+   Compiling cpufeatures v0.3.1
+   Compiling icu_normalizer v2.3.0
+   Compiling icu_properties v2.3.0
+   Compiling try-lock v0.2.5
+   Compiling block v0.1.6
+   Compiling hexf-parse v0.2.1
+   Compiling rustc-hash v1.1.0
+   Compiling base64 v0.22.1
+   Compiling fnv v1.0.7
+   Compiling scopeguard v1.2.0
+   Compiling want v0.3.2
+   Compiling globset v0.4.20
+   Compiling h2 v0.4.20
+   Compiling sha2 v0.11.1
+   Compiling serde_spanned v0.6.9
+   Compiling toml_datetime v0.6.11
+   Compiling objc v0.2.7
+   Compiling v_frame v0.3.9
+   Compiling pin-project v1.1.13
+   Compiling bindgen v0.71.1
+   Compiling num-rational v0.4.2
+   Compiling objc2-foundation v0.3.2
+   Compiling rustls-webpki v0.103.15
+   Compiling profiling-procmacros v1.0.18
+   Compiling idna_adapter v1.2.2
+   Compiling idna v1.1.0
+   Compiling async-process v2.5.0
+   Compiling generic-array v0.14.7
+   Compiling block2 v0.6.2
+   Compiling core-graphics-types v0.2.0
+   Compiling itertools v0.14.0
+   Compiling security-framework-sys v2.17.0
+   Compiling core_maths v0.1.1
+   Compiling fdeflate v0.3.7
+   Compiling as-slice v0.2.1
+   Compiling compression-core v0.4.34
+   Compiling subtle v2.6.1
+   Compiling tower-service v0.3.3
+   Compiling float-cmp v0.9.0
+   Compiling deflate64 v0.1.12
+   Compiling rustls v0.23.46
+   Compiling strict-num v0.1.1
+   Compiling compression-codecs v0.4.46
+   Compiling toml_edit v0.22.27
+   Compiling aligned v0.4.3
+   Compiling ttf-parser v0.25.1
+   Compiling security-framework v3.7.0
+   Compiling half v2.7.1
+   Compiling ppv-lite86 v0.2.21
+   Compiling url v2.5.8
+   Compiling profiling v1.0.18
+   Compiling hyper v1.12.0
+   Compiling rust-embed-utils v8.13.0
+   Compiling objc2-metal v0.3.2
+   Compiling slotmap v1.1.1
+   Compiling lyon_geom v1.0.19
+   Compiling futures-executor v0.3.34
+   Compiling arg_enum_proc_macro v0.3.4
+   Compiling ref-cast-impl v1.0.27
+   Compiling rand_core v0.9.5
+   Compiling libz-sys v1.1.30
+   Compiling serde_derive_internals v0.30.0
+   Compiling getrandom v0.4.3
+   Compiling gpui_collections v0.2.2
+   Compiling nom v8.0.0
+   Compiling no_std_io2 v0.9.4
+   Compiling event-listener v2.5.3
+   Compiling arrayref v0.3.9
+   Compiling y4m v0.8.0
+   Compiling quick-error v2.0.1
+   Compiling leak v0.1.2
+   Compiling async-channel v1.9.0
+   Compiling leaky-cow v0.1.1
+   Compiling av-scenechange v0.14.1
+   Compiling tiny-skia-path v0.11.4
+   Compiling bitstream-io v4.10.0
+   Compiling ref-cast v1.0.27
+   Compiling gpui_perf v0.2.2
+   Compiling tempfile v3.27.0
+   Compiling libgit2-sys v0.18.8+1.9.7
+   Compiling schemars_derive v1.2.3
+   Compiling rand_chacha v0.9.0
+   Compiling tokio-rustls v0.26.6
+   Compiling lyon_path v1.0.19
+   Compiling hyper-util v0.1.21
+   Compiling futures v0.3.34
+   Compiling toml v0.8.23
+   Compiling rust-embed-impl v8.13.0
+   Compiling rustls-native-certs v0.8.5
+   Compiling async-compression v0.4.51
+   Compiling nix v0.31.3
+   Compiling parking_lot_core v0.9.12
+   Compiling syn v1.0.109
+   Compiling system-configuration-sys v0.6.0
+   Compiling rustix v0.38.44
+   Compiling block-buffer v0.10.4
+   Compiling crypto-common v0.1.7
+   Compiling core-graphics v0.24.0
+   Compiling lock_api v0.4.14
+   Compiling async-global-executor v2.4.1
+   Compiling num-complex v0.4.6
+   Compiling rgb v0.8.53
+   Compiling objc2-quartz-core v0.3.2
+   Compiling maybe-rayon v0.1.1
+   Compiling num-derive v0.4.2
+   Compiling core-graphics-types v0.1.3
+   Compiling codespan-reporting v0.12.0
+   Compiling async-net v2.0.0
+   Compiling async-fs v2.2.0
+   Compiling av1-grain v0.2.5
+   Compiling kv-log-macro v1.0.7
+   Compiling memmap2 v0.9.11
+   Compiling dirs-sys v0.3.7
+   Compiling cgl v0.3.2
+   Compiling simd_helpers v0.1.0
+   Compiling proc-macro-error-attr2 v2.0.0
+   Compiling kurbo v0.11.3
+   Compiling sync_wrapper v1.0.2
+   Compiling reborrow v0.5.5
+   Compiling siphasher v1.0.4
+   Compiling unicode-script v0.5.8
+   Compiling unicode-bidi-mirroring v0.4.0
+   Compiling tinyvec v1.13.3
+   Compiling weezl v0.1.12
+   Compiling tower-layer v0.3.3
+   Compiling unicode-properties v0.1.4
+   Compiling waker-fn v1.2.0
+   Compiling simdutf8 v0.1.5
+   Compiling unicode-ccc v0.4.0
+   Compiling option-ext v0.2.0
+   Compiling new_debug_unreachable v1.0.6
+   Compiling fastrand v1.9.0
+   Compiling pulp-wasm-simd-flag v0.1.1
+   Compiling dyn-clone v1.0.20
+   Compiling zune-core v0.5.3
+   Compiling pin-utils v0.1.1
+   Compiling home v0.5.12
+   Compiling imgref v1.12.3
+   Compiling async-std v1.13.2
+   Compiling futures-lite v1.13.0
+   Compiling which v6.0.3
+   Compiling schemars v1.2.3
+   Compiling pulp v0.22.3
+   Compiling fontdb v0.23.0
+   Compiling loop9 v0.1.5
+   Compiling zune-jpeg v0.5.15
+   Compiling rav1e v0.8.1
+   Compiling svgtypes v0.15.3
+   Compiling encoding_rs v0.8.42
+   Compiling naga v25.0.1
+   Compiling rustybuzz v0.20.1
+   Compiling dirs-sys v0.4.1
+   Compiling proc-macro-error2 v2.0.1
+   Compiling tower v0.5.3
+   Compiling dtor v0.0.6
+   Compiling cbindgen v0.28.0
+   Compiling io-surface v0.16.1
+   Compiling hidden-trait v0.1.2
+   Compiling dirs v4.0.0
+   Compiling objc2-app-kit v0.3.2
+   Compiling smol v2.0.2
+   Compiling metal v0.29.0
+   Compiling command-fds v0.3.3
+   Compiling hyper-rustls v0.27.10
+   Compiling parking_lot v0.12.5
+   Compiling gpui_media v0.2.2
+   Compiling digest v0.10.7
+   Compiling system-configuration v0.6.1
+   Compiling rust-embed v8.13.0
+   Compiling async_zip v0.0.17
+   Compiling psm v0.1.32
+   Compiling pathfinder_simd v0.5.6
+   Compiling git2 v0.20.4
+   Compiling rand v0.9.5
+   Compiling gpui_util_macros v0.2.2
+   Compiling nix v0.29.0
+   Compiling serde_json_lenient v0.2.4
+   Compiling png v0.17.16
+   Compiling serde_urlencoded v0.7.1
+   Compiling tokio-socks v0.5.3
+   Compiling core-graphics2 v0.4.1
+   Compiling http-body-util v0.1.5
+   Compiling simplecss v0.2.2
+   Compiling rustls-pemfile v2.2.0
+   Compiling xattr v0.2.3
+   Compiling filetime v0.2.29
+   Compiling cpufeatures v0.2.17
+   Compiling zune-inflate v0.2.54
+   Compiling avif-serialize v0.8.9
+   Compiling float_next_after v1.0.0
+   Compiling pxfm v0.1.30
+   Compiling unicode-vo v0.1.0
+   Compiling imagesize v0.13.0
+   Compiling bit_field v0.10.3
+   Compiling roxmltree v0.20.0
+   Compiling fax v0.2.7
+   Compiling take-until v0.2.0
+   Compiling byteorder-lite v0.1.0
+   Compiling gimli v0.32.3
+   Compiling data-url v0.3.2
+   Compiling lebe v0.5.3
+   Compiling mint v0.5.9
+   Compiling raw-window-handle v0.6.2
+   Compiling dunce v1.0.5
+   Compiling ipnet v2.12.2
+   Compiling unicode-bidi v0.3.18
+   Compiling color_quant v1.1.0
+   Compiling pico-args v0.5.0
+   Compiling xmlwriter v0.1.0
+   Compiling gif v0.14.2
+   Compiling derive_more v0.99.20
+   Compiling zed-reqwest v0.12.15-zed
+   Compiling gpui_util v0.2.2
+   Compiling usvg v0.45.1
+   Compiling image-webp v0.2.4
+   Compiling exr v1.74.2
+   Compiling tiff v0.11.3
+   Compiling moxcms v0.8.1
+   Compiling blade-graphics v0.7.1
+   Compiling addr2line v0.25.1
+   Compiling ravif v0.13.0
+   Compiling ctor v0.4.3
+   Compiling lyon_tessellation v1.0.22
+   Compiling sha2 v0.10.9
+   Compiling zed-async-tar v0.5.0-zed
+   Compiling core-video v0.4.3
+   Compiling tiny-skia v0.11.4
+   Compiling pathfinder_geometry v0.5.1
+   Compiling stacker v0.1.25
+   Compiling stacksafe-macro v0.1.4
+   Compiling object v0.37.3
+   Compiling dirs v5.0.1
+   Compiling core-text v21.0.0
+   Compiling lyon_algorithms v1.0.21
+   Compiling gpui v0.2.2
+   Compiling png v0.18.1
+   Compiling cocoa-foundation v0.2.0
+   Compiling qoi v0.4.1
+   Compiling gpui_derive_refineable v0.2.2
+   Compiling strum_macros v0.27.2
+   Compiling crossbeam-queue v0.3.14
+   Compiling svg_fmt v0.4.5
+   Compiling rustc-demangle v0.1.28
+   Compiling grid v0.18.0
+   Compiling sha1_smol v1.0.1
+   Compiling atomic v0.5.3
+   Compiling pollster v0.2.5
+   Compiling byteorder v1.5.0
+   Compiling static_assertions v1.1.0
+   Compiling float-ord v0.3.2
+   Compiling lazy_static v1.5.1
+   Compiling postage v0.5.0
+   Compiling taffy v0.9.0
+   Compiling uuid v1.18.1
+   Compiling gpui_refineable v0.2.2
+   Compiling etagere v0.2.15
+   Compiling zed-font-kit v0.14.1-zed
+   Compiling image v0.25.10
+   Compiling cocoa v0.26.0
+   Compiling lyon v1.0.19
+   Compiling resvg v0.45.1
+   Compiling stacksafe v0.1.4
+   Compiling backtrace v0.3.76
+   Compiling strum v0.27.2
+   Compiling gpui_http_client v0.2.2
+   Compiling blade-util v0.3.0
+   Compiling gpui_semantic_version v0.2.2
+   Compiling ureq-proto v0.5.3
+   Compiling gpui_sum_tree v0.2.2
+   Compiling blade-macros v0.3.0
+   Compiling gpui-macros v0.2.2
+   Compiling num_cpus v1.17.0
+   Compiling inventory v0.3.25
+   Compiling utf-8 v0.7.6
+   Compiling seahash v4.1.0
+   Compiling ureq v3.1.2
+   Compiling unicode-segmentation v1.12.0
+   Compiling eitri-operator v0.1.0 (/Users/felix.langbein/projects/eitri-worker-cleanup-next/operator)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 43.06s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6, proc-macro-error2 v2.0.1
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running unittests src/main.rs (operator/target/debug/deps/eitri_operator-16b23e7f4fc03507)
+
+running 30 tests
+test client::artifact_tests::png_rejects_dimensions_malformed_chunks_and_compressed_metadata_before_decode ... ok
+test client::sse::tests::expired_deadline_and_cancellation_reject_already_buffered_lines ... ok
+test client::artifact_tests::artifact_provenance_requires_every_check_link ... ok
+test client::artifact_tests::artifact_acceptance_rejects_stale_boot_generation_case_expiry_and_disconnect ... ok
+test client::sse::tests::header_bytes_and_line_count_are_bounded ... ok
+test client::sse::tests::exact_header_byte_and_line_limits_and_http10_status_are_accepted ... ok
+test client::sse::tests::eof_partial_lines_invalid_utf8_and_overlong_wire_lines_are_rejected ... ok
+test client::sse::tests::request_route_bearer_and_numeric_loopback_host_are_validated ... ok
+test client::artifact_tests::native_png_decoder_accepts_exact_png_and_rejects_corrupt_pixel_data ... ok
+test client::artifact_tests::sse_frames_reject_protocol_boot_snapshot_and_sequence_changes_before_applying ... ok
+test client::sse::tests::malformed_status_headers_framing_and_encoding_are_rejected ... ok
+test input::tests::unicode_selection_multiline_and_ime_ranges ... ok
+test input::tests::native_handler_keyboard_clipboard_and_multiline ... ok
+test client::sse::tests::payload_limit_counts_json_bytes_not_data_prefix_or_crlf ... ok
+test client::artifact_tests::artifact_http_validates_exact_route_bearer_bytes_hash_status_type_and_length ... ok
+test client::artifact_tests::sse_generation_and_stop_checks_prevent_buffered_late_frames_from_applying ... ok
+test layout_tests::editor_wheel_down_does_not_scroll_detail ... ok
+test theme::tests::session_status_never_implies_a_passed_check ... ok
+test theme::tests::workshop_text_meets_wcag_aa_contrast ... ok
+test client::sse::tests::partial_body_line_trickle_cannot_restart_the_deadline ... ok
+test layout_tests::editor_wheel_up_does_not_scroll_detail ... ok
+test client::sse::tests::stalled_line_cancellation_finishes_within_the_line_deadline ... ok
+test layout_tests::history_wheel_up_does_not_scroll_detail ... ok
+test layout_tests::history_wheel_down_does_not_scroll_detail ... ok
+test layout_tests::selected_paused_detail_keeps_history_and_save_reachable ... ok
+test client::sse::tests::header_stall_byte_trickle_and_complete_header_lines_share_one_deadline ... ok
+test client::artifact_tests::artifact_body_timeout_does_not_wait_for_connection_close ... ok
+test client::artifact_tests::sse_heartbeats_survive_the_response_header_deadline ... ok
+test client::tests::real_http_sse_notes_reconnection_and_expired_history ... ok
+test client::sse::tests::healthy_heartbeats_outlive_both_production_deadlines_on_one_connection ... ok
+
+test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 17.06s
+
+
+verify:all exit code: 0

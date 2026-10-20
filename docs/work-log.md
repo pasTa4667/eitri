@@ -47,7 +47,7 @@ The user's implementation request authorizes local implementation under the exis
 
 ## Current checkpoint
 
-Five mandatory milestones remain, M2 through M6. M0 and the scoped scripted M1 checks are verified. The opt-in [accepted-request consumption](worker-consumption.md) prerequisite is implemented at `6778eabc`, with 812 Node and 30 Rust tests passing. Production activation and native real-check admission remain gated. External human-presence gates remain explicit. M7 is optional. Rigor remains high because generated code execution, credentials, and repository writes cross trust boundaries.
+Five mandatory milestones remain, M2 through M6. M0 and the scoped scripted M1 checks are verified. The opt-in [accepted-request consumption](worker-consumption.md) prerequisite is implemented at `6778eabc`. The later [targeted consumed-run cleanup](worker-cleanup.md) command is implemented at `3a7e666`, with 855 Node and 30 Rust tests passing. Production activation and native real-check admission remain gated. External human-presence gates remain explicit. M7 is optional. Rigor remains high because generated code execution, credentials, and repository writes cross trust boundaries.
 
 The previously accepted frozen browser validator is integrated on main as `8517aca`. Production main does not enable validator execution. The [October 20 source integration record](evidence/validator-integration/verification.md) supersedes earlier unmerged-source status. The later [admitted check interface](check-execution.md), integrated as `d9da6f6`, adds action-bound scripted dispatch and conservative outcomes. Its final integrated suite passes 382 Node and 30 Rust tests. M2 is not accepted.
 
@@ -280,6 +280,20 @@ Fresh GPT final source review passes with no P0 or P1 findings and independently
 Callback return, interruption, pause, authority loss, and close revoke forward work. Controller close drains pending opening and worker settlement without waiting for arbitrary callback code. Client drainage does not prove daemon drainage. Synchronous authority sampling, compatible elapsed milliseconds, cooperative cancellation, trusted local ownership, and existing power-loss limits remain explicit.
 
 No actual Docker dispatch, monitored fixture edit, credential access, service activation, application inference, publication, deployment, or containment change occurs. Production main remains unwired. Native real-check admission, trusted live cleanup reconciliation, actual fixture validation, and M2 acceptance remain open. The implementation worktree and detached red reproduction are retained. No remote is configured. This requested bounded step is complete.
+
+## Targeted consumed-run cleanup continuation on October 20
+
+This continuation resumes from `8bcbe02` after accepted-request consumption. Source `3a7e666d8c6ae102fe7619b77b216fcd407c57be` implements the next bounded prerequisite. The [reference](worker-cleanup.md) and [verification record](evidence/worker-cleanup/verification.md) define the command and evidence.
+
+Two independent GPT sketches compare a cleanup-only handle with a static exact-record command. The fresh cross-judge identifies that opening the handle would normalize unrelated pending records before selector validation. The static command instead acquires existing storage without recovery traversal, validates one consumed selector, normalizes only that execution, reuses ownership-checked finalization, and closes privately. It adds no ledger, execution authority, evidence export, accounting charge, or schema change.
+
+The original implementation owner completes a loader compatibility check and an initial full-suite run before adding two final legacy tests. The harness then stops it at 30 minutes during final verification and removes its managed worktree. A retained patch preserves all five files. The parent restores it in a persistent worktree, and a fresh GPT owner completes verification and commits unchanged source bytes. Neither the interrupted final rerun nor the parent's earlier 300-second baseline attempt counts as a pass.
+
+Fresh GPT correctness and comment reviews find no issues. The source reviewer lacks an execution tool and explicitly delegates final verification and byte identity to the parent. Parent focused verification passes all 43 tests, including actual SIGKILL checkpoints. Writer and parent independently complete `npm run verify:all`, each passing 855 Node and 30 Rust tests. Parent full verification runs on integrated main after the fast-forward. Reviewed and committed source patches match, all five file hashes match, and the executable working-tree diff remains empty. Existing Rust dependency future-incompatibility notices remain.
+
+The fresh GPT evidence audit passes with no flags or corrections. It corroborates the claims against raw logs and actual parent transcript tool results. All design, implementation, source review, and evidence review roles use `openai-codex/gpt-6.1-sol`, not Claude. This is fresh-context independence, not cross-family assurance. External cleanup effects are scripted, not actual Docker execution. Cleanup retains unknown-build and ambiguous-acquisition uncertainty. Ownership remains process-local, and historical removal does not establish daemon quiescence or retained-cache reclamation.
+
+No monitored fixture edit, credentials, live services, application inference, publication, deployment, or containment change occurs. Production main remains unwired. Trusted consumed-report retrieval, native real-check admission, actual fixture validation, and M2 acceptance remain open. Later human-presence gates remain explicit. No remote is configured, so delivery stays local. The requested local implementation step is complete.
 
 ## Checkpoint policy
 
