@@ -206,7 +206,7 @@ test('workspace owns real independent worktrees and literal raw checkpoints with
     ).toString(),
     'regression B',
   );
-  for (const name of ['controller.ts', 'native.ts', 'http.ts', 'main.ts'])
+  for (const name of ['native.ts', 'http.ts', 'main.ts'])
     assert.doesNotMatch(
       await readFile(new URL(`../src/${name}`, import.meta.url), 'utf8'),
       /(?:from\s*|import\s*\()['"]\.\/workspace(?:\.ts)?['"]/,

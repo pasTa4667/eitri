@@ -1,8 +1,28 @@
 import { DatabaseSync } from 'node:sqlite';
 import { mkdir, chmod, lstat, open, realpath, rm } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import type { Provider } from '@earendil-works/pi-ai/models';
+import {
+  WorkspaceStore,
+  workspaceLimits,
+  caseId,
+  repositoryId,
+  requestId,
+  virtualPath,
+  gitRevision,
+  sha256,
+} from './workspace.ts';
+import type {
+  RepositoryId,
+  VirtualPath,
+  BaselineFile,
+  BrokerEdit,
+  GitRevision,
+  SavedReceipt,
+  FrozenRevision,
+  WorkspaceCheckpoint,
+} from './workspace.ts';
 import { NativeCase } from './native.ts';
 import { ArtifactStore, artifactLimits, validateOutput } from './artifacts.ts';
 import {
@@ -31,6 +51,34 @@ import type {
   Snapshot,
 } from './domain.ts';
 
+export type OfflineWorkspaceOptions = Readonly<{
+  repositoryId: RepositoryId;
+  regressionDirectory: VirtualPath;
+  baseline: readonly BaselineFile[];
+}>;
+export type OfflineActionWorkspace = Readonly<{
+  selection: FrozenRevision;
+  readSelected(): Promise<readonly BaselineFile[]>;
+  edit(expectedRevision: GitRevision, input: Omit<BrokerEdit, 'requestId'>): Promise<SavedReceipt>;
+}>;
+type WorkspaceBinding = Readonly<{
+  caseId: string;
+  repositoryId: RepositoryId;
+  sourceDigest: string;
+}> &
+  (
+    | Readonly<{ state: 'planned' }>
+    | Readonly<{ state: 'provisioning' }>
+    | Readonly<{ state: 'ready'; baseRevision: GitRevision }>
+    | Readonly<{ state: 'uncertain'; reason: string }>
+  );
+type ActionSource = Readonly<{ action: Readonly<Action>; kind: Check['kind'] }> &
+  (
+    | Readonly<{ state: 'selecting'; expected: WorkspaceCheckpoint }>
+    | Readonly<{ state: 'selected'; frozen: FrozenRevision }>
+    | Readonly<{ state: 'settled'; frozen: FrozenRevision }>
+    | Readonly<{ state: 'interrupted'; reason: string; frozen: FrozenRevision | null }>
+  );
 type Options = {
   directory: string;
   policy: { project: string; environment: string; repository: string };
@@ -39,7 +87,11 @@ type Options = {
   capacity?: number;
   allowanceMs?: number;
   probe?: (id: string, signal: AbortSignal) => Promise<string>;
-  check?: (request: AdmittedCheckRequest) => Promise<CheckExecution>;
+  offlineWorkspace?: OfflineWorkspaceOptions;
+  check?: (
+    request: AdmittedCheckRequest,
+    source?: OfflineActionWorkspace,
+  ) => Promise<CheckExecution>;
   issues?: () => Promise<Issue[]>;
   fault?: (point: string, caseId: string) => void;
 };
@@ -62,6 +114,9 @@ export class Controller {
   private polling = false;
   private sequence = 0;
   private allowance: number;
+  private workspaces?: WorkspaceStore;
+  private workspaceQueue: Promise<unknown> = Promise.resolve();
+  private sourceDigest?: string;
 
   private constructor(directory: string, db: DatabaseSync, options: Options) {
     this.directory = directory;
@@ -77,6 +132,28 @@ export class Controller {
     this.allowance = Math.min(options.allowanceMs ?? 600_000, 600_000);
   }
   static async open(options: Options) {
+    if (options.offlineWorkspace) {
+      const offline = options.offlineWorkspace;
+      if (!Array.isArray(offline.baseline) || offline.baseline.length > workspaceLimits.files)
+        fail('workspace-size-limit');
+      options = {
+        ...options,
+        offlineWorkspace: {
+          repositoryId: repositoryId(offline.repositoryId),
+          regressionDirectory: virtualPath(offline.regressionDirectory),
+          baseline: offline.baseline.map((file) => {
+            if (
+              !file ||
+              !hasFields(file, ['virtualPath', 'bytes']) ||
+              !(file.bytes instanceof Uint8Array) ||
+              file.bytes.byteLength > workspaceLimits.fileBytes
+            )
+              return fail('workspace-file-size-limit');
+            return { virtualPath: virtualPath(file.virtualPath), bytes: Buffer.from(file.bytes) };
+          }),
+        },
+      };
+    }
     const directory = resolve(options.directory);
     if (
       !Number.isSafeInteger(options.capacity ?? 1) ||
@@ -121,10 +198,14 @@ export class Controller {
         CREATE TABLE IF NOT EXISTS receipts (id TEXT PRIMARY KEY, digest TEXT NOT NULL, value TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS deliveries (id TEXT PRIMARY KEY, case_id TEXT NOT NULL REFERENCES cases(id), text TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS actions (id TEXT PRIMARY KEY, case_id TEXT NOT NULL UNIQUE REFERENCES cases(id), value TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS workspace_bindings (case_id TEXT PRIMARY KEY REFERENCES cases(id), value TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS action_sources (action_id TEXT PRIMARY KEY, case_id TEXT NOT NULL REFERENCES cases(id), value TEXT NOT NULL);
+        CREATE INDEX IF NOT EXISTS action_sources_case ON action_sources(case_id);
       `);
       if (db.prepare("SELECT value FROM metadata WHERE key='schema'").get()?.value !== '1')
         fail('unsupported-schema');
       controller = new Controller(directory, db, options);
+      await controller.openWorkspaces();
       await controller.recover();
       controller.starting = false;
       controller.schedule();
@@ -134,9 +215,394 @@ export class Controller {
         await Promise.allSettled(
           [...controller.runtimes.values()].map(async (p) => (await p).close()),
         );
+      await Promise.allSettled([controller?.workspaces?.close()]);
       db?.close();
       openDirectories.delete(directory);
       throw error;
+    }
+  }
+  private async openWorkspaces() {
+    const row = this.db.prepare("SELECT value FROM metadata WHERE key='offline_workspace'").get();
+    const offline = this.options.offlineWorkspace;
+    if (!offline) {
+      if (
+        row ||
+        this.db.prepare('SELECT case_id FROM workspace_bindings LIMIT 1').get() ||
+        this.db.prepare('SELECT action_id FROM action_sources LIMIT 1').get()
+      )
+        fail('offline-workspace-required');
+      return;
+    }
+    this.sourceDigest = digest({
+      version: 1,
+      repositoryId: offline.repositoryId,
+      regressionDirectory: offline.regressionDirectory,
+      baseline: offline.baseline
+        .map((file) => ({
+          path: file.virtualPath,
+          size: file.bytes.byteLength,
+          hash: createHash('sha256').update(file.bytes).digest('hex'),
+        }))
+        .sort((a, b) => Buffer.compare(Buffer.from(a.path), Buffer.from(b.path))),
+    });
+    if (row) {
+      const saved = JSON.parse(String(row.value));
+      if (
+        !saved ||
+        !hasFields(saved, ['version', 'sourceDigest', 'state']) ||
+        saved.version !== 1 ||
+        saved.sourceDigest !== this.sourceDigest ||
+        !['opening', 'ready'].includes(saved.state)
+      )
+        fail('offline-workspace-configuration-mismatch');
+    } else {
+      if (this.db.prepare('SELECT id FROM cases LIMIT 1').get())
+        fail('offline-workspace-migration-required');
+      this.db.prepare('INSERT INTO metadata VALUES (?,?)').run(
+        'offline_workspace',
+        JSON.stringify({
+          version: 1,
+          sourceDigest: this.sourceDigest,
+          state: 'opening',
+        }),
+      );
+    }
+    const directory = join(this.directory, 'workspaces');
+    if (!row) await mkdir(directory, { mode: 0o700 });
+    else {
+      for (const name of ['workspace-owner', 'journal.sqlite']) {
+        const stat = await lstat(join(directory, name));
+        if (!stat.isFile() || stat.isSymbolicLink()) fail('offline-workspace-store-missing');
+      }
+    }
+    this.workspaces = await WorkspaceStore.open({
+      directory,
+      regressionDirectory: offline.regressionDirectory,
+      fault: (point, id) => this.options.fault?.(`workspace-${point}`, id),
+    });
+    this.db.prepare("UPDATE metadata SET value=? WHERE key='offline_workspace'").run(
+      JSON.stringify({
+        version: 1,
+        sourceDigest: this.sourceDigest,
+        state: 'ready',
+      }),
+    );
+  }
+  private workspaceSerial<T>(work: () => Promise<T>): Promise<T> {
+    if (this.closing) return Promise.reject(new ControlError('controller-closed'));
+    const next = this.workspaceQueue.then(work);
+    this.workspaceQueue = next.catch(() => {});
+    return next;
+  }
+  private saveBinding(binding: WorkspaceBinding) {
+    this.db
+      .prepare(
+        'INSERT INTO workspace_bindings VALUES (?,?) ON CONFLICT(case_id) DO UPDATE SET value=excluded.value',
+      )
+      .run(binding.caseId, JSON.stringify(binding));
+  }
+  private binding(id: string): WorkspaceBinding {
+    const row = this.db.prepare('SELECT value FROM workspace_bindings WHERE case_id=?').get(id);
+    const b: WorkspaceBinding = row
+      ? JSON.parse(String(row.value))
+      : fail('workspace-binding-missing');
+    if (
+      !b ||
+      b.caseId !== id ||
+      !uuid(b.caseId) ||
+      b.repositoryId !== this.options.offlineWorkspace?.repositoryId ||
+      b.sourceDigest !== this.sourceDigest ||
+      !['planned', 'provisioning', 'ready', 'uncertain'].includes(b.state)
+    )
+      fail('invalid-workspace-binding');
+    repositoryId(b.repositoryId);
+    if (
+      !hasFields(b, [
+        'caseId',
+        'repositoryId',
+        'sourceDigest',
+        'state',
+        ...(b.state === 'ready' ? ['baseRevision'] : b.state === 'uncertain' ? ['reason'] : []),
+      ])
+    )
+      fail('invalid-workspace-binding');
+    if (b.state === 'ready') gitRevision(b.baseRevision);
+    if (b.state === 'uncertain' && !text(b.reason, 512)) fail('invalid-workspace-binding');
+    return b;
+  }
+  private workspaceReady(id: string): boolean {
+    return !this.options.offlineWorkspace || this.binding(id).state === 'ready';
+  }
+  private parkWorkspace(id: string, error: unknown) {
+    const reason = error instanceof ControlError ? error.code : 'workspace-recovery-failed';
+    this.transaction(() => {
+      this.saveBinding({
+        caseId: id,
+        repositoryId: this.options.offlineWorkspace!.repositoryId,
+        sourceDigest: this.sourceDigest!,
+        state: 'uncertain',
+        reason,
+      });
+      const c = this.get(id);
+      if (c.status === 'terminal') {
+        c.warning = reason;
+        c.version++;
+      } else if (c.status === 'paused' || c.status === 'pause-requested') {
+        c.reason = reason;
+        c.version++;
+      } else this.attention(c, reason);
+      this.save(c);
+    });
+  }
+  private async ensureWorkspace(id: string) {
+    if (!this.options.offlineWorkspace) return;
+    await this.workspaceSerial(async () => {
+      try {
+        const binding = this.binding(id);
+        if (binding.state === 'uncertain') return;
+        let workspace;
+        if (binding.state === 'planned') {
+          this.saveBinding({ ...binding, state: 'provisioning' });
+          this.options.fault?.('after-workspace-provision-intent', id);
+          workspace = await this.workspaces!.provision({
+            caseId: caseId(id),
+            repositoryId: binding.repositoryId,
+            baseline: this.options.offlineWorkspace!.baseline,
+          });
+          this.options.fault?.('after-workspace-provision-effect', id);
+        } else workspace = await this.workspaces!.inspect(caseId(id));
+        if (
+          workspace.caseId !== id ||
+          workspace.repositoryId !== binding.repositoryId ||
+          workspace.state !== 'ready'
+        )
+          return fail('workspace-binding-not-ready');
+        if (binding.state === 'ready') {
+          if (workspace.baseRevision !== binding.baseRevision) fail('workspace-base-mismatch');
+        } else {
+          if (
+            workspace.checkpoint.revision !== workspace.baseRevision ||
+            workspace.checkpoint.sequence !== 0
+          )
+            fail('workspace-provisioning-uncertain');
+          this.saveBinding({ ...binding, state: 'ready', baseRevision: workspace.baseRevision });
+        }
+      } catch (error) {
+        this.parkWorkspace(id, error);
+      }
+    });
+  }
+  private saveSource(source: ActionSource) {
+    this.db
+      .prepare(
+        'INSERT INTO action_sources VALUES (?,?,?) ON CONFLICT(action_id) DO UPDATE SET value=excluded.value',
+      )
+      .run(source.action.id, source.action.caseId, JSON.stringify(source));
+  }
+  private source(id: string, actionId: string): ActionSource {
+    const row = this.db
+      .prepare('SELECT case_id,value FROM action_sources WHERE action_id=?')
+      .get(actionId);
+    const s: ActionSource = row ? JSON.parse(String(row.value)) : fail('action-source-missing');
+    if (
+      !s ||
+      row!.case_id !== id ||
+      s.action?.caseId !== id ||
+      s.action.id !== actionId ||
+      !['baseline', 'checkpoint', 'unit', 'regression', 'build', 'browser'].includes(s.kind) ||
+      !['selecting', 'selected', 'settled', 'interrupted'].includes(s.state)
+    )
+      fail('invalid-action-source');
+    if (
+      !hasFields(s, [
+        'action',
+        'kind',
+        'state',
+        ...(s.state === 'selecting'
+          ? ['expected']
+          : s.state === 'interrupted'
+            ? ['reason', 'frozen']
+            : ['frozen']),
+      ])
+    )
+      fail('invalid-action-source');
+    validateSourceAction(s.action, this.get(id));
+    if (s.state === 'selecting') {
+      const e = s.expected;
+      if (
+        !e ||
+        !hasFields(e, ['revision', 'tree', 'manifestDigest', 'sequence']) ||
+        !Number.isSafeInteger(e.sequence) ||
+        e.sequence < 0 ||
+        e.sequence > workspaceLimits.receipts
+      )
+        fail('invalid-action-source');
+      gitRevision(e.revision);
+      gitRevision(e.tree);
+      sha256(e.manifestDigest);
+    } else if (s.frozen !== null) {
+      if (s.frozen?.caseId !== id || !hasFields(s.frozen, ['caseId', 'revision', 'manifestDigest']))
+        fail('foreign-action-source');
+      gitRevision(s.frozen.revision);
+      sha256(s.frozen.manifestDigest);
+    } else if (s.state !== 'interrupted') fail('invalid-action-source');
+    if (s.state === 'interrupted' && !text(s.reason, 512)) fail('invalid-action-source');
+    return s;
+  }
+  private sourceAuthority(id: string, action: Action, signal: AbortSignal, live: () => boolean) {
+    if (!live()) fail('action-source-revoked');
+    const { c } = this.checkAllowance(id, action, signal);
+    if (c.status !== 'running') fail('check-dispatch-denied');
+    return c;
+  }
+  private async selectActionSource(
+    id: string,
+    action: Action,
+    kind: Check['kind'],
+    signal: AbortSignal,
+    live: () => boolean,
+  ): Promise<OfflineActionWorkspace> {
+    return this.workspaceSerial(async () => {
+      this.sourceAuthority(id, action, signal, live);
+      if (this.db.prepare('SELECT action_id FROM action_sources WHERE action_id=?').get(action.id))
+        fail('action-source-already-selected');
+      const workspace = await this.workspaces!.inspect(caseId(id)).catch((error) => {
+        this.parkWorkspace(id, error);
+        throw error;
+      });
+      this.sourceAuthority(id, action, signal, live);
+      const binding = this.binding(id);
+      if (
+        binding.state !== 'ready' ||
+        workspace.state !== 'ready' ||
+        workspace.repositoryId !== binding.repositoryId ||
+        workspace.baseRevision !== binding.baseRevision
+      ) {
+        this.parkWorkspace(id, new ControlError('workspace-binding-not-ready'));
+        return fail('workspace-binding-not-ready');
+      }
+      this.saveSource({
+        action: { ...action },
+        kind,
+        state: 'selecting',
+        expected: workspace.checkpoint,
+      });
+      this.options.fault?.('after-source-selection-intent', id);
+      const frozen = await this.workspaces!.freeze(caseId(id), workspace.checkpoint.revision).catch(
+        (error) => {
+          this.parkWorkspace(id, error);
+          throw error;
+        },
+      );
+      this.options.fault?.('after-source-freeze', id);
+      this.sourceAuthority(id, action, signal, live);
+      this.saveSource({ action: { ...action }, kind, state: 'selected', frozen });
+      this.options.fault?.('after-source-selection-receipt', id);
+      return Object.freeze({
+        selection: Object.freeze({ ...frozen }),
+        readSelected: () => this.readSelectedSource(id, action, kind, signal, live),
+        edit: (expected: GitRevision, input: Omit<BrokerEdit, 'requestId'>) =>
+          this.editActionSource(id, action, kind, expected, input, signal, live),
+      });
+    });
+  }
+  private selectedSource(id: string, action: Action, kind: Check['kind']) {
+    const source = this.source(id, action.id);
+    if (source.state !== 'selected' || source.kind !== kind || !sameAction(source.action, action))
+      return fail('action-source-not-selected');
+    return source.frozen;
+  }
+  private async readSelectedSource(
+    id: string,
+    action: Action,
+    kind: Check['kind'],
+    signal: AbortSignal,
+    live: () => boolean,
+  ): Promise<readonly BaselineFile[]> {
+    return this.workspaceSerial(async () => {
+      this.sourceAuthority(id, action, signal, live);
+      let files: readonly BaselineFile[];
+      try {
+        files = await this.workspaces!.readFrozen(this.selectedSource(id, action, kind), signal);
+      } catch (error) {
+        if (!signal.aborted && !this.closing) this.parkWorkspace(id, error);
+        throw error;
+      }
+      this.sourceAuthority(id, action, signal, live);
+      return files;
+    });
+  }
+  private async editActionSource(
+    id: string,
+    action: Action,
+    kind: Check['kind'],
+    expected: GitRevision,
+    input: Omit<BrokerEdit, 'requestId'>,
+    signal: AbortSignal,
+    live: () => boolean,
+  ): Promise<SavedReceipt> {
+    if (
+      !input ||
+      !hasFields(input, ['virtualPath', 'expectedHash', 'bytes']) ||
+      !(input.bytes instanceof Uint8Array) ||
+      input.bytes.byteLength > workspaceLimits.fileBytes
+    )
+      return fail('workspace-file-size-limit');
+    const copied: BrokerEdit = {
+      virtualPath: input.virtualPath,
+      expectedHash: input.expectedHash,
+      bytes: Buffer.from(input.bytes),
+      requestId: requestId(randomUUID()),
+    };
+    return this.workspaceSerial(async () => {
+      if (this.sourceAuthority(id, action, signal, live).phase !== 'implementation')
+        fail('workspace-edit-phase-denied');
+      this.selectedSource(id, action, kind);
+      let receipt: SavedReceipt;
+      try {
+        receipt = await this.workspaces!.edit(caseId(id), expected, copied);
+      } catch (error) {
+        const workspace = await this.workspaces!.inspect(caseId(id)).catch(() => null);
+        if (!workspace || workspace.state !== 'ready') this.parkWorkspace(id, error);
+        throw error;
+      }
+      this.options.fault?.('after-source-edit-effect', id);
+      this.sourceAuthority(id, action, signal, live);
+      return receipt;
+    });
+  }
+  private async recoverSources(id: string) {
+    if (!this.options.offlineWorkspace) return;
+    try {
+      for (const row of this.db
+        .prepare('SELECT action_id FROM action_sources WHERE case_id=?')
+        .all(id)) {
+        const s = this.source(id, String(row.action_id));
+        const live = this.db
+          .prepare('SELECT value FROM actions WHERE id=? AND case_id=?')
+          .get(s.action.id, id);
+        if (s.state === 'selecting' || s.state === 'selected')
+          this.saveSource({
+            action: s.action,
+            kind: s.kind,
+            state: 'interrupted',
+            reason: 'interrupted-source-selection',
+            frozen: s.state === 'selected' ? s.frozen : null,
+          });
+        if (live && !sameAction(s.action, JSON.parse(String(live.value))))
+          fail('invalid-action-source');
+        if ((s.state === 'selecting' || s.state === 'selected') && !live)
+          fail('orphan-action-source');
+      }
+      for (const row of this.db
+        .prepare('SELECT action_id FROM action_sources WHERE case_id=?')
+        .all(id)) {
+        const s = this.source(id, String(row.action_id));
+        if (s.state !== 'selecting' && s.frozen)
+          await this.workspaces!.readFrozen(s.frozen, new AbortController().signal);
+      }
+    } catch (error) {
+      this.parkWorkspace(id, error);
     }
   }
   private transaction<T>(work: () => T): T {
@@ -266,6 +732,13 @@ export class Controller {
       simulated: true,
     };
     this.save(c);
+    if (this.options.offlineWorkspace)
+      this.saveBinding({
+        caseId: c.id,
+        repositoryId: this.options.offlineWorkspace.repositoryId,
+        sourceDigest: this.sourceDigest!,
+        state: 'planned',
+      });
     this.db
       .prepare(
         'INSERT INTO guards VALUES (?,?) ON CONFLICT(issue_key) DO UPDATE SET owner=excluded.owner',
@@ -313,13 +786,23 @@ export class Controller {
               c.version++;
             }
           } else if (i.type === 'continue') {
-            if (c.status !== 'paused' || c.native !== 'ready' || c.remainingMs <= 0)
+            if (
+              c.status !== 'paused' ||
+              c.native !== 'ready' ||
+              !this.workspaceReady(c.id) ||
+              c.remainingMs <= 0
+            )
               fail('cannot-continue');
             c.status = 'queued';
             c.reason = '';
             c.version++;
           } else if (i.type === 'retry') {
-            if (c.status !== 'needs-attention' || c.native !== 'ready') fail('cannot-retry');
+            if (
+              c.status !== 'needs-attention' ||
+              c.native !== 'ready' ||
+              !this.workspaceReady(c.id)
+            )
+              fail('cannot-retry');
             c.status = 'queued';
             c.reason = '';
             c.remainingMs = this.allowance;
@@ -441,6 +924,7 @@ export class Controller {
     return this.runtimes.get(id)!;
   }
   private async provision(id: string) {
+    await this.ensureWorkspace(id);
     const c = this.get(id);
     if (c.native !== 'provisioning') return;
     this.options.fault?.('before-native-provision', id);
@@ -474,7 +958,12 @@ export class Controller {
     return this.transaction(() => {
       const c = this.get(id);
       this.charge(c);
-      if (c.status !== 'running' || c.native !== 'ready' || c.remainingMs <= 0)
+      if (
+        c.status !== 'running' ||
+        c.native !== 'ready' ||
+        !this.workspaceReady(id) ||
+        c.remainingMs <= 0
+      )
         fail('dispatch-denied');
       if (this.db.prepare('SELECT id FROM actions WHERE case_id=?').get(id))
         fail('action-already-running');
@@ -523,6 +1012,7 @@ export class Controller {
       action.kind !== 'tool' ||
       !['running', 'pause-requested'].includes(c.status) ||
       c.native !== 'ready' ||
+      !this.workspaceReady(id) ||
       c.epoch !== action.epoch ||
       !persisted ||
       !(['id', 'caseId', 'epoch', 'kind', 'startedAt', 'limitMs', 'usedAtStart'] as const).every(
@@ -579,9 +1069,19 @@ export class Controller {
     signal: AbortSignal,
   ): Promise<CheckExecution> {
     let request: AdmittedCheckRequest;
+    let source: OfflineActionWorkspace | undefined;
+    let live = true;
+    const callback = this.options.check;
     try {
       this.options.fault?.('before-check-dispatch', id);
-      const { c, remainingMs } = this.checkAllowance(id, action, signal);
+      let allowance = this.checkAllowance(id, action, signal);
+      if (allowance.c.status !== 'running') fail('check-dispatch-denied');
+      if (!callback) return this.stopCheck(id, action, 'validation-not-configured');
+      if (this.options.offlineWorkspace) {
+        source = await this.selectActionSource(id, action, kind, signal, () => live);
+        allowance = this.checkAllowance(id, action, signal);
+      }
+      const { c, remainingMs } = allowance;
       if (c.status !== 'running') fail('check-dispatch-denied');
       request = Object.freeze({
         caseId: id,
@@ -592,14 +1092,13 @@ export class Controller {
         signal,
       });
     } catch (error) {
+      live = false;
       return this.stopCheck(
         id,
         action,
         error instanceof ControlError ? error.code : 'check-dispatch-denied',
       );
     }
-    const callback = this.options.check;
-    if (!callback) return this.stopCheck(id, action, 'validation-not-configured');
     let execution: CheckExecution;
     let abort!: () => void;
     try {
@@ -610,7 +1109,10 @@ export class Controller {
         };
         signal.addEventListener('abort', abort, { once: true });
       });
-      const result: unknown = await Promise.race([callback(request), interrupted]);
+      const result: unknown = await Promise.race([
+        source ? callback(request, source) : callback(request),
+        interrupted,
+      ]);
       try {
         execution = parseCheckExecution(result, kind);
       } catch {
@@ -621,6 +1123,7 @@ export class Controller {
         ? { type: 'uncertain' }
         : this.stopCheck(id, action, 'check-callback-failed');
     } finally {
+      live = false;
       signal.removeEventListener('abort', abort);
     }
     try {
@@ -654,6 +1157,30 @@ export class Controller {
       else if (failed && c.status === 'running' && c.epoch === action.epoch)
         this.attention(c, `${action.kind}-action-failed`);
       this.save(c);
+      if (
+        this.options.offlineWorkspace &&
+        this.db.prepare('SELECT action_id FROM action_sources WHERE action_id=?').get(action.id)
+      ) {
+        const s = this.source(action.caseId, action.id);
+        if (s.state === 'selecting' || s.state === 'selected') {
+          if (
+            !uncertain &&
+            !failed &&
+            c.epoch === action.epoch &&
+            ['running', 'pause-requested'].includes(c.status) &&
+            s.state === 'selected'
+          )
+            this.saveSource({ ...s, state: 'settled' });
+          else
+            this.saveSource({
+              action: s.action,
+              kind: s.kind,
+              state: 'interrupted',
+              reason: 'source-action-interrupted',
+              frozen: s.state === 'selected' ? s.frozen : null,
+            });
+        }
+      }
       this.db.prepare('DELETE FROM actions WHERE id=?').run(action.id);
     });
     this.changed();
@@ -774,7 +1301,13 @@ export class Controller {
   private async tick() {
     for (const c of this.all()) {
       if (this.closing || this.runners.size >= (this.options.capacity ?? 1)) break;
-      if (c.status !== 'queued' || c.native !== 'ready' || this.runners.has(c.id)) continue;
+      if (
+        c.status !== 'queued' ||
+        c.native !== 'ready' ||
+        !this.workspaceReady(c.id) ||
+        this.runners.has(c.id)
+      )
+        continue;
       const runner = this.execute(c.id).finally(() => {
         this.runners.delete(c.id);
         this.changed();
@@ -790,7 +1323,8 @@ export class Controller {
       const native = await this.runtime(id);
       const c = this.transaction(() => {
         const c = this.get(id);
-        if (this.closing || c.status !== 'queued') fail('run-not-queued');
+        if (this.closing || c.status !== 'queued' || !this.workspaceReady(id))
+          fail('run-not-queued');
         if (c.remainingMs <= 0) {
           this.attention(c, 'allowance-exhausted');
           this.save(c);
@@ -855,11 +1389,16 @@ export class Controller {
           c.native !== 'expired')
       ) {
         await this.expire(c.id);
+        c = this.get(c.id);
+      }
+      if (c.native === 'expired' || c.native === 'missing') {
+        await this.ensureWorkspace(c.id);
+        await this.recoverSources(c.id);
         continue;
       }
-      if (c.native === 'expired' || c.native === 'missing') continue;
       try {
         await this.provision(c.id);
+        await this.recoverSources(c.id);
         c = this.get(c.id);
         const actionRow = this.db.prepare('SELECT value FROM actions WHERE case_id=?').get(c.id);
         this.transaction(() => {
@@ -1089,13 +1628,45 @@ export class Controller {
       [...this.runtimes.values()].map(async (p) => (await p).close()),
     );
     await Promise.allSettled(this.runners.values());
+    await this.workspaceQueue;
+    const workspaceClosed = await Promise.allSettled([this.workspaces?.close()]);
     this.watchers.clear();
     this.db.close();
     openDirectories.delete(this.directory);
     if (closed.some((result) => result.status === 'rejected')) fail('native-close-failed');
+    if (workspaceClosed.some((result) => result.status === 'rejected'))
+      fail('workspace-close-failed');
   }
 }
 
+function hasFields(value: object, fields: string[]): boolean {
+  return (
+    Object.keys(value).length === fields.length &&
+    Object.keys(value).every((key) => fields.includes(key))
+  );
+}
+function sameAction(a: Readonly<Action>, b: Readonly<Action>): boolean {
+  return (['id', 'caseId', 'epoch', 'kind', 'startedAt', 'limitMs', 'usedAtStart'] as const).every(
+    (key) => a[key] === b[key],
+  );
+}
+function validateSourceAction(action: Readonly<Action>, c: Case) {
+  if (
+    !action ||
+    Object.keys(action).sort().join(',') !== 'caseId,epoch,id,kind,limitMs,startedAt,usedAtStart' ||
+    !uuid(action.id) ||
+    action.caseId !== c.id ||
+    action.kind !== 'tool' ||
+    ![action.epoch, action.startedAt, action.limitMs, action.usedAtStart].every(
+      (n) => Number.isSafeInteger(n) && n >= 0,
+    ) ||
+    action.limitMs < 1 ||
+    action.limitMs > 60000 ||
+    action.epoch > c.epoch ||
+    action.usedAtStart > c.usedMs
+  )
+    fail('invalid-action-source');
+}
 function parseCheckExecution(value: unknown, kind: Check['kind']): CheckExecution {
   if (!value || typeof value !== 'object' || Array.isArray(value))
     return fail('invalid-check-execution');
