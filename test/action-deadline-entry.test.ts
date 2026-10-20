@@ -101,3 +101,44 @@ test('controller expiry and reopening preserve canonical request and historical 
   assert.deepEqual(journalBytes(f.journalDirectory), before);
   assert.equal(JSON.stringify(sources(f.directory)[0].workerIntent), intentBytes);
 });
+
+test('unsafe nested action-source endpoint parks recovery without rewriting its JSON', async (t) => {
+  let callbacks = 0;
+  const f = await fixture(t, {
+    clock: () => 1000,
+    check: async () => {
+      callbacks++;
+      return { type: 'infrastructure' };
+    },
+  });
+  const id = await f.add();
+  await f.parked(id);
+  await f.close();
+  const db = new DatabaseSync(join(f.directory, 'catalogue.sqlite'));
+  const row = db.prepare('SELECT action_id,value FROM action_sources').get()!;
+  const source = JSON.parse(String(row.value));
+  source.action.startedAt = Number.MAX_SAFE_INTEGER;
+  const bytes = JSON.stringify(source);
+  db.prepare('UPDATE action_sources SET value=? WHERE action_id=?').run(bytes, row.action_id);
+  db.close();
+  await f.reopen();
+  const c = await f.parked(id);
+  assert.equal(c.native, 'ready');
+  assert.equal(c.reason, 'invalid-action-state');
+  assert.equal(callbacks, 1);
+  const reopened = new DatabaseSync(join(f.directory, 'catalogue.sqlite'), { readOnly: true });
+  assert.equal(
+    reopened.prepare('SELECT value FROM action_sources WHERE action_id=?').get(row.action_id)!
+      .value,
+    bytes,
+  );
+  assert.equal(
+    JSON.parse(
+      String(
+        reopened.prepare('SELECT value FROM workspace_bindings WHERE case_id=?').get(id)!.value,
+      ),
+    ).state,
+    'uncertain',
+  );
+  reopened.close();
+});

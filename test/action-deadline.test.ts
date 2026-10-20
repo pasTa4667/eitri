@@ -15,6 +15,7 @@ import { createAssistantMessageEventStream } from '@earendil-works/pi-ai';
 import type { AssistantMessageEventStream, AssistantMessageEvent } from '@earendil-works/pi-ai';
 import { Controller } from '../src/controller.ts';
 import { NativeCase } from '../src/native.ts';
+import type { RuntimeHost } from '../src/native.ts';
 import { actionDeadlineAt } from '../src/domain.ts';
 import type { Action, Case } from '../src/domain.ts';
 
@@ -753,4 +754,103 @@ for (const revoke of ['deadline', 'epoch'] as const)
       revoke === 'deadline' ? 'assessment-required' : 'Revoked after publication',
     );
     assert.equal(f.faux.state.callCount, 1);
+  });
+
+for (const field of [
+  'id',
+  'caseId',
+  'epoch',
+  'kind',
+  'startedAt',
+  'limitMs',
+  'usedAtStart',
+  'case-epoch',
+] as const)
+  test(`${field} mismatch denies permission, sampling, stop and finish before charging`, async (t) => {
+    let now = 1000;
+    const entered = gate(),
+      release = gate();
+    t.after(() => release.resolve());
+    let host!: RuntimeHost;
+    let action!: Action;
+    let callbacks = 0;
+    const original = NativeCase.prototype.metadata;
+    let wrapped = false;
+    t.mock.method(NativeCase.prototype, 'metadata', async function (this: NativeCase) {
+      if (!wrapped) {
+        wrapped = true;
+        host = this.host;
+        const admit = host.admit;
+        host.admit = (...args) => {
+          const result = admit(...args);
+          if (result.kind === 'tool') action = result;
+          return result;
+        };
+      }
+      return original.call(this);
+    });
+    const f = await fixture(
+      t,
+      {
+        clock: () => now,
+        actionWakeup: scheduler().wakeup,
+        check: async () => {
+          callbacks++;
+          entered.resolve();
+          await release.promise;
+          return { type: 'infrastructure' };
+        },
+      },
+      [call('run_check', { kind: 'browser' })],
+    );
+    const id = await f.add();
+    await entered.promise;
+    const db = new DatabaseSync(join(f.directory, 'catalogue.sqlite'));
+    const originalCase = host.current();
+    const changedAction = { ...action };
+    if (field === 'case-epoch') {
+      db.prepare('UPDATE cases SET value=? WHERE id=?').run(
+        JSON.stringify({ ...originalCase, epoch: originalCase.epoch + 1 }),
+        id,
+      );
+    } else {
+      Reflect.set(
+        changedAction,
+        field,
+        typeof action[field] === 'number'
+          ? Number(action[field]) + 1
+          : field === 'kind'
+            ? 'model'
+            : randomUUID(),
+      );
+      db.prepare('UPDATE actions SET value=? WHERE id=?').run(
+        JSON.stringify(changedAction),
+        action.id,
+      );
+    }
+    const before = host.current();
+    now = 1075;
+    assert.throws(() => host.permit(action), { code: 'check-dispatch-denied' });
+    assert.throws(() => host.remaining(action), { code: 'check-dispatch-denied' });
+    assert.throws(() => host.validateCheckAction(action), { code: 'check-dispatch-denied' });
+    assert.deepEqual(await host.check(action, 'browser', new AbortController().signal), {
+      type: 'uncertain',
+    });
+    host.finish(action, true, true);
+    assert.deepEqual(host.current(), before);
+    assert.equal(host.current().usedMs, 0);
+    assert.equal(host.current().remainingMs, 600000);
+    assert.equal(callbacks, 1);
+    const row = db.prepare('SELECT value FROM actions WHERE id=?').get(action.id);
+    if (field === 'case-epoch') assert.equal(row, undefined);
+    else assert.equal(row!.value, JSON.stringify(changedAction));
+    db.prepare(
+      'INSERT INTO actions VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET value=excluded.value',
+    ).run(action.id, id, JSON.stringify(action));
+    db.prepare('UPDATE cases SET value=? WHERE id=?').run(JSON.stringify(originalCase), id);
+    db.close();
+    release.resolve();
+    const view = await f.parked(id);
+    assert.equal(view.case.reason, 'check-infrastructure');
+    assert.equal(view.case.usedMs, 75);
   });
