@@ -11,6 +11,8 @@ import {
   fauxToolCall,
 } from '@earendil-works/pi-ai/providers/faux';
 import type { FauxResponseStep } from '@earendil-works/pi-ai/providers/faux';
+import { createAssistantMessageEventStream } from '@earendil-works/pi-ai';
+import type { AssistantMessageEventStream, AssistantMessageEvent } from '@earendil-works/pi-ai';
 import { Controller } from '../src/controller.ts';
 import { NativeCase } from '../src/native.ts';
 import { actionDeadlineAt } from '../src/domain.ts';
@@ -692,4 +694,63 @@ for (const kind of ['model', 'tool'] as const)
     const count = scheduled.wakes.length;
     for (const wake of scheduled.wakes) wake.callback();
     assert.equal(scheduled.wakes.length, count);
+  });
+
+for (const revoke of ['deadline', 'epoch'] as const)
+  test(`model receipt notification follows terminal publication before ${revoke} revocation`, async (t) => {
+    let now = 1000;
+    const terminals: string[] = [];
+    let atReceipt: string[] = [];
+    const prototype = Object.getPrototypeOf(
+      createAssistantMessageEventStream(),
+    ) as AssistantMessageEventStream;
+    const push = prototype.push;
+    t.mock.method(
+      prototype,
+      'push',
+      function (this: AssistantMessageEventStream, event: AssistantMessageEvent) {
+        if (event.type === 'done')
+          terminals.push(
+            event.message.content.map((c) => (c.type === 'text' ? c.text : c.type)).join(''),
+          );
+        if (event.type === 'error') terminals.push('controlled-error');
+        return push.call(this, event);
+      },
+    );
+    const f = await fixture(
+      t,
+      {
+        clock: () => now,
+        actionWakeup: scheduler().wakeup,
+        fault: (point, id) => {
+          if (point !== 'after-model-action-receipt') return;
+          atReceipt = [...terminals];
+          if (revoke === 'deadline') now = 121000;
+          else {
+            const db = new DatabaseSync(join(f.directory, 'catalogue.sqlite'));
+            const c = JSON.parse(
+              String(db.prepare('SELECT value FROM cases WHERE id=?').get(id)!.value),
+            );
+            Object.assign(c, {
+              epoch: c.epoch + 1,
+              status: 'needs-attention',
+              accountedAt: null,
+              reason: 'Revoked after publication',
+            });
+            db.prepare('UPDATE cases SET value=? WHERE id=?').run(JSON.stringify(c), id);
+            db.close();
+          }
+        },
+      },
+      [fauxAssistantMessage('Publication result')],
+    );
+    const id = await f.add();
+    const view = await f.parked(id);
+    assert.deepEqual(atReceipt, ['Publication result', 'Publication result', 'Publication result']);
+    assert.deepEqual(terminals, ['Publication result', 'Publication result', 'Publication result']);
+    assert.equal(
+      view.case.reason,
+      revoke === 'deadline' ? 'assessment-required' : 'Revoked after publication',
+    );
+    assert.equal(f.faux.state.callCount, 1);
   });
