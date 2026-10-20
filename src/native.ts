@@ -43,9 +43,10 @@ export type RuntimeHost = {
   admit(kind: 'model' | 'tool', limit: number): Action;
   permit(action: Action | undefined): void;
   remaining(action: Action): number;
-  completed(action: Action): boolean;
+  mayRecordCompletion(action: Action): boolean;
   wakeup(delayMs: number, callback: () => void): () => void;
   finish(action: Action, uncertain: boolean, failed?: boolean): void;
+  receipt(action: Action): void;
   assess(action: Action, assessment: Assessment, checks: Check[]): Promise<void>;
   checkpoint(action: Action, check: Check): void;
   probe(signal: AbortSignal): Promise<string>;
@@ -140,7 +141,7 @@ export class NativeCase {
         timestamp: Date.now(),
       });
       void (async () => {
-        let finished = false;
+        let retirementAttempted = false;
         try {
           lifetime.check();
           const stream = scope.run(action, () => invoke(lifetime.signal));
@@ -150,8 +151,8 @@ export class NativeCase {
             if (next.done) throw new Error('Stream ended without a terminal event');
             if (next.value.type === 'done' || next.value.type === 'error') {
               lifetime.check();
+              retirementAttempted = true;
               host.finish(action, false);
-              finished = true;
               output.push(
                 next.value.type === 'error'
                   ? { type: 'error', reason: 'error', error: errorMessage() }
@@ -164,11 +165,18 @@ export class NativeCase {
             host.changed();
           }
         } catch {
-          if (!finished) host.finish(action, lifetime.signal.aborted);
+          if (!retirementAttempted) {
+            try {
+              host.finish(action, lifetime.signal.aborted);
+            } catch {}
+          }
           output.push({ type: 'error', reason: 'error', error: errorMessage() });
           output.end();
         } finally {
           lifetime.dispose();
+          try {
+            host.receipt(action);
+          } catch {}
         }
       })();
       return output;
@@ -208,25 +216,30 @@ export class NativeCase {
       const action = host.admit('tool', 60_000);
       const lifetime = actionLifetime(host, action);
       const signal = lifetime.signal;
+      let retirementAttempted = false;
       try {
         lifetime.check();
         const result = await abortable(operation(signal, action), signal);
-        if (!host.completed(action)) lifetime.check();
+        if (!host.mayRecordCompletion(action)) lifetime.check();
         await native.note(`action-result-${action.id}`, 'eitri.action-result', {
           actionId: action.id,
           result: result ?? null,
         });
-        if (!host.completed(action)) lifetime.check();
+        if (!host.mayRecordCompletion(action)) lifetime.check();
+        retirementAttempted = true;
         host.finish(action, false);
         return result;
       } catch (error) {
-        try {
-          if (!host.completed(action)) lifetime.check();
-        } catch {}
-        host.finish(action, signal.aborted, true);
+        if (!retirementAttempted) {
+          try {
+            if (!host.mayRecordCompletion(action)) lifetime.check();
+          } catch {}
+          host.finish(action, signal.aborted, true);
+        }
         throw error;
       } finally {
         lifetime.dispose();
+        host.receipt(action);
       }
     };
     registry.install(

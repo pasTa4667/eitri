@@ -1053,13 +1053,14 @@ export class Controller {
             admit: (kind, limit) => this.admitAction(id, kind, limit),
             permit: (action) => this.permitAction(id, action),
             remaining: (action) => this.actionAllowance(id, action).remainingMs,
-            completed: (action) => this.completedAction(action),
+            mayRecordCompletion: (action) => this.mayRecordCompletion(action),
             wakeup: (delay, callback) => {
               if (this.options.actionWakeup) return this.options.actionWakeup(delay, callback);
               const timer = setTimeout(callback, delay);
               return () => clearTimeout(timer);
             },
             finish: (action, uncertain, failed) => this.finishAction(action, uncertain, failed),
+            receipt: (action) => this.actionReceipt(action),
             assess: (action, assessment, checks) => this.assess(id, action, assessment, checks),
             checkpoint: (action, check) => this.checkpoint(id, action, check),
             probe: (signal) =>
@@ -1195,7 +1196,7 @@ export class Controller {
         version: c.version,
       });
   }
-  private completedAction(action: Action): boolean {
+  private mayRecordCompletion(action: Action): boolean {
     const completion = this.completions.get(action);
     if (!completion || this.closing) return false;
     const c = this.authenticatedAction(action.caseId, action);
@@ -1434,9 +1435,11 @@ export class Controller {
       return expired;
     });
     this.completions.delete(action);
+    if (expired && !uncertain && !failed) fail('action-timed-out');
+  }
+  private actionReceipt(action: Action) {
     this.changed();
     this.options.fault?.(`after-${action.kind}-action-receipt`, action.caseId);
-    if (expired && !uncertain && !failed) fail('action-timed-out');
   }
   private checkpoint(id: string, action: Action, check: Check) {
     const committed = this.transaction(() => {
