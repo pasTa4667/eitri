@@ -854,3 +854,91 @@ for (const field of [
     assert.equal(view.case.reason, 'check-infrastructure');
     assert.equal(view.case.usedMs, 75);
   });
+
+for (const transition of ['progress', 'no-fix', 'baseline-stop'] as const)
+  test(`confirmed ${transition} cancels its execution wakeup while only bookkeeping remains`, async (t) => {
+    let now = 1000;
+    const confirmed = gate(),
+      release = gate(),
+      retired = gate();
+    t.after(() => release.resolve());
+    const scheduled = scheduler();
+    if (transition === 'baseline-stop') {
+      const original = NativeCase.prototype.recordCheck;
+      t.mock.method(
+        NativeCase.prototype,
+        'recordCheck',
+        async function (this: NativeCase, ...args: Parameters<typeof original>) {
+          const result = await original.apply(this, args);
+          confirmed.resolve();
+          await release.promise;
+          return result;
+        },
+      );
+    } else {
+      const original = NativeCase.prototype.metadata;
+      let wrapped = false;
+      t.mock.method(NativeCase.prototype, 'metadata', async function (this: NativeCase) {
+        if (!wrapped) {
+          wrapped = true;
+          const assess = this.host.assess;
+          this.host.assess = async (...args) => {
+            await assess(...args);
+            confirmed.resolve();
+            await release.promise;
+          };
+        }
+        return original.call(this);
+      });
+    }
+    const f = await fixture(
+      t,
+      {
+        clock: () => now,
+        actionWakeup: scheduled.wakeup,
+        fault: (point) => {
+          if (point === 'after-tool-action-receipt') retired.resolve();
+        },
+        check: async ({ kind }) => ({
+          type: 'completed',
+          check: {
+            kind,
+            candidate: 'a'.repeat(40),
+            configuration: 'b'.repeat(64),
+            passed: false,
+            simulated: true,
+            outputs: [],
+          },
+        }),
+      },
+      [
+        async () => {
+          if (transition === 'baseline-stop') return call('run_check', { kind: 'baseline' });
+          const c = (await f.controller.snapshot()).cases[0];
+          return call('complete_assessment', {
+            phase: c.phase,
+            expectedControlVersion: c.version,
+            conclusion: transition,
+            reason: 'Confirmed before expiry',
+            evidenceIds: [],
+          });
+        },
+        fauxAssistantMessage('Next phase'),
+      ],
+    );
+    const id = await f.add();
+    await confirmed.promise;
+    now = 61000;
+    const wake = scheduled.wakes.at(-1)!;
+    wake.callback();
+    release.resolve();
+    await retired.promise;
+    const view = await f.parked(id);
+    assert.equal(wake.cancelled, true);
+    assert.equal(view.messages.filter((m) => m.kind === 'eitri.action-result').length, 1);
+    assert.equal(view.case.usedMs, 0);
+    assert.equal(view.case.remainingMs, 600000);
+    assert.equal(view.case.phase, transition === 'progress' ? 'investigation' : 'triage');
+    assert.equal(view.case.outcome, transition === 'no-fix' ? 'no-fix' : null);
+    assert.equal(f.faux.state.callCount, transition === 'progress' ? 2 : 1);
+  });
