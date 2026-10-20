@@ -252,6 +252,7 @@ export class NativeCase {
             status: 'done',
             entry: entry.id,
           });
+          guard();
         }, context);
         host.changed();
         guard();
