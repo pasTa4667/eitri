@@ -13,7 +13,8 @@ import {
 import type { FauxResponseStep } from '@earendil-works/pi-ai/providers/faux';
 import { Controller } from '../src/controller.ts';
 import { NativeCase } from '../src/native.ts';
-import type { Action } from '../src/domain.ts';
+import { actionDeadlineAt } from '../src/domain.ts';
+import type { Action, Case } from '../src/domain.ts';
 
 const policy = { project: 'demo', environment: 'demo', repository: 'eitri-test-web-app' };
 const issue = {
@@ -70,13 +71,20 @@ async function fixture(
     providerForCase: () => ({ provider: faux.provider, modelId: faux.getModel().id }),
     ...extra,
   };
-  const controller = await Controller.open(options);
+  let controller = await Controller.open(options);
   t.after(async () => {
     await controller.close();
     await rm(directory, { recursive: true, force: true });
   });
   return {
-    controller,
+    get controller() {
+      return controller;
+    },
+    async restart(change: () => void) {
+      await controller.close();
+      change();
+      controller = await Controller.open(options);
+    },
     directory,
     faux,
     async add() {
@@ -427,4 +435,261 @@ for (const transition of ['assessment', 'baseline-stop'] as const)
     assert.equal(newer.case.usedMs, 0);
     assert.equal(newer.messages.filter((m) => m.kind === 'eitri.action-result').length, 0);
     assert.equal(f.faux.state.callCount, 2);
+  });
+
+for (const kind of ['model', 'tool'] as const)
+  for (const delta of [-1, 0, 1])
+    test(`${kind} final retirement sample at D${delta < 0 ? delta : `+${delta}`} rejects late success`, async (t) => {
+      let now = 1000;
+      const original = NativeCase.prototype.metadata;
+      let wrapped = false;
+      t.mock.method(NativeCase.prototype, 'metadata', async function (this: NativeCase) {
+        if (!wrapped) {
+          wrapped = true;
+          const finish = this.host.finish;
+          this.host.finish = (action, ...args) => {
+            if (action.kind === kind) now = action.startedAt + action.limitMs + delta;
+            return finish(action, ...args);
+          };
+        }
+        return original.call(this);
+      });
+      const f = await fixture(
+        t,
+        {
+          clock: () => now,
+          actionWakeup: scheduler().wakeup,
+          probe: async () => 'Admitted result',
+        },
+        kind === 'model'
+          ? [fauxAssistantMessage('Terminal result')]
+          : [call('probe'), fauxAssistantMessage('Done')],
+      );
+      const id = await f.add();
+      const view = await f.parked(id);
+      assert.equal(
+        view.case.reason,
+        delta < 0 ? 'assessment-required' : `${kind}-action-timed-out`,
+      );
+      assert.equal(f.faux.state.callCount, kind === 'tool' && delta < 0 ? 2 : 1);
+    });
+
+test('derived action endpoint validates safe integer addition without changing the persisted tuple', () => {
+  assert.equal(actionDeadlineAt({ startedAt: 1250, limitMs: 60000 }), 61250);
+  assert.equal(
+    actionDeadlineAt({ startedAt: Number.MAX_SAFE_INTEGER - 100, limitMs: 100 }),
+    Number.MAX_SAFE_INTEGER,
+  );
+  for (const action of [
+    { startedAt: -1, limitMs: 1 },
+    { startedAt: 0.5, limitMs: 1 },
+    { startedAt: 1000, limitMs: 0 },
+    { startedAt: 1000, limitMs: 1.5 },
+    { startedAt: Number.MAX_SAFE_INTEGER, limitMs: 1 },
+  ])
+    assert.throws(() => actionDeadlineAt(action), { code: 'invalid-action-state' });
+});
+
+for (const advancing of [false, true])
+  for (const allowanceMs of [200, 600000])
+    test(`admission uses one charge/start sample with ${allowanceMs} case allowance and ${advancing ? 'advancing' : 'fixed'} clock`, async (t) => {
+      let now = 1000;
+      const admitted: { action: Action; c: Case }[] = [];
+      const original = NativeCase.prototype.metadata;
+      let wrapped = false;
+      t.mock.method(NativeCase.prototype, 'metadata', async function (this: NativeCase) {
+        if (!wrapped) {
+          wrapped = true;
+          const admit = this.host.admit;
+          this.host.admit = (...args) => {
+            const action = admit(...args);
+            admitted.push({ action, c: this.host.current() });
+            return action;
+          };
+        }
+        return original.call(this);
+      });
+      const f = await fixture(
+        t,
+        {
+          clock: () => (advancing ? now++ : now),
+          allowanceMs,
+          actionWakeup: scheduler().wakeup,
+          probe: async () => 'One bounded operation',
+        },
+        [call('probe'), fauxAssistantMessage('Done')],
+      );
+      const id = await f.add();
+      await f.parked(id);
+      assert.deepEqual(
+        admitted.map(({ action }) => action.kind),
+        ['model', 'tool', 'model'],
+      );
+      for (const { action, c } of admitted) {
+        assert.equal(action.startedAt, c.accountedAt);
+        assert.equal(action.usedAtStart, c.usedMs);
+        assert.equal(
+          action.limitMs,
+          Math.min(action.kind === 'model' ? 120000 : 60000, c.remainingMs),
+        );
+        assert.equal(c.usedMs + c.remainingMs, allowanceMs);
+      }
+      if (!advancing)
+        assert.deepEqual(
+          admitted.map(({ action }) => action.limitMs),
+          allowanceMs === 200 ? [200, 200, 200] : [120000, 60000, 120000],
+        );
+    });
+
+for (const kind of ['model', 'tool'] as const)
+  for (const reopenedAt of [500, 61000, 999999])
+    test(`legacy ${kind} action conservatively recovers at ${reopenedAt} without reconstructing a lifetime`, async (t) => {
+      let now = 1000;
+      const f = await fixture(t, { clock: () => now, actionWakeup: scheduler().wakeup }, [
+        fauxAssistantMessage('Parked'),
+      ]);
+      const id = await f.add();
+      await f.parked(id);
+      let actionBytes = '';
+      await f.restart(() => {
+        const db = new DatabaseSync(join(f.directory, 'catalogue.sqlite'));
+        try {
+          const c: Case = JSON.parse(
+            String(db.prepare('SELECT value FROM cases WHERE id=?').get(id)!.value),
+          );
+          Object.assign(c, {
+            status: 'pause-requested',
+            epoch: 10,
+            usedMs: 250,
+            remainingMs: 599750,
+            accountedAt: 1250,
+          });
+          const action: Action = {
+            id: randomUUID(),
+            caseId: id,
+            epoch: 10,
+            kind,
+            startedAt: 1000,
+            limitMs: kind === 'model' ? 120000 : 60000,
+            usedAtStart: 200,
+          };
+          actionBytes = JSON.stringify(action);
+          db.prepare('UPDATE cases SET value=? WHERE id=?').run(JSON.stringify(c), id);
+          db.prepare('INSERT INTO actions VALUES(?,?,?)').run(action.id, id, actionBytes);
+        } finally {
+          db.close();
+        }
+        now = reopenedAt;
+      });
+      const c = (await f.view(id)).case;
+      assert.equal(c.status, 'paused');
+      assert.equal(c.native, 'ready');
+      assert.equal(c.epoch, 11);
+      assert.equal(c.usedMs, kind === 'model' ? 120200 : 60200);
+      assert.equal(c.remainingMs, kind === 'model' ? 479800 : 539800);
+      assert.equal(c.accountedAt, null);
+      assert.equal(f.faux.state.callCount, 1);
+      const db = new DatabaseSync(join(f.directory, 'catalogue.sqlite'), { readOnly: true });
+      assert.equal(db.prepare('SELECT COUNT(*) AS n FROM actions').get()!.n, 0);
+      db.close();
+      assert.equal(JSON.parse(actionBytes).startedAt, 1000);
+    });
+
+test('unsafe recovered endpoint fails closed without replay or rewriting the legacy action', async (t) => {
+  const f = await fixture(t, { clock: () => 1000, actionWakeup: scheduler().wakeup }, [
+    fauxAssistantMessage('Parked'),
+  ]);
+  const id = await f.add();
+  await f.parked(id);
+  let bytes = '';
+  await f.restart(() => {
+    const db = new DatabaseSync(join(f.directory, 'catalogue.sqlite'));
+    const c = JSON.parse(String(db.prepare('SELECT value FROM cases WHERE id=?').get(id)!.value));
+    const action: Action = {
+      id: randomUUID(),
+      caseId: id,
+      epoch: c.epoch,
+      kind: 'tool',
+      startedAt: Number.MAX_SAFE_INTEGER,
+      limitMs: 60000,
+      usedAtStart: 0,
+    };
+    bytes = JSON.stringify(action);
+    db.prepare('INSERT INTO actions VALUES(?,?,?)').run(action.id, id, bytes);
+    db.close();
+  });
+  const c = (await f.controller.snapshot()).cases[0];
+  assert.equal(c.status, 'needs-attention');
+  assert.equal(c.native, 'missing');
+  assert.equal(c.reason, 'invalid-action-state');
+  assert.equal(f.faux.state.callCount, 1);
+  const db = new DatabaseSync(join(f.directory, 'catalogue.sqlite'), { readOnly: true });
+  assert.equal(db.prepare('SELECT value FROM actions WHERE case_id=?').get(id)!.value, bytes);
+  db.close();
+});
+
+for (const delta of [-1, 0, 1])
+  test(`provider permission at D${delta < 0 ? delta : `+${delta}`} is checked after native setup`, async (t) => {
+    let now = 1000;
+    const original = NativeCase.prototype.metadata;
+    let wrapped = false;
+    t.mock.method(NativeCase.prototype, 'metadata', async function (this: NativeCase) {
+      if (!wrapped) {
+        wrapped = true;
+        const permit = this.host.permit;
+        this.host.permit = (action) => {
+          now = action!.startedAt + action!.limitMs + delta;
+          permit(action);
+        };
+      }
+      return original.call(this);
+    });
+    const f = await fixture(t, { clock: () => now, actionWakeup: scheduler().wakeup }, [
+      fauxAssistantMessage('Provider result'),
+    ]);
+    const id = await f.add();
+    const view = await f.parked(id);
+    assert.equal(view.case.reason, delta < 0 ? 'assessment-required' : 'model-action-timed-out');
+    assert.equal(f.faux.state.callCount, delta < 0 ? 1 : 0);
+  });
+
+for (const kind of ['model', 'tool'] as const)
+  test(`${kind} asynchronous wakeup sampling errors abort only that lifetime`, async (t) => {
+    let now = 1000;
+    const entered = gate(),
+      release = gate();
+    t.after(() => release.resolve());
+    const scheduled = scheduler();
+    const f = await fixture(
+      t,
+      {
+        clock: () => now,
+        actionWakeup: scheduled.wakeup,
+        probe: async () => {
+          entered.resolve();
+          await release.promise;
+          return 'late';
+        },
+      },
+      [
+        async () => {
+          if (kind === 'tool') return call('probe');
+          entered.resolve();
+          await release.promise;
+          return fauxAssistantMessage('late');
+        },
+      ],
+    );
+    const id = await f.add();
+    await entered.promise;
+    now = -1;
+    assert.doesNotThrow(() => scheduled.wakes.at(-1)!.callback());
+    now = 1000;
+    const stopped = await f.parked(id);
+    assert.equal(stopped.case.reason, `${kind}-action-timed-out`);
+    assert.equal(stopped.case.usedMs, 0);
+    assert.equal(stopped.case.remainingMs, 600000);
+    const count = scheduled.wakes.length;
+    for (const wake of scheduled.wakes) wake.callback();
+    assert.equal(scheduled.wakes.length, count);
   });
