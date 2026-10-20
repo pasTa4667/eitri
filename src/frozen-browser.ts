@@ -39,6 +39,45 @@ export type FrozenBrowserOutcome =
 export type FrozenBrowserCleanup =
   | Readonly<{ kind: 'not-needed' | 'owned-removed'; cache: 'retained' }>
   | Readonly<{ kind: 'incomplete'; cache: 'retained'; code: string }>;
+export type JournalResource =
+  | Readonly<{ kind: 'none' }>
+  | Readonly<{ kind: 'intent' }>
+  | Readonly<{ kind: 'acquired'; id: string }>;
+export type RecoveryRun = Readonly<{
+  runId: string;
+  request: FrozenBrowserRequest;
+  requestDigest: Sha256;
+  configurationDigest: Sha256;
+  admittedAt: number;
+  deadline: number;
+  build: 'not-started' | 'unknown' | 'completed';
+  image: JournalResource;
+  container: JournalResource;
+}> &
+  (
+    | Readonly<{
+        state: 'recorded';
+        outcome: FrozenBrowserOutcome;
+        cleanup: 'unresolved';
+      }>
+    | Readonly<{
+        state: 'settled';
+        outcome: FrozenBrowserOutcome;
+        cleanup: FrozenBrowserCleanup;
+      }>
+  );
+export type RecoveryInventory = Readonly<{
+  ownerId: string;
+  configurationDigest: Sha256;
+  attempts: number;
+  contribution: number;
+  runs: readonly RecoveryRun[];
+}>;
+/** Inspects an existing owned journal. Cleanup is historical, not a live daemon assertion. */
+export type FrozenBrowserJournal = Readonly<{
+  inventory(): Promise<RecoveryInventory>;
+  close(): Promise<void>;
+}>;
 type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 type ObjectValue = { [key: string]: Json };
 type Manifest = { path: string; size: number; sha256: string }[];
@@ -1268,6 +1307,7 @@ export class FrozenBrowserValidator {
     controller: AbortController;
     promise: Promise<FrozenBrowserReport>;
   } | null = null;
+  private reads = new Set<Promise<RecoveryInventory>>();
   private closing: Promise<void> | null = null;
   private broken = false;
   private constructor(
@@ -1289,10 +1329,21 @@ export class FrozenBrowserValidator {
     this.marker = marker;
     this.identities = identities;
   }
+  /** Requires an existing owned journal. Recovery may write SQLite but performs no worker effects. */
+  static open(options: {
+    workspace: WorkspaceStore;
+    directory: string;
+    mode: 'journal-only';
+  }): Promise<FrozenBrowserJournal>;
+  static open(options: {
+    workspace: WorkspaceStore;
+    directory: string;
+  }): Promise<FrozenBrowserValidator>;
   static async open(options: {
     workspace: WorkspaceStore;
     directory: string;
-  }): Promise<FrozenBrowserValidator> {
+    mode?: 'journal-only';
+  }): Promise<FrozenBrowserValidator | FrozenBrowserJournal> {
     const directory = resolve(options.directory);
     if (owners.has(directory)) fail('validator-already-open');
     owners.add(directory);
@@ -1359,7 +1410,7 @@ export class FrozenBrowserValidator {
         markerPath = join(directory, 'owner.json'),
         policyPath = join(directory, 'seccomp.json');
       if (
-        !fresh &&
+        (options.mode === 'journal-only' || !fresh) &&
         (!names.includes('owner.json') ||
           !names.includes('journal.sqlite') ||
           !names.includes('seccomp.json'))
@@ -1515,17 +1566,56 @@ export class FrozenBrowserValidator {
           await validator.save(run);
         }
         if (
-          run.result.kind === 'recorded' ||
-          (run.result.kind === 'settled' && run.result.report.cleanup.kind === 'incomplete')
+          options.mode !== 'journal-only' &&
+          (run.result.kind === 'recorded' ||
+            (run.result.kind === 'settled' && run.result.report.cleanup.kind === 'incomplete'))
         )
           await validator.finalize(run);
       }
+      if (options.mode === 'journal-only')
+        return Object.freeze({
+          inventory: () => validator.inventory(),
+          close: () => validator.close(),
+        });
       return validator;
     } catch (error) {
       db?.close();
       owners.delete(directory);
       throw error;
     }
+  }
+  private inventory(): Promise<RecoveryInventory> {
+    if (this.closing || this.broken) return Promise.resolve().then(() => fail('validator-closed'));
+    const read = Promise.resolve().then(async () => {
+      await this.guard();
+      const runs = this.runs.map((run): RecoveryRun => {
+        const { intent, ledger, result } = run;
+        if (result.kind === 'pending') return fail('validator-result-not-recorded');
+        const saved = result.kind === 'recorded' ? result : result.report;
+        return {
+          runId: intent.runId,
+          request: intent.request,
+          requestDigest: sha256(intent.requestDigest),
+          configurationDigest: sha256(intent.configurationDigest),
+          admittedAt: intent.admittedAt,
+          deadline: intent.deadline,
+          ...ledger,
+          ...(result.kind === 'recorded'
+            ? { state: 'recorded', outcome: saved.outcome, cleanup: 'unresolved' }
+            : { state: 'settled', outcome: result.report.outcome, cleanup: result.report.cleanup }),
+        };
+      });
+      return structuredClone({
+        ownerId: this.meta.owner,
+        configurationDigest: sha256(this.meta.configurationDigest),
+        attempts: this.meta.attempts,
+        contribution: this.meta.contribution,
+        runs,
+      });
+    });
+    this.reads.add(read);
+    void read.finally(() => this.reads.delete(read)).catch(() => {});
+    return read;
   }
   private async guard() {
     if (this.broken) fail('validator-journal-failed');
@@ -2284,6 +2374,7 @@ export class FrozenBrowserValidator {
       try {
         await active?.promise;
       } finally {
+        await Promise.allSettled(this.reads);
         this.db.close();
         owners.delete(this.directory);
       }
