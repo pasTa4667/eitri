@@ -195,6 +195,7 @@ test('public implementation selects A, edits isolated B, reads A, and Retry sele
   let editCase = '';
   const finish = gate();
   const entered = gate();
+  t.after(() => finish.resolve());
   const observations: string[] = [];
   const f = await fixture(
     t,
@@ -274,7 +275,6 @@ test('public implementation selects A, edits isolated B, reads A, and Retry sele
   );
   const a = await f.add('A');
   const b = await f.add('B');
-  t.after(() => finish.resolve());
   await entered.promise;
   assert.deepEqual(observations, ['literal A\n', 'literal A\n']);
   assert.equal(await f.add('A'), a);
@@ -386,6 +386,7 @@ for (const mode of ['pause', 'cancel'] as const)
   test(`live source handles reject after ${mode} and cannot revive on Continue or Retry`, async (t) => {
     const entered = gate(),
       release = gate();
+    t.after(() => release.resolve());
     let captured: OfflineActionWorkspace;
     let now = 1000;
     const f = await fixture(t, {
@@ -402,7 +403,6 @@ for (const mode of ['pause', 'cancel'] as const)
         return { provider: faux.provider, modelId: faux.getModel().id };
       },
     });
-    t.after(() => release.resolve());
     const id = await f.add();
     await entered.promise;
     if (mode === 'pause') {
@@ -434,6 +434,7 @@ test('pause and close drain an admitted edit without authorizing a late operatio
   const entered = gate(),
     release = gate(),
     observed = gate();
+  t.after(() => release.resolve());
   let captured: OfflineActionWorkspace;
   let editError: unknown;
   const f = await fixture(
@@ -463,7 +464,6 @@ test('pause and close drain an admitted edit without authorizing a late operatio
     },
     true,
   );
-  t.after(() => release.resolve());
   const id = await f.add();
   await entered.promise;
   const pausing = f.controller.command(command({ type: 'pause', caseId: id }));
@@ -641,6 +641,7 @@ for (const mode of [
 test('real allowance cancellation revokes a callback that has not returned', async (t) => {
   const entered = gate(),
     release = gate();
+  t.after(() => release.resolve());
   let captured: OfflineActionWorkspace;
   let request: AdmittedCheckRequest;
   const f = await fixture(t, {
@@ -654,7 +655,6 @@ test('real allowance cancellation revokes a callback that has not returned', asy
       return receipt(input.kind);
     },
   });
-  t.after(() => release.resolve());
   const id = await f.add();
   await entered.promise;
   const c = await f.parked(id);
