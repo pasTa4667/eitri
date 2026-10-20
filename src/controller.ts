@@ -1101,8 +1101,9 @@ function parseCheckExecution(value: unknown, kind: Check['kind']): CheckExecutio
     return fail('invalid-check-execution');
   const record = value as Record<string, unknown>;
   const type = record.type;
+  const keys = Reflect.ownKeys(record);
   if (type !== 'completed') {
-    if (Reflect.ownKeys(record).join(',') !== 'type') return fail('invalid-check-execution');
+    if (keys.length !== 1 || keys[0] !== 'type') return fail('invalid-check-execution');
     switch (type) {
       case 'infrastructure':
       case 'unrelated-failure':
@@ -1114,15 +1115,18 @@ function parseCheckExecution(value: unknown, kind: Check['kind']): CheckExecutio
         return fail('invalid-check-execution');
     }
   }
-  if (Reflect.ownKeys(record).sort().join(',') !== 'check,type')
+  if (keys.length !== 2 || !keys.includes('check') || !keys.includes('type'))
     return fail('invalid-check-execution');
   const receipt = record.check;
   if (!receipt || typeof receipt !== 'object' || Array.isArray(receipt))
     return fail('invalid-check-execution');
   const check = { ...receipt } as Record<string, unknown>;
+  const receiptKeys = Reflect.ownKeys(receipt);
   if (
-    Reflect.ownKeys(receipt).sort().join(',') !==
-      'candidate,configuration,kind,outputs,passed,simulated' ||
+    receiptKeys.length !== 6 ||
+    !['candidate', 'configuration', 'kind', 'outputs', 'passed', 'simulated'].every((key) =>
+      receiptKeys.includes(key),
+    ) ||
     check.kind !== kind ||
     typeof check.candidate !== 'string' ||
     !/^[0-9a-f]{40,64}$/.test(check.candidate) ||
@@ -1139,8 +1143,10 @@ function parseCheckExecution(value: unknown, kind: Check['kind']): CheckExecutio
     if (!value || typeof value !== 'object' || Array.isArray(value))
       return fail('invalid-check-execution');
     const output = { ...value } as Record<string, unknown>;
+    const outputKeys = Reflect.ownKeys(value);
     if (
-      Reflect.ownKeys(value).sort().join(',') !== 'bytes,label,mime' ||
+      outputKeys.length !== 3 ||
+      !['bytes', 'label', 'mime'].every((key) => outputKeys.includes(key)) ||
       typeof output.label !== 'string' ||
       (output.mime !== 'text/plain' && output.mime !== 'image/png') ||
       !(output.bytes instanceof Uint8Array)
