@@ -220,12 +220,41 @@ export class NativeCase {
       try {
         lifetime.check();
         const result = await abortable(operation(signal, action), signal);
-        if (!host.mayRecordCompletion(action)) lifetime.check();
-        await native.note(`action-result-${action.id}`, 'eitri.action-result', {
-          actionId: action.id,
-          result: result ?? null,
-        });
-        if (!host.mayRecordCompletion(action)) lifetime.check();
+        const guard = () => {
+          if (!host.mayRecordCompletion(action)) lifetime.check();
+        };
+        guard();
+        const requestId = `action-result-${action.id}`;
+        const data = JSON.parse(
+          JSON.stringify({
+            payload: { actionId: action.id, result: result ?? null },
+            timestamp: Date.now(),
+          }),
+        );
+        await native.root.commit(async (tx) => {
+          const existing = await tx.submissionByRequest(native.root.id, requestId);
+          if (existing) {
+            if (existing.type !== 'write')
+              throw new Error(
+                `Request ${requestId} already identifies a submission of type ${existing.type}`,
+              );
+            return;
+          }
+          guard();
+          const entry = await tx.appendEntry(native.root.id, {
+            kind: 'eitri.action-result',
+            data,
+          });
+          await tx.createSubmission({
+            conversationId: native.root.id,
+            requestId,
+            type: 'write',
+            status: 'done',
+            entry: entry.id,
+          });
+        }, context);
+        host.changed();
+        guard();
         retirementAttempted = true;
         host.finish(action, false);
         return result;

@@ -1341,7 +1341,12 @@ export class Controller {
     try {
       const interrupted = new Promise<never>((_resolve, reject) => {
         abort = () => {
-          this.stopCheck(id, action, 'check-allowance-exhausted');
+          try {
+            this.stopCheck(id, action, 'check-allowance-exhausted');
+          } catch (error) {
+            reject(error);
+            return;
+          }
           reject(new ControlError('check-allowance-exhausted'));
         };
         signal.addEventListener('abort', abort, { once: true });

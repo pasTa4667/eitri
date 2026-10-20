@@ -3,6 +3,7 @@ import { mkdtemp, realpath, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { DatabaseSync } from 'node:sqlite';
 import { setImmediate as turn } from 'node:timers/promises';
 import {
   fauxProvider,
@@ -102,6 +103,27 @@ try {
   assert.equal(request.signal.aborted, true);
   assert.deepEqual(settled, { type: 'uncertain' });
   assert.equal(now, -1);
+  const view = (await controller.snapshot({ selected: request.caseId })).selected!;
+  assert.equal(view.case.native, 'ready');
+  assert.equal(view.case.usedMs, 0);
+  assert.equal(view.case.remainingMs, 600000);
+  assert.deepEqual(view.checks, []);
+  assert.deepEqual(view.artifacts, []);
+  assert.deepEqual(
+    view.messages.filter((message) => message.kind === 'eitri.action-result'),
+    [],
+  );
+  const db = new DatabaseSync(join(directory, 'catalogue.sqlite'), { readOnly: true });
+  try {
+    const retained = JSON.parse(
+      String(db.prepare('SELECT value FROM actions WHERE id=?').get(request.actionId)!.value),
+    );
+    assert.equal(retained.caseId, request.caseId);
+    assert.equal(retained.epoch, request.epoch);
+    assert.equal(retained.kind, 'tool');
+  } finally {
+    db.close();
+  }
   console.log(
     'run-check interruption settled with persistently invalid clock after event-loop turns',
   );

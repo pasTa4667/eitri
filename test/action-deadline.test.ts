@@ -459,26 +459,29 @@ for (const retry of [false, true])
     let retryArmed = false;
     let actionId = '';
     let barrier: Promise<void> | undefined;
-    let native!: NativeCase;
-    const original = NativeCase.prototype.note;
-    t.mock.method(
-      NativeCase.prototype,
-      'note',
-      function (this: NativeCase, ...args: Parameters<typeof original>) {
-        if (args[1] === 'eitri.action-result' && !actionId) {
-          native = this;
-          actionId = (args[2] as { actionId: string }).actionId;
-          barrier = this.root.commit(async () => {
-            blocked.resolve();
-            await release.promise;
-          }, context);
-          const pending = original.apply(this, args);
-          queued.resolve();
-          return pending;
-        }
-        return original.apply(this, args);
-      },
-    );
+    let native!: Pick<NativeCase, 'root' | 'host'>;
+    const original = NativeCase.prototype.metadata;
+    let wrapped = false;
+    t.mock.method(NativeCase.prototype, 'metadata', async function (this: NativeCase) {
+      if (!wrapped) {
+        wrapped = true;
+        const mayRecordCompletion = this.host.mayRecordCompletion;
+        this.host.mayRecordCompletion = (action) => {
+          const confirmed = mayRecordCompletion(action);
+          if (confirmed && !actionId) {
+            native = { root: this.root, host: this.host };
+            actionId = action.id;
+            barrier = this.root.commit(async () => {
+              blocked.resolve();
+              await release.promise;
+            }, context);
+            queueMicrotask(() => queued.resolve());
+          }
+          return confirmed;
+        };
+      }
+      return original.call(this);
+    });
     const f = await fixture(
       t,
       {
@@ -566,6 +569,26 @@ for (const retry of [false, true])
       retry ? [] : [{ actionId, result: null }],
     );
     assert.equal(f.faux.state.callCount, retry ? 2 : 1);
+    if (!retry) {
+      const entry = durableResults()[0];
+      assert.equal(typeof entry.data.timestamp, 'number');
+      const draft = {
+        type: 'write' as const,
+        requestId: `action-result-${actionId}`,
+        entry: { kind: 'eitri.action-result', data: { payload: 'Must not replace result' } },
+      };
+      const replay = await native.root.submit(draft, context);
+      assert.deepEqual(await replay.status(context), {
+        id: replay.id,
+        conversationId: native.root.id,
+        requestId: draft.requestId,
+        type: 'write',
+        status: 'done',
+        entry: entry.id,
+      });
+      assert.equal((await native.root.submit(draft, context)).id, replay.id);
+      assert.deepEqual(durableResults(), [entry]);
+    }
   });
 
 for (const kind of ['model', 'tool'] as const)
