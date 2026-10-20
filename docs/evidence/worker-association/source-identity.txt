@@ -1,0 +1,14 @@
+952acf441668ee6b6ec0b7e07735f842b04fdee0
+183bf56578758983b10a193a9e380fb7dce66f66
+ docs/worker-association.md                         |  46 ++
+ src/controller.ts                                  | 154 ++++-
+ test/controller-worker-association-crash-worker.ts |  28 +
+ test/controller-worker-association-fixture.ts      | 264 ++++++++
+ test/controller-worker-association.test.ts         | 699 +++++++++++++++++++++
+ 5 files changed, 1190 insertions(+), 1 deletion(-)
+
+Labeled post-verification source identity check
+Command: git rev-parse HEAD
+183bf56578758983b10a193a9e380fb7dce66f66
+Command: git diff --exit-code HEAD -- src test worker operator package.json package-lock.json
+Exit code: 0

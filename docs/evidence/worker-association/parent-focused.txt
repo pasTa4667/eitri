@@ -1,0 +1,27 @@
+✔ baseline retains the original allowance and derives detached history without changing either owner (1565.861ms)
+✔ browser retains the original allowance and derives detached history without changing either owner (1449.416417ms)
+✔ selected A remains the candidate intent after an edit to B and Retry cannot revive the old action (3036.492625ms)
+✔ same-key request mismatches conflict while another action key is absent (1115.393417ms)
+✔ pre-await configuration snapshot and immutable binding reject changed or omitted reopen options (100.192791ms)
+✔ new bindings require independent verified ownership before persistence or startup recovery (93.555875ms)
+✔ legacy and unsupported selections stay unrecorded without backfill (1347.207875ms)
+▶ unsupported check has no intent and final authority loss cannot record one
+  ✔ unit (937.112209ms)
+  ✔ exhausted (959.770083ms)
+  ✔ paused (1066.782625ms)
+✔ unsupported check has no intent and final authority loss cannot record one (2964.18125ms)
+✔ inspection reports missing, corrupt, busy and foreign journals as errors and always releases ownership (1044.520792ms)
+✔ accepted inspections serialize and close drains them before releasing storage (1487.80525ms)
+✔ SIGKILL after-worker-intent retains exact history without callback replay (2257.414834ms)
+✔ SIGKILL after-source-selection-receipt retains exact history without callback replay (2088.891166ms)
+✔ malformed binding options reject before any directory is created (58.597875ms)
+✔ retained intent parsing rejects source and digest mutations without changing history (1155.778084ms)
+✔ settled historical cleanup is detached and startup journal failure precedes case recovery (1631.408708ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 21743.090042
