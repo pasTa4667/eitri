@@ -1,0 +1,46 @@
+Accepted dependency applicability
+UTC 2026-10-20T06:34:06Z
+
+Command: git diff --exit-code 352bf1568b176d9afd4351aca5e2c9c8fc6731e4 -- src/workspace.ts src/artifacts.ts src/domain.ts prototypes/chromium/policy.mjs prototypes/chromium/sandbox-status.mjs prototypes/chromium/seccomp/docker-29.4.0.json package.json package-lock.json tsconfig.json
+exit=0
+
+Command: git ls-files prototypes/chromium
+prototypes/chromium/Dockerfile
+prototypes/chromium/namespace_probe.py
+prototypes/chromium/policy.d.mts
+prototypes/chromium/policy.mjs
+prototypes/chromium/probe.mjs
+prototypes/chromium/run.mjs
+prototypes/chromium/sandbox-status.d.mts
+prototypes/chromium/sandbox-status.mjs
+prototypes/chromium/seccomp/LICENSE
+prototypes/chromium/seccomp/README.md
+prototypes/chromium/seccomp/docker-29.4.0.json
+
+Node and Rust results from npm run verify:all, exit0
+  ✔ access-error (134.042542ms)
+▶ trusted frozen driver collects popup and shutdown errors instead of clean B
+  ✔ popup-error (102.137125ms)
+  ✔ popup-console-error (94.850375ms)
+  ✔ late-browser-close-error (102.252042ms)
+  ✔ late-server-close-error (105.0325ms)
+✔ trusted frozen driver collects popup and shutdown errors instead of clean B (498.582375ms)
+▶ trusted frozen driver serves a worker restriction and retains worker denial errors
+✔ trusted frozen driver serves a worker restriction and retains worker denial errors (184.502417ms)
+  ✔ candidate B console-error (2182.356833ms)
+  ✔ candidate B page-error (2179.595042ms)
+  ✔ baseline A startup-error (2197.831792ms)
+ℹ tests 311
+ℹ pass 311
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6, proc-macro-error2 v2.0.1
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6, proc-macro-error2 v2.0.1
+test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 17.10s
+
+Command: node --version
+v26.5.0
+
+Command: docker --context orbstack version --format {{.Server.Version}}
+29.4.0

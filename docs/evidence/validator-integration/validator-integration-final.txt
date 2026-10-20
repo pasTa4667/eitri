@@ -1,0 +1,20 @@
+Final source and trail check
+UTC 2026-10-20T06:40:46Z
+
+Command: git rev-parse HEAD
+8517aca40c87bcc9050c56e0537dfceffcac8a24
+
+Command: git diff --exit-code 352bf1568b176d9afd4351aca5e2c9c8fc6731e4 -- src worker test prototypes package.json package-lock.json tsconfig.json
+exit=0
+
+Command: git diff --exit-code 4fda3c2 -- docs/evidence/frozen-browser
+exit=0
+
+Command: verify baseline decisions.tsv is an exact byte prefix
+PASS. All 93 previous rows are unchanged.
+
+Command: node --check worker/frozen-browser/driver.mjs
+exit=0
+
+Command: node --check worker/frozen-browser/watchdog.mjs
+exit=0

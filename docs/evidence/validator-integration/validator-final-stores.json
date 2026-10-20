@@ -1,0 +1,628 @@
+{
+  "sourceRevision": "352bf1568b176d9afd4351aca5e2c9c8fc6731e4",
+  "fixtures": [
+    {
+      "root": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-s6iH6i",
+      "owner": "3c2ec7fd-8846-41a4-9f08-ccad628927ec",
+      "attempts": 7,
+      "runs": [
+        {
+          "runId": "be87fe62-47d0-4903-ae35-ef78b7f7d956",
+          "role": "baseline",
+          "result": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "baseline-reproduced"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "cb02ac9a-4979-4494-bec3-ae27752fdef0",
+          "role": "candidate",
+          "result": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "candidate-passed"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "a7b339af-1fa0-4334-8464-71bc60aaf182",
+          "role": "baseline",
+          "result": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "baseline-not-reproduced"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "43f95ac4-f589-4976-8931-1ab5f84139f5",
+          "role": "baseline",
+          "result": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "unrelated-failure"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "bf7ed7ab-7a4e-4231-9010-e64acf1e7d11",
+          "role": "baseline",
+          "result": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "unrelated-failure"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "35d25455-cfe7-4096-8ce4-6f6e94c5d754",
+          "role": "baseline",
+          "result": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "baseline-reproduced"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "bb6455d2-d856-4ebe-93d2-952fcbbd359c",
+          "role": "baseline",
+          "result": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        }
+      ]
+    },
+    {
+      "root": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-esVQbk",
+      "owner": "b1810d82-407d-4c16-a60b-89e962e4af1e",
+      "attempts": 2,
+      "runs": [
+        {
+          "runId": "33e18da0-18a0-454d-a5fd-26f029bd6e40",
+          "role": "candidate",
+          "result": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "candidate-passed"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "61d4797c-f35e-49c1-b396-31aebdc3d880",
+          "role": "candidate",
+          "result": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        }
+      ]
+    },
+    {
+      "root": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-Kl7uFH",
+      "owner": "5b8d6b50-5370-4ddb-b084-1587761e2102",
+      "attempts": 4,
+      "runs": [
+        {
+          "runId": "dc403f99-c7cc-47ec-98ab-a6a25d777785",
+          "role": "candidate",
+          "result": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "candidate-passed"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "7819965c-41f1-4499-876c-6f04be2d3b71",
+          "role": "candidate",
+          "result": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "unrelated-failure"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "69b1e6ca-45f6-4356-a992-371c429ad085",
+          "role": "candidate",
+          "result": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "unrelated-failure"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "8ad2597c-1308-4d7a-b9b9-523a2a0afda4",
+          "role": "candidate",
+          "result": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        }
+      ]
+    },
+    {
+      "root": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-AnwUQA",
+      "owner": "43f514d2-13fd-4f9c-93cd-65e222cc405d",
+      "attempts": 2,
+      "runs": [
+        {
+          "runId": "e1409051-f2c6-4e0b-bc5b-2b4fac09d346",
+          "role": "candidate",
+          "result": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "unrelated-failure"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "7bea0b07-9032-4040-a052-03e625a0d43f",
+          "role": "candidate",
+          "result": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "unrelated-failure"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        }
+      ]
+    },
+    {
+      "root": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-XEyFnH",
+      "owner": "3fc76b2a-5fc2-4e3e-8c4d-a4927b2d6dee",
+      "attempts": 1,
+      "runs": [
+        {
+          "runId": "082b4a93-4622-47dd-bd53-ce519158b432",
+          "role": "baseline",
+          "result": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "cancelled",
+            "code": "cancelled-or-allowance-exhausted"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        }
+      ]
+    },
+    {
+      "root": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-8NB5pD",
+      "owner": "402f67b7-2ea1-49a8-8230-2dd2a73d539d",
+      "attempts": 1,
+      "runs": [
+        {
+          "runId": "3659bf05-e50e-4ca7-8912-590d1cbd40f9",
+          "role": "baseline",
+          "result": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "uncertain",
+            "code": "interrupted-run-no-replay"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        }
+      ]
+    },
+    {
+      "root": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-5iRyMY",
+      "owner": "e944a577-a818-4793-a2c0-05691483910f",
+      "attempts": 1,
+      "runs": [
+        {
+          "runId": "273e16d8-83b1-49b5-926b-1e652e191462",
+          "role": "baseline",
+          "result": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "uncertain",
+            "code": "interrupted-run-no-replay"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        }
+      ]
+    },
+    {
+      "root": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-pts0Ma",
+      "owner": "2b24f06e-e052-43bb-9cf1-5099b8076863",
+      "attempts": 1,
+      "runs": [
+        {
+          "runId": "82d72dba-56d3-4e6c-8c59-b806689f0cbf",
+          "role": "baseline",
+          "result": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "uncertain",
+            "code": "interrupted-run-no-replay"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        }
+      ]
+    },
+    {
+      "root": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-fUIiFC",
+      "owner": "cc35910b-aa05-46b4-a954-424d03a3fbe1",
+      "attempts": 1,
+      "runs": [
+        {
+          "runId": "009ed981-e636-4751-8717-c821c57267dd",
+          "role": "baseline",
+          "result": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "baseline-reproduced"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        }
+      ]
+    },
+    {
+      "root": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-N3YkuP",
+      "owner": "7b7cbd70-33eb-4a26-a3f6-72ba31db7dd0",
+      "attempts": 1,
+      "runs": [
+        {
+          "runId": "9cd639a4-ee89-4879-8774-7f1870736ff7",
+          "role": "baseline",
+          "result": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "baseline-reproduced"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        }
+      ]
+    },
+    {
+      "root": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-2jz3bo",
+      "owner": "2f8e3e9a-659e-4755-a193-aa1278d15fe9",
+      "attempts": 16,
+      "runs": [
+        {
+          "runId": "a74eb454-4d22-4574-87ac-14c1fcd1becd",
+          "role": "baseline",
+          "result": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "baseline-reproduced"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "2428e859-65fc-4ca4-98e0-91ed96460403",
+          "role": "baseline",
+          "result": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "93487f2f-4057-4dd3-b726-83e8854e3a06",
+          "role": "baseline",
+          "result": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "11b8e09b-3e96-4050-a45a-069ffa8b727c",
+          "role": "baseline",
+          "result": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "3e81f27e-074c-45a7-9f08-e055241f9747",
+          "role": "baseline",
+          "result": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "1686e71a-307f-44ed-a60e-4d4a8a8f7ab3",
+          "role": "baseline",
+          "result": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "cf005c17-5258-4ea6-bf29-bfe5109be377",
+          "role": "baseline",
+          "result": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "0c73ba0a-9721-4bf6-826c-fd6683bc2294",
+          "role": "baseline",
+          "result": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "daacc0ca-323d-49d9-a51e-a6d71a4657fe",
+          "role": "baseline",
+          "result": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "dba57bc3-a2d6-4436-926a-16245ca0caf1",
+          "role": "baseline",
+          "result": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "27818b72-05a4-447d-9499-8083c1ed9f8f",
+          "role": "baseline",
+          "result": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "9b519e7f-7101-449a-a557-0b8a2ceee101",
+          "role": "baseline",
+          "result": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "8802caba-fafd-4e71-b3b0-9a2c93ae6102",
+          "role": "baseline",
+          "result": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "afb7c30d-07de-4d61-adc3-fb97036a3bc9",
+          "role": "baseline",
+          "result": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "5958fa76-7cde-46da-b25f-8bd7681bf8a2",
+          "role": "baseline",
+          "result": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "5da7b3c0-14a0-4b34-9aaa-fe35b5fe108a",
+          "role": "baseline",
+          "result": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        }
+      ]
+    },
+    {
+      "root": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-FP3IeC",
+      "owner": "8651bd1c-8d1d-4e9d-925c-08f72d6494b5",
+      "attempts": 1,
+      "runs": [
+        {
+          "runId": "31e3ff56-3348-441d-ab3e-a035c4fcc161",
+          "role": "baseline",
+          "result": "settled",
+          "build": "unknown",
+          "outcome": {
+            "kind": "uncertain",
+            "code": "daemon-build-unresolved"
+          },
+          "cleanup": {
+            "kind": "incomplete",
+            "cache": "retained",
+            "code": "daemon-build-unresolved"
+          }
+        }
+      ]
+    },
+    {
+      "root": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-C0VKoR",
+      "owner": "039073e1-495d-4d27-9d74-2cc8b954424c",
+      "attempts": 1,
+      "runs": [
+        {
+          "runId": "4e6f72cb-82c4-42c2-b936-793e9b0763b3",
+          "role": "baseline",
+          "result": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "uncertain",
+            "code": "interrupted-run-no-replay"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        }
+      ]
+    }
+  ]
+}

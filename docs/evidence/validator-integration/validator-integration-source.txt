@@ -1,0 +1,114 @@
+Integration boundary record
+UTC 2026-10-20T06:28:26Z
+
+Command: git status --short
+ M decisions.tsv
+A  docs/frozen-browser.md
+A  prototypes/chromium/policy.d.mts
+A  prototypes/chromium/sandbox-status.d.mts
+A  src/frozen-browser.ts
+A  test/frozen-browser.test.ts
+A  test/integration/frozen-browser.test.ts
+A  worker/frozen-browser/Dockerfile
+A  worker/frozen-browser/driver.mjs
+A  worker/frozen-browser/scenario.json
+A  worker/frozen-browser/watchdog.mjs
+
+Command: git rev-parse HEAD MERGE_HEAD
+4fda3c2c811cc0ce58909f51d5092356cbb65640
+88f89090de567fa6eb10afc9f5f196892a22731f
+
+Command: git merge-base HEAD MERGE_HEAD
+786784e2d355e29d516f1743ee3ae1ecfa58f64c
+
+Command: git diff --cached --name-status
+A	docs/frozen-browser.md
+A	prototypes/chromium/policy.d.mts
+A	prototypes/chromium/sandbox-status.d.mts
+A	src/frozen-browser.ts
+A	test/frozen-browser.test.ts
+A	test/integration/frozen-browser.test.ts
+A	worker/frozen-browser/Dockerfile
+A	worker/frozen-browser/driver.mjs
+A	worker/frozen-browser/scenario.json
+A	worker/frozen-browser/watchdog.mjs
+
+Blob identity. Each group is accepted, index, actual worktree.
+
+src/frozen-browser.ts
+e1bc85a6104c21e7942d5fbf29bd78be0ab7b6b4
+e1bc85a6104c21e7942d5fbf29bd78be0ab7b6b4
+e1bc85a6104c21e7942d5fbf29bd78be0ab7b6b4
+
+test/frozen-browser.test.ts
+bf41ebb828179e08a1e33aeaa9f87703d1afdd7b
+bf41ebb828179e08a1e33aeaa9f87703d1afdd7b
+bf41ebb828179e08a1e33aeaa9f87703d1afdd7b
+
+test/integration/frozen-browser.test.ts
+25fe1c9e380973da4104775ab7280b24c434a556
+25fe1c9e380973da4104775ab7280b24c434a556
+25fe1c9e380973da4104775ab7280b24c434a556
+
+worker/frozen-browser/Dockerfile
+1569d7b737793144e59e6855f583f85cd126395c
+1569d7b737793144e59e6855f583f85cd126395c
+1569d7b737793144e59e6855f583f85cd126395c
+
+worker/frozen-browser/driver.mjs
+fc837e5233043d3f9a86b47e1b5c7a65abd99d30
+fc837e5233043d3f9a86b47e1b5c7a65abd99d30
+fc837e5233043d3f9a86b47e1b5c7a65abd99d30
+
+worker/frozen-browser/scenario.json
+a18a6c2003b40007c1c68602bfbe5e97047f7ec9
+a18a6c2003b40007c1c68602bfbe5e97047f7ec9
+a18a6c2003b40007c1c68602bfbe5e97047f7ec9
+
+worker/frozen-browser/watchdog.mjs
+11541077d5d249e4dd6cf853861cbacfe08e0668
+11541077d5d249e4dd6cf853861cbacfe08e0668
+11541077d5d249e4dd6cf853861cbacfe08e0668
+
+prototypes/chromium/policy.d.mts
+f9468feec7efdbb241f4e09b1806ca0b5db588e4
+f9468feec7efdbb241f4e09b1806ca0b5db588e4
+f9468feec7efdbb241f4e09b1806ca0b5db588e4
+
+prototypes/chromium/sandbox-status.d.mts
+886f63efccc2961c2f0e596c802059183336f2f7
+886f63efccc2961c2f0e596c802059183336f2f7
+886f63efccc2961c2f0e596c802059183336f2f7
+
+Command: git diff --exit-code 4fda3c2 -- src/controller.ts src/native.ts src/domain.ts src/http.ts src/main.ts src/artifacts.ts src/workspace.ts package.json package-lock.json tsconfig.json docs/evidence docs/work-log.md
+exit=0
+
+Command: git diff --exit-code 88f8909 -- docs/frozen-browser.md
+exit=0
+
+Command: rg -n frozen-browser src test/integration
+test/integration/frozen-browser.test.ts:14:import { FrozenBrowserValidator, frozenBrowserRequest } from '../../src/frozen-browser.ts';
+test/integration/frozen-browser.test.ts:15:import type { FrozenBrowserReport, FrozenBrowserRequest } from '../../src/frozen-browser.ts';
+test/integration/frozen-browser.test.ts:182:      assert.equal(container.Config.Labels['eitri.frozen-browser.owner'], owner, context);
+test/integration/frozen-browser.test.ts:214:      `eitri.frozen-browser.owner=${owner}`,
+test/integration/frozen-browser.test.ts:492:    assert.equal(sentinel[0].Config.Labels['eitri.frozen-browser.owner'], 'unrelated-sentinel');
+test/integration/frozen-browser.test.ts:509:    import {FrozenBrowserValidator,frozenBrowserRequest} from ${JSON.stringify(new URL('../../src/frozen-browser.ts', import.meta.url).href)};
+test/integration/frozen-browser.test.ts:604:      import {FrozenBrowserValidator,frozenBrowserRequest} from ${JSON.stringify(new URL('../../src/frozen-browser.ts', import.meta.url).href)};
+test/integration/frozen-browser.test.ts:685:            sentinel[0].Config.Labels['eitri.frozen-browser.owner'],
+test/integration/frozen-browser.test.ts:808:    import {FrozenBrowserValidator,frozenBrowserRequest} from ${JSON.stringify(new URL('../../src/frozen-browser.ts', import.meta.url).href)};
+src/frozen-browser.ts:95:const entrypoint = ['/usr/local/bin/node', '/opt/eitri/frozen-browser/watchdog.mjs'];
+src/frozen-browser.ts:96:const labelOwner = 'eitri.frozen-browser.owner';
+src/frozen-browser.ts:97:const labelRun = 'eitri.frozen-browser.run';
+src/frozen-browser.ts:148:    return fail('invalid-frozen-browser-record');
+src/frozen-browser.ts:153:  if (!same(Object.keys(r).sort(), [...keys].sort())) fail('invalid-frozen-browser-fields');
+src/frozen-browser.ts:158:    return fail('invalid-frozen-browser-string');
+src/frozen-browser.ts:163:    return fail('invalid-frozen-browser-number');
+src/frozen-browser.ts:167:  if (!Array.isArray(value) || value.length > max) return fail('invalid-frozen-browser-array');
+src/frozen-browser.ts:171:  if (!uuid(value) || value !== value.toLowerCase()) return fail('invalid-frozen-browser-id');
+src/frozen-browser.ts:208:    return fail('invalid-frozen-browser-request');
+src/frozen-browser.ts:619:    intent.imageTag !== `eitri-frozen-browser:${runId}` ||
+src/frozen-browser.ts:620:    intent.containerName !== `eitri-frozen-browser-${runId}` ||
+src/frozen-browser.ts:1109:          fileURLToPath(new URL(`../worker/frozen-browser/${name}`, import.meta.url)),
+src/frozen-browser.ts:1551:        imageTag: `eitri-frozen-browser:${runId}`,
+src/frozen-browser.ts:1552:        containerName: `eitri-frozen-browser-${runId}`,
+src/frozen-browser.ts:1803:            : { kind: 'infrastructure-failed', code: 'frozen-browser-check-failed' };
