@@ -20,7 +20,16 @@ import { openNodeSqliteStorage } from '@earendil-works/pi-durable/storage/sqlite
 import { randomUUID, createHash } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { phases, fail, uuid } from './domain.ts';
-import type { Action, Artifact, Assessment, Case, Check, CheckResult, Message } from './domain.ts';
+import type {
+  Action,
+  Artifact,
+  Assessment,
+  Case,
+  Check,
+  CheckResult,
+  CheckExecution,
+  Message,
+} from './domain.ts';
 import {
   ArtifactStore,
   artifactLimits,
@@ -37,7 +46,7 @@ export type RuntimeHost = {
   assess(assessment: Assessment, checks: Check[]): Promise<void>;
   checkpoint(check: Check): void;
   probe(signal: AbortSignal): Promise<string>;
-  check(kind: Check['kind'], signal: AbortSignal): Promise<CheckResult>;
+  check(action: Action, kind: Check['kind'], signal: AbortSignal): Promise<CheckExecution>;
   validateCheckAction(action: Action): void;
   fault(point: string): void;
   changed(): void;
@@ -255,10 +264,15 @@ export class NativeCase {
               const check = await tool(async (signal, action) => {
                 const checkId = randomUUID();
                 const kind = args.kind as Check['kind'];
-                const result = await host.check(kind, signal);
-                if (result.kind !== kind) fail('invalid-check-receipt');
-                return native.recordCheck(action, checkId, result, signal);
+                const result = await host.check(action, kind, signal);
+                if (result.type !== 'completed') return result;
+                return native.recordCheck(action, checkId, result.check, signal);
               });
+              if ('type' in check)
+                return {
+                  output: [{ type: 'text', text: 'Validation unavailable.' }],
+                  control: { terminate: true },
+                };
               return {
                 output: [
                   {

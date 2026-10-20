@@ -22,12 +22,12 @@ const controller = await Controller.open({
     ]);
     return { provider: faux.provider, modelId: faux.getModel().id };
   },
-  check: async (_id, kind) => ({ kind, candidate: 'a'.repeat(40), configuration: 'b'.repeat(64),
+  check: async ({ kind }) => ({ type: 'completed', check: { kind, candidate: 'a'.repeat(40), configuration: 'b'.repeat(64),
     simulated: true, passed: true, outputs: [
       { label: 'Assertions', mime: 'text/plain', bytes: Buffer.from('Simulated assertions passed.\n') },
       { label: 'Screenshot', mime: 'image/png', bytes: Buffer.from(
         'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==', 'base64') },
-    ] }),
+    ] } }),
 });
 const read = controller.artifact.bind(controller);
 let first = true;
