@@ -233,18 +233,7 @@ export class Controller {
         fail('offline-workspace-required');
       return;
     }
-    this.sourceDigest = digest({
-      version: 1,
-      repositoryId: offline.repositoryId,
-      regressionDirectory: offline.regressionDirectory,
-      baseline: offline.baseline
-        .map((file) => ({
-          path: file.virtualPath,
-          size: file.bytes.byteLength,
-          hash: createHash('sha256').update(file.bytes).digest('hex'),
-        }))
-        .sort((a, b) => Buffer.compare(Buffer.from(a.path), Buffer.from(b.path))),
-    });
+    this.sourceDigest = offlineSourceDigest(offline);
     if (row) {
       const saved = JSON.parse(String(row.value));
       if (
@@ -385,6 +374,13 @@ export class Controller {
             workspace.checkpoint.sequence !== 0
           )
             fail('workspace-provisioning-uncertain');
+          const frozen = await this.workspaces!.freeze(caseId(id), workspace.baseRevision);
+          const baseline = await this.workspaces!.readFrozen(frozen, new AbortController().signal);
+          if (
+            offlineSourceDigest({ ...this.options.offlineWorkspace!, baseline }) !==
+            binding.sourceDigest
+          )
+            fail('workspace-initial-source-mismatch');
           this.saveBinding({ ...binding, state: 'ready', baseRevision: workspace.baseRevision });
         }
       } catch (error) {
@@ -1639,6 +1635,20 @@ export class Controller {
   }
 }
 
+function offlineSourceDigest(offline: OfflineWorkspaceOptions): string {
+  return digest({
+    version: 1,
+    repositoryId: offline.repositoryId,
+    regressionDirectory: offline.regressionDirectory,
+    baseline: offline.baseline
+      .map((file) => ({
+        path: file.virtualPath,
+        size: file.bytes.byteLength,
+        hash: createHash('sha256').update(file.bytes).digest('hex'),
+      }))
+      .sort((a, b) => Buffer.compare(Buffer.from(a.path), Buffer.from(b.path))),
+  });
+}
 function hasFields(value: object, fields: string[]): boolean {
   return (
     Object.keys(value).length === fields.length &&
