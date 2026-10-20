@@ -16,7 +16,7 @@ After retaining exact worker intent, an enabled `baseline` or `browser` callback
 | `acceptedAt` | Original worker timestamp in milliseconds. |
 | `deadline` | Exactly `acceptedAt + request.allowanceMs`. |
 
-Callback entry does not accept work. Other checks have no capability. Callers cannot override the request, identity, signal, allowance, deadline, or authority guard. Concurrent exact retries return the original acknowledgment. Neither timestamp is renewed, including after expiry.
+Callback entry does not accept work. Other checks have no capability. Callers cannot override the request, identity, signal, allowance, deadline, or authority guard. Concurrent exact retries return the original acknowledgment. Neither timestamp is renewed, including after expiry. This historical `deadline` is separate from the [admitted-action endpoint](action-deadline.md) exposed as callback `deadlineAt`.
 
 ## Authority and persistence
 
@@ -46,4 +46,4 @@ Acceptance is not an execution reservation or permission to execute. It creates 
 
 History is finite, the format upgrade is one-way, and association requires the original trusted journal and supported configuration. Same-UID hostile writers remain outside the trust boundary. COMMIT can cross a deadline after the final synchronous authority sample. This is not distributed atomic authorization.
 
-Future execution authority, absolute controller deadlines, cancellation drainage, cleanup reconciliation, containment, and native real-check admission remain separate work.
+Future execution authority, cancellation drainage, cleanup reconciliation, containment, and native real-check admission remain separate work. [Admitted-action deadlines](action-deadline.md) bound current controller authority without changing acceptance bytes.

@@ -12,7 +12,8 @@ A configured scripted callback receives one `AdmittedCheckRequest`.
 | `actionId` | The actual admitted action UUID. |
 | `epoch` | The action's control epoch. It is correlation data, not independent authority. |
 | `kind` | The requested check kind. |
-| `remainingMs` | Dispatch-time allowance, bounded by remaining case and action budgets. It is not a renewed minute. |
+| `deadlineAt` | Exclusive admitted-action endpoint in the controller clock domain. |
+| `remainingMs` | Callback-entry sample, bounded by remaining case and action budgets. It is not a renewed minute. |
 | `signal` | The admitted operation's cancellation signal. |
 
 The request is a frozen object containing detached scalar values. It does not expose the mutable `Action` or `Case`. The signal is not frozen. Controller authority checks still decide dispatch and evidence admission.
@@ -44,7 +45,7 @@ Ordinary completed pass and fail receipts retain the existing assessment and rep
 
 This is an internal scripted adapter interface, not an agent-supplied execution configuration. No positional legacy callback is retained. No model can supply commands, paths, images or scenarios through it.
 
-The dispatch allowance is a snapshot. A cancellation signal does not prove underlying work or worker cleanup has drained. Artifact persistence remains non-atomic across blobs, manifests and check receipts. This unit does not roll back evidence committed before a later cancellation.
+The dispatch allowance is a snapshot. [Admitted-action deadlines](action-deadline.md) define the fixed endpoint, synchronous expiry guards, and custom-clock semantics. A cancellation signal does not prove underlying work or worker cleanup has drained. Artifact persistence remains non-atomic across blobs, manifests and check receipts. This unit does not roll back evidence committed before a later cancellation.
 
 The optional [controller-owned offline workspace](controller-workspace.md) configuration adds case ownership and action-scoped frozen source selection. It does not change these simulated receipt semantics. Docker dispatch, browser-report mapping, non-simulated evidence admission and durable worker cleanup correlation remain separate work. The accepted browser validator stays unwired. HTTP and native operator protocols do not change.
 
