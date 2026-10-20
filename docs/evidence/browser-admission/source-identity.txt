@@ -1,0 +1,19 @@
+$ git rev-parse 9c862a0
+9c862a0f04056b2a88c01fe12525e80e47ef7ef8
+
+$ git rev-parse bd01ff6
+bd01ff66e71b59c396792eb5120a1cc0e50d4005
+
+$ git diff --name-only 9c862a0 bd01ff6
+docs/frozen-browser.md
+src/frozen-browser.ts
+test/frozen-browser-admission.test.ts
+
+$ git diff 9c862a0 bd01ff6 -- src/controller.ts src/native.ts src/domain.ts src/main.ts src/http.ts src/workspace.ts src/artifacts.ts worker operator package.json package-lock.json
+
+$ git diff bd01ff6 -- src test
+
+$ cmp .audit/browser-admission-review.patch .audit/browser-admission-committed-review.patch
+Both review patches match byte for byte.
+
+$ git remote -v
