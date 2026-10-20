@@ -25,7 +25,12 @@ import type {
   WorkspaceCheckpoint,
 } from './workspace.ts';
 import { FrozenBrowserValidator, frozenBrowserRequest } from './frozen-browser.ts';
-import type { FrozenBrowserRequest, RecoveryInventory, RecoveryRun } from './frozen-browser.ts';
+import type {
+  FrozenBrowserRequest,
+  RecoveryInventory,
+  RecoveryRecord,
+  FrozenBrowserAcceptance,
+} from './frozen-browser.ts';
 import { NativeCase } from './native.ts';
 import { ArtifactStore, artifactLimits, validateOutput } from './artifacts.ts';
 import {
@@ -60,6 +65,7 @@ export type OfflineWorkspaceOptions = Readonly<{
   baseline: readonly BaselineFile[];
 }>;
 export type OfflineActionWorkspace = Readonly<{
+  workerAcceptance?: Readonly<{ accept(): Promise<FrozenBrowserAcceptance> }>;
   selection: FrozenRevision;
   readSelected(): Promise<readonly BaselineFile[]>;
   edit(expectedRevision: GitRevision, input: Omit<BrokerEdit, 'requestId'>): Promise<SavedReceipt>;
@@ -74,8 +80,8 @@ type WorkerIntent = Readonly<{ request: FrozenBrowserRequest; requestDigest: str
 export type WorkerAssociationObservation =
   | Readonly<{ state: 'unrecorded' }>
   | Readonly<{ state: 'absent'; intent: WorkerIntent }>
-  | Readonly<{ state: 'conflict'; intent: WorkerIntent; runs: readonly RecoveryRun[] }>
-  | Readonly<{ state: 'matched'; intent: WorkerIntent; run: RecoveryRun }>;
+  | Readonly<{ state: 'conflict'; intent: WorkerIntent; runs: readonly RecoveryRecord[] }>
+  | Readonly<{ state: 'matched'; intent: WorkerIntent; run: RecoveryRecord }>;
 type WorkspaceBinding = Readonly<{
   caseId: string;
   repositoryId: RepositoryId;
@@ -108,6 +114,7 @@ type Options = {
   probe?: (id: string, signal: AbortSignal) => Promise<string>;
   offlineWorkspace?: OfflineWorkspaceOptions;
   offlineWorkerJournal?: OfflineWorkerJournalOptions;
+  offlineWorkerAcceptance?: true;
   check?: (
     request: AdmittedCheckRequest,
     source?: OfflineActionWorkspace,
@@ -153,6 +160,13 @@ export class Controller {
   }
   static async open(options: Options) {
     options = { ...options };
+    if (options.offlineWorkerAcceptance !== undefined && options.offlineWorkerAcceptance !== true)
+      fail('invalid-offline-worker-acceptance');
+    if (
+      options.offlineWorkerAcceptance &&
+      (!options.offlineWorkspace || !options.offlineWorkerJournal)
+    )
+      fail('offline-worker-acceptance-configuration-required');
     if (options.offlineWorkerJournal !== undefined) {
       const journal = options.offlineWorkerJournal;
       if (
@@ -323,15 +337,13 @@ export class Controller {
       directory: binding.directory,
       workspace: this.workspaces!,
       mode: 'journal-only',
+      expectedIdentity: {
+        ownerId: binding.ownerId,
+        configurationDigest: sha256(binding.configurationDigest),
+      },
     });
     try {
-      const inventory = await journal.inventory();
-      if (
-        inventory.ownerId !== binding.ownerId ||
-        inventory.configurationDigest !== binding.configurationDigest
-      )
-        fail('worker-journal-identity-mismatch');
-      return inventory;
+      return await journal.inventory();
     } finally {
       await journal.close();
     }
@@ -1145,9 +1157,7 @@ export class Controller {
       !this.workspaceReady(id) ||
       c.epoch !== action.epoch ||
       !persisted ||
-      !(['id', 'caseId', 'epoch', 'kind', 'startedAt', 'limitMs', 'usedAtStart'] as const).every(
-        (key) => action[key] === persisted[key],
-      )
+      !isDeepStrictEqual(action, persisted)
     )
       fail('check-dispatch-denied');
     this.charge(c, now);
@@ -1229,6 +1239,44 @@ export class Controller {
           workerIntent: { request: workerRequest, requestDigest: digest(workerRequest) },
         });
         this.options.fault?.('after-worker-intent', id);
+        if (this.options.offlineWorkerAcceptance) {
+          const retained = this.source(id, action.id);
+          const assertCurrentAuthority = (): true => {
+            this.sourceAuthority(id, action, signal, () => live);
+            if (!isDeepStrictEqual(this.source(id, action.id), retained))
+              fail('worker-acceptance-source-changed');
+            return true;
+          };
+          source = Object.freeze({
+            ...source!,
+            workerAcceptance: Object.freeze({
+              accept: () =>
+                this.workspaceSerial(async () => {
+                  assertCurrentAuthority();
+                  const binding = this.options.offlineWorkerJournal!;
+                  const journal = await FrozenBrowserValidator.open({
+                    directory: binding.directory,
+                    workspace: this.workspaces!,
+                    mode: 'acceptance-only',
+                    expectedIdentity: {
+                      ownerId: binding.ownerId,
+                      configurationDigest: sha256(binding.configurationDigest),
+                    },
+                  });
+                  let accepted: FrozenBrowserAcceptance;
+                  try {
+                    assertCurrentAuthority();
+                    accepted = await journal.accept(workerRequest, assertCurrentAuthority);
+                    assertCurrentAuthority();
+                  } finally {
+                    await journal.close();
+                  }
+                  assertCurrentAuthority();
+                  return accepted;
+                }),
+            }),
+          });
+        }
       }
       request = Object.freeze({
         caseId: id,
@@ -1257,7 +1305,9 @@ export class Controller {
         signal.addEventListener('abort', abort, { once: true });
       });
       const result: unknown = await Promise.race([
-        source ? callback(request, source) : callback(request),
+        Promise.resolve(source ? callback(request, source) : callback(request)).finally(() => {
+          live = false;
+        }),
         interrupted,
       ]);
       try {

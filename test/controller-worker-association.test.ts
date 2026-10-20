@@ -196,6 +196,8 @@ test('same-key request mismatches conflict while another action key is absent', 
     );
     if (result.state === 'conflict') {
       assert.deepEqual(result.intent, observed.intent);
+      assert.notEqual(result.runs[0].state, 'accepted');
+      if (result.runs[0].state === 'accepted') return assert.fail('unexpected acceptance');
       assert.equal(result.runs[0].runId, run.intent.runId);
       assert.deepEqual(result.runs[0].request, request);
     }

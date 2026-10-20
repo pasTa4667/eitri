@@ -66,12 +66,39 @@ export type RecoveryRun = Readonly<{
         cleanup: FrozenBrowserCleanup;
       }>
   );
+export type FrozenBrowserAcceptance = Readonly<{
+  acceptanceId: string;
+  request: FrozenBrowserRequest;
+  requestDigest: Sha256;
+  configurationDigest: Sha256;
+  ownerId: string;
+  acceptedAt: number;
+  deadline: number;
+}>;
+export type RecoveryRecord =
+  | RecoveryRun
+  | (FrozenBrowserAcceptance &
+      Readonly<{
+        kind: 'offline-acceptance';
+        state: 'accepted';
+      }>);
+export type FrozenBrowserAcceptanceJournal = FrozenBrowserJournal &
+  Readonly<{
+    accept(
+      request: FrozenBrowserRequest,
+      assertCurrentAuthority: () => true,
+    ): Promise<FrozenBrowserAcceptance>;
+  }>;
+export type FrozenBrowserJournalIdentity = Readonly<{
+  ownerId: string;
+  configurationDigest: Sha256;
+}>;
 export type RecoveryInventory = Readonly<{
   ownerId: string;
   configurationDigest: Sha256;
   attempts: number;
   contribution: number;
-  runs: readonly RecoveryRun[];
+  runs: readonly RecoveryRecord[];
 }>;
 /** Inspects an existing owned journal. Cleanup is historical, not a live daemon assertion. */
 export type FrozenBrowserJournal = Readonly<{
@@ -199,8 +226,12 @@ type Result =
   | { kind: 'recorded'; outcome: FrozenBrowserOutcome; evidence: FrozenBrowserEvidence | null }
   | { kind: 'settled'; report: FrozenBrowserReport };
 type Run = { intent: Intent; ledger: Ledger; result: Result };
+type JournalRecord =
+  | { kind: 'execution'; run: Run }
+  | ({ kind: 'offline-acceptance' } & FrozenBrowserAcceptance);
+const acceptanceCapacity = 256;
 type Meta = {
-  version: 1;
+  version: 1 | 2;
   owner: string;
   configurationDigest: string;
   attempts: number;
@@ -914,6 +945,61 @@ function parseRun(value: unknown, meta: Meta, assets: Assets): Run {
   return { intent, ledger, result };
 }
 
+function parseAcceptance(
+  value: unknown,
+  meta: Meta,
+): Extract<JournalRecord, { kind: 'offline-acceptance' }> {
+  const r = exact(value, [
+    'kind',
+    'acceptanceId',
+    'request',
+    'requestDigest',
+    'configurationDigest',
+    'ownerId',
+    'acceptedAt',
+    'deadline',
+  ]);
+  const request = frozenBrowserRequest(r.request);
+  const record = {
+    kind: 'offline-acceptance' as const,
+    acceptanceId: id(r.acceptanceId),
+    request,
+    requestDigest: sha256(r.requestDigest),
+    configurationDigest: sha256(r.configurationDigest),
+    ownerId: id(r.ownerId),
+    acceptedAt: integer(r.acceptedAt),
+    deadline: integer(r.deadline),
+  };
+  if (
+    r.kind !== 'offline-acceptance' ||
+    record.requestDigest !== digest(request) ||
+    record.configurationDigest !== meta.configurationDigest ||
+    record.ownerId !== meta.owner ||
+    !Number.isSafeInteger(record.acceptedAt + request.allowanceMs) ||
+    record.deadline !== record.acceptedAt + request.allowanceMs
+  )
+    fail('corrupt-validator-acceptance');
+  return record;
+}
+function recordRequest(record: JournalRecord): FrozenBrowserRequest {
+  return record.kind === 'execution' ? record.run.intent.request : record.request;
+}
+function recordId(record: JournalRecord): string {
+  return record.kind === 'execution' ? record.run.intent.runId : record.acceptanceId;
+}
+function acknowledgment(
+  record: Extract<JournalRecord, { kind: 'offline-acceptance' }>,
+): FrozenBrowserAcceptance {
+  const { kind: _kind, ...accepted } = record;
+  return structuredClone(accepted);
+}
+function requireCurrentAuthority(assertCurrentAuthority: () => true): void {
+  const result: unknown = assertCurrentAuthority();
+  if (result === true) return;
+  if (types.isPromise(result)) void Promise.prototype.then.call(result, undefined, () => {});
+  fail('worker-authority-denied');
+}
+
 function tar(files: { path: string; bytes: Buffer; directory?: boolean }[]): Buffer {
   const chunks: Buffer[] = [];
   let total = 1024;
@@ -1297,7 +1383,11 @@ export class FrozenBrowserValidator {
   private workspace: WorkspaceStore;
   private db: DatabaseSync;
   private meta: Meta;
-  private runs: Run[];
+  private records: JournalRecord[];
+  private journalQueue: Promise<unknown> = Promise.resolve();
+  private get runs(): Run[] {
+    return this.records.flatMap((record) => (record.kind === 'execution' ? [record.run] : []));
+  }
   private assets: Assets;
   private marker: Buffer;
   private identities: { root: Identity; journal: Identity; marker: Identity; policy: Identity };
@@ -1315,7 +1405,7 @@ export class FrozenBrowserValidator {
     workspace: WorkspaceStore,
     db: DatabaseSync,
     meta: Meta,
-    runs: Run[],
+    records: JournalRecord[],
     assets: Assets,
     marker: Buffer,
     identities: { root: Identity; journal: Identity; marker: Identity; policy: Identity },
@@ -1324,7 +1414,7 @@ export class FrozenBrowserValidator {
     this.workspace = workspace;
     this.db = db;
     this.meta = meta;
-    this.runs = runs;
+    this.records = records;
     this.assets = assets;
     this.marker = marker;
     this.identities = identities;
@@ -1334,18 +1424,37 @@ export class FrozenBrowserValidator {
     workspace: WorkspaceStore;
     directory: string;
     mode: 'journal-only';
+    expectedIdentity?: FrozenBrowserJournalIdentity;
   }): Promise<FrozenBrowserJournal>;
   static open(options: {
     workspace: WorkspaceStore;
     directory: string;
+    mode: 'acceptance-only';
+    expectedIdentity: FrozenBrowserJournalIdentity;
+  }): Promise<FrozenBrowserAcceptanceJournal>;
+  static open(options: {
+    workspace: WorkspaceStore;
+    directory: string;
+    expectedIdentity?: FrozenBrowserJournalIdentity;
   }): Promise<FrozenBrowserValidator>;
   static async open(options: {
     workspace: WorkspaceStore;
     directory: string;
-    mode?: 'journal-only';
-  }): Promise<FrozenBrowserValidator | FrozenBrowserJournal> {
+    mode?: 'journal-only' | 'acceptance-only';
+    expectedIdentity?: FrozenBrowserJournalIdentity;
+  }): Promise<FrozenBrowserValidator | FrozenBrowserAcceptanceJournal | FrozenBrowserJournal> {
     const mode = options.mode;
-    if (mode !== undefined && mode !== 'journal-only') fail('invalid-validator-mode');
+    const workspace = options.workspace;
+    if (mode !== undefined && mode !== 'journal-only' && mode !== 'acceptance-only')
+      fail('invalid-validator-mode');
+    const expected =
+      options.expectedIdentity === undefined
+        ? undefined
+        : exact(admissionSnapshot(options.expectedIdentity), ['ownerId', 'configurationDigest']);
+    const expectedIdentity = expected
+      ? { ownerId: id(expected.ownerId), configurationDigest: sha256(expected.configurationDigest) }
+      : undefined;
+    if (mode === 'acceptance-only' && !expectedIdentity) fail('worker-journal-identity-required');
     const directory = resolve(options.directory);
     if (owners.has(directory)) fail('validator-already-open');
     owners.add(directory);
@@ -1412,7 +1521,7 @@ export class FrozenBrowserValidator {
         markerPath = join(directory, 'owner.json'),
         policyPath = join(directory, 'seccomp.json');
       if (
-        (mode === 'journal-only' || !fresh) &&
+        (mode !== undefined || !fresh) &&
         (!names.includes('owner.json') ||
           !names.includes('journal.sqlite') ||
           !names.includes('seccomp.json'))
@@ -1496,12 +1605,12 @@ export class FrozenBrowserValidator {
         return value;
       };
       let meta: Meta;
-      let runs: Run[] = [];
+      let records: JournalRecord[] = [];
       if (fresh) meta = { version: 1, owner, configurationDigest, attempts: 0, contribution: 0 };
       else {
-        const rows = db.prepare('SELECT body, digest FROM meta').all();
-        if (rows.length !== 1) fail('missing-validator-accounting');
-        const m = exact(decode(rows[0]), [
+        const metaRows = db.prepare('SELECT body, digest FROM meta').all();
+        if (metaRows.length !== 1) fail('missing-validator-accounting');
+        const m = exact(decode(metaRows[0]), [
           'version',
           'owner',
           'configurationDigest',
@@ -1509,31 +1618,53 @@ export class FrozenBrowserValidator {
           'contribution',
         ]);
         meta = {
-          version: 1,
+          version: m.version === 2 ? 2 : 1,
           owner: id(m.owner),
           configurationDigest: sha256(m.configurationDigest),
           attempts: integer(m.attempts, 0, limits.attempts),
           contribution: integer(m.contribution, 0, limits.contribution),
         };
         if (
-          m.version !== 1 ||
+          (m.version !== 1 && m.version !== 2) ||
           meta.owner !== owner ||
           meta.configurationDigest !== configurationDigest ||
           meta.contribution !== meta.attempts * limits.context
         )
           fail('corrupt-validator-accounting');
-        const records = db.prepare('SELECT id, body, digest FROM runs ORDER BY id').all();
-        if (records.length !== meta.attempts) fail('missing-validator-accounting');
-        runs = records.map((row, index) => {
+        const rows = db.prepare('SELECT id, body, digest FROM runs ORDER BY id').all();
+        if (rows.length > limits.attempts + acceptanceCapacity)
+          fail('corrupt-validator-accounting');
+        if (meta.version === 1 && rows.length !== meta.attempts)
+          fail('missing-validator-accounting');
+        const parsed: JournalRecord[] = rows.map((row, index) => {
           if (row.id !== index + 1) fail('corrupt-validator-accounting');
-          return parseRun(decode(row), meta, assets);
+          const value = decode(row);
+          if (meta.version === 1) return { kind: 'execution', run: parseRun(value, meta, assets) };
+          const record = object(value);
+          if (record.kind === 'execution') {
+            exact(record, ['kind', 'run']);
+            return { kind: 'execution', run: parseRun(record.run, meta, assets) };
+          }
+          return parseAcceptance(record, meta);
         });
         if (
-          new Set(runs.map((r) => key(r.intent.request))).size !== runs.length ||
-          new Set(runs.map((r) => r.intent.runId)).size !== runs.length
+          parsed.filter((r) => r.kind === 'execution').length !== meta.attempts ||
+          parsed.filter((r) => r.kind === 'offline-acceptance').length > acceptanceCapacity
+        )
+          fail('missing-validator-accounting');
+        if (
+          new Set(parsed.map((r) => key(recordRequest(r)))).size !== parsed.length ||
+          new Set(parsed.map(recordId)).size !== parsed.length
         )
           fail('corrupt-validator-identities');
+        records = parsed;
       }
+      if (
+        expectedIdentity &&
+        (meta.owner !== expectedIdentity.ownerId ||
+          meta.configurationDigest !== expectedIdentity.configurationDigest)
+      )
+        fail('worker-journal-identity-mismatch');
       if (!same(journalIdentity, await identity(journalPath))) fail('validator-journal-replaced');
       if (!fresh) {
         db.close();
@@ -1544,10 +1675,10 @@ export class FrozenBrowserValidator {
       );
       const validator = new FrozenBrowserValidator(
         directory,
-        options.workspace,
+        workspace,
         db,
         meta,
-        runs,
+        records,
         assets,
         marker,
         {
@@ -1558,7 +1689,7 @@ export class FrozenBrowserValidator {
         },
       );
       if (fresh) await validator.save();
-      for (const run of runs) {
+      for (const run of validator.runs) {
         if (run.result.kind === 'pending') {
           run.result = {
             kind: 'recorded',
@@ -1568,12 +1699,19 @@ export class FrozenBrowserValidator {
           await validator.save(run);
         }
         if (
-          mode !== 'journal-only' &&
+          mode === undefined &&
           (run.result.kind === 'recorded' ||
             (run.result.kind === 'settled' && run.result.report.cleanup.kind === 'incomplete'))
         )
           await validator.finalize(run);
       }
+      if (mode === 'acceptance-only')
+        return Object.freeze({
+          accept: (request: FrozenBrowserRequest, assertCurrentAuthority: () => true) =>
+            validator.accept(request, assertCurrentAuthority),
+          inventory: () => validator.inventory(),
+          close: () => validator.close(),
+        });
       if (mode === 'journal-only')
         return Object.freeze({
           inventory: () => validator.inventory(),
@@ -1588,9 +1726,12 @@ export class FrozenBrowserValidator {
   }
   private inventory(): Promise<RecoveryInventory> {
     if (this.closing || this.broken) return Promise.resolve().then(() => fail('validator-closed'));
-    const read = Promise.resolve().then(async () => {
+    const read = this.journalQueue.then(async () => {
       await this.guard();
-      const runs = this.runs.map((run): RecoveryRun => {
+      const runs = this.records.map((record): RecoveryRecord => {
+        if (record.kind === 'offline-acceptance')
+          return { kind: record.kind, state: 'accepted', ...acknowledgment(record) };
+        const run = record.run;
         const { intent, ledger, result } = run;
         if (result.kind === 'pending') return fail('validator-result-not-recorded');
         const saved = result.kind === 'recorded' ? result : result.report;
@@ -1615,6 +1756,7 @@ export class FrozenBrowserValidator {
         runs,
       });
     });
+    this.journalQueue = read.catch(() => {});
     this.reads.add(read);
     void read.finally(() => this.reads.delete(read)).catch(() => {});
     return read;
@@ -1670,14 +1812,20 @@ export class FrozenBrowserValidator {
         )
         .run(body, digest(this.meta));
       if (run) {
-        const value = JSON.stringify(run);
+        const record: JournalRecord = { kind: 'execution', run };
+        const saved = this.meta.version === 1 ? run : record;
+        const value = JSON.stringify(saved);
         if (Buffer.byteLength(value) > limits.evidence + limits.control)
           fail('validator-record-limit');
         this.db
           .prepare(
             'INSERT INTO runs VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body,digest=excluded.digest',
           )
-          .run(this.runs.indexOf(run) + 1, value, digest(run));
+          .run(
+            this.records.findIndex((r) => r.kind === 'execution' && r.run === run) + 1,
+            value,
+            digest(saved),
+          );
       }
       this.db.exec('COMMIT');
     } catch (error) {
@@ -1686,11 +1834,92 @@ export class FrozenBrowserValidator {
       throw error;
     }
   }
+  private accept(
+    value: FrozenBrowserRequest,
+    assertCurrentAuthority: () => true,
+  ): Promise<FrozenBrowserAcceptance> {
+    let request: FrozenBrowserRequest;
+    try {
+      if (this.closing || this.broken) fail('validator-closed');
+      request = frozenBrowserRequest(admissionSnapshot(value));
+      if (typeof assertCurrentAuthority !== 'function') fail('invalid-worker-authority-guard');
+    } catch (error) {
+      return Promise.reject(error);
+    }
+    const operation = this.journalQueue.then(async () => {
+      if (this.broken) fail('validator-journal-failed');
+      const existing = this.records.find((r) => key(recordRequest(r)) === key(request));
+      if (existing && (existing.kind !== 'offline-acceptance' || !same(existing.request, request)))
+        fail('validator-identity-conflict');
+      if (
+        !existing &&
+        this.records.filter((r) => r.kind === 'offline-acceptance').length >= acceptanceCapacity
+      )
+        fail('validator-acceptance-limit');
+      await this.guard();
+      if (existing?.kind === 'offline-acceptance') {
+        requireCurrentAuthority(assertCurrentAuthority);
+        return acknowledgment(existing);
+      }
+      const acceptedAt = integer(Date.now());
+      const deadline = integer(acceptedAt + request.allowanceMs);
+      const record: Extract<JournalRecord, { kind: 'offline-acceptance' }> = {
+        kind: 'offline-acceptance',
+        acceptanceId: randomUUID(),
+        request,
+        requestDigest: sha256(digest(request)),
+        configurationDigest: sha256(this.meta.configurationDigest),
+        ownerId: this.meta.owner,
+        acceptedAt,
+        deadline,
+      };
+      const meta: Meta = { ...this.meta, version: 2 };
+      const records = [...this.records, record];
+      const values = (this.meta.version === 1 ? records : [record]).map((r) => ({
+        index: records.indexOf(r) + 1,
+        body: JSON.stringify(r),
+        digest: digest(r),
+      }));
+      let checkingAuthority = false;
+      try {
+        this.db.exec('BEGIN IMMEDIATE');
+        this.db
+          .prepare('UPDATE meta SET body=?,digest=? WHERE id=1')
+          .run(JSON.stringify(meta), digest(meta));
+        const write = this.db.prepare(
+          'INSERT INTO runs VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body,digest=excluded.digest',
+        );
+        for (const value of values) write.run(value.index, value.body, value.digest);
+        checkingAuthority = true;
+        requireCurrentAuthority(assertCurrentAuthority);
+        checkingAuthority = false;
+        this.db.exec('COMMIT');
+      } catch (error) {
+        if (!checkingAuthority) this.broken = true;
+        try {
+          if (this.db.isTransaction) this.db.exec('ROLLBACK');
+        } catch (rollbackError) {
+          this.broken = true;
+          throw rollbackError;
+        }
+        throw error;
+      }
+      this.meta = meta;
+      this.records = records;
+      return acknowledgment(record);
+    });
+    this.journalQueue = operation.catch(() => {});
+    return operation;
+  }
   validate(value: FrozenBrowserRequest, signal: AbortSignal): Promise<FrozenBrowserReport> {
     try {
       if (this.closing || this.broken) fail('validator-closed');
       const request = frozenBrowserRequest(value),
         requestDigest = digest(request);
+      if (
+        this.records.some((r) => r.kind === 'offline-acceptance' && key(r.request) === key(request))
+      )
+        fail('validator-acceptance-not-executable');
       const existing = this.runs.find((r) => key(r.intent.request) === key(request));
       if (existing && existing.intent.requestDigest !== requestDigest)
         fail('validator-identity-conflict');
@@ -1852,7 +2081,7 @@ export class FrozenBrowserValidator {
       ledger: { build: 'not-started', image: { kind: 'none' }, container: { kind: 'none' } },
       result: { kind: 'pending' },
     };
-    this.runs.push(run);
+    this.records.push({ kind: 'execution', run });
     this.meta.attempts++;
     this.meta.contribution += limits.context;
     await this.save(run);
@@ -2376,6 +2605,7 @@ export class FrozenBrowserValidator {
       try {
         await active?.promise;
       } finally {
+        await this.journalQueue;
         await Promise.allSettled(this.reads);
         this.db.close();
         owners.delete(this.directory);

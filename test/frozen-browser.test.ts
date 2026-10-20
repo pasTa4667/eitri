@@ -1712,10 +1712,11 @@ test('frozen browser journal snapshots detach nested requests, resources, cleanu
   const snapshot = await journal.inventory();
   Object.assign(snapshot.runs[0]!.request.action, { epoch: 99 });
   Object.assign(snapshot.runs[0]!.request.frozen, { revision: 'f'.repeat(40) });
-  Object.assign(snapshot.runs[0]!.outcome, { code: 'forged' });
-  Object.assign(snapshot.runs[1]!.image, { kind: 'acquired', id: 'forged' });
-  Object.assign(snapshot.runs[5]!.container, { id: 'forged' });
-  Object.assign(snapshot.runs[7]!.cleanup, { code: 'forged' });
+  const executions = snapshot.runs.filter((r) => r.state !== 'accepted');
+  Object.assign(executions[0]!.outcome, { code: 'forged' });
+  Object.assign(executions[1]!.image, { kind: 'acquired', id: 'forged' });
+  Object.assign(executions[5]!.container, { id: 'forged' });
+  Object.assign(executions[7]!.cleanup, { code: 'forged' });
   Reflect.set(snapshot.runs, 'length', 0);
   assert.deepEqual(await journal.inventory(), expected);
   await journal.close();
