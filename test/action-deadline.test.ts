@@ -666,7 +666,7 @@ for (const retry of [false, true])
             .all()
             .map((row) => JSON.parse(String(row.record)).data.payload),
           submissions: db
-            .prepare('SELECT record FROM submissions WHERE request_id=?')
+            .prepare("SELECT record FROM submissions WHERE json_extract(record, '$.requestId')=?")
             .all(`action-result-${actionId}`)
             .map((row) => JSON.parse(String(row.record)).status),
         };
