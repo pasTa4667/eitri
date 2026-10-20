@@ -731,6 +731,134 @@ test('baseline is copied before Controller.open first awaits', async (t) => {
   assert.equal(result.caseId, (await controller.snapshot()).cases[0].id);
 });
 
+for (const mismatch of ['changed-bytes', 'extra-path', 'missing-path'] as const)
+  test(
+    `SIGKILL provisioning intent rejects pristine foreign ${mismatch} under matching IDs`,
+    { timeout: 20000 },
+    async (t) => {
+      const directory = await realpath(
+        await mkdtemp(join(tmpdir(), 'eitri-controller-foreign-provision-')),
+      );
+      const child = fork(
+        new URL('./controller-workspace-crash-worker.ts', import.meta.url),
+        [directory, 'after-workspace-provision-intent'],
+        {
+          env: { PATH: process.env.PATH, HOME: process.env.HOME, TMPDIR: process.env.TMPDIR },
+          stdio: ['ignore', 'ignore', 'pipe', 'ipc'],
+        },
+      );
+      let errors = '';
+      child.stderr!.on('data', (chunk) => {
+        errors += chunk.toString();
+      });
+      let controller: Controller | undefined;
+      let store: WorkspaceStore | undefined;
+      t.after(async () => {
+        if (child.exitCode === null && child.signalCode === null) {
+          const exited = once(child, 'exit');
+          child.kill('SIGKILL');
+          await exited;
+        }
+        await controller?.close();
+        await store?.close();
+        await rm(directory, { recursive: true, force: true });
+      });
+      const message = await Promise.race([
+        once(child, 'message').then(([m]) => m as { id: string; point: string; callbacks: number }),
+        once(child, 'exit').then(() => {
+          throw new Error(`Child exited early ${errors}`);
+        }),
+      ]);
+      assert.equal(message.point, 'after-workspace-provision-intent');
+      assert.equal(message.callbacks, 0);
+      const exited = once(child, 'exit');
+      child.kill('SIGKILL');
+      await exited;
+      const baseline = mismatch === 'missing-path' ? [] : offline().baseline;
+      if (mismatch === 'changed-bytes') baseline[0].bytes = Buffer.from('literal C\n');
+      if (mismatch === 'extra-path')
+        baseline.push({
+          virtualPath: virtualPath('src/extra.ts'),
+          bytes: Buffer.from('extra C\n'),
+        });
+      store = await WorkspaceStore.open({
+        directory: join(directory, 'workspaces'),
+        regressionDirectory: offline().regressionDirectory,
+      });
+      const foreign = await store.provision({
+        caseId: caseId(message.id),
+        repositoryId: offline().repositoryId,
+        baseline,
+      });
+      assert.equal(foreign.state, 'ready');
+      assert.equal(foreign.checkpoint.sequence, 0);
+      assert.equal(foreign.checkpoint.revision, foreign.baseRevision);
+      await store.close();
+      store = undefined;
+      const faux = fauxProvider({ tokensPerSecond: 100000 });
+      faux.setResponses([call()]);
+      let callbacks = 0;
+      let observed: string[] = [];
+      controller = await Controller.open({
+        directory,
+        policy,
+        offlineWorkspace: offline(),
+        providerForCase: () => ({ provider: faux.provider, modelId: faux.getModel().id }),
+        check: async (_request, source) => {
+          callbacks++;
+          observed = (await source!.readSelected()).map((file) =>
+            Buffer.from(file.bytes).toString(),
+          );
+          return { type: 'infrastructure' };
+        },
+      });
+      const c = await until(
+        async () => (await controller!.snapshot()).cases[0],
+        (c) => c.status === 'needs-attention',
+      );
+      assert.equal(c.id, message.id);
+      assert.deepEqual(
+        {
+          callbacks,
+          observed,
+          binding: rows(directory, 'workspace_bindings')[0].value.state,
+          native: c.native,
+        },
+        { callbacks: 0, observed: [], binding: 'uncertain', native: 'ready' },
+      );
+      await assert.rejects(
+        controller.command(
+          command(
+            { type: 'retry', caseId: c.id, note: 'Must not adopt foreign source' },
+            c.version,
+          ),
+        ),
+        { code: 'cannot-retry' },
+      );
+      assert.deepEqual(rows(directory, 'action_sources'), []);
+      await controller.close();
+      controller = undefined;
+      store = await WorkspaceStore.open({
+        directory: join(directory, 'workspaces'),
+        regressionDirectory: offline().regressionDirectory,
+      });
+      assert.deepEqual(await store.inspect(caseId(c.id)), foreign);
+      const frozen = await store.freeze(caseId(c.id), foreign.baseRevision);
+      const files = await store.readFrozen(frozen, new AbortController().signal);
+      assert.deepEqual(
+        files.map((file) => [file.virtualPath, Buffer.from(file.bytes).toString()]),
+        mismatch === 'missing-path'
+          ? []
+          : mismatch === 'extra-path'
+            ? [
+                ['src/extra.ts', 'extra C\n'],
+                ['src/value.ts', 'literal A\n'],
+              ]
+            : [['src/value.ts', 'literal C\n']],
+      );
+    },
+  );
+
 const crashPoints = [
   'after-command-commit',
   'after-workspace-provision-intent',
@@ -770,7 +898,11 @@ for (const point of crashPoints)
       });
       let controller: Controller | undefined;
       t.after(async () => {
-        child.kill('SIGKILL');
+        if (child.exitCode === null && child.signalCode === null) {
+          const exited = once(child, 'exit');
+          child.kill('SIGKILL');
+          await exited;
+        }
         await controller?.close();
         await rm(directory, { recursive: true, force: true });
       });
@@ -837,7 +969,11 @@ for (const point of crashPoints)
         assert.equal(message.callbacks, 2);
       if (point === 'after-tool-action-receipt')
         assert.equal(c.reason, 'incomplete-native-tool-checkpoint');
-      if (point === 'after-source-edit-effect' || point === 'workspace-after-checkpoint') {
+      if (
+        point === 'after-workspace-provision-effect' ||
+        point === 'after-source-edit-effect' ||
+        point === 'workspace-after-checkpoint'
+      ) {
         await controller.close();
         controller = undefined;
         const store = await WorkspaceStore.open({
@@ -845,6 +981,15 @@ for (const point of crashPoints)
           regressionDirectory: offline().regressionDirectory,
         });
         try {
+          if (point === 'after-workspace-provision-effect') {
+            assert.deepEqual(after, []);
+            assert.equal(
+              Buffer.from((await store.read(caseId(c.id), path)).bytes).toString(),
+              'literal A\n',
+            );
+            assert.equal((await store.inspect(caseId(c.id))).state, 'ready');
+            return;
+          }
           const frozen = after.at(-1)!.value.frozen as FrozenRevision;
           assert.equal(
             Buffer.from(
