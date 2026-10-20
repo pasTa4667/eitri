@@ -1,0 +1,22 @@
+Review target
+2646b909185a1cbb705dbb50f4d043884a2c23a6
+c045082a84fa3d71f04bf620a12c31d6712d4d98
+Bind check dispatch to admitted actions and preserve conservative stops
+
+Tracked worktree changes
+exit=0
+
+Commit scope
+M	operator/src/artifact_tests.rs
+M	src/controller.ts
+M	src/domain.ts
+M	src/native.ts
+M	test/artifact-resources.test.ts
+A	test/check-dispatch-crash-worker.ts
+A	test/check-dispatch.test.ts
+M	test/crash-worker.ts
+M	test/evidence.test.ts
+M	test/http.test.ts
+
+Protected production module comparison
+exit=0

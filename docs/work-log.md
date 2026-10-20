@@ -49,7 +49,7 @@ The user's implementation request authorizes local implementation under the exis
 
 Five mandatory milestones remain, M2 through M6. M0 and the scoped scripted M1 checks are verified. External human-presence gates remain explicit. M7 is optional. Rigor remains high because generated code execution, credentials, and repository writes cross trust boundaries.
 
-The previously accepted frozen browser validator is now integrated on main as `8517aca`, still without production imports or controller execution permission. The [October 20 source integration record](evidence/validator-integration/verification.md) supersedes earlier unmerged-source status. M2 is not accepted.
+The previously accepted frozen browser validator is now integrated on main as `8517aca`, still without production imports or controller execution permission. The [October 20 source integration record](evidence/validator-integration/verification.md) supersedes earlier unmerged-source status. The later [admitted check interface](check-execution.md), integrated as `d9da6f6`, adds action-bound scripted dispatch and conservative outcomes. Its final integrated suite passes 382 Node and 30 Rust tests. M2 is not accepted.
 
 The operator approved the documented SDK differences and continuation with published 1.3.0. `docs/sdk-review.md` retains that decision and the two control-ownership designs. Approved source hashes are fixed separately from each fresh comparison.
 
@@ -174,6 +174,20 @@ The existing record producer verifies merged executable identity, literal A and 
 The final same-family evidence audit passes. It independently compares Git bytes, opens all 13 retained catalogues read-only, checks exported rows and views the PNG. It finds no blocking overclaim or missing verification. Its resource-snapshot and unproved-behavior limits remain explicit in the integration record.
 
 This source-only unit is complete. The module remains unwired. No original fixture edit, project Node execution, credential lookup, service activation, application inference, GitHub write, deployment or restriction change occurred. M2 and later human-presence gates remain open. The next proposed unit is action-context and conservative evidence-admission design using synthetic reports, not enabling Docker dispatch. Reviews use the configured GPT family, without cross-family assurance.
+
+## Admitted check execution on October 20
+
+The next bounded unit is implemented in source merge `d9da6f648f71d87b3e3a485d15a2c297591ebaed`. It preserves implementation `2646b9`, red regression `3d09be6` and green repair `4e9642b` in history. The [interface reference](check-execution.md) and [verification record](evidence/check-dispatch/verification.md) describe the exact contract and evidence.
+
+Two read-only candidates and a cross-judge selected the flat immutable AdmittedCheckRequest and six-variant CheckExecution. The controller binds actual persisted action identity, epoch, kind and remaining allowance before callback effects. Unknown callback returns are parsed and copied. Only completed simulated receipts reach native evidence storage. Infrastructure, unrelated failure, cancellation, uncertainty and incomplete cleanup preserve repair history and issue ownership, stop conservatively and retain pending pause precedence through timeout and recovery. No legacy positional callback remains.
+
+The first full run exposed a missed JavaScript callback embedded in the Rust artifact-test fixture. Parent approved only its signature and envelope migration, preserving payloads, assertions and timeouts. The initial parent suite then passed 367 Node and 30 Rust tests. Independent source review nevertheless found a malformed-key collision that could admit failed evidence and start speculative implementation. Parent reproduced it through public Controller before fixing it. The red test fails on the original parser. The green repair replaces all four comma-serialized key guards with actual key membership and count. A new public Retry regression proves that a later old callback cannot change a completed newer-epoch check or artifact.
+
+The identical parent reproduction now passes with invalid-check-execution, zero evidence and unchanged triage/repair state. Fresh delta source and comment reviews pass. Parent final npm run verify:all passes all 382 Node tests and 30 Rust tests with no failures, cancellations or skips. The focused repaired suite passes 97 tests. Genuine SIGKILL tests cover a durable stop before native settlement, including pending pause. Source identity and the unchanged validator, workspace, worker, package, HTTP and Rust production code are recorded separately.
+
+The final same-family evidence audit passes. It independently checks source ancestry and bytes, raw logs, public reproduction, regressions and authorized session checkpoints. It finds no blocking discrepancy or material overclaim. Earlier tracked evidence and decision rows remain unchanged. Whitespace-only log normalization is documented and original outputs are retained.
+
+This unit remains entirely scripted. No Docker dispatch, real-report conversion, workspace ownership, non-simulated evidence, real fixture change, credential lookup, service activation, live inference, GitHub write, deployment or restriction change occurred. Existing non-atomic artifact persistence, snapshot-only allowance and unproved underlying cleanup drainage remain explicit. Ordinary completed failed-baseline behavior during pending pause is unchanged and tested. Next work still needs controller-owned workspace lifecycle, frozen revision selection, truthful real-report admission and durable worker cleanup correlation. M2 and later human-presence gates remain open. Review uses the configured GPT family, without cross-family assurance.
 
 ## Checkpoint policy
 

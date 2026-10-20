@@ -1,0 +1,109 @@
+✔ callback receives its actual admitted action and a frozen scalar request with the remaining action limit (54.820958ms)
+✔ capacity two dispatches separate requests and records only each owning case and action (50.106292ms)
+✔ dispatch denies id authority before callback effects (16.922917ms)
+✔ dispatch denies caseId authority before callback effects (15.519041ms)
+✔ dispatch denies epoch authority before callback effects (16.841042ms)
+✔ dispatch denies kind authority before callback effects (21.802125ms)
+✔ dispatch denies startedAt authority before callback effects (15.753875ms)
+✔ dispatch denies limitMs authority before callback effects (16.165791ms)
+✔ dispatch denies usedAtStart authority before callback effects (18.844042ms)
+✔ dispatch denies expired authority before callback effects (15.775375ms)
+✔ infrastructure retains existing repair history across restart (120.60575ms)
+✔ infrastructure retains existing repair history and pending pause across restart (112.625584ms)
+✔ unrelated-failure retains existing repair history across restart (108.554375ms)
+✔ unrelated-failure retains existing repair history and pending pause across restart (117.223084ms)
+✔ cancelled retains existing repair history across restart (113.224916ms)
+✔ cancelled retains existing repair history and pending pause across restart (116.7585ms)
+✔ uncertain retains existing repair history across restart (100.927417ms)
+✔ uncertain retains existing repair history and pending pause across restart (104.862333ms)
+✔ cleanup-incomplete retains existing repair history across restart (106.084375ms)
+✔ cleanup-incomplete retains existing repair history and pending pause across restart (119.92925ms)
+✔ malformed callback result 0 stops without evidence or speculative repair (14.649916ms)
+✔ malformed callback result 1 stops without evidence or speculative repair (16.873416ms)
+✔ malformed callback result 2 stops without evidence or speculative repair (14.336875ms)
+✔ malformed callback result 3 stops without evidence or speculative repair (13.741333ms)
+✔ malformed callback result 4 stops without evidence or speculative repair (29.109708ms)
+✔ malformed callback result 5 stops without evidence or speculative repair (13.011834ms)
+✔ malformed callback result 6 stops without evidence or speculative repair (14.365ms)
+✔ malformed callback result 7 stops without evidence or speculative repair (19.461625ms)
+✔ malformed callback result 8 stops without evidence or speculative repair (13.491458ms)
+✔ malformed callback result 9 stops without evidence or speculative repair (14.515917ms)
+✔ malformed callback result 10 stops without evidence or speculative repair (15.53525ms)
+✔ malformed callback result 11 stops without evidence or speculative repair (14.600667ms)
+✔ malformed callback result 12 stops without evidence or speculative repair (16.763292ms)
+✔ malformed callback result 13 stops without evidence or speculative repair (13.767458ms)
+✔ malformed callback result 14 stops without evidence or speculative repair (12.574958ms)
+✔ malformed callback result 15 stops without evidence or speculative repair (13.046542ms)
+✔ malformed callback result 16 stops without evidence or speculative repair (14.260708ms)
+✔ malformed callback result 17 stops without evidence or speculative repair (14.690625ms)
+✔ malformed callback result 18 stops without evidence or speculative repair (15.432666ms)
+✔ malformed callback result 19 stops without evidence or speculative repair (14.120292ms)
+✔ malformed callback result 20 stops without evidence or speculative repair (12.746041ms)
+✔ malformed callback result 21 stops without evidence or speculative repair (13.248792ms)
+✔ malformed callback result 22 stops without evidence or speculative repair (13.149ms)
+✔ malformed callback result 23 stops without evidence or speculative repair (17.943917ms)
+✖ comma-joined envelope key with inherited type and check stops without evidence or speculative repair (33.092291ms)
+✔ inherited completed envelope keys stops without evidence or speculative repair (13.766709ms)
+✔ extra comma-containing completed envelope key stops without evidence or speculative repair (15.179875ms)
+✔ inherited non-behavior type with a comma-containing key stops without evidence or speculative repair (14.954166ms)
+✔ extra comma-containing non-behavior key stops without evidence or speculative repair (19.377208ms)
+✔ comma-joined receipt key with inherited candidate and configuration stops without evidence or speculative repair (17.002834ms)
+✔ extra comma-containing receipt key stops without evidence or speculative repair (14.273875ms)
+✔ inherited receipt fields stops without evidence or speculative repair (14.226458ms)
+✔ comma-joined output key with inherited bytes and label stops without evidence or speculative repair (14.090416ms)
+✔ extra comma-containing output key stops without evidence or speculative repair (13.544833ms)
+✔ inherited output fields stops without evidence or speculative repair (17.181958ms)
+✔ symbol completed envelope key stops without evidence or speculative repair (13.863417ms)
+✔ symbol receipt key stops without evidence or speculative repair (12.250833ms)
+✔ symbol output key stops without evidence or speculative repair (20.197334ms)
+✔ timed-out callback cannot change a completed result from a newer Retry epoch (579.21725ms)
+✔ missing callback cannot admit evidence or override pause (21.166875ms)
+✔ reject callback cannot admit evidence or override pause (21.815666ms)
+✔ paused-reject callback cannot admit evidence or override pause (26.094916ms)
+✔ expired-return callback cannot admit evidence or override pause (68.027042ms)
+✔ paused-expired-return callback cannot admit evidence or override pause (18.631625ms)
+✔ late callback cannot admit evidence or override pause (531.877375ms)
+✔ paused-late callback cannot admit evidence or override pause (532.281041ms)
+✔ SIGKILL after durable check stop before tool settlement preserves disposition without replay (351.177875ms)
+✔ SIGKILL after durable check stop before tool settlement with pending pause preserves disposition without replay (246.839083ms)
+✔ completed passing baseline retains ordinary checkpoint behavior during pending pause (26.829833ms)
+✔ completed failing baseline retains ordinary checkpoint behavior during pending pause (22.788ms)
+✔ native write guard rejects expiry between callback admission and evidence persistence (14.567875ms)
+ℹ tests 71
+ℹ suites 0
+ℹ pass 70
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4675.85125
+
+✖ failing tests:
+
+test at test/check-dispatch.test.ts:614:3
+✖ comma-joined envelope key with inherited type and check stops without evidence or speculative repair (33.092291ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+    {
+      base: null,
+      candidate: null,
+  +   failedCandidate: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+  +   phase: 'implementation',
+  +   reason: 'assessment-required',
+  -   failedCandidate: null,
+  -   phase: 'triage',
+  -   reason: 'invalid-check-execution',
+      repairs: 0
+    }
+
+      at TestContext.<anonymous> (file:///Users/felix.langbein/projects/eitri-check-dispatch/test/check-dispatch.test.ts:633:12)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { reason: 'assessment-required', phase: 'implementation', base: null, candidate: null, failedCandidate: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', repairs: 0 },
+    expected: { reason: 'invalid-check-execution', phase: 'triage', base: null, candidate: null, failedCandidate: null, repairs: 0 },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

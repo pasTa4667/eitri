@@ -1,0 +1,1378 @@
+npm notice run eitri@0.1.0 verify:all
+npm notice run npm run verify && npm run lint:rust && npm run format:check:rust && npm run test:operator
+npm notice run eitri@0.1.0 verify
+npm notice run npm run lint:ts && npm run format:check:ts && npm run check && npm test
+npm notice run eitri@0.1.0 lint:ts
+npm notice run oxlint --deny-warnings src test scripts prototypes
+npm notice run eitri@0.1.0 format:check:ts
+npm notice run oxfmt --check '**/*.{ts,mjs}' package.json tsconfig.json .oxfmtrc.json
+Checking formatting...
+
+All matched files use the correct format.
+Finished in 4ms on 45 files using 12 threads.
+npm notice run eitri@0.1.0 check
+npm notice run tsc --noEmit && node --check scripts/doctor.mjs && node --check scripts/check-sdk.mjs && node --check prototypes/sdk-compatibility.mjs && node --check prototypes/chromium/probe.mjs && node --check prototypes/chromium/run.mjs && node --check prototypes/chromium/policy.mjs
+npm notice run eitri@0.1.0 test
+npm notice run node --test test/*.test.ts test/*.test.mjs
+✔ artifact reads stay passive across pagination, restart, missing directories, and serialized expiry (344.163584ms)
+✔ trusted check output rejects forged-ids without accepting evidence (56.59175ms)
+✔ trusted check output rejects live-result without accepting evidence (37.465709ms)
+✔ trusted check output rejects check-count without accepting evidence (48.00525ms)
+✔ trusted check output rejects case-count without accepting evidence (1435.436791ms)
+✔ trusted check output rejects check-bytes without accepting evidence (40.162125ms)
+✔ trusted check output rejects case-bytes without accepting evidence (324.613208ms)
+✔ native manifests bind every evidence reference to its case, action, receipt, revision and configuration (64.311208ms)
+✔ artifact MIME validation bounds UTF-8, labels, PNG structure, dimensions and decompression (2.577625ms)
+✔ private immutable blobs reject unsafe identities, corruption, links and replaced directories (87.628041ms)
+✔ callback receives its actual admitted action and a frozen scalar request with the remaining action limit (126.169ms)
+✔ capacity two dispatches separate requests and records only each owning case and action (125.148042ms)
+✔ dispatch denies id authority before callback effects (41.191666ms)
+✔ dispatch denies caseId authority before callback effects (53.381792ms)
+✔ dispatch denies epoch authority before callback effects (55.761208ms)
+✔ dispatch denies kind authority before callback effects (34.355625ms)
+✔ dispatch denies startedAt authority before callback effects (49.572458ms)
+✔ dispatch denies limitMs authority before callback effects (51.63225ms)
+✔ dispatch denies usedAtStart authority before callback effects (46.12375ms)
+✔ dispatch denies expired authority before callback effects (52.110709ms)
+✔ infrastructure retains existing repair history across restart (244.822875ms)
+✔ infrastructure retains existing repair history and pending pause across restart (268.977667ms)
+✔ unrelated-failure retains existing repair history across restart (211.603917ms)
+✔ unrelated-failure retains existing repair history and pending pause across restart (198.071333ms)
+✔ cancelled retains existing repair history across restart (192.13875ms)
+✔ cancelled retains existing repair history and pending pause across restart (214.747166ms)
+✔ uncertain retains existing repair history across restart (222.774375ms)
+✔ uncertain retains existing repair history and pending pause across restart (188.113ms)
+✔ cleanup-incomplete retains existing repair history across restart (135.043084ms)
+✔ cleanup-incomplete retains existing repair history and pending pause across restart (131.08775ms)
+✔ malformed callback result 0 stops without evidence or speculative repair (14.808958ms)
+✔ malformed callback result 1 stops without evidence or speculative repair (21.133791ms)
+✔ malformed callback result 2 stops without evidence or speculative repair (20.705583ms)
+✔ malformed callback result 3 stops without evidence or speculative repair (19.993417ms)
+✔ malformed callback result 4 stops without evidence or speculative repair (27.137792ms)
+✔ malformed callback result 5 stops without evidence or speculative repair (17.558834ms)
+✔ malformed callback result 6 stops without evidence or speculative repair (18.423042ms)
+✔ malformed callback result 7 stops without evidence or speculative repair (18.51875ms)
+✔ malformed callback result 8 stops without evidence or speculative repair (18.810708ms)
+✔ malformed callback result 9 stops without evidence or speculative repair (13.488875ms)
+✔ malformed callback result 10 stops without evidence or speculative repair (18.854333ms)
+✔ malformed callback result 11 stops without evidence or speculative repair (16.837208ms)
+✔ malformed callback result 12 stops without evidence or speculative repair (17.651542ms)
+✔ malformed callback result 13 stops without evidence or speculative repair (29.727708ms)
+✔ malformed callback result 14 stops without evidence or speculative repair (15.653167ms)
+✔ malformed callback result 15 stops without evidence or speculative repair (26.801459ms)
+✔ malformed callback result 16 stops without evidence or speculative repair (19.746167ms)
+✔ malformed callback result 17 stops without evidence or speculative repair (14.902625ms)
+✔ malformed callback result 18 stops without evidence or speculative repair (13.456417ms)
+✔ malformed callback result 19 stops without evidence or speculative repair (12.107167ms)
+✔ malformed callback result 20 stops without evidence or speculative repair (14.660584ms)
+✔ malformed callback result 21 stops without evidence or speculative repair (23.042916ms)
+✔ malformed callback result 22 stops without evidence or speculative repair (15.100125ms)
+✔ malformed callback result 23 stops without evidence or speculative repair (14.059667ms)
+✔ missing callback cannot admit evidence or override pause (15.963459ms)
+✔ reject callback cannot admit evidence or override pause (19.627625ms)
+✔ paused-reject callback cannot admit evidence or override pause (42.8165ms)
+✔ expired-return callback cannot admit evidence or override pause (24.171292ms)
+✔ paused-expired-return callback cannot admit evidence or override pause (17.76525ms)
+✔ late callback cannot admit evidence or override pause (514.198208ms)
+✔ paused-late callback cannot admit evidence or override pause (514.455833ms)
+✔ SIGKILL after durable check stop before tool settlement preserves disposition without replay (252.935042ms)
+✔ SIGKILL after durable check stop before tool settlement with pending pause preserves disposition without replay (242.972542ms)
+✔ completed passing baseline retains ordinary checkpoint behavior during pending pause (27.673ms)
+✔ completed failing baseline retains ordinary checkpoint behavior during pending pause (34.375208ms)
+✔ native write guard rejects expiry between callback admission and evidence persistence (16.650208ms)
+✔ captured Chromium 156 sandbox status is positively verified (0.708583ms)
+✔ sandbox status accepts multiple-space columns and CRLF line endings (0.0935ms)
+✔ sandbox status requires the rows rather than the summary or optional protections (0.069666ms)
+✔ sandbox status rejects missing Layer 1 Sandbox (0.0635ms)
+✔ sandbox status rejects negative Layer 1 Sandbox (0.054917ms)
+✔ sandbox status rejects duplicate Layer 1 Sandbox (0.056375ms)
+✔ sandbox status rejects conflicting Layer 1 Sandbox in either order (0.050084ms)
+✔ sandbox status rejects ambiguous Layer 1 Sandbox values (0.049959ms)
+✔ sandbox status rejects missing PID namespaces (0.049875ms)
+✔ sandbox status rejects negative PID namespaces (0.085833ms)
+✔ sandbox status rejects duplicate PID namespaces (0.049083ms)
+✔ sandbox status rejects conflicting PID namespaces in either order (0.040041ms)
+✔ sandbox status rejects ambiguous PID namespaces values (0.039666ms)
+✔ sandbox status rejects missing Network namespaces (0.033834ms)
+✔ sandbox status rejects negative Network namespaces (2.603458ms)
+✔ sandbox status rejects duplicate Network namespaces (0.090625ms)
+✔ sandbox status rejects conflicting Network namespaces in either order (0.071417ms)
+✔ sandbox status rejects ambiguous Network namespaces values (0.095042ms)
+✔ sandbox status rejects missing Seccomp-BPF sandbox (0.095ms)
+✔ sandbox status rejects negative Seccomp-BPF sandbox (0.067542ms)
+✔ sandbox status rejects duplicate Seccomp-BPF sandbox (0.064334ms)
+✔ sandbox status rejects conflicting Seccomp-BPF sandbox in either order (0.074666ms)
+✔ sandbox status rejects ambiguous Seccomp-BPF sandbox values (0.111041ms)
+✔ sandbox status rejects nonexact positive values (0.131958ms)
+✔ summary and kernel seccomp evidence cannot establish Chromium sandbox status (0.130709ms)
+✔ namespace candidate preserves the pinned daemon baseline and adds only six exact ARM64 rules (23.704292ms)
+✔ namespace chroot candidate adds only one ARM64 chroot rule to the six-rule namespace candidate (2.988292ms)
+✔ atomic ownership, durable request receipts, policy checks and compact catalogue (101.261834ms)
+✔ pause lets an admitted tool finish, denies follow-up inference, and releases capacity (128.795667ms)
+✔ pause during model auth/response denies the next tool and native SDK follow-up (59.167875ms)
+✔ parked notes, duplicate delivery, views, reconnect watches and restart never infer (55.130458ms)
+✔ interrupted provisioning recovers the same owner and native file (55.447792ms)
+✔ structured triage can advance; a stale completion cannot advance or use a phase setter (110.135417ms)
+✔ No fix needed suppresses intake; explicit requeue links a new session (60.737625ms)
+✔ budget exhaustion makes no summary call; Retry is explicit, bounded, and cumulative (67.41175ms)
+✔ capacity-two scripted cases have distinct databases, messages, counters and IDs (79.245125ms)
+✔ per-file expiry preserves guards, cannot wake or recreate details, and protects unfinished work (56.495083ms)
+✔ missing native details and cleanup failure are surfaced without recreating history (84.741584ms)
+✔ active notes are steered at the SDK boundary without a handler starting inference (38.7295ms)
+✔ corrupt durable allowance fails closed rather than allowing another model call (39.231ms)
+✔ pause during asynchronous auth is checked at the actual provider dispatch (73.9215ms)
+✔ auth waiting is bounded by the allowance and cannot dispatch after timeout (81.27175ms)
+✔ revision-bound scripted checks with stored artifacts fail closed at the expected phase (488.106416ms)
+✔ revision-bound scripted checks with stale artifacts fail closed at the expected phase (236.7315ms)
+✔ revision-bound scripted checks with missing artifacts fail closed at the expected phase (344.43475ms)
+✔ revision-bound scripted checks with corrupt artifacts fail closed at the expected phase (289.332166ms)
+✔ revision-bound scripted checks with fabricated artifacts fail closed at the expected phase (257.829334ms)
+✔ revision-bound scripted checks with empty artifacts fail closed at the expected phase (272.596541ms)
+✔ initial failed validation permits two repair candidates, not two arbitrary check failures (222.564667ms)
+✔ trusted frozen driver retains complete B and shutdown observations without faults (141.993666ms)
+✔ trusted frozen driver inventories every process without argv or executable reads (132.083208ms)
+✔ trusted frozen driver retries a disappearing scan without omitting a helper (120.456542ms)
+▶ trusted frozen driver rejects unstable, inaccessible and invalid CDP censuses
+  ✔ disappearing (129.586625ms)
+  ✔ access-error (133.55775ms)
+  ✔ zombie-unreadable (122.165916ms)
+  ✔ pid-reuse (103.1565ms)
+  ✔ state-churn (124.764083ms)
+  ✔ reparent-churn (122.599917ms)
+  ✔ security-churn (107.806709ms)
+  ✔ entries-churn (101.42075ms)
+  ✔ cdp-missing-browser (102.248167ms)
+  ✔ cdp-missing-renderer (98.970125ms)
+  ✔ cdp-duplicate (93.664125ms)
+  ✔ cdp-unmatched (119.984625ms)
+  ✔ cdp-churn (108.592667ms)
+  ✔ census-overflow (102.981917ms)
+✔ trusted frozen driver rejects unstable, inaccessible and invalid CDP censuses (1573.878042ms)
+▶ trusted frozen driver fails closed on overflow through final shutdown
+  ✔ screenshot overflow (105.321459ms)
+  ✔ screenshot count-overflow (103.8245ms)
+  ✔ screenshot bytes-overflow (108.157958ms)
+  ✔ census overflow (112.417834ms)
+  ✔ census count-overflow (109.80075ms)
+  ✔ census bytes-overflow (107.137167ms)
+  ✔ browser-close overflow (90.590875ms)
+  ✔ browser-close count-overflow (91.550667ms)
+  ✔ browser-close bytes-overflow (92.724625ms)
+  ✔ server-close overflow (90.370792ms)
+  ✔ server-close count-overflow (90.636375ms)
+  ✔ server-close bytes-overflow (88.006041ms)
+✔ trusted frozen driver fails closed on overflow through final shutdown (1192.177ms)
+▶ trusted frozen driver collects popup and shutdown errors instead of clean B
+  ✔ popup-error (88.921125ms)
+  ✔ popup-console-error (85.842958ms)
+  ✔ popup-crash (103.174459ms)
+  ✔ late-browser-close-error (92.728667ms)
+  ✔ late-server-close-error (90.254334ms)
+✔ trusted frozen driver collects popup and shutdown errors instead of clean B (461.656916ms)
+▶ trusted frozen driver rejects popup overflow and unexpected dedicated workers
+  ✔ popup-overflow (102.025917ms)
+  ✔ worker (108.887875ms)
+✔ trusted frozen driver rejects popup overflow and unexpected dedicated workers (211.329917ms)
+▶ trusted frozen driver serves a worker restriction and retains worker denial errors
+  ✔ dedicated-worker (125.011875ms)
+  ✔ shared-worker (92.36375ms)
+✔ trusted frozen driver serves a worker restriction and retains worker denial errors (217.704667ms)
+✔ frozen browser COPY context has a short first header recognizable without PAX lookahead (2250.466834ms)
+✔ frozen browser COPY context fixes trusted asset mode 0555 and preserves snapshot modes and paths (2767.493375ms)
+✔ frozen browser literal A after B has host evidence, detached cache and persistent idempotency (2920.998917ms)
+▶ frozen browser empty inspected Cmd forms persist canonically and reopen without effects
+  ✔ image omitted, container omitted (2173.784542ms)
+  ✔ image omitted, container null (2283.113125ms)
+  ✔ image omitted, container empty array (2269.620458ms)
+  ✔ image null, container omitted (2082.202959ms)
+  ✔ image null, container null (2097.003ms)
+  ✔ image null, container empty array (2354.960084ms)
+  ✔ image empty array, container omitted (2137.754166ms)
+  ✔ image empty array, container null (2101.206458ms)
+  ✔ image empty array, container empty array (2225.844292ms)
+✔ frozen browser empty inspected Cmd forms persist canonically and reopen without effects (19726.559167ms)
+▶ frozen browser rejects nonempty and malformed raw Cmd before container start
+  ✔ image Cmd ["--unexpected"] (1776.806041ms)
+  ✔ image Cmd [null] (1575.662083ms)
+  ✔ image Cmd [1] (1641.394416ms)
+  ✔ image Cmd [[]] (1700.425916ms)
+  ✔ image Cmd "" (1658.068208ms)
+  ✔ image Cmd "node" (1629.204167ms)
+  ✔ image Cmd {} (1651.046ms)
+  ✔ image Cmd {"length":0} (1584.836584ms)
+  ✔ image Cmd false (1766.279542ms)
+  ✔ image Cmd 0 (1679.537ms)
+  ✔ container Cmd ["--unexpected"] (2056.283333ms)
+  ✔ container Cmd [null] (2023.787209ms)
+  ✔ container Cmd [1] (2056.357667ms)
+  ✔ container Cmd [[]] (2037.542417ms)
+  ✔ container Cmd "" (1956.134667ms)
+  ✔ container Cmd "node" (2035.553083ms)
+  ✔ container Cmd {} (2020.588ms)
+  ✔ container Cmd {"length":0} (2102.523041ms)
+  ✔ container Cmd false (2213.56825ms)
+  ✔ container Cmd 0 (2072.443417ms)
+✔ frozen browser rejects nonempty and malformed raw Cmd before container start (37240.201833ms)
+▶ frozen browser reopen rejects noncanonical persisted Cmd in recorded and settled evidence
+  ✔ recorded (2218.245583ms)
+  ✔ settled (2249.528625ms)
+✔ frozen browser reopen rejects noncanonical persisted Cmd in recorded and settled evidence (4468.056208ms)
+▶ frozen browser classifies protected roles and unrelated startup or literal failures
+  ✔ baseline B normal (2098.193458ms)
+  ✔ candidate B normal (2213.123458ms)
+  ✔ candidate B console-error (2309.166792ms)
+  ✔ candidate B page-error (2244.179166ms)
+  ✔ candidate A normal (2228.7405ms)
+  ✔ baseline C normal (2318.6355ms)
+  ✔ baseline A startup-error (2315.034834ms)
+  ✔ baseline A console-forgery (2290.830042ms)
+✔ frozen browser classifies protected roles and unrelated startup or literal failures (18018.747083ms)
+▶ frozen browser rejects malformed protocol and containment transcripts before classification
+  ✔ trailing (2419.364ms)
+  ✔ duplicate (2359.995416ms)
+  ✔ nonce (2242.307292ms)
+  ✔ overflow (2305.364833ms)
+  ✔ bad-mime (2215.7155ms)
+  ✔ bad-png (2350.461791ms)
+  ✔ unknown-namespace (2271.82575ms)
+  ✔ outer-sysadmin (2234.050666ms)
+  ✔ bad-env (2163.714917ms)
+  ✔ bad-mount (2134.469292ms)
+✔ frozen browser rejects malformed protocol and containment transcripts before classification (22698.2435ms)
+✔ frozen browser accepts the nested census including an unknown helper and zombie (2331.638417ms)
+▶ frozen browser rejects invalid kernel identity, labels and security on every process
+  ✔ initial 1 capEff (2239.5925ms)
+  ✔ initial 1 capPrm (2291.365459ms)
+  ✔ initial 1 capBnd (2272.099584ms)
+  ✔ initial 2 capEff (2205.128875ms)
+  ✔ initial 2 capPrm (2256.245334ms)
+  ✔ initial 2 capBnd (2198.056375ms)
+  ✔ initial 24 capEff (2382.933834ms)
+  ✔ initial 24 capPrm (2195.484167ms)
+  ✔ initial 24 capBnd (2326.016041ms)
+  ✔ initial 200 capEff (2187.00725ms)
+  ✔ initial 200 capPrm (2269.871959ms)
+  ✔ initial 200 capBnd (2267.636333ms)
+  ✔ nested 33 bounding (2339.565459ms)
+  ✔ nested 35 bounding (2263.075667ms)
+  ✔ nested 83 bounding (2294.46075ms)
+  ✔ nested 119 bounding (2266.863875ms)
+  ✔ nested 158 bounding (2249.207292ms)
+  ✔ unknown helper SYS_ADMIN (2211.290834ms)
+  ✔ nested service SYS_ADMIN (2332.116584ms)
+  ✔ indirect renderer ancestor SYS_ADMIN (2285.466708ms)
+  ✔ renderer SYS_ADMIN (2283.250958ms)
+  ✔ zombie SYS_ADMIN (2232.271875ms)
+  ✔ parent zombie (2179.848417ms)
+  ✔ parent namespace mismatch (2240.690458ms)
+  ✔ parent effective only (2284.266125ms)
+  ✔ parent other capability (2148.620958ms)
+  ✔ browser not direct driver child (2369.809834ms)
+  ✔ browser nested (2199.146959ms)
+  ✔ renderer outside browser ancestry (2349.136334ms)
+  ✔ nested 33 uid map (2218.240541ms)
+  ✔ nested 33 gid map (2296.312792ms)
+  ✔ nested 33 NSpid (2222.016167ms)
+  ✔ nested 35 uid map (2267.037542ms)
+  ✔ nested 35 gid map (2252.702291ms)
+  ✔ nested 35 NSpid (2258.673583ms)
+  ✔ nested 83 uid map (2279.894417ms)
+  ✔ nested 83 gid map (2196.502583ms)
+  ✔ nested 83 NSpid (2341.964333ms)
+  ✔ nested 119 uid map (2228.539ms)
+  ✔ nested 119 gid map (2306.449875ms)
+  ✔ nested 119 NSpid (2273.996292ms)
+  ✔ nested 158 uid map (2279.192958ms)
+  ✔ nested 158 gid map (2287.148667ms)
+  ✔ nested 158 NSpid (2381.40275ms)
+  ✔ helper UID (2284.788167ms)
+  ✔ helper NNP (2359.900709ms)
+  ✔ zombie seccomp (2247.44475ms)
+  ✔ helper namespace (2283.012375ms)
+  ✔ missing browser label (2325.31475ms)
+  ✔ missing renderer label (2463.897125ms)
+  ✔ duplicate browser label (2441.407333ms)
+  ✔ conflicting label (2382.872791ms)
+  ✔ multiple browsers (2261.343459ms)
+  ✔ unmatched renderer label (2308.36225ms)
+  ✔ PID reuse label (2252.290458ms)
+  ✔ zombie renderer label (2372.777167ms)
+  ✔ zombie browser (2372.99325ms)
+  ✔ missing parent (2516.574833ms)
+  ✔ missing outer census record (2387.711042ms)
+  ✔ cycle (2323.099292ms)
+  ✔ parent younger than child (2324.58325ms)
+  ✔ duplicate PID (2434.098958ms)
+  ✔ census overflow (2285.975708ms)
+✔ frozen browser rejects invalid kernel identity, labels and security on every process (144344.992709ms)
+✔ frozen browser accepts zero nested bounding masks without granting capabilities (2439.270875ms)
+✔ frozen browser cancellation and close remove the running container even without awaiting validation (2311.005875ms)
+✔ frozen browser lost build remains uncertain and blocks new attempts across reopen (1482.499417ms)
+✔ frozen browser exact boundary rejects extra fields and unrecorded revisions without Docker effects (791.071833ms)
+✔ frozen browser reservations are nonrefundable and persist through all 16 failed attempts (1298.432958ms)
+▶ frozen browser rejects unowned, linked, missing-accounting and replaced stores without adoption
+  ✔ unowned (667.35575ms)
+  ✔ symlink (652.920167ms)
+  ✔ hardlink (717.283792ms)
+  ✔ accounting (648.034708ms)
+✔ frozen browser rejects unowned, linked, missing-accounting and replaced stores without adoption (2686.058208ms)
+✔ frozen browser allows native SQLite hot-journal rollback before recovery validation (2517.027292ms)
+▶ frozen browser actual host death distinguishes pending, committed and acknowledged outcomes without replay
+  ✔ before-outcome-commit (2884.155834ms)
+  ✔ after-outcome-commit (2808.217041ms)
+  ✔ before-acknowledgment (2976.058292ms)
+✔ frozen browser actual host death distinguishes pending, committed and acknowledged outcomes without replay (8668.859541ms)
+✔ frozen browser committed observation survives failed cleanup and exact repeats do not rerun (2217.207125ms)
+✔ frozen browser lost create response does not misreport a still-pending named effect as removed (1741.995041ms)
+✔ frozen browser refuses an eligible committed outcome without its complete durable evidence (2349.274167ms)
+✔ authenticated HTTP/SSE, singleton-before-storage, idempotency and hostile input (165.037959ms)
+✔ authenticated strict artifact resources return verified exact bytes and honest unavailable states (170.947333ms)
+✔ SIGKILL during model conservatively preserves allowance and intent (562.065958ms)
+✔ SIGKILL during paused-model conservatively preserves allowance and intent (389.668125ms)
+✔ SIGKILL during tool conservatively preserves allowance and intent (373.746458ms)
+✔ SIGKILL during tool-receipt conservatively preserves allowance and intent (327.4225ms)
+✔ SIGKILL after-artifact-blobs preserves storage ordering without replay or invented checkpoint (372.07075ms)
+✔ SIGKILL after-artifact-manifests preserves storage ordering without replay or invented checkpoint (387.734416ms)
+✔ SIGKILL after-check-receipt preserves storage ordering without replay or invented checkpoint (312.57075ms)
+✔ workspace boundary accepts copied bytes and one edit only, never source paths or extra operations (1506.448375ms)
+✔ readFrozen returns literal A after B with fresh buffers and no store writes or exports (4229.087041ms)
+✔ readFrozen rejects unrecorded, foreign, forged and extra frozen fields without writes (1494.922333ms)
+✔ readFrozen already-aborted and queued cancellation reject before the owner is released (1393.64075ms)
+✔ readFrozen kills a spawned real Git read and waits for close before cancellation settles (630.31725ms)
+✔ readFrozen cancellation between Git stages returns no partial files and leaves the owner usable (787.84025ms)
+✔ readFrozen rejects corrupt config without changing source, refs, journal or exports (608.514042ms)
+✔ readFrozen rejects corrupt object without changing source, refs, journal or exports (574.481583ms)
+✔ readFrozen rejects corrupt mode without changing source, refs, journal or exports (592.349167ms)
+✔ readFrozen rejects corrupt pointer without changing source, refs, journal or exports (581.128542ms)
+✔ readFrozen fails closed on recorded hash corruption in real SQLite (890.932208ms)
+✔ readFrozen fails closed on recorded size corruption in real SQLite (933.014875ms)
+✔ readFrozen fails closed on recorded file-limit corruption in real SQLite (563.558333ms)
+✔ readFrozen fails closed on recorded count-limit corruption in real SQLite (667.137458ms)
+✔ readFrozen fails closed on recorded aggregate-limit corruption in real SQLite (634.803834ms)
+✔ workspace ownership rejects marker mismatch before catalogue mutation (20.898125ms)
+✔ workspace ownership rejects catalogue mismatch before catalogue mutation (87.08325ms)
+✔ workspace ownership rejects rollback-symlink mismatch before catalogue mutation (62.516417ms)
+✔ workspace ownership rejects rollback-hardlink mismatch before catalogue mutation (28.690416ms)
+✔ workspace ownership rejects rollback-mode mismatch before catalogue mutation (28.372708ms)
+✔ workspace rejects hot-journal marker identity mismatch without rollback or source mutation (1629.056083ms)
+✔ workspace rejects hot-journal catalogue identity mismatch without rollback or source mutation (1348.591542ms)
+✔ workspace rejects hot-journal root identity mismatch without rollback or source mutation (1047.8875ms)
+✔ workspace incomplete store creation is never adopted or reinitialized (2.712833ms)
+✔ workspace owns real independent worktrees and literal raw checkpoints without runtime wiring (5119.141ms)
+✔ workspace protects baseline tests and configuration even nested under src (6918.425167ms)
+✔ workspace rejects sensitive imports, noncanonical paths, unicode and case collisions without writes (12.517709ms)
+✔ workspace bounds file, manifest count, aggregate bytes and canonical path bytes (4861.574ms)
+✔ workspace copies bytes before awaits and serializes edit compare-and-swap (1039.611625ms)
+✔ workspace stale checks and conflicting request reuse do not mutate source or refs (1454.039625ms)
+✔ workspace detects and preserves unexpected tracked changes before edit and freeze (615.005417ms)
+✔ workspace detects and preserves unexpected untracked changes before edit and freeze (667.507709ms)
+✔ workspace detects and preserves unexpected ignored changes before edit and freeze (636.918875ms)
+✔ workspace detects and preserves unexpected protected changes before edit and freeze (625.317042ms)
+✔ workspace detects and preserves unexpected mode changes before edit and freeze (715.292791ms)
+✔ workspace detects and preserves unexpected directory changes before edit and freeze (793.764458ms)
+✔ workspace detects and preserves unexpected ancestor-identity changes before edit and freeze (743.570333ms)
+✔ workspace detects and preserves unexpected symlink changes before edit and freeze (771.225625ms)
+✔ workspace detects and preserves unexpected hardlink changes before edit and freeze (664.254042ms)
+✔ workspace detects and preserves unexpected socket changes before edit and freeze (628.331917ms)
+✔ workspace detects and preserves unexpected pointer changes before edit and freeze (707.711542ms)
+✔ workspace detects and preserves unexpected ref changes before edit and freeze (705.198834ms)
+✔ workspace freeze independently rejects dirty bytes and exports only recorded case-owned A after B (2221.610542ms)
+✔ workspace rejects unowned nonempty and unsafe roots without changing bytes or permissions (2.813416ms)
+✔ workspace fails closed reopening corrupt journal (513.919375ms)
+✔ workspace fails closed reopening corrupt config (534.168042ms)
+✔ workspace fails closed reopening corrupt metadata-directory (537.114458ms)
+✔ workspace fails closed reopening corrupt source-directory (529.4105ms)
+✔ workspace never inherits hostile Git configuration, execution canaries or parent environment (1332.390708ms)
+✔ workspace owns one serialized store and bounds failed-attempt objects and export orphans (35345.131542ms)
+✔ workspace SIGKILL after-provision-intent preserves intents or replays the durable receipt (121.90375ms)
+✔ workspace SIGKILL after-provision-repository preserves intents or replays the durable receipt (141.436042ms)
+✔ workspace SIGKILL after-provision-worktree preserves intents or replays the durable receipt (375.326125ms)
+✔ workspace SIGKILL after-intent preserves intents or replays the durable receipt (650.862125ms)
+✔ workspace SIGKILL after-file preserves intents or replays the durable receipt (709.565917ms)
+✔ workspace SIGKILL after-commit preserves intents or replays the durable receipt (864.896333ms)
+✔ workspace SIGKILL after-ref preserves intents or replays the durable receipt (961.696833ms)
+✔ workspace SIGKILL after-checkpoint preserves intents or replays the durable receipt (1116.581084ms)
+✔ workspace SIGKILL before-response preserves intents or replays the durable receipt (1134.65375ms)
+✔ workspace SIGKILL inside-journal-transaction preserves intents or replays the durable receipt (722.103667ms)
+ℹ tests 367
+ℹ suites 0
+ℹ pass 367
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 289595.751584
+npm notice run eitri@0.1.0 lint:rust
+npm notice run DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer cargo clippy --locked --manifest-path operator/Cargo.toml --all-targets -- -D warnings
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.27
+   Compiling quote v1.0.47
+   Compiling libc v0.2.191
+    Checking cfg-if v1.0.5
+   Compiling serde_core v1.0.228
+   Compiling autocfg v1.5.1
+    Checking bitflags v2.13.2
+   Compiling libm v0.2.16
+   Compiling typeid v1.0.3
+   Compiling erased-serde v0.4.10
+    Checking pin-project-lite v0.2.17
+    Checking memchr v2.8.3
+    Checking futures-core v0.3.34
+   Compiling crossbeam-utils v0.8.23
+   Compiling num-traits v0.2.19
+    Checking futures-io v0.3.34
+   Compiling shlex v2.0.1
+   Compiling find-msvc-tools v0.1.14
+    Checking stable_deref_trait v1.2.1
+    Checking core-foundation-sys v0.8.7
+    Checking slab v0.4.12
+    Checking smallvec v1.16.3
+    Checking arrayvec v0.7.8
+    Checking parking v2.2.1
+   Compiling version_check v0.9.5
+   Compiling cfg_aliases v0.2.2
+   Compiling zerocopy v0.8.63
+    Checking simd-adler32 v0.3.10
+    Checking once_cell v1.21.4
+    Checking fastrand v2.5.0
+    Checking adler2 v2.0.1
+    Checking itoa v1.0.18
+    Checking bytes v1.12.1
+   Compiling rustversion v1.0.23
+    Checking hashbrown v0.17.1
+   Compiling crc32fast v1.5.2
+    Checking futures-sink v0.3.34
+    Checking serde_fmt v1.1.0
+    Checking equivalent v1.0.3
+    Checking atomic-waker v1.1.2
+    Checking indexmap v2.14.2
+    Checking futures-lite v2.6.1
+    Checking value-bag-serde1 v1.14.1
+    Checking value-bag v1.14.1
+    Checking log v0.4.34
+   Compiling aho-corasick v1.1.5
+   Compiling jobserver v0.1.35
+    Checking typenum v1.20.1
+   Compiling rustix v1.1.5
+   Compiling regex-syntax v0.8.11
+   Compiling cc v1.8.0
+    Checking miniz_oxide v0.9.1
+    Checking event-listener v5.4.2
+    Checking either v1.19.0
+   Compiling serde v1.0.228
+    Checking concurrent-queue v2.5.0
+   Compiling syn v2.0.119
+   Compiling syn v3.0.9
+   Compiling regex-automata v0.4.18
+    Checking flate2 v1.1.10
+    Checking event-listener-strategy v0.5.4
+    Checking futures-channel v0.3.34
+   Compiling thiserror v2.0.21
+   Compiling crossbeam-epoch v0.9.21
+   Compiling heck v0.5.0
+   Compiling async-io v2.6.0
+    Checking litemap v0.8.3
+   Compiling unicase v2.10.0
+   Compiling crossbeam-deque v0.8.8
+    Checking writeable v0.6.4
+    Checking errno v0.3.14
+    Checking core-foundation v0.10.0
+    Checking mio v1.2.4
+    Checking socket2 v0.6.5
+   Compiling anyhow v1.0.104
+   Compiling rustc-hash v2.1.3
+    Checking futures-task v0.3.34
+    Checking http v1.5.0
+    Checking tokio v1.53.3
+   Compiling paste v1.0.15
+   Compiling icu_normalizer_data v2.3.0
+   Compiling getrandom v0.4.3
+    Checking async-task v4.7.1
+   Compiling icu_properties_data v2.3.0
+   Compiling glob v0.3.4
+    Checking utf8_iter v1.0.4
+   Compiling objc2 v0.6.4
+   Compiling rayon-core v1.13.0
+   Compiling clang-sys v1.9.1
+    Checking polling v3.11.0
+   Compiling hybrid-array v0.4.15
+   Compiling ring v0.17.14
+   Compiling synstructure v0.14.0
+    Checking async-channel v2.5.0
+    Checking piper v0.2.5
+    Checking zeroize v1.9.1
+    Checking objc2-encode v4.1.0
+   Compiling pkg-config v0.3.34
+   Compiling prettyplease v0.2.37
+   Compiling httparse v1.10.1
+   Compiling serde_json v1.0.145
+    Checking rustls-pki-types v1.15.1
+    Checking blocking v1.7.0
+    Checking async-lock v3.4.2
+   Compiling vcpkg v0.2.15
+   Compiling getrandom v0.3.4
+    Checking foreign-types-shared v0.3.1
+   Compiling thiserror v1.0.69
+   Compiling ryu v1.0.23
+   Compiling minimal-lexical v0.2.1
+   Compiling object v0.39.1
+    Checking percent-encoding v2.3.2
+   Compiling zerofrom-derive v0.1.8
+   Compiling yoke-derive v0.8.4
+   Compiling serde_derive v1.0.228
+   Compiling zerocopy-derive v0.8.63
+   Compiling zerovec-derive v0.11.6
+   Compiling thiserror-impl v2.0.21
+   Compiling bytemuck_derive v1.12.1
+   Compiling displaydoc v0.2.7
+   Compiling futures-macro v0.3.34
+   Compiling strum_macros v0.26.4
+   Compiling equator-macro v0.4.2
+    Checking zerofrom v0.1.8
+   Compiling foreign-types-macros v0.2.4
+    Checking bytemuck v1.25.2
+   Compiling libz-sys v1.1.30
+    Checking yoke v0.8.3
+    Checking futures-util v0.3.34
+    Checking foreign-types v0.5.0
+   Compiling nom v7.1.3
+    Checking equator v0.4.2
+   Compiling thiserror-impl v1.0.69
+   Compiling block-buffer v0.12.1
+   Compiling crypto-common v0.2.2
+    Checking zerovec v0.11.8
+    Checking zerotrie v0.2.5
+    Checking signal-hook-registry v1.4.8
+    Checking getrandom v0.2.17
+    Checking core-foundation v0.9.4
+    Checking num-integer v0.1.47
+    Checking miniz_oxide v0.8.9
+    Checking tracing-core v0.1.36
+   Compiling generic-array v0.14.7
+   Compiling libloading v0.8.9
+   Compiling bindgen v0.71.1
+    Checking untrusted v0.9.0
+    Checking bitflags v1.3.2
+   Compiling const-oid v0.10.2
+   Compiling digest v0.11.3
+   Compiling itertools v0.13.0
+    Checking tinystr v0.8.4
+    Checking potential_utf v0.1.6
+    Checking tracing v0.1.44
+    Checking icu_collections v2.3.0
+    Checking icu_locale_core v2.3.0
+    Checking aligned-vec v0.6.4
+    Checking num-bigint v0.4.8
+    Checking async-signal v0.2.14
+   Compiling cexpr v0.6.0
+    Checking form_urlencoded v1.2.2
+   Compiling pin-project-internal v1.1.13
+    Checking icu_provider v2.3.1
+    Checking icu_normalizer v2.3.0
+    Checking icu_properties v2.3.0
+    Checking objc2-core-foundation v0.3.2
+    Checking tokio-util v0.7.20
+    Checking rayon v1.12.0
+    Checking http-body v1.1.0
+   Compiling regex v1.13.1
+    Checking async-executor v1.14.0
+   Compiling mime_guess v2.0.5
+    Checking malloc_buf v0.0.6
+    Checking euclid v0.22.14
+   Compiling cpufeatures v0.3.1
+   Compiling slotmap v1.1.1
+   Compiling bstr v1.13.1
+    Checking idna_adapter v1.2.2
+    Checking base64 v0.22.1
+    Checking try-lock v0.2.5
+    Checking fnv v1.0.7
+   Compiling same-file v1.0.6
+   Compiling semver v1.0.28
+    Checking block v0.1.6
+   Compiling rustls v0.23.46
+    Checking scopeguard v1.2.0
+   Compiling shlex v1.3.0
+    Checking walkdir v2.5.0
+   Compiling rustc_version v0.4.1
+    Checking half v2.7.1
+    Checking h2 v0.4.20
+   Compiling globset v0.4.20
+    Checking want v0.3.2
+    Checking idna v1.1.0
+    Checking objc2-foundation v0.3.2
+   Compiling sha2 v0.11.1
+    Checking objc v0.2.7
+    Checking pin-project v1.1.13
+    Checking num-rational v0.4.2
+   Compiling serde_spanned v0.6.9
+   Compiling toml_datetime v0.6.11
+    Checking async-process v2.5.0
+    Checking v_frame v0.3.9
+   Compiling profiling-procmacros v1.0.18
+    Checking block2 v0.6.2
+   Compiling libgit2-sys v0.18.8+1.9.7
+    Checking core-graphics-types v0.2.0
+    Checking security-framework-sys v2.17.0
+   Compiling ar_archive_writer v0.5.3
+    Checking itertools v0.14.0
+    Checking core_maths v0.1.1
+    Checking fdeflate v0.3.7
+   Compiling nix v0.31.3
+    Checking as-slice v0.2.1
+    Checking tower-service v0.3.3
+   Compiling winnow v0.7.15
+   Compiling syn v1.0.109
+   Compiling toml_write v0.1.2
+    Checking compression-core v0.4.34
+    Checking subtle v2.6.1
+   Compiling parking_lot_core v0.9.12
+   Compiling ref-cast v1.0.27
+   Compiling built v0.8.1
+    Checking float-cmp v0.9.0
+   Compiling rustix v0.38.44
+   Compiling system-configuration-sys v0.6.0
+    Checking deflate64 v0.1.12
+   Compiling mime v0.3.17
+    Checking rustls-webpki v0.103.15
+   Compiling av-scenechange v0.14.1
+    Checking hyper v1.12.0
+   Compiling rav1e v0.8.1
+    Checking objc2-metal v0.3.2
+    Checking compression-codecs v0.4.46
+   Compiling psm v0.1.32
+    Checking strict-num v0.1.1
+   Compiling toml_edit v0.22.27
+    Checking aligned v0.4.3
+    Checking profiling v1.0.18
+    Checking security-framework v3.7.0
+    Checking ttf-parser v0.25.1
+   Compiling rust-embed-utils v8.13.0
+    Checking url v2.5.8
+   Compiling pathfinder_simd v0.5.6
+    Checking lyon_geom v1.0.19
+    Checking ppv-lite86 v0.2.21
+    Checking futures-executor v0.3.34
+    Checking rand_core v0.9.5
+   Compiling arg_enum_proc_macro v0.3.4
+   Compiling ref-cast-impl v1.0.27
+   Compiling serde_derive_internals v0.30.0
+   Compiling gpui_collections v0.2.2
+   Compiling encoding_rs v0.8.42
+   Compiling pulp v0.22.3
+   Compiling naga v25.0.1
+   Compiling nix v0.29.0
+    Checking no_std_io2 v0.9.4
+    Checking nom v8.0.0
+   Compiling termcolor v1.4.1
+    Checking bit-vec v0.8.0
+   Compiling foldhash v0.1.5
+   Compiling cbindgen v0.28.0
+    Checking event-listener v2.5.3
+   Compiling serde_json_lenient v0.2.4
+    Checking unicode-width v0.2.2
+    Checking arrayref v0.3.9
+   Compiling pastey v0.1.1
+    Checking leak v0.1.2
+    Checking y4m v0.8.0
+    Checking quick-error v2.0.1
+   Compiling schemars_derive v1.2.3
+   Compiling bit-set v0.8.0
+    Checking codespan-reporting v0.12.0
+   Compiling tempfile v3.27.0
+    Checking leaky-cow v0.1.1
+    Checking hashbrown v0.15.5
+    Checking async-channel v1.9.0
+    Checking tiny-skia-path v0.11.4
+    Checking bitstream-io v4.10.0
+   Compiling gpui_perf v0.2.2
+    Checking lyon_path v1.0.19
+    Checking objc2-quartz-core v0.3.2
+    Checking rand_chacha v0.9.0
+    Checking futures v0.3.34
+   Compiling toml v0.8.23
+    Checking tokio-rustls v0.26.6
+   Compiling rust-embed-impl v8.13.0
+    Checking rustls-native-certs v0.8.5
+    Checking av1-grain v0.2.5
+    Checking hyper-util v0.1.21
+    Checking async-compression v0.4.51
+    Checking block-buffer v0.10.4
+    Checking crypto-common v0.1.7
+    Checking core-graphics v0.24.0
+    Checking maybe-rayon v0.1.1
+    Checking lock_api v0.4.14
+    Checking async-global-executor v2.4.1
+    Checking core-graphics-types v0.1.3
+    Checking strum v0.26.3
+    Checking rgb v0.8.53
+    Checking num-complex v0.4.6
+   Compiling num-derive v0.4.2
+    Checking async-fs v2.2.0
+    Checking async-net v2.0.0
+   Compiling stacker v0.1.25
+    Checking dirs-sys v0.3.7
+    Checking memmap2 v0.9.11
+    Checking cgl v0.3.2
+   Compiling simd_helpers v0.1.0
+   Compiling proc-macro-error-attr2 v2.0.0
+    Checking kv-log-macro v1.0.7
+    Checking kurbo v0.11.3
+    Checking sync_wrapper v1.0.2
+    Checking unicode-script v0.5.8
+    Checking tower-layer v0.3.3
+    Checking tinyvec v1.13.3
+   Compiling noop_proc_macro v0.3.0
+    Checking option-ext v0.2.0
+   Compiling heck v0.4.1
+    Checking rustc-hash v1.1.0
+    Checking unicode-ccc v0.4.0
+    Checking waker-fn v1.2.0
+    Checking hexf-parse v0.2.1
+    Checking zune-core v0.5.3
+    Checking imgref v1.12.3
+    Checking weezl v0.1.12
+    Checking new_debug_unreachable v1.0.6
+    Checking pulp-wasm-simd-flag v0.1.1
+    Checking home v0.5.12
+    Checking siphasher v1.0.4
+    Checking pin-utils v0.1.1
+    Checking simdutf8 v0.1.5
+    Checking unicode-properties v0.1.4
+    Checking dyn-clone v1.0.20
+    Checking reborrow v0.5.5
+    Checking unicode-bidi-mirroring v0.4.0
+    Checking fastrand v1.9.0
+   Compiling dtor-proc-macro v0.0.5
+   Compiling multiversion_no_op v1.0.0
+   Compiling object v0.37.3
+    Checking rustybuzz v0.20.1
+    Checking futures-lite v1.13.0
+    Checking schemars v1.2.3
+    Checking svgtypes v0.15.3
+    Checking dtor v0.0.6
+    Checking async-std v1.13.2
+    Checking fontdb v0.23.0
+    Checking which v6.0.3
+    Checking zune-jpeg v0.5.15
+    Checking loop9 v0.1.5
+   Compiling proc-macro-error2 v2.0.1
+    Checking dirs-sys v0.4.1
+    Checking tower v0.5.3
+   Compiling hidden-trait v0.1.2
+    Checking smol v2.0.2
+    Checking io-surface v0.16.1
+    Checking dirs v4.0.0
+    Checking hyper-rustls v0.27.10
+    Checking parking_lot v0.12.5
+    Checking metal v0.29.0
+    Checking async_zip v0.0.17
+    Checking digest v0.10.7
+    Checking rust-embed v8.13.0
+    Checking system-configuration v0.6.1
+    Checking command-fds v0.3.3
+    Checking objc2-app-kit v0.3.2
+    Checking rand v0.9.5
+   Compiling gpui_util_macros v0.2.2
+   Compiling gpui_media v0.2.2
+    Checking png v0.17.16
+    Checking core-graphics2 v0.4.1
+    Checking http-body-util v0.1.5
+    Checking tokio-socks v0.5.3
+    Checking serde_urlencoded v0.7.1
+    Checking rustls-pemfile v2.2.0
+    Checking xattr v0.2.3
+    Checking cpufeatures v0.2.17
+    Checking filetime v0.2.29
+    Checking simplecss v0.2.2
+    Checking zune-inflate v0.2.54
+    Checking avif-serialize v0.8.9
+    Checking float_next_after v1.0.0
+    Checking bit_field v0.10.3
+    Checking byteorder-lite v0.1.0
+    Checking ipnet v2.12.2
+    Checking data-url v0.3.2
+    Checking dunce v1.0.5
+   Compiling zed-font-kit v0.14.1-zed
+    Checking roxmltree v0.20.0
+    Checking xmlwriter v0.1.0
+    Checking lebe v0.5.3
+   Compiling convert_case v0.4.0
+    Checking unicode-vo v0.1.0
+    Checking gimli v0.32.3
+    Checking raw-window-handle v0.6.2
+    Checking mint v0.5.9
+    Checking color_quant v1.1.0
+    Checking unicode-bidi v0.3.18
+    Checking pxfm v0.1.30
+    Checking fax v0.2.7
+    Checking imagesize v0.13.0
+    Checking pico-args v0.5.0
+   Compiling ctor-proc-macro v0.0.6
+    Checking take-until v0.2.0
+    Checking usvg v0.45.1
+    Checking tiff v0.11.3
+    Checking ctor v0.4.3
+    Checking exr v1.74.2
+    Checking blade-graphics v0.7.1
+    Checking gif v0.14.2
+   Compiling derive_more v0.99.20
+    Checking image-webp v0.2.4
+    Checking core-video v0.4.3
+    Checking zed-reqwest v0.12.15-zed
+    Checking lyon_tessellation v1.0.22
+    Checking zed-async-tar v0.5.0-zed
+    Checking addr2line v0.25.1
+    Checking ravif v0.13.0
+    Checking sha2 v0.10.9
+    Checking tiny-skia v0.11.4
+    Checking pathfinder_geometry v0.5.1
+    Checking moxcms v0.8.1
+   Compiling stacksafe-macro v0.1.4
+    Checking dirs v5.0.1
+    Checking core-text v21.0.0
+    Checking lyon_algorithms v1.0.21
+    Checking png v0.18.1
+    Checking cocoa-foundation v0.2.0
+    Checking qoi v0.4.1
+   Compiling gpui_derive_refineable v0.2.2
+   Compiling strum_macros v0.27.2
+    Checking crossbeam-queue v0.3.14
+    Checking rustc-demangle v0.1.28
+    Checking sha1_smol v1.0.1
+    Checking byteorder v1.5.0
+    Checking static_assertions v1.1.0
+    Checking svg_fmt v0.4.5
+    Checking grid v0.18.0
+    Checking pollster v0.2.5
+    Checking atomic v0.5.3
+    Checking float-ord v0.3.2
+    Checking lazy_static v1.5.1
+    Checking etagere v0.2.15
+    Checking uuid v1.18.1
+    Checking taffy v0.9.0
+    Checking postage v0.5.0
+    Checking gpui_refineable v0.2.2
+    Checking cocoa v0.26.0
+    Checking resvg v0.45.1
+    Checking lyon v1.0.19
+    Checking stacksafe v0.1.4
+    Checking blade-util v0.3.0
+    Checking gpui_sum_tree v0.2.2
+    Checking ureq-proto v0.5.3
+    Checking gpui_semantic_version v0.2.2
+   Compiling blade-macros v0.3.0
+   Compiling gpui-macros v0.2.2
+    Checking num_cpus v1.17.0
+    Checking utf-8 v0.7.6
+    Checking inventory v0.3.25
+    Checking seahash v4.1.0
+    Checking ureq v3.1.2
+    Checking unicode-segmentation v1.12.0
+    Checking strum v0.27.2
+    Checking backtrace v0.3.76
+    Checking image v0.25.10
+   Compiling gpui v0.2.2
+    Checking git2 v0.20.4
+    Checking gpui_util v0.2.2
+    Checking gpui_http_client v0.2.2
+    Checking eitri-operator v0.1.0 (/Users/felix.langbein/projects/eitri-check-dispatch/operator)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 55.35s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6, proc-macro-error2 v2.0.1
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+npm notice run eitri@0.1.0 format:check:rust
+npm notice run cargo fmt --manifest-path operator/Cargo.toml --all -- --check
+npm notice run eitri@0.1.0 test:operator
+npm notice run DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer cargo test --locked --manifest-path operator/Cargo.toml
+   Compiling unicode-ident v1.0.27
+   Compiling cfg-if v1.0.5
+   Compiling bitflags v2.13.2
+   Compiling pin-project-lite v0.2.17
+   Compiling memchr v2.8.3
+   Compiling libc v0.2.191
+   Compiling serde_core v1.0.228
+   Compiling libm v0.2.16
+   Compiling typeid v1.0.3
+   Compiling futures-core v0.3.34
+   Compiling crossbeam-utils v0.8.23
+   Compiling futures-io v0.3.34
+   Compiling proc-macro2 v1.0.107
+   Compiling hashbrown v0.17.1
+   Compiling equivalent v1.0.3
+   Compiling stable_deref_trait v1.2.1
+   Compiling slab v0.4.12
+   Compiling core-foundation-sys v0.8.7
+   Compiling itoa v1.0.18
+   Compiling fastrand v2.5.0
+   Compiling smallvec v1.16.3
+   Compiling arrayvec v0.7.8
+   Compiling parking v2.2.1
+   Compiling simd-adler32 v0.3.10
+   Compiling once_cell v1.21.4
+   Compiling typenum v1.20.1
+   Compiling adler2 v2.0.1
+   Compiling bytes v1.12.1
+   Compiling atomic-waker v1.1.2
+   Compiling quote v1.0.47
+   Compiling concurrent-queue v2.5.0
+   Compiling futures-sink v0.3.34
+   Compiling futures-lite v2.6.1
+   Compiling aho-corasick v1.1.5
+   Compiling crc32fast v1.5.2
+   Compiling miniz_oxide v0.9.1
+   Compiling event-listener v5.4.2
+   Compiling syn v2.0.119
+   Compiling syn v3.0.9
+   Compiling either v1.19.0
+   Compiling ryu v1.0.23
+   Compiling event-listener-strategy v0.5.4
+   Compiling num-traits v0.2.19
+   Compiling flate2 v1.1.10
+   Compiling indexmap v2.14.2
+   Compiling futures-channel v0.3.34
+   Compiling errno v0.3.14
+   Compiling core-foundation v0.10.0
+   Compiling rustix v1.1.5
+   Compiling rustc-hash v2.1.3
+   Compiling regex-automata v0.4.18
+   Compiling hybrid-array v0.4.15
+   Compiling mio v1.2.4
+   Compiling socket2 v0.6.5
+   Compiling unicase v2.10.0
+   Compiling futures-task v0.3.34
+   Compiling writeable v0.6.4
+   Compiling litemap v0.8.3
+   Compiling tokio v1.53.3
+   Compiling crossbeam-epoch v0.9.21
+   Compiling http v1.5.0
+   Compiling utf8_iter v1.0.4
+   Compiling async-task v4.7.1
+   Compiling crossbeam-deque v0.8.8
+   Compiling serde_fmt v1.1.0
+   Compiling erased-serde v0.4.10
+   Compiling crypto-common v0.2.2
+   Compiling block-buffer v0.12.1
+   Compiling anyhow v1.0.104
+   Compiling async-channel v2.5.0
+   Compiling piper v0.2.5
+   Compiling zeroize v1.9.1
+   Compiling value-bag-serde1 v1.14.1
+   Compiling value-bag v1.14.1
+   Compiling objc2-encode v4.1.0
+   Compiling const-oid v0.10.2
+   Compiling rustls-pki-types v1.15.1
+   Compiling digest v0.11.3
+   Compiling blocking v1.7.0
+   Compiling log v0.4.34
+   Compiling objc2 v0.6.4
+   Compiling rayon-core v1.13.0
+   Compiling icu_properties_data v2.3.0
+   Compiling icu_normalizer_data v2.3.0
+   Compiling async-lock v3.4.2
+   Compiling same-file v1.0.6
+   Compiling shlex v1.3.0
+   Compiling foreign-types-shared v0.3.1
+   Compiling termcolor v1.4.1
+   Compiling percent-encoding v2.3.2
+   Compiling polling v3.11.0
+   Compiling unicode-width v0.2.2
+   Compiling async-io v2.6.0
+   Compiling walkdir v2.5.0
+   Compiling serde_json v1.0.145
+   Compiling httparse v1.10.1
+   Compiling num-integer v0.1.47
+   Compiling signal-hook-registry v1.4.8
+   Compiling getrandom v0.2.17
+   Compiling core-foundation v0.9.4
+   Compiling miniz_oxide v0.8.9
+   Compiling tracing-core v0.1.36
+   Compiling synstructure v0.14.0
+   Compiling libloading v0.8.9
+   Compiling regex-syntax v0.8.11
+   Compiling bitflags v1.3.2
+   Compiling untrusted v0.9.0
+   Compiling mime v0.3.17
+   Compiling foldhash v0.1.5
+   Compiling bit-vec v0.8.0
+   Compiling hashbrown v0.15.5
+   Compiling ring v0.17.14
+   Compiling clang-sys v1.9.1
+   Compiling tracing v0.1.44
+   Compiling objc2-core-foundation v0.3.2
+   Compiling bit-set v0.8.0
+   Compiling async-signal v0.2.14
+   Compiling num-bigint v0.4.8
+   Compiling prettyplease v0.2.37
+   Compiling getrandom v0.3.4
+   Compiling rayon v1.12.0
+   Compiling form_urlencoded v1.2.2
+   Compiling serde_derive v1.0.228
+   Compiling zerocopy-derive v0.8.63
+   Compiling zerofrom-derive v0.1.8
+   Compiling yoke-derive v0.8.4
+   Compiling bytemuck_derive v1.12.1
+   Compiling thiserror-impl v2.0.21
+   Compiling zerovec-derive v0.11.6
+   Compiling displaydoc v0.2.7
+   Compiling zerofrom v0.1.8
+   Compiling futures-macro v0.3.34
+   Compiling zerocopy v0.8.63
+   Compiling yoke v0.8.3
+   Compiling bytemuck v1.25.2
+   Compiling foreign-types-macros v0.2.4
+   Compiling equator-macro v0.4.2
+   Compiling thiserror v2.0.21
+   Compiling thiserror-impl v1.0.69
+   Compiling strum_macros v0.26.4
+   Compiling futures-util v0.3.34
+   Compiling zerovec v0.11.8
+   Compiling zerotrie v0.2.5
+   Compiling foreign-types v0.5.0
+   Compiling equator v0.4.2
+   Compiling tokio-util v0.7.20
+   Compiling serde v1.0.228
+   Compiling thiserror v1.0.69
+   Compiling pin-project-internal v1.1.13
+   Compiling strum v0.26.3
+   Compiling tinystr v0.8.4
+   Compiling icu_locale_core v2.3.0
+   Compiling potential_utf v0.1.6
+   Compiling icu_collections v2.3.0
+   Compiling regex v1.13.1
+   Compiling http-body v1.1.0
+   Compiling aligned-vec v0.6.4
+   Compiling async-executor v1.14.0
+   Compiling mime_guess v2.0.5
+   Compiling euclid v0.22.14
+   Compiling malloc_buf v0.0.6
+   Compiling icu_provider v2.3.1
+   Compiling bstr v1.13.1
+   Compiling cpufeatures v0.3.1
+   Compiling icu_properties v2.3.0
+   Compiling icu_normalizer v2.3.0
+   Compiling try-lock v0.2.5
+   Compiling block v0.1.6
+   Compiling rustc-hash v1.1.0
+   Compiling hexf-parse v0.2.1
+   Compiling half v2.7.1
+   Compiling base64 v0.22.1
+   Compiling fnv v1.0.7
+   Compiling scopeguard v1.2.0
+   Compiling want v0.3.2
+   Compiling h2 v0.4.20
+   Compiling toml_datetime v0.6.11
+   Compiling serde_spanned v0.6.9
+   Compiling sha2 v0.11.1
+   Compiling objc v0.2.7
+   Compiling v_frame v0.3.9
+   Compiling globset v0.4.20
+   Compiling pin-project v1.1.13
+   Compiling bindgen v0.71.1
+   Compiling num-rational v0.4.2
+   Compiling rustls-webpki v0.103.15
+   Compiling objc2-foundation v0.3.2
+   Compiling profiling-procmacros v1.0.18
+   Compiling async-process v2.5.0
+   Compiling generic-array v0.14.7
+   Compiling block2 v0.6.2
+   Compiling core-graphics-types v0.2.0
+   Compiling idna_adapter v1.2.2
+   Compiling security-framework-sys v2.17.0
+   Compiling idna v1.1.0
+   Compiling core_maths v0.1.1
+   Compiling itertools v0.14.0
+   Compiling fdeflate v0.3.7
+   Compiling as-slice v0.2.1
+   Compiling float-cmp v0.9.0
+   Compiling tower-service v0.3.3
+   Compiling compression-core v0.4.34
+   Compiling deflate64 v0.1.12
+   Compiling subtle v2.6.1
+   Compiling toml_edit v0.22.27
+   Compiling compression-codecs v0.4.46
+   Compiling rustls v0.23.46
+   Compiling url v2.5.8
+   Compiling strict-num v0.1.1
+   Compiling aligned v0.4.3
+   Compiling security-framework v3.7.0
+   Compiling ttf-parser v0.25.1
+   Compiling profiling v1.0.18
+   Compiling rust-embed-utils v8.13.0
+   Compiling slotmap v1.1.1
+   Compiling objc2-metal v0.3.2
+   Compiling hyper v1.12.0
+   Compiling ppv-lite86 v0.2.21
+   Compiling lyon_geom v1.0.19
+   Compiling futures-executor v0.3.34
+   Compiling ref-cast-impl v1.0.27
+   Compiling arg_enum_proc_macro v0.3.4
+   Compiling libz-sys v1.1.30
+   Compiling rand_core v0.9.5
+   Compiling serde_derive_internals v0.30.0
+   Compiling getrandom v0.4.3
+   Compiling gpui_collections v0.2.2
+   Compiling nom v8.0.0
+   Compiling no_std_io2 v0.9.4
+   Compiling event-listener v2.5.3
+   Compiling leak v0.1.2
+   Compiling arrayref v0.3.9
+   Compiling y4m v0.8.0
+   Compiling quick-error v2.0.1
+   Compiling async-channel v1.9.0
+   Compiling tiny-skia-path v0.11.4
+   Compiling av-scenechange v0.14.1
+   Compiling leaky-cow v0.1.1
+   Compiling bitstream-io v4.10.0
+   Compiling gpui_perf v0.2.2
+   Compiling hyper-util v0.1.21
+   Compiling schemars_derive v1.2.3
+   Compiling ref-cast v1.0.27
+   Compiling tempfile v3.27.0
+   Compiling rand_chacha v0.9.0
+   Compiling libgit2-sys v0.18.8+1.9.7
+   Compiling tokio-rustls v0.26.6
+   Compiling lyon_path v1.0.19
+   Compiling futures v0.3.34
+   Compiling toml v0.8.23
+   Compiling rust-embed-impl v8.13.0
+   Compiling rustls-native-certs v0.8.5
+   Compiling nix v0.31.3
+   Compiling async-compression v0.4.51
+   Compiling rustix v0.38.44
+   Compiling system-configuration-sys v0.6.0
+   Compiling syn v1.0.109
+   Compiling parking_lot_core v0.9.12
+   Compiling block-buffer v0.10.4
+   Compiling objc2-quartz-core v0.3.2
+   Compiling crypto-common v0.1.7
+   Compiling core-graphics v0.24.0
+   Compiling lock_api v0.4.14
+   Compiling async-global-executor v2.4.1
+   Compiling rgb v0.8.53
+   Compiling num-complex v0.4.6
+   Compiling maybe-rayon v0.1.1
+   Compiling num-derive v0.4.2
+   Compiling core-graphics-types v0.1.3
+   Compiling async-net v2.0.0
+   Compiling codespan-reporting v0.12.0
+   Compiling async-fs v2.2.0
+   Compiling kv-log-macro v1.0.7
+   Compiling av1-grain v0.2.5
+   Compiling memmap2 v0.9.11
+   Compiling cgl v0.3.2
+   Compiling dirs-sys v0.3.7
+   Compiling simd_helpers v0.1.0
+   Compiling proc-macro-error-attr2 v2.0.0
+   Compiling kurbo v0.11.3
+   Compiling sync_wrapper v1.0.2
+   Compiling tower-layer v0.3.3
+   Compiling siphasher v1.0.4
+   Compiling weezl v0.1.12
+   Compiling pulp-wasm-simd-flag v0.1.1
+   Compiling option-ext v0.2.0
+   Compiling pin-utils v0.1.1
+   Compiling unicode-script v0.5.8
+   Compiling imgref v1.12.3
+   Compiling zune-core v0.5.3
+   Compiling home v0.5.12
+   Compiling tinyvec v1.13.3
+   Compiling dyn-clone v1.0.20
+   Compiling reborrow v0.5.5
+   Compiling simdutf8 v0.1.5
+   Compiling waker-fn v1.2.0
+   Compiling new_debug_unreachable v1.0.6
+   Compiling unicode-ccc v0.4.0
+   Compiling unicode-bidi-mirroring v0.4.0
+   Compiling unicode-properties v0.1.4
+   Compiling fastrand v1.9.0
+   Compiling naga v25.0.1
+   Compiling fontdb v0.23.0
+   Compiling cbindgen v0.28.0
+   Compiling rav1e v0.8.1
+   Compiling encoding_rs v0.8.42
+   Compiling zune-jpeg v0.5.15
+   Compiling rustybuzz v0.20.1
+   Compiling futures-lite v1.13.0
+   Compiling svgtypes v0.15.3
+   Compiling dtor v0.0.6
+   Compiling pulp v0.22.3
+   Compiling loop9 v0.1.5
+   Compiling schemars v1.2.3
+   Compiling proc-macro-error2 v2.0.1
+   Compiling which v6.0.3
+   Compiling async-std v1.13.2
+   Compiling dirs-sys v0.4.1
+   Compiling tower v0.5.3
+   Compiling dirs v4.0.0
+   Compiling io-surface v0.16.1
+   Compiling smol v2.0.2
+   Compiling metal v0.29.0
+   Compiling objc2-app-kit v0.3.2
+   Compiling hidden-trait v0.1.2
+   Compiling gpui_media v0.2.2
+   Compiling parking_lot v0.12.5
+   Compiling digest v0.10.7
+   Compiling command-fds v0.3.3
+   Compiling rust-embed v8.13.0
+   Compiling async_zip v0.0.17
+   Compiling system-configuration v0.6.1
+   Compiling hyper-rustls v0.27.10
+   Compiling psm v0.1.32
+   Compiling pathfinder_simd v0.5.6
+   Compiling git2 v0.20.4
+   Compiling rand v0.9.5
+   Compiling gpui_util_macros v0.2.2
+   Compiling nix v0.29.0
+   Compiling serde_json_lenient v0.2.4
+   Compiling png v0.17.16
+   Compiling core-graphics2 v0.4.1
+   Compiling tokio-socks v0.5.3
+   Compiling serde_urlencoded v0.7.1
+   Compiling http-body-util v0.1.5
+   Compiling simplecss v0.2.2
+   Compiling rustls-pemfile v2.2.0
+   Compiling xattr v0.2.3
+   Compiling cpufeatures v0.2.17
+   Compiling filetime v0.2.29
+   Compiling avif-serialize v0.8.9
+   Compiling zune-inflate v0.2.54
+   Compiling take-until v0.2.0
+   Compiling imagesize v0.13.0
+   Compiling lebe v0.5.3
+   Compiling roxmltree v0.20.0
+   Compiling gimli v0.32.3
+   Compiling byteorder-lite v0.1.0
+   Compiling mint v0.5.9
+   Compiling pico-args v0.5.0
+   Compiling color_quant v1.1.0
+   Compiling unicode-vo v0.1.0
+   Compiling data-url v0.3.2
+   Compiling ipnet v2.12.2
+   Compiling raw-window-handle v0.6.2
+   Compiling fax v0.2.7
+   Compiling pxfm v0.1.30
+   Compiling bit_field v0.10.3
+   Compiling unicode-bidi v0.3.18
+   Compiling xmlwriter v0.1.0
+   Compiling float_next_after v1.0.0
+   Compiling dunce v1.0.5
+   Compiling gpui_util v0.2.2
+   Compiling lyon_tessellation v1.0.22
+   Compiling exr v1.74.2
+   Compiling tiff v0.11.3
+   Compiling zed-reqwest v0.12.15-zed
+   Compiling usvg v0.45.1
+   Compiling gif v0.14.2
+   Compiling derive_more v0.99.20
+   Compiling addr2line v0.25.1
+   Compiling image-webp v0.2.4
+   Compiling ravif v0.13.0
+   Compiling zed-async-tar v0.5.0-zed
+   Compiling moxcms v0.8.1
+   Compiling blade-graphics v0.7.1
+   Compiling ctor v0.4.3
+   Compiling sha2 v0.10.9
+   Compiling core-video v0.4.3
+   Compiling tiny-skia v0.11.4
+   Compiling pathfinder_geometry v0.5.1
+   Compiling stacker v0.1.25
+   Compiling stacksafe-macro v0.1.4
+   Compiling object v0.37.3
+   Compiling gpui v0.2.2
+   Compiling dirs v5.0.1
+   Compiling core-text v21.0.0
+   Compiling lyon_algorithms v1.0.21
+   Compiling png v0.18.1
+   Compiling cocoa-foundation v0.2.0
+   Compiling qoi v0.4.1
+   Compiling gpui_derive_refineable v0.2.2
+   Compiling strum_macros v0.27.2
+   Compiling crossbeam-queue v0.3.14
+   Compiling static_assertions v1.1.0
+   Compiling sha1_smol v1.0.1
+   Compiling rustc-demangle v0.1.28
+   Compiling byteorder v1.5.0
+   Compiling atomic v0.5.3
+   Compiling float-ord v0.3.2
+   Compiling pollster v0.2.5
+   Compiling lazy_static v1.5.1
+   Compiling grid v0.18.0
+   Compiling svg_fmt v0.4.5
+   Compiling postage v0.5.0
+   Compiling zed-font-kit v0.14.1-zed
+   Compiling etagere v0.2.15
+   Compiling taffy v0.9.0
+   Compiling image v0.25.10
+   Compiling cocoa v0.26.0
+   Compiling gpui_refineable v0.2.2
+   Compiling uuid v1.18.1
+   Compiling lyon v1.0.19
+   Compiling resvg v0.45.1
+   Compiling stacksafe v0.1.4
+   Compiling strum v0.27.2
+   Compiling backtrace v0.3.76
+   Compiling gpui_http_client v0.2.2
+   Compiling blade-util v0.3.0
+   Compiling ureq-proto v0.5.3
+   Compiling gpui_semantic_version v0.2.2
+   Compiling gpui_sum_tree v0.2.2
+   Compiling gpui-macros v0.2.2
+   Compiling blade-macros v0.3.0
+   Compiling num_cpus v1.17.0
+   Compiling utf-8 v0.7.6
+   Compiling inventory v0.3.25
+   Compiling seahash v4.1.0
+   Compiling ureq v3.1.2
+   Compiling unicode-segmentation v1.12.0
+   Compiling eitri-operator v0.1.0 (/Users/felix.langbein/projects/eitri-check-dispatch/operator)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 50.34s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6, proc-macro-error2 v2.0.1
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running unittests src/main.rs (operator/target/debug/deps/eitri_operator-16b23e7f4fc03507)
+
+running 30 tests
+test client::artifact_tests::png_rejects_dimensions_malformed_chunks_and_compressed_metadata_before_decode ... ok
+test client::artifact_tests::artifact_provenance_requires_every_check_link ... ok
+test client::artifact_tests::artifact_acceptance_rejects_stale_boot_generation_case_expiry_and_disconnect ... ok
+test client::sse::tests::expired_deadline_and_cancellation_reject_already_buffered_lines ... ok
+test client::sse::tests::header_bytes_and_line_count_are_bounded ... ok
+test client::sse::tests::exact_header_byte_and_line_limits_and_http10_status_are_accepted ... ok
+test client::sse::tests::eof_partial_lines_invalid_utf8_and_overlong_wire_lines_are_rejected ... ok
+test client::sse::tests::request_route_bearer_and_numeric_loopback_host_are_validated ... ok
+test client::artifact_tests::sse_frames_reject_protocol_boot_snapshot_and_sequence_changes_before_applying ... ok
+test client::artifact_tests::native_png_decoder_accepts_exact_png_and_rejects_corrupt_pixel_data ... ok
+test client::sse::tests::malformed_status_headers_framing_and_encoding_are_rejected ... ok
+test input::tests::unicode_selection_multiline_and_ime_ranges ... ok
+test input::tests::native_handler_keyboard_clipboard_and_multiline ... ok
+test client::sse::tests::payload_limit_counts_json_bytes_not_data_prefix_or_crlf ... ok
+test client::artifact_tests::artifact_http_validates_exact_route_bearer_bytes_hash_status_type_and_length ... ok
+test client::artifact_tests::sse_generation_and_stop_checks_prevent_buffered_late_frames_from_applying ... ok
+test layout_tests::editor_wheel_down_does_not_scroll_detail ... ok
+test theme::tests::session_status_never_implies_a_passed_check ... ok
+test theme::tests::workshop_text_meets_wcag_aa_contrast ... ok
+test layout_tests::editor_wheel_up_does_not_scroll_detail ... ok
+test client::sse::tests::partial_body_line_trickle_cannot_restart_the_deadline ... ok
+test client::sse::tests::stalled_line_cancellation_finishes_within_the_line_deadline ... ok
+test layout_tests::history_wheel_down_does_not_scroll_detail ... ok
+test layout_tests::history_wheel_up_does_not_scroll_detail ... ok
+test layout_tests::selected_paused_detail_keeps_history_and_save_reachable ... ok
+test client::sse::tests::header_stall_byte_trickle_and_complete_header_lines_share_one_deadline ... ok
+test client::artifact_tests::artifact_body_timeout_does_not_wait_for_connection_close ... ok
+test client::artifact_tests::sse_heartbeats_survive_the_response_header_deadline ... ok
+test client::tests::real_http_sse_notes_reconnection_and_expired_history ... FAILED
+test client::sse::tests::healthy_heartbeats_outlive_both_production_deadlines_on_one_connection ... ok
+
+failures:
+
+---- client::tests::real_http_sse_notes_reconnection_and_expired_history stdout ----
+
+thread 'client::tests::real_http_sse_notes_reconnection_and_expired_history' (298030) panicked at src/client.rs:699:13:
+Timed out waiting for controller projection
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    client::tests::real_http_sse_notes_reconnection_and_expired_history
+
+test result: FAILED. 29 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 17.06s
+
+error: test failed, to rerun pass `--bin eitri-operator`

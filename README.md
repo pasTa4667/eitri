@@ -55,6 +55,8 @@ The [workspace library](docs/workspace.md) adds managed Git, guarded one-file ed
 
 The [frozen browser validator](docs/frozen-browser.md) is integrated as a callable module, without controller execution permissions. It checks recorded frozen bytes through the protected synthetic browser scenario. Its fast tests run in `npm run verify`; actual Docker acceptance remains an explicit separate command. The [integration record](docs/evidence/validator-integration/verification.md) records 311 Node, 30 Rust and 20 Docker tests passing. This is not M2 completion or real fixture validation.
 
+The [admitted check interface](docs/check-execution.md) now supplies scripted adapters with the actual action identity and remaining allowance. Non-behavior outcomes stop conservatively without fabricated failed checks or repair work. Final verification passes 382 Node and 30 Rust tests. Real browser reports and Docker dispatch remain unwired.
+
 ## Containment gate
 
 The trusted fixed-browser ARM64 Chromium probe passes with the explicitly approved syscall policy and 256-task limit. Managed worker and validation integration remain incomplete. See [the containment review](docs/containment-review.md) for scope and evidence. No privileged, `SYS_ADMIN`, host IPC/network, or no-sandbox workaround was used. Generated execution and live integrations remain disabled.

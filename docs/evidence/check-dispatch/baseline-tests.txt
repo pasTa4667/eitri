@@ -1,0 +1,32 @@
+✔ artifact reads stay passive across pagination, restart, missing directories, and serialized expiry (150.826542ms)
+✔ trusted check output rejects forged-ids without accepting evidence (18.018208ms)
+✔ trusted check output rejects live-result without accepting evidence (17.718458ms)
+✔ trusted check output rejects check-count without accepting evidence (17.89025ms)
+✔ trusted check output rejects case-count without accepting evidence (798.35325ms)
+✔ trusted check output rejects check-bytes without accepting evidence (44.57225ms)
+✔ trusted check output rejects case-bytes without accepting evidence (205.879083ms)
+✔ native manifests bind every evidence reference to its case, action, receipt, revision and configuration (45.792333ms)
+✔ pause during asynchronous auth is checked at the actual provider dispatch (34.332375ms)
+✔ auth waiting is bounded by the allowance and cannot dispatch after timeout (68.76325ms)
+✔ revision-bound scripted checks with stored artifacts fail closed at the expected phase (287.318209ms)
+✔ revision-bound scripted checks with stale artifacts fail closed at the expected phase (159.93875ms)
+✔ revision-bound scripted checks with missing artifacts fail closed at the expected phase (240.2365ms)
+✔ revision-bound scripted checks with corrupt artifacts fail closed at the expected phase (258.384041ms)
+✔ revision-bound scripted checks with fabricated artifacts fail closed at the expected phase (217.341ms)
+✔ revision-bound scripted checks with empty artifacts fail closed at the expected phase (186.973667ms)
+✔ initial failed validation permits two repair candidates, not two arbitrary check failures (103.100375ms)
+✔ SIGKILL during model conservatively preserves allowance and intent (314.357917ms)
+✔ SIGKILL during paused-model conservatively preserves allowance and intent (266.324708ms)
+✔ SIGKILL during tool conservatively preserves allowance and intent (246.065666ms)
+✔ SIGKILL during tool-receipt conservatively preserves allowance and intent (312.084416ms)
+✔ SIGKILL after-artifact-blobs preserves storage ordering without replay or invented checkpoint (270.233792ms)
+✔ SIGKILL after-artifact-manifests preserves storage ordering without replay or invented checkpoint (231.527375ms)
+✔ SIGKILL after-check-receipt preserves storage ordering without replay or invented checkpoint (242.080041ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 24
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2311.763542

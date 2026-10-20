@@ -1,0 +1,19 @@
+Final correction identity
+UTC 2026-10-20T07:30:18Z
+4e9642b4a3ebaafad62d41b756ef7a583019d3a4 3d09be691eb8e6328f522902afae8dac30a10dc9 Validate exact own check keys without delimiter serialization
+3d09be691eb8e6328f522902afae8dac30a10dc9 2646b909185a1cbb705dbb50f4d043884a2c23a6 Reproduce malformed check key admission and cover Retry epochs
+2646b909185a1cbb705dbb50f4d043884a2c23a6 c045082a84fa3d71f04bf620a12c31d6712d4d98 Bind check dispatch to admitted actions and preserve conservative stops
+
+Main HEAD and MERGE_HEAD
+c045082a84fa3d71f04bf620a12c31d6712d4d98
+4e9642b4a3ebaafad62d41b756ef7a583019d3a4
+
+Final source versus importing worktree
+exit=0
+
+Fix scope
+M	src/controller.ts
+M	test/check-dispatch.test.ts
+
+Red commit production comparison
+exit=0

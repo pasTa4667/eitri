@@ -1,0 +1,48 @@
+{"status":"needs-attention","reason":"assessment-required","phase":"implementation","failedCandidate":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","repairs":0,"checks":1,"artifacts":0}
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
+  {
+    artifacts: 0,
++   checks: 1,
++   failedCandidate: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
++   phase: 'implementation',
++   reason: 'assessment-required',
+-   checks: 0,
+-   failedCandidate: null,
+-   phase: 'triage',
+-   reason: 'invalid-check-execution',
+    repairs: 0,
+    status: 'needs-attention'
+  }
+
+    at file:///Users/felix.langbein/projects/eitri/docs/evidence/check-dispatch/reproduce-key-collision.mjs:75:10 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: {
+    status: 'needs-attention',
+    reason: 'assessment-required',
+    phase: 'implementation',
+    failedCandidate: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    repairs: 0,
+    checks: 1,
+    artifacts: 0
+  },
+  expected: {
+    status: 'needs-attention',
+    reason: 'invalid-check-execution',
+    phase: 'triage',
+    failedCandidate: null,
+    repairs: 0,
+    checks: 0,
+    artifacts: 0
+  },
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v26.5.0
