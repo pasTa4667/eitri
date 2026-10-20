@@ -8,6 +8,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { BACKGROUND_CONTEXT as context } from '@earendil-works/chord/context';
+import type { ConversationId, EntryDraft } from '@earendil-works/pi-durable';
 import {
   fauxProvider,
   fauxAssistantMessage,
@@ -589,6 +590,128 @@ for (const retry of [false, true])
       assert.equal((await native.root.submit(draft, context)).id, replay.id);
       assert.deepEqual(durableResults(), [entry]);
     }
+  });
+
+for (const retry of [false, true])
+  test(`staged action-result transaction ${retry ? 'rolls back after persisted Retry' : 'commits without Retry'}`, async (t) => {
+    const staged = gate(),
+      release = gate(),
+      retried = gate();
+    t.after(() => release.resolve());
+    let retryArmed = false;
+    let actionId = '';
+    let wrapped = false;
+    const metadata = NativeCase.prototype.metadata;
+    t.mock.method(NativeCase.prototype, 'metadata', async function (this: NativeCase) {
+      if (!wrapped) {
+        wrapped = true;
+        const commit = this.root.commit.bind(this.root);
+        t.mock.method(this.root, 'commit', (...[change, ctx]: Parameters<typeof commit>) =>
+          commit(async (tx) => {
+            const appendEntry = tx.appendEntry.bind(tx);
+            t.mock.method(
+              tx,
+              'appendEntry',
+              async (conversationId: ConversationId, draft: EntryDraft) => {
+                const entry = await appendEntry(conversationId, draft);
+                if (draft.kind === 'eitri.action-result') {
+                  actionId = (draft.data as { payload: { actionId: string } }).payload.actionId;
+                  staged.resolve();
+                  await release.promise;
+                }
+                return entry;
+              },
+            );
+            return change(tx);
+          }, ctx),
+        );
+      }
+      return metadata.call(this);
+    });
+    const f = await fixture(
+      t,
+      {
+        clock: () => 1000,
+        actionWakeup: scheduler().wakeup,
+        fault: (point) => {
+          if (retryArmed && point === 'after-command-commit') retried.resolve();
+        },
+      },
+      [
+        async () => {
+          const c = (await f.controller.snapshot()).cases[0];
+          return call('complete_assessment', {
+            phase: c.phase,
+            expectedControlVersion: c.version,
+            conclusion: 'attention',
+            reason: 'Confirmed before staged result',
+            evidenceIds: [],
+          });
+        },
+        fauxAssistantMessage('New attempt'),
+      ],
+    );
+    const id = await f.add();
+    await staged.promise;
+    const records = () => {
+      const db = new DatabaseSync(join(f.directory, 'cases', id, 'session.sqlite'), {
+        readOnly: true,
+      });
+      try {
+        return {
+          entries: db
+            .prepare(
+              "SELECT record FROM entries WHERE json_extract(record, '$.kind')='eitri.action-result'",
+            )
+            .all()
+            .map((row) => JSON.parse(String(row.record)).data.payload),
+          submissions: db
+            .prepare('SELECT record FROM submissions WHERE request_id=?')
+            .all(`action-result-${actionId}`)
+            .map((row) => JSON.parse(String(row.record)).status),
+        };
+      } finally {
+        db.close();
+      }
+    };
+    assert.deepEqual(records(), { entries: [], submissions: [] });
+    const stopped = (await f.controller.snapshot()).cases[0];
+    assert.equal(stopped.reason, 'Confirmed before staged result');
+    let retryCommand: Promise<unknown> | undefined;
+    if (retry) {
+      retryArmed = true;
+      retryCommand = f.controller.command({
+        requestId: randomUUID(),
+        expectedControlVersion: stopped.version,
+        intent: { type: 'retry', caseId: id, note: 'Revoke staged result before native commit' },
+      });
+      await retried.promise;
+      const newer = (await f.controller.snapshot()).cases[0];
+      assert.equal(newer.attempt, 2);
+      assert.equal(newer.status, 'queued');
+    }
+    release.resolve();
+    await retryCommand;
+    const view = await until(
+      () => f.view(id),
+      (v) =>
+        v.case.status === 'needs-attention' &&
+        (retry
+          ? v.case.attempt === 2 && v.case.reason === 'assessment-required'
+          : v.messages.some((m) => m.kind === 'eitri.action-result')),
+    );
+    assert.deepEqual(
+      records(),
+      retry
+        ? { entries: [], submissions: [] }
+        : {
+            entries: [{ actionId, result: null }],
+            submissions: ['done'],
+          },
+    );
+    assert.equal(view.case.usedMs, 0);
+    assert.equal(view.case.remainingMs, 600000);
+    assert.equal(f.faux.state.callCount, retry ? 2 : 1);
   });
 
 for (const kind of ['model', 'tool'] as const)
