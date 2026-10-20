@@ -273,7 +273,7 @@ for (const delta of [-1, 0, 1])
     }
   });
 
-test('post-staging budget shrink, unsafe and backward clocks roll back without poisoning', async (t) => {
+test('post-staging exhausted allowance, unsafe and backward clocks roll back without poisoning', async (t) => {
   const f = await consumptionFixture(t);
   const before = journalRows(f.directory);
   const originalNow = Date.now,
@@ -285,7 +285,7 @@ test('post-staging budget shrink, unsafe and backward clocks roll back without p
     DatabaseSync.prototype.exec = function (sql) {
       const value = Reflect.apply(originalExec, this, [sql]);
       if (sql === 'BEGIN IMMEDIATE') {
-        if (kind === 'budget') remaining = 99;
+        if (kind === 'budget') remaining = 0;
         if (kind === 'backward') now--;
         if (kind === 'invalid') now = NaN;
       }
@@ -798,7 +798,11 @@ test('preparation delays shorten admission and request allowance remains an uppe
     frozenBrowserRequest({ ...f.request, action: { ...f.request.action, actionId: randomUUID() } }),
     () => true,
   );
-  const result = await f.journal.consume(second, () => Number.MAX_SAFE_INTEGER, signal());
+  await assert.rejects(
+    f.journal.consume(second, () => Number.MAX_SAFE_INTEGER, signal()),
+    /invalid-frozen-browser-number/,
+  );
+  const result = await f.journal.consume(second, () => 120000, signal());
   assert.equal(result.run.deadline - result.run.admittedAt, 60000);
 });
 

@@ -1507,7 +1507,7 @@ export class FrozenBrowserValidator {
     controller: AbortController;
     promise: Promise<FrozenBrowserConsumption>;
   } | null = null;
-  private forwardGuards = new Map<AbortSignal, () => void>();
+  private forwardGuards = new Map<AbortSignal, () => number>();
   private reads = new Set<Promise<RecoveryInventory>>();
   private closing: Promise<void> | null = null;
   private broken = false;
@@ -2117,13 +2117,35 @@ export class FrozenBrowserValidator {
       lastWorkerTime = now;
       return now;
     };
+    const assertLive = () => {
+      if (this.closing || this.broken) fail('validator-closed');
+      controller.signal.throwIfAborted();
+    };
     const authority = () => {
-      if (this.closing || this.broken) fail('validator-closed');
-      controller.signal.throwIfAborted();
+      assertLive();
       const remaining = currentAllowance(sample);
-      if (this.closing || this.broken) fail('validator-closed');
-      controller.signal.throwIfAborted();
+      assertLive();
       return remaining;
+    };
+    let effectiveDeadline: number | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let executing = false;
+    const bound = (deadline: number) => {
+      const before = workerTime();
+      const remaining = authority();
+      const after = workerTime();
+      assertLive();
+      const previousDeadline = effectiveDeadline ?? deadline;
+      effectiveDeadline = Math.min(previousDeadline, deadline, integer(before + remaining));
+      if (after >= effectiveDeadline) fail('worker-authority-denied');
+      if (executing && (timer === undefined || effectiveDeadline < previousDeadline)) {
+        clearTimeout(timer);
+        timer = setTimeout(
+          () => controller.abort(new Error('allowance-exhausted')),
+          effectiveDeadline - after,
+        );
+      }
+      return effectiveDeadline;
     };
     const admission = this.journalQueue.then(async () => {
       authority();
@@ -2201,9 +2223,7 @@ export class FrozenBrowserValidator {
           .prepare('UPDATE runs SET body=?,digest=? WHERE id=?')
           .run(JSON.stringify(consumed), digest(consumed), index + 1);
         checkingAuthority = true;
-        const now = workerTime();
-        const remaining = authority();
-        if (now >= deadline || deadline - now > remaining) fail('worker-authority-denied');
+        bound(deadline);
         checkingAuthority = false;
         this.db.exec('COMMIT');
       } catch (error) {
@@ -2220,9 +2240,7 @@ export class FrozenBrowserValidator {
       this.records[index] = consumed;
       this.forwardGuards.set(controller.signal, () => {
         try {
-          const now = workerTime();
-          const remaining = authority();
-          if (now >= deadline || deadline - now > remaining) fail('worker-authority-denied');
+          return bound(deadline);
         } catch (error) {
           controller.abort(error);
           throw error;
@@ -2232,9 +2250,13 @@ export class FrozenBrowserValidator {
     });
     this.journalQueue = admission.catch(() => {});
     const promise = admission.then(async (run) => {
-      if (run.result.kind === 'pending') await this.executeAdmitted(run, controller);
-      authority();
-      this.forwardGuards.get(controller.signal)?.();
+      if (run.result.kind === 'pending') {
+        executing = true;
+        await this.executeAdmitted(run, controller);
+      }
+      const forward = this.forwardGuards.get(controller.signal);
+      if (forward) forward();
+      else authority();
       const observation = recoveryRun(run);
       if (observation.state === 'pending') return fail('validator-result-not-recorded');
       return { acceptanceId: accepted.acceptanceId, run: observation };
@@ -2243,6 +2265,7 @@ export class FrozenBrowserValidator {
     this.consumption = owned;
     void promise
       .finally(() => {
+        clearTimeout(timer);
         signal.removeEventListener('abort', abort);
         this.forwardGuards.delete(controller.signal);
         if (this.consumption === owned) this.consumption = null;
@@ -2306,7 +2329,7 @@ export class FrozenBrowserValidator {
     input?: Buffer,
     stdoutLimit = limits.control,
   ): Promise<ClientResult> {
-    if (signal) this.forwardGuards.get(signal)?.();
+    if (signal) deadline = Math.min(deadline, this.forwardGuards.get(signal)?.() ?? deadline);
     if (signal?.aborted) return Promise.resolve({ kind: 'lost', code: 'client-aborted' });
     if (deadline <= Date.now()) return Promise.resolve({ kind: 'lost', code: 'client-timeout' });
     return new Promise((resolveResult) => {
@@ -2323,7 +2346,9 @@ export class FrozenBrowserValidator {
         lost ??= code;
         child.kill('SIGKILL');
       };
-      const timer = setTimeout(() => stop('client-timeout'), Math.max(1, deadline - Date.now()));
+      const remaining = deadline - Date.now();
+      const timer = remaining > 0 ? setTimeout(() => stop('client-timeout'), remaining) : undefined;
+      if (remaining <= 0) stop('client-timeout');
       const abort = () => stop('client-aborted');
       signal?.addEventListener('abort', abort, { once: true });
       child.stdout.on('data', (bytes: Buffer) => {
@@ -2440,10 +2465,12 @@ export class FrozenBrowserValidator {
       controller.signal.throwIfAborted();
       this.forwardGuards.get(controller.signal)?.();
     };
-    const timer = setTimeout(
-      () => controller.abort(new Error('allowance-exhausted')),
-      Math.max(1, run.intent.deadline - Date.now()),
-    );
+    const timer = this.forwardGuards.has(controller.signal)
+      ? undefined
+      : setTimeout(
+          () => controller.abort(new Error('allowance-exhausted')),
+          Math.max(1, run.intent.deadline - Date.now()),
+        );
     const signal = controller.signal,
       deadline = run.intent.deadline;
     let reportEvidence: FrozenBrowserEvidence | null = null;
