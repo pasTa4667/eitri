@@ -97,6 +97,15 @@ export type FrozenBrowserConsumption = Readonly<{
   acceptanceId: string;
   run: RecoveryRun;
 }>;
+export type FrozenBrowserConsumedRunKey = Readonly<{
+  acceptanceId: string;
+  runId: string;
+  requestDigest: Sha256;
+}>;
+export type FrozenBrowserCleanupReconciliation = Readonly<{
+  acceptanceId: string;
+  run: Extract<RecoveryRun, { state: 'settled' }>;
+}>;
 export type FrozenBrowserConsumptionJournal = FrozenBrowserAcceptanceJournal &
   Readonly<{
     consume(
@@ -1583,7 +1592,135 @@ export class FrozenBrowserValidator {
       : undefined;
     if ((mode === 'acceptance-only' || mode === 'consumption-only') && !expectedIdentity)
       fail('worker-journal-identity-required');
+    const validator = await FrozenBrowserValidator.acquireJournal({
+      workspace,
+      directory: resolve(options.directory),
+      expectedIdentity,
+      storage: mode === undefined ? 'create-or-open' : 'existing-only',
+    });
+    try {
+      for (const run of validator.runs) {
+        if (run.result.kind === 'pending') {
+          run.result = {
+            kind: 'recorded',
+            outcome: { kind: 'uncertain', code: 'interrupted-run-no-replay' },
+            evidence: null,
+          };
+          await validator.save(run);
+        }
+        if (
+          mode === undefined &&
+          (run.result.kind === 'recorded' ||
+            (run.result.kind === 'settled' && run.result.report.cleanup.kind === 'incomplete'))
+        )
+          await validator.finalize(run);
+      }
+      if (mode === 'consumption-only')
+        return Object.freeze({
+          accept: (request: FrozenBrowserRequest, assertCurrentAuthority: () => true) =>
+            validator.accept(request, assertCurrentAuthority),
+          consume: (
+            acceptance: FrozenBrowserAcceptance,
+            sample: FrozenBrowserCurrentAllowance,
+            signal: AbortSignal,
+          ) => validator.consume(acceptance, sample, signal),
+          inventory: () => validator.inventory(),
+          close: () => validator.close(),
+        });
+      if (mode === 'acceptance-only')
+        return Object.freeze({
+          accept: (request: FrozenBrowserRequest, assertCurrentAuthority: () => true) =>
+            validator.accept(request, assertCurrentAuthority),
+          inventory: () => validator.inventory(),
+          close: () => validator.close(),
+        });
+      if (mode === 'journal-only')
+        return Object.freeze({
+          inventory: () => validator.inventory(),
+          close: () => validator.close(),
+        });
+      return validator;
+    } catch (error) {
+      await validator.close();
+      throw error;
+    }
+  }
+  /** Repairs one consumed run's historical cleanup without execution or evidence export. */
+  static async reconcileConsumed(
+    options: Readonly<{
+      workspace: WorkspaceStore;
+      directory: string;
+      expectedIdentity: FrozenBrowserJournalIdentity;
+      consumedRun: FrozenBrowserConsumedRunKey;
+    }>,
+  ): Promise<FrozenBrowserCleanupReconciliation> {
+    const workspace = options.workspace;
     const directory = resolve(options.directory);
+    if (options.expectedIdentity === undefined) fail('worker-journal-identity-required');
+    const expected = exact(admissionSnapshot(options.expectedIdentity), [
+      'ownerId',
+      'configurationDigest',
+    ]);
+    const expectedIdentity = {
+      ownerId: id(expected.ownerId),
+      configurationDigest: sha256(expected.configurationDigest),
+    };
+    const selected = exact(admissionSnapshot(options.consumedRun), [
+      'acceptanceId',
+      'runId',
+      'requestDigest',
+    ]);
+    const consumedRun: FrozenBrowserConsumedRunKey = {
+      acceptanceId: id(selected.acceptanceId),
+      runId: id(selected.runId),
+      requestDigest: sha256(selected.requestDigest),
+    };
+    const validator = await FrozenBrowserValidator.acquireJournal({
+      workspace,
+      directory,
+      expectedIdentity,
+      storage: 'existing-only',
+    });
+    try {
+      const record = validator.records.find(
+        (record) =>
+          record.kind === 'consumed-acceptance' &&
+          record.acceptance.acceptanceId === consumedRun.acceptanceId &&
+          record.acceptance.requestDigest === consumedRun.requestDigest &&
+          record.execution.run.intent.runId === consumedRun.runId &&
+          record.execution.run.intent.requestDigest === consumedRun.requestDigest,
+      );
+      if (!record || record.kind !== 'consumed-acceptance')
+        return fail('validator-identity-conflict');
+      await validator.guard();
+      const run = record.execution.run;
+      if (run.result.kind === 'pending') {
+        run.result = {
+          kind: 'recorded',
+          outcome: { kind: 'uncertain', code: 'interrupted-run-no-replay' },
+          evidence: null,
+        };
+        await validator.save(run);
+      }
+      if (
+        run.result.kind === 'recorded' ||
+        (run.result.kind === 'settled' && run.result.report.cleanup.kind === 'incomplete')
+      )
+        await validator.finalize(run);
+      const observation = recoveryRun(run);
+      if (observation.state !== 'settled') return fail('validator-result-not-recorded');
+      return { acceptanceId: record.acceptance.acceptanceId, run: observation };
+    } finally {
+      await validator.close();
+    }
+  }
+  private static async acquireJournal(options: {
+    workspace: WorkspaceStore;
+    directory: string;
+    expectedIdentity?: FrozenBrowserJournalIdentity;
+    storage: 'create-or-open' | 'existing-only';
+  }): Promise<FrozenBrowserValidator> {
+    const { workspace, directory, expectedIdentity, storage } = options;
     if (owners.has(directory)) fail('validator-already-open');
     owners.add(directory);
     let db: DatabaseSync | undefined;
@@ -1649,7 +1786,7 @@ export class FrozenBrowserValidator {
         markerPath = join(directory, 'owner.json'),
         policyPath = join(directory, 'seccomp.json');
       if (
-        (mode !== undefined || !fresh) &&
+        (storage === 'existing-only' || !fresh) &&
         (!names.includes('owner.json') ||
           !names.includes('journal.sqlite') ||
           !names.includes('seccomp.json'))
@@ -1829,46 +1966,6 @@ export class FrozenBrowserValidator {
         },
       );
       if (fresh) await validator.save();
-      for (const run of validator.runs) {
-        if (run.result.kind === 'pending') {
-          run.result = {
-            kind: 'recorded',
-            outcome: { kind: 'uncertain', code: 'interrupted-run-no-replay' },
-            evidence: null,
-          };
-          await validator.save(run);
-        }
-        if (
-          mode === undefined &&
-          (run.result.kind === 'recorded' ||
-            (run.result.kind === 'settled' && run.result.report.cleanup.kind === 'incomplete'))
-        )
-          await validator.finalize(run);
-      }
-      if (mode === 'consumption-only')
-        return Object.freeze({
-          accept: (request: FrozenBrowserRequest, assertCurrentAuthority: () => true) =>
-            validator.accept(request, assertCurrentAuthority),
-          consume: (
-            acceptance: FrozenBrowserAcceptance,
-            sample: FrozenBrowserCurrentAllowance,
-            signal: AbortSignal,
-          ) => validator.consume(acceptance, sample, signal),
-          inventory: () => validator.inventory(),
-          close: () => validator.close(),
-        });
-      if (mode === 'acceptance-only')
-        return Object.freeze({
-          accept: (request: FrozenBrowserRequest, assertCurrentAuthority: () => true) =>
-            validator.accept(request, assertCurrentAuthority),
-          inventory: () => validator.inventory(),
-          close: () => validator.close(),
-        });
-      if (mode === 'journal-only')
-        return Object.freeze({
-          inventory: () => validator.inventory(),
-          close: () => validator.close(),
-        });
       return validator;
     } catch (error) {
       db?.close();
