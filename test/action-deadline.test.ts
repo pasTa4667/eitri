@@ -5,6 +5,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { BACKGROUND_CONTEXT as context } from '@earendil-works/chord/context';
 import {
   fauxProvider,
   fauxAssistantMessage,
@@ -446,6 +449,125 @@ for (const transition of ['assessment', 'baseline-stop'] as const)
     assert.deepEqual((await f.view(id)).case, newer.case);
   });
 
+for (const retry of [false, true])
+  test(`queued action-result admission ${retry ? 'rejects persisted Retry revocation' : 'preserves confirmed completion without Retry'}`, async (t) => {
+    const blocked = gate(),
+      queued = gate(),
+      release = gate(),
+      retried = gate();
+    t.after(() => release.resolve());
+    let retryArmed = false;
+    let actionId = '';
+    let barrier: Promise<void> | undefined;
+    let native!: NativeCase;
+    const original = NativeCase.prototype.note;
+    t.mock.method(
+      NativeCase.prototype,
+      'note',
+      function (this: NativeCase, ...args: Parameters<typeof original>) {
+        if (args[1] === 'eitri.action-result' && !actionId) {
+          native = this;
+          actionId = (args[2] as { actionId: string }).actionId;
+          barrier = this.root.commit(async () => {
+            blocked.resolve();
+            await release.promise;
+          }, context);
+          const pending = original.apply(this, args);
+          queued.resolve();
+          return pending;
+        }
+        return original.apply(this, args);
+      },
+    );
+    const f = await fixture(
+      t,
+      {
+        clock: () => 1000,
+        actionWakeup: scheduler().wakeup,
+        fault: (point) => {
+          if (retryArmed && point === 'after-command-commit') retried.resolve();
+        },
+      },
+      [
+        async () => {
+          const c = (await f.controller.snapshot()).cases[0];
+          return call('complete_assessment', {
+            phase: c.phase,
+            expectedControlVersion: c.version,
+            conclusion: 'attention',
+            reason: 'Confirmed before native admission',
+            evidenceIds: [],
+          });
+        },
+        fauxAssistantMessage('New attempt'),
+      ],
+    );
+    const id = await f.add();
+    await queued.promise;
+    await blocked.promise;
+    assert.equal(native.host.current().reason, 'Confirmed before native admission');
+    const durableResults = () => {
+      const db = new DatabaseSync(join(f.directory, 'cases', id, 'session.sqlite'), {
+        readOnly: true,
+      });
+      try {
+        return db
+          .prepare(
+            "SELECT record FROM entries WHERE json_extract(record, '$.kind')='eitri.action-result'",
+          )
+          .all()
+          .map((row) => JSON.parse(String(row.record)));
+      } finally {
+        db.close();
+      }
+    };
+    assert.deepEqual(durableResults(), []);
+    let retryCommand: Promise<unknown> | undefined;
+    if (retry) {
+      retryArmed = true;
+      retryCommand = f.controller.command({
+        requestId: randomUUID(),
+        expectedControlVersion: native.host.current().version,
+        intent: { type: 'retry', caseId: id, note: 'Revoke queued old result' },
+      });
+      await retried.promise;
+      const db = new DatabaseSync(join(f.directory, 'catalogue.sqlite'), { readOnly: true });
+      try {
+        const c: Case = JSON.parse(
+          String(db.prepare('SELECT value FROM cases WHERE id=?').get(id)!.value),
+        );
+        assert.equal(c.status, 'queued');
+        assert.equal(c.attempt, 2);
+        assert.equal(c.usedMs, 0);
+        assert.equal(c.remainingMs, 600000);
+      } finally {
+        db.close();
+      }
+    }
+    release.resolve();
+    await barrier;
+    await retryCommand;
+    const view = await until(
+      () => f.view(id),
+      (v) =>
+        v.case.status === 'needs-attention' &&
+        (retry
+          ? v.case.attempt === 2 && v.case.reason === 'assessment-required'
+          : v.messages.some((m) => m.kind === 'eitri.action-result')),
+    );
+    assert.equal(
+      view.case.reason,
+      retry ? 'assessment-required' : 'Confirmed before native admission',
+    );
+    assert.equal(view.case.usedMs, 0);
+    assert.equal(view.case.remainingMs, 600000);
+    assert.deepEqual(
+      durableResults().map((entry) => entry.data.payload),
+      retry ? [] : [{ actionId, result: null }],
+    );
+    assert.equal(f.faux.state.callCount, retry ? 2 : 1);
+  });
+
 for (const kind of ['model', 'tool'] as const)
   for (const delta of [-1, 0, 1])
     test(`${kind} final retirement sample at D${delta < 0 ? delta : `+${delta}`} rejects late success`, async (t) => {
@@ -661,6 +783,30 @@ for (const delta of [-1, 0, 1])
     assert.equal(view.case.reason, delta < 0 ? 'assessment-required' : 'model-action-timed-out');
     assert.equal(f.faux.state.callCount, delta < 0 ? 1 : 0);
   });
+
+test('run_check invalid-clock subprocess detects deferred abort exceptions and hanging interruption controls', () => {
+  const helper = fileURLToPath(
+    new URL('./helpers/action-deadline-invalid-clock.ts', import.meta.url),
+  );
+  const run = (mode: string, timeout = 10000) =>
+    spawnSync(process.execPath, [helper, mode], {
+      encoding: 'utf8',
+      timeout,
+      env: { ...process.env, NODE_TEST_CONTEXT: undefined },
+    });
+  const uncaught = run('uncaught-control');
+  assert.equal(uncaught.error, undefined);
+  assert.equal(uncaught.status, 1);
+  assert.match(uncaught.stderr, /deferred-abort-positive-control/);
+  const hanging = run('hang-control', 1000);
+  assert.equal((hanging.error as NodeJS.ErrnoException).code, 'ETIMEDOUT');
+  assert.match(hanging.stdout, /hanging-interruption-positive-control/);
+  const actual = run('run-check');
+  assert.equal(actual.error, undefined);
+  assert.equal(actual.signal, null);
+  assert.equal(actual.status, 0, actual.stdout + actual.stderr);
+  assert.match(actual.stdout, /interruption settled with persistently invalid clock/);
+});
 
 for (const kind of ['model', 'tool'] as const)
   test(`${kind} asynchronous wakeup sampling errors abort only that lifetime`, async (t) => {
