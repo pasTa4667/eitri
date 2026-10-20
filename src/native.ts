@@ -19,7 +19,7 @@ import type { Conversation } from '@earendil-works/pi-durable';
 import { openNodeSqliteStorage } from '@earendil-works/pi-durable/storage/sqlite/node';
 import { randomUUID, createHash } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { phases, fail, uuid } from './domain.ts';
+import { phases, fail, uuid, ControlError } from './domain.ts';
 import type {
   Action,
   Artifact,
@@ -42,9 +42,12 @@ export type RuntimeHost = {
   current(): Case;
   admit(kind: 'model' | 'tool', limit: number): Action;
   permit(action: Action | undefined): void;
+  remaining(action: Action): number;
+  completed(action: Action): boolean;
+  wakeup(delayMs: number, callback: () => void): () => void;
   finish(action: Action, uncertain: boolean, failed?: boolean): void;
-  assess(assessment: Assessment, checks: Check[]): Promise<void>;
-  checkpoint(check: Check): void;
+  assess(action: Action, assessment: Assessment, checks: Check[]): Promise<void>;
+  checkpoint(action: Action, check: Check): void;
   probe(signal: AbortSignal): Promise<string>;
   check(action: Action, kind: Check['kind'], signal: AbortSignal): Promise<CheckExecution>;
   validateCheckAction(action: Action): void;
@@ -117,8 +120,7 @@ export class NativeCase {
     ) => {
       const action = host.admit('model', 120_000);
       const output = createAssistantMessageEventStream();
-      const abort = new AbortController();
-      const timeout = setTimeout(() => abort.abort(), action.limitMs);
+      const lifetime = actionLifetime(host, action);
       const errorMessage = (): AssistantMessage => ({
         role: 'assistant',
         content: [],
@@ -140,12 +142,14 @@ export class NativeCase {
       void (async () => {
         let finished = false;
         try {
-          const stream = scope.run(action, () => invoke(abort.signal));
+          lifetime.check();
+          const stream = scope.run(action, () => invoke(lifetime.signal));
           const iterator = stream[Symbol.asyncIterator]();
           while (true) {
-            const next = await abortable(iterator.next(), abort.signal);
+            const next = await abortable(iterator.next(), lifetime.signal);
             if (next.done) throw new Error('Stream ended without a terminal event');
             if (next.value.type === 'done' || next.value.type === 'error') {
+              lifetime.check();
               host.finish(action, false);
               finished = true;
               output.push(
@@ -160,11 +164,11 @@ export class NativeCase {
             host.changed();
           }
         } catch {
-          if (!finished) host.finish(action, abort.signal.aborted);
+          if (!finished) host.finish(action, lifetime.signal.aborted);
           output.push({ type: 'error', reason: 'error', error: errorMessage() });
           output.end();
         } finally {
-          clearTimeout(timeout);
+          lifetime.dispose();
         }
       })();
       return output;
@@ -202,18 +206,27 @@ export class NativeCase {
     let native: NativeCase;
     const tool = async <T>(operation: (signal: AbortSignal, action: Action) => Promise<T>) => {
       const action = host.admit('tool', 60_000);
-      const signal = AbortSignal.timeout(action.limitMs);
+      const lifetime = actionLifetime(host, action);
+      const signal = lifetime.signal;
       try {
+        lifetime.check();
         const result = await abortable(operation(signal, action), signal);
+        if (!host.completed(action)) lifetime.check();
         await native.note(`action-result-${action.id}`, 'eitri.action-result', {
           actionId: action.id,
           result: result ?? null,
         });
+        if (!host.completed(action)) lifetime.check();
         host.finish(action, false);
         return result;
       } catch (error) {
+        try {
+          if (!host.completed(action)) lifetime.check();
+        } catch {}
         host.finish(action, signal.aborted, true);
         throw error;
+      } finally {
+        lifetime.dispose();
       }
     };
     registry.install(
@@ -226,11 +239,11 @@ export class NativeCase {
               'Record a phase assessment. The controller validates evidence and decides the next state.',
             parameters: assessmentSchema,
             execute: async (args) => {
-              await tool(async () => {
+              await tool(async (_signal, action) => {
                 const assessment = args as Assessment;
                 await native.note(`assessment-${randomUUID()}`, 'eitri.assessment', assessment);
                 const { checks } = await native.metadata();
-                await host.assess(assessment, checks);
+                await host.assess(action, assessment, checks);
               });
               return {
                 output: [{ type: 'text', text: 'Assessment recorded.' }],
@@ -519,7 +532,7 @@ export class NativeCase {
     await this.note(`check-${check.id}`, 'eitri.check', check);
     this.host.fault('after-check-receipt');
     guard();
-    this.host.checkpoint(check);
+    this.host.checkpoint(action, check);
     return check;
   }
 
@@ -619,6 +632,54 @@ export class NativeCase {
   async close() {
     await this.harness.close(context);
   }
+}
+function actionLifetime(host: RuntimeHost, action: Action) {
+  const abort = new AbortController();
+  let cancel: (() => void) | undefined;
+  let disposed = false;
+  let generation = 0;
+  const clear = () => {
+    generation++;
+    cancel?.();
+    cancel = undefined;
+  };
+  const remaining = () => {
+    abort.signal.throwIfAborted();
+    try {
+      const value = host.remaining(action);
+      if (value <= 0) throw new ControlError('action-timed-out');
+      return value;
+    } catch (error) {
+      clear();
+      abort.abort(error);
+      throw error;
+    }
+  };
+  const arm = (delay: number) => {
+    clear();
+    const expected = generation;
+    cancel = host.wakeup(delay, () => {
+      if (disposed || expected !== generation || abort.signal.aborted) return;
+      try {
+        arm(remaining());
+      } catch {}
+    });
+  };
+  return {
+    signal: abort.signal,
+    check() {
+      const allowance = remaining();
+      arm(allowance);
+      const fresh = remaining();
+      if (fresh < allowance) arm(fresh);
+      remaining();
+    },
+    dispose() {
+      if (disposed) return;
+      disposed = true;
+      clear();
+    },
+  };
 }
 function combine(signal: AbortSignal, other?: AbortSignal) {
   return other ? AbortSignal.any([signal, other]) : signal;

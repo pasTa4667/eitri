@@ -301,7 +301,7 @@ for (const field of [
     const selected = await disposition(controller, command.caseId!, 'needs-attention');
     assert.equal(
       selected.case.reason,
-      field === 'expired' ? 'check-allowance-exhausted' : 'check-dispatch-denied',
+      field === 'expired' ? 'check-allowance-exhausted' : 'model-error-or-dispatch-denied',
     );
     assert.equal(selected.case.phase, 'triage');
     assert.equal(selected.case.repairs, 0);

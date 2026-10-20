@@ -35,6 +35,7 @@ import { NativeCase } from './native.ts';
 import { ArtifactStore, artifactLimits, validateOutput } from './artifacts.ts';
 import {
   ControlError,
+  actionDeadlineAt,
   digest,
   fail,
   issueKey,
@@ -109,6 +110,7 @@ type Options = {
   policy: { project: string; environment: string; repository: string };
   providerForCase(id: string): { provider: Provider; modelId: string };
   clock?: () => number;
+  actionWakeup?: (delayMs: number, callback: () => void) => () => void;
   capacity?: number;
   allowanceMs?: number;
   probe?: (id: string, signal: AbortSignal) => Promise<string>;
@@ -144,16 +146,22 @@ export class Controller {
   private workspaces?: WorkspaceStore;
   private workspaceQueue: Promise<unknown> = Promise.resolve();
   private sourceDigest?: string;
+  private completions = new WeakMap<
+    Action,
+    Pick<Case, 'epoch' | 'attempt' | 'status' | 'version'>
+  >();
 
   private constructor(directory: string, db: DatabaseSync, options: Options) {
     this.directory = directory;
     this.db = db;
     this.options = options;
+    let last = 0;
     this.clock = () => {
       const now = options.clock
         ? options.clock()
         : Math.floor(performance.timeOrigin + performance.now());
-      if (!Number.isSafeInteger(now) || now < 0) return fail('invalid-clock');
+      if (!Number.isSafeInteger(now) || now < last) return fail('invalid-clock');
+      last = now;
       return now;
     };
     this.allowance = Math.min(options.allowanceMs ?? 600_000, 600_000);
@@ -1044,9 +1052,16 @@ export class Controller {
             current: () => this.get(id),
             admit: (kind, limit) => this.admitAction(id, kind, limit),
             permit: (action) => this.permitAction(id, action),
+            remaining: (action) => this.actionAllowance(id, action).remainingMs,
+            completed: (action) => this.completedAction(action),
+            wakeup: (delay, callback) => {
+              if (this.options.actionWakeup) return this.options.actionWakeup(delay, callback);
+              const timer = setTimeout(callback, delay);
+              return () => clearTimeout(timer);
+            },
             finish: (action, uncertain, failed) => this.finishAction(action, uncertain, failed),
-            assess: (assessment, checks) => this.assess(id, assessment, checks),
-            checkpoint: (check) => this.checkpoint(id, check),
+            assess: (action, assessment, checks) => this.assess(id, action, assessment, checks),
+            checkpoint: (action, check) => this.checkpoint(id, action, check),
             probe: (signal) =>
               this.options.probe?.(id, signal) ??
               Promise.resolve('Scripted probe; no external effect.'),
@@ -1099,7 +1114,8 @@ export class Controller {
     if (this.closing || this.starting) fail('dispatch-disabled');
     return this.transaction(() => {
       const c = this.get(id);
-      this.charge(c);
+      const now = this.clock();
+      this.charge(c, now);
       if (
         c.status !== 'running' ||
         c.native !== 'ready' ||
@@ -1114,10 +1130,17 @@ export class Controller {
         caseId: id,
         epoch: c.epoch,
         kind,
-        startedAt: this.clock(),
-        limitMs: Math.max(1, Math.min(maxMs, c.remainingMs)),
+        startedAt: now,
+        limitMs: Math.min(maxMs, c.remainingMs),
         usedAtStart: c.usedMs,
       };
+      if (
+        !Number.isSafeInteger(maxMs) ||
+        maxMs < 1 ||
+        maxMs > (kind === 'model' ? 120_000 : 60_000)
+      )
+        fail('invalid-action-state');
+      actionDeadlineAt(action);
       this.save(c);
       this.db
         .prepare('INSERT INTO actions VALUES (?,?,?)')
@@ -1125,50 +1148,64 @@ export class Controller {
       return action;
     });
   }
-  private permitAction(id: string, action: Action | undefined) {
-    const admitted = action ?? fail('dispatch-disabled');
-    if (this.closing || this.starting) fail('dispatch-disabled');
-    this.transaction(() => {
-      const c = this.get(id);
-      this.charge(c);
-      this.save(c);
-      if (
-        c.status !== 'running' ||
-        c.epoch !== admitted.epoch ||
-        c.remainingMs <= 0 ||
-        !this.db.prepare('SELECT id FROM actions WHERE id=? AND case_id=?').get(admitted.id, id)
-      )
-        fail('dispatch-denied');
-    });
-  }
-  private checkAllowance(id: string, action: Action, signal?: AbortSignal) {
-    if (this.closing || this.starting) fail('check-dispatch-denied');
-    const now = this.clock();
+  private authenticatedAction(id: string, action: Action): Case | undefined {
     const c = this.get(id);
     const row = this.db
       .prepare('SELECT value FROM actions WHERE id=? AND case_id=?')
       .get(action.id, id);
-    const persisted: Action | undefined = row ? JSON.parse(String(row.value)) : undefined;
+    if (action.caseId !== id || !row || !isDeepStrictEqual(action, JSON.parse(String(row.value))))
+      return undefined;
+    return c;
+  }
+  private actionAllowance(id: string, action: Action) {
+    if (this.closing || this.starting) fail('check-dispatch-denied');
+    const c = this.authenticatedAction(id, action);
     if (
-      action.caseId !== id ||
-      action.kind !== 'tool' ||
+      !c ||
+      c.epoch !== action.epoch ||
       !['running', 'pause-requested'].includes(c.status) ||
       c.native !== 'ready' ||
-      !this.workspaceReady(id) ||
-      c.epoch !== action.epoch ||
-      !persisted ||
-      !isDeepStrictEqual(action, persisted)
+      !this.workspaceReady(id)
     )
-      fail('check-dispatch-denied');
+      return fail('check-dispatch-denied');
+    const deadlineAt = actionDeadlineAt(action);
+    const now = this.clock();
     this.charge(c, now);
     this.save(c);
-    const remainingMs = Math.min(
-      c.remainingMs,
-      action.limitMs - Math.max(0, now - action.startedAt),
-    );
-    if (remainingMs <= 0) fail('check-allowance-exhausted');
+    return { c, deadlineAt, remainingMs: Math.max(0, Math.min(c.remainingMs, deadlineAt - now)) };
+  }
+  private permitAction(id: string, action: Action | undefined) {
+    const admitted = action ?? fail('dispatch-disabled');
+    const { c, remainingMs } = this.actionAllowance(id, admitted);
+    if (c.status !== 'running' || remainingMs <= 0) fail('dispatch-denied');
+  }
+  private checkAllowance(id: string, action: Action, signal?: AbortSignal) {
+    if (action.kind !== 'tool') fail('check-dispatch-denied');
+    const allowance = this.actionAllowance(id, action);
+    if (allowance.remainingMs <= 0) fail('check-allowance-exhausted');
     if (signal?.aborted) fail('check-cancelled');
-    return { c, remainingMs };
+    return allowance;
+  }
+  private confirmCompletion(action: Action, c: Case) {
+    if (c.epoch !== action.epoch)
+      this.completions.set(action, {
+        epoch: c.epoch,
+        attempt: c.attempt,
+        status: c.status,
+        version: c.version,
+      });
+  }
+  private completedAction(action: Action): boolean {
+    const completion = this.completions.get(action);
+    if (!completion || this.closing) return false;
+    const c = this.authenticatedAction(action.caseId, action);
+    return (
+      !!c &&
+      c.epoch === completion.epoch &&
+      c.attempt === completion.attempt &&
+      c.status === completion.status &&
+      c.version === completion.version
+    );
   }
   private validateCheckAction(id: string, action: Action) {
     try {
@@ -1184,19 +1221,20 @@ export class Controller {
   }
   private stopCheck(id: string, action: Action, reason: string): CheckExecution {
     if (this.closing) return { type: 'uncertain' };
-    let stopped = false;
-    this.transaction(() => {
-      const c = this.get(id);
-      if (c.epoch !== action.epoch || !['running', 'pause-requested'].includes(c.status)) return;
+    const stopped = this.transaction(() => {
+      const c = this.authenticatedAction(id, action);
+      if (!c || c.epoch !== action.epoch || !['running', 'pause-requested'].includes(c.status))
+        return;
       if (c.status === 'pause-requested') {
         this.charge(c);
         c.reason = reason;
         c.version++;
       } else this.attention(c, reason);
       this.save(c);
-      stopped = true;
+      return c;
     });
     if (stopped) {
+      this.confirmCompletion(action, stopped);
       this.changed();
       this.options.fault?.('after-check-stop', id);
     }
@@ -1278,12 +1316,15 @@ export class Controller {
           });
         }
       }
+      const entry = this.checkAllowance(id, action, signal);
+      if (entry.c.status !== 'running') fail('check-dispatch-denied');
       request = Object.freeze({
         caseId: id,
         actionId: action.id,
         epoch: action.epoch,
         kind,
-        remainingMs,
+        deadlineAt: entry.deadlineAt,
+        remainingMs: entry.remainingMs,
         signal,
       });
     } catch (error) {
@@ -1304,6 +1345,10 @@ export class Controller {
         };
         signal.addEventListener('abort', abort, { once: true });
       });
+      if (signal.aborted) {
+        abort();
+        await interrupted;
+      }
       const result: unknown = await Promise.race([
         Promise.resolve(source ? callback(request, source) : callback(request)).finally(() => {
           live = false;
@@ -1345,15 +1390,21 @@ export class Controller {
     }
   }
   private finishAction(action: Action, uncertain: boolean, failed = false) {
-    this.transaction(() => {
-      if (!this.db.prepare('SELECT id FROM actions WHERE id=?').get(action.id)) return;
-      const c = this.get(action.caseId);
-      this.charge(c);
-      if (uncertain && c.status === 'running' && c.epoch === action.epoch)
+    const expired = this.transaction(() => {
+      const c = this.authenticatedAction(action.caseId, action);
+      if (!c) return;
+      const current = c.epoch === action.epoch;
+      let expired = false;
+      if (current) {
+        const now = this.clock();
+        this.charge(c, now);
+        expired = c.remainingMs <= 0 || now >= actionDeadlineAt(action);
+      }
+      if ((uncertain || expired) && c.status === 'running' && current)
         this.attention(c, `${action.kind}-action-timed-out`);
       else if (failed && c.status === 'running' && c.epoch === action.epoch)
         this.attention(c, `${action.kind}-action-failed`);
-      this.save(c);
+      if (current) this.save(c);
       if (
         this.options.offlineWorkspace &&
         this.db.prepare('SELECT action_id FROM action_sources WHERE action_id=?').get(action.id)
@@ -1380,13 +1431,17 @@ export class Controller {
         }
       }
       this.db.prepare('DELETE FROM actions WHERE id=?').run(action.id);
+      return expired;
     });
+    this.completions.delete(action);
     this.changed();
     this.options.fault?.(`after-${action.kind}-action-receipt`, action.caseId);
+    if (expired && !uncertain && !failed) fail('action-timed-out');
   }
-  private checkpoint(id: string, check: Check) {
-    this.transaction(() => {
-      const c = this.get(id);
+  private checkpoint(id: string, action: Action, check: Check) {
+    const committed = this.transaction(() => {
+      const { c } = this.checkAllowance(id, action);
+      if (check.actionId !== action.id || check.caseId !== id) fail('checkpoint-control-changed');
       if (!['running', 'pause-requested'].includes(c.status)) fail('checkpoint-control-changed');
       if (check.kind === 'baseline') {
         if (check.passed && (!c.base || c.base === check.candidate)) c.base = check.candidate;
@@ -1411,17 +1466,18 @@ export class Controller {
         }
       }
       this.save(c);
+      return c;
     });
+    this.confirmCompletion(action, committed);
   }
-  private async assess(id: string, a: Assessment, checks: Check[]) {
+  private async assess(id: string, action: Action, a: Assessment, checks: Check[]) {
     if (a.conclusion === 'progress') {
       const native = (await this.runtimes.get(id)) ?? fail('details-unavailable');
       for (const check of checks.filter((check) => a.evidenceIds.includes(check.id)))
         await native.verifyArtifacts(check);
     }
-    this.transaction(() => {
-      const c = this.get(id);
-      this.charge(c);
+    const committed = this.transaction(() => {
+      const { c } = this.checkAllowance(id, action);
       if (
         c.status !== 'running' ||
         c.phase !== a.phase ||
@@ -1480,12 +1536,15 @@ export class Controller {
         if (c.phase === 'publication' || c.phase === 'pr-created') fail('publication-not-enabled');
         c.phase = phases[phases.indexOf(c.phase) + 1];
         c.status = 'queued';
+        c.accountedAt = null;
         c.reason = '';
         c.epoch++;
         c.version++;
       }
       this.save(c);
+      return c;
     });
+    this.confirmCompletion(action, committed);
     this.changed();
   }
   private schedule() {
@@ -1543,6 +1602,7 @@ export class Controller {
       if (this.closing) return;
       this.transaction(() => {
         const latest = this.get(id);
+        if (latest.epoch !== epoch) return;
         this.charge(latest);
         if (latest.status === 'pause-requested') {
           latest.status = 'paused';
@@ -1564,6 +1624,7 @@ export class Controller {
       if (this.closing) return;
       this.transaction(() => {
         const c = this.get(id);
+        if (c.epoch !== epoch) return;
         if (c.status === 'pause-requested') {
           this.charge(c);
           c.status = 'paused';
@@ -1617,6 +1678,7 @@ export class Controller {
               action.usedAtStart > c.usedMs
             )
               fail('invalid-action-state');
+            actionDeadlineAt(action);
             const cost = Math.min(
               c.remainingMs,
               Math.max(0, action.limitMs - (c.usedMs - action.usedAtStart)),
@@ -1878,6 +1940,7 @@ function validateSourceAction(action: Readonly<Action>, c: Case) {
     action.usedAtStart > c.usedMs
   )
     fail('invalid-action-source');
+  actionDeadlineAt(action);
 }
 function parseCheckExecution(value: unknown, kind: Check['kind']): CheckExecution {
   if (!value || typeof value !== 'object' || Array.isArray(value))

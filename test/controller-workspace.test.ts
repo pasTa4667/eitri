@@ -638,15 +638,21 @@ for (const mode of [
     assert.equal(count, 1);
   });
 
-test('real allowance cancellation revokes a callback that has not returned', async (t) => {
+test('controller-clock allowance cancellation revokes a callback that has not returned', async (t) => {
   const entered = gate(),
     release = gate();
   t.after(() => release.resolve());
   let captured: OfflineActionWorkspace;
   let request: AdmittedCheckRequest;
+  let now = 1000;
+  let wake!: () => void;
   const f = await fixture(t, {
     allowanceMs: 2000,
-    clock: () => 1000,
+    clock: () => now,
+    actionWakeup: (_delay, callback) => {
+      wake = callback;
+      return () => {};
+    },
     check: async (input, source) => {
       captured = source!;
       request = input;
@@ -657,6 +663,8 @@ test('real allowance cancellation revokes a callback that has not returned', asy
   });
   const id = await f.add();
   await entered.promise;
+  now = 3000;
+  wake();
   const c = await f.parked(id);
   assert.equal(request!.signal.aborted, true);
   assert.equal(c.reason, 'check-allowance-exhausted');
@@ -689,7 +697,7 @@ for (const mode of ['foreign', 'stale'] as const)
     });
     const id = await f.add();
     const c = await f.parked(id);
-    assert.equal(c.reason, 'check-dispatch-denied');
+    assert.equal(c.reason, 'model-error-or-dispatch-denied');
     assert.equal(c.native, 'ready');
     assert.equal(callbacks, 0);
     assert.equal(rows(f.directory, 'action_sources').length, 0);

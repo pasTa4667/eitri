@@ -123,6 +123,7 @@ export type AdmittedCheckRequest = Readonly<{
   actionId: string;
   epoch: number;
   kind: Check['kind'];
+  deadlineAt: number;
   remainingMs: number;
   signal: AbortSignal;
 }>;
@@ -153,6 +154,18 @@ export type Action = {
   limitMs: number;
   usedAtStart: number;
 };
+export function actionDeadlineAt(action: Pick<Action, 'startedAt' | 'limitMs'>): number {
+  const deadlineAt = action.startedAt + action.limitMs;
+  if (
+    !Number.isSafeInteger(action.startedAt) ||
+    action.startedAt < 0 ||
+    !Number.isSafeInteger(action.limitMs) ||
+    action.limitMs < 1 ||
+    !Number.isSafeInteger(deadlineAt)
+  )
+    return fail('invalid-action-state');
+  return deadlineAt;
+}
 export class ControlError extends Error {
   code: string;
   constructor(code: string, message = code) {
