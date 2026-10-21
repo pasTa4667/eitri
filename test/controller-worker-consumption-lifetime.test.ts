@@ -8,7 +8,13 @@ import type { AdmittedCheckRequest } from '../src/domain.ts';
 import { FrozenBrowserValidator } from '../src/frozen-browser.ts';
 import type { FrozenBrowserConsumptionJournal } from '../src/frozen-browser.ts';
 import { WorkspaceStore } from '../src/workspace.ts';
-import { gate, journalRows, command, until } from './controller-worker-association-fixture.ts';
+import {
+  gate,
+  journalRows,
+  command,
+  until,
+  sources,
+} from './controller-worker-association-fixture.ts';
 import { consumptionController, gateClient } from './controller-worker-consumption-fixture.ts';
 
 for (const exit of ['return', 'throw', 'pause', 'interrupt'] as const)
@@ -48,6 +54,24 @@ for (const exit of ['return', 'throw', 'pause', 'interrupt'] as const)
       });
       const id = await f.add();
       await client.entered;
+      const originalSource = sources(f.directory)[0];
+      const committed = journalRows(f.journalDirectory).runs[0];
+      const retained = f.controller.inspectWorkerExecutionFacts(id, request.actionId);
+      assert.deepEqual(retained, {
+        state: 'retained',
+        provenance: 'controller-live-consumption',
+        intent: originalSource.workerIntent,
+        binding: { version: 1, ...f.options.offlineWorkerJournal },
+        facts: {
+          consumedRun: {
+            acceptanceId: committed.acceptance.acceptanceId,
+            runId: committed.execution.run.intent.runId,
+            requestDigest: originalSource.workerIntent.requestDigest,
+          },
+          admittedAt: committed.execution.run.intent.admittedAt,
+          deadline: committed.execution.run.intent.deadline,
+        },
+      });
       let pausing: Promise<unknown> | undefined;
       if (exit === 'pause') {
         pausing = f.controller.command(command({ type: 'pause', caseId: id }));
@@ -105,10 +129,20 @@ for (const exit of ['return', 'throw', 'pause', 'interrupt'] as const)
         assert.equal(callbacks, 1);
         assert.equal((await f.controller.snapshot()).cases[0].attempt, 2);
         await assert.rejects(scope.workerConsumption!.consume(), /action-source-revoked/);
+        assert.deepEqual(f.controller.inspectWorkerExecutionFacts(id, request.actionId), retained);
+        for (const nextSource of sources(f.directory).filter(
+          (source) => source.action.id !== request.actionId,
+        )) {
+          assert.deepEqual(f.controller.inspectWorkerExecutionFacts(id, nextSource.action.id), {
+            state: 'unavailable',
+            reason: 'not-retained-by-controller',
+          });
+        }
       }
       await f.close();
       await f.reopen();
       assert.deepEqual(journalRows(f.journalDirectory), rows);
+      assert.deepEqual(f.controller.inspectWorkerExecutionFacts(id, request.actionId), retained);
       assert.deepEqual((await f.state()).calls, []);
       await assert.rejects(scope.workerConsumption!.consume(), /action-source-revoked/);
     },

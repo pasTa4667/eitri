@@ -34,6 +34,7 @@ import type {
   RecoveryInventory,
   RecoveryRecord,
   FrozenBrowserAcceptance,
+  FrozenBrowserAdmissionObservation,
   FrozenBrowserConsumption,
   FrozenBrowserConsumedRunKey,
   FrozenBrowserConsumedReport,
@@ -532,9 +533,8 @@ export class Controller {
   }
   private retainWorkerExecutionFacts(
     capture: WorkerExecutionCapture,
-    accepted: FrozenBrowserAcceptance,
-    result: FrozenBrowserConsumption,
-  ): void {
+    observation: FrozenBrowserAdmissionObservation,
+  ): undefined {
     this.transaction(() => {
       const original = capture.source;
       const current = this.source(original.action.caseId, original.action.id);
@@ -549,7 +549,7 @@ export class Controller {
         !isDeepStrictEqual(current.workerIntent, original.workerIntent)
       )
         fail('worker-execution-facts-conflict');
-      const facts = validateLiveWorkerExecutionFacts(capture, accepted, result);
+      const facts = validateLiveWorkerExecutionFacts(capture, observation);
       if (current.workerExecutionFacts) {
         if (!isDeepStrictEqual(current.workerExecutionFacts, facts))
           fail('worker-execution-facts-conflict');
@@ -1589,7 +1589,7 @@ export class Controller {
                 assertCurrentAuthority();
                 return this.checkAllowance(id, action, signal).remainingMs;
               },
-              (accepted, result) => this.retainWorkerExecutionFacts(capture, accepted, result),
+              (observation) => this.retainWorkerExecutionFacts(capture, observation),
             );
             this.workerScopes.set(action, workerScope);
             source = Object.freeze({
@@ -2327,10 +2327,15 @@ function captureWorkerExecutionAnchor(
 }
 function validateLiveWorkerExecutionFacts(
   capture: WorkerExecutionCapture,
-  accepted: FrozenBrowserAcceptance,
-  result: FrozenBrowserConsumption,
+  observation: FrozenBrowserAdmissionObservation,
 ): WorkerExecutionFacts {
   try {
+    if (
+      !observation ||
+      !hasFields(observation, ['acceptance', 'consumedRun', 'admittedAt', 'deadline'])
+    )
+      return fail('invalid-worker-execution-facts');
+    const accepted = observation.acceptance;
     const { request, requestDigest } = capture.source.workerIntent;
     const { binding } = capture;
     if (
@@ -2354,44 +2359,14 @@ function validateLiveWorkerExecutionFacts(
       accepted.ownerId !== binding.ownerId ||
       ![accepted.acceptedAt, accepted.deadline].every((n) => Number.isSafeInteger(n) && n >= 0) ||
       accepted.deadline - accepted.acceptedAt !== request.allowanceMs ||
-      !result ||
-      !hasFields(result, ['acceptanceId', 'run']) ||
-      result.acceptanceId !== accepted.acceptanceId
-    )
-      return fail('invalid-worker-execution-facts');
-    const run = result.run;
-    if (
-      !run ||
-      !['recorded', 'settled'].includes(run.state) ||
-      !hasFields(run, [
-        'runId',
-        'request',
-        'requestDigest',
-        'configurationDigest',
-        'admittedAt',
-        'deadline',
-        'build',
-        'image',
-        'container',
-        'state',
-        'outcome',
-        'cleanup',
-      ]) ||
-      !isDeepStrictEqual(frozenBrowserRequest(run.request), request) ||
-      digest(run.request) !== requestDigest ||
-      run.requestDigest !== requestDigest ||
-      run.configurationDigest !== binding.configurationDigest
+      observation.consumedRun?.acceptanceId !== accepted.acceptanceId
     )
       return fail('invalid-worker-execution-facts');
     return validateRetainedWorkerExecutionFacts(
       {
-        consumedRun: {
-          acceptanceId: result.acceptanceId,
-          runId: run.runId,
-          requestDigest: run.requestDigest,
-        },
-        admittedAt: run.admittedAt,
-        deadline: run.deadline,
+        consumedRun: observation.consumedRun,
+        admittedAt: observation.admittedAt,
+        deadline: observation.deadline,
       },
       capture.source.workerIntent,
     );

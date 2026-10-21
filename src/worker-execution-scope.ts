@@ -1,16 +1,13 @@
+import { types } from 'node:util';
 import { ControlError } from './domain.ts';
 import type {
   FrozenBrowserAcceptance,
+  FrozenBrowserAdmissionObserver,
   FrozenBrowserConsumption,
   FrozenBrowserConsumptionJournal,
   FrozenBrowserRequest,
   RecoveryInventory,
 } from './frozen-browser.ts';
-
-type RetainConsumedExecution = (
-  acceptance: FrozenBrowserAcceptance,
-  consumption: FrozenBrowserConsumption,
-) => void;
 
 export class WorkerExecutionScope {
   private live = true;
@@ -26,13 +23,13 @@ export class WorkerExecutionScope {
   private request: FrozenBrowserRequest;
   private open: () => Promise<FrozenBrowserConsumptionJournal>;
   private sample: () => number;
-  private retain: RetainConsumedExecution;
+  private retain: FrozenBrowserAdmissionObserver;
 
   constructor(
     request: FrozenBrowserRequest,
     open: () => Promise<FrozenBrowserConsumptionJournal>,
     sample: () => number,
-    retain: RetainConsumedExecution,
+    retain: FrozenBrowserAdmissionObserver,
   ) {
     this.request = structuredClone(request);
     this.open = open;
@@ -76,6 +73,20 @@ export class WorkerExecutionScope {
       })(),
     );
 
+  private observeAdmission: FrozenBrowserAdmissionObserver = (observation) => {
+    try {
+      const result: unknown = this.retain(structuredClone(observation));
+      if (result !== undefined) {
+        if (types.isPromise(result)) void Promise.prototype.then.call(result, undefined, () => {});
+        throw new ControlError('invalid-worker-admission-observer');
+      }
+      return undefined;
+    } catch (error) {
+      this.retentionFailure ??= { error };
+      throw error;
+    }
+  };
+
   consume = (): Promise<FrozenBrowserConsumption> =>
     this.observe(
       (async () => {
@@ -89,13 +100,8 @@ export class WorkerExecutionScope {
             structuredClone(accepted),
             this.currentAllowance,
             this.signal,
+            this.observeAdmission,
           );
-          try {
-            this.retain(structuredClone(accepted), structuredClone(result));
-          } catch (error) {
-            this.retentionFailure = { error };
-            throw error;
-          }
           return result;
         })();
         const result = await this.consumption;

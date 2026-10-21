@@ -48,6 +48,17 @@ const result: FrozenBrowserConsumption = {
   },
 };
 
+const observation = {
+  acceptance: accepted,
+  consumedRun: {
+    acceptanceId: accepted.acceptanceId,
+    runId: result.run.runId,
+    requestDigest: accepted.requestDigest,
+  },
+  admittedAt: result.run.admittedAt,
+  deadline: result.run.deadline,
+};
+
 test('WorkerExecutionScope shares execution and synchronous detached retention before delivery', async () => {
   let consumes = 0;
   let closes = 0;
@@ -56,9 +67,11 @@ test('WorkerExecutionScope shares execution and synchronous detached retention b
     request,
     async () => ({
       accept: async () => structuredClone(accepted),
-      consume: async (a) => {
+      consume: async (a, _sample, _signal, observeAdmission) => {
         consumes++;
         Object.assign(a, { acceptanceId: 'mutated-by-journal' });
+        observeAdmission!(structuredClone(observation));
+        assert.deepEqual(retained, [observation]);
         return structuredClone(result);
       },
       inventory: async () => ({
@@ -73,15 +86,16 @@ test('WorkerExecutionScope shares execution and synchronous detached retention b
       },
     }),
     () => 1000,
-    (a, r) => {
-      retained.push(structuredClone({ a, r }));
-      Object.assign(a, { acceptanceId: 'mutated-by-retention' });
-      Object.assign(r.run, { deadline: 0 });
+    (value) => {
+      retained.push(structuredClone(value));
+      Object.assign(value.acceptance, { acceptanceId: 'mutated-by-retention' });
+      Object.assign(value, { deadline: 0 });
+      return undefined;
     },
   );
   await scope.accept();
   const results = await Promise.all([scope.consume(), scope.consume(), scope.consume()]);
-  assert.deepEqual(retained, [{ a: accepted, r: result }]);
+  assert.deepEqual(retained, [observation]);
   assert.deepEqual(results, [result, result, result]);
   Object.assign(results[0].run, { deadline: 1 });
   assert.deepEqual(await scope.consume(), result);
@@ -136,8 +150,9 @@ test('WorkerExecutionScope caches retention failure and closes its journal befor
     request,
     async () => ({
       accept: async () => structuredClone(accepted),
-      consume: async () => {
+      consume: async (_a, _sample, _signal, observeAdmission) => {
         consumes++;
+        observeAdmission!(structuredClone(observation));
         return structuredClone(result);
       },
       inventory: async () => ({

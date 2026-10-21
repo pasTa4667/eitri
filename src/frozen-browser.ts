@@ -102,6 +102,15 @@ export type FrozenBrowserConsumedRunKey = Readonly<{
   runId: string;
   requestDigest: Sha256;
 }>;
+export type FrozenBrowserAdmissionObservation = Readonly<{
+  acceptance: FrozenBrowserAcceptance;
+  consumedRun: FrozenBrowserConsumedRunKey;
+  admittedAt: number;
+  deadline: number;
+}>;
+export type FrozenBrowserAdmissionObserver = (
+  observation: FrozenBrowserAdmissionObservation,
+) => undefined;
 /** Detached retained history, not current authority or a live cleanup assertion. */
 export type FrozenBrowserConsumedReport = Readonly<{
   consumedRun: FrozenBrowserConsumedRunKey;
@@ -137,6 +146,7 @@ export type FrozenBrowserConsumptionJournal = FrozenBrowserAcceptanceJournal &
       acceptance: FrozenBrowserAcceptance,
       sampleCurrentAllowance: FrozenBrowserCurrentAllowance,
       signal: AbortSignal,
+      observeAdmission?: FrozenBrowserAdmissionObserver,
     ): Promise<FrozenBrowserConsumption>;
   }>;
 export type FrozenBrowserJournalIdentity = Readonly<{
@@ -288,6 +298,9 @@ type Result =
   | { kind: 'recorded'; outcome: FrozenBrowserOutcome; evidence: FrozenBrowserEvidence | null }
   | { kind: 'settled'; report: FrozenBrowserReport };
 type Run = { intent: Intent; ledger: Ledger; result: Result };
+type ConsumptionAdmission =
+  | Readonly<{ kind: 'new'; run: Run }>
+  | Readonly<{ kind: 'existing'; run: Run }>;
 type AcceptanceRecord = { kind: 'offline-acceptance' } & FrozenBrowserAcceptance;
 type ConsumedAcceptanceRecord = {
   kind: 'consumed-acceptance';
@@ -1774,7 +1787,8 @@ export class FrozenBrowserValidator {
             acceptance: FrozenBrowserAcceptance,
             sample: FrozenBrowserCurrentAllowance,
             signal: AbortSignal,
-          ) => validator.consume(acceptance, sample, signal),
+            observeAdmission?: FrozenBrowserAdmissionObserver,
+          ) => validator.consume(acceptance, sample, signal, observeAdmission),
           inventory: () => validator.inventory(),
           close: () => validator.close(),
         });
@@ -2437,6 +2451,7 @@ export class FrozenBrowserValidator {
     value: FrozenBrowserAcceptance,
     sample: FrozenBrowserCurrentAllowance,
     signal: AbortSignal,
+    observeAdmission?: FrozenBrowserAdmissionObserver,
   ): Promise<FrozenBrowserConsumption> {
     let accepted: FrozenBrowserAcceptance;
     try {
@@ -2461,6 +2476,8 @@ export class FrozenBrowserValidator {
       )
         fail('validator-identity-conflict');
       if (typeof sample !== 'function') fail('invalid-worker-authority-guard');
+      if (observeAdmission !== undefined && typeof observeAdmission !== 'function')
+        fail('invalid-worker-admission-observer');
       signal.throwIfAborted();
       currentAllowance(sample);
       if (this.consumption) {
@@ -2516,7 +2533,7 @@ export class FrozenBrowserValidator {
       }
       return effectiveDeadline;
     };
-    const admission = this.journalQueue.then(async () => {
+    const admission = this.journalQueue.then(async (): Promise<ConsumptionAdmission> => {
       authority();
       await this.guard();
       const record =
@@ -2526,7 +2543,7 @@ export class FrozenBrowserValidator {
         fail('validator-identity-conflict');
       if (record.kind === 'consumed-acceptance') {
         authority();
-        return record.execution.run;
+        return { kind: 'existing', run: record.execution.run };
       }
       if (this.runs.some((r) => r.ledger.build === 'unknown'))
         fail('validator-daemon-build-unresolved');
@@ -2607,6 +2624,25 @@ export class FrozenBrowserValidator {
       }
       this.meta = meta;
       this.records[index] = consumed;
+      if (observeAdmission) {
+        const result: unknown = observeAdmission(
+          structuredClone({
+            acceptance: accepted,
+            consumedRun: {
+              acceptanceId: accepted.acceptanceId,
+              runId,
+              requestDigest: accepted.requestDigest,
+            },
+            admittedAt,
+            deadline,
+          }),
+        );
+        if (result !== undefined) {
+          if (types.isPromise(result))
+            void Promise.prototype.then.call(result, undefined, () => {});
+          fail('invalid-worker-admission-observer');
+        }
+      }
       this.forwardGuards.set(controller.signal, () => {
         try {
           return bound(deadline);
@@ -2615,11 +2651,12 @@ export class FrozenBrowserValidator {
           throw error;
         }
       });
-      return run;
+      return { kind: 'new', run };
     });
     this.journalQueue = admission.catch(() => {});
-    const promise = admission.then(async (run) => {
-      if (run.result.kind === 'pending') {
+    const promise = admission.then(async ({ kind, run }) => {
+      if (kind === 'existing' && run.result.kind === 'pending') fail('validator-unsettled');
+      if (kind === 'new') {
         executing = true;
         await this.executeAdmitted(run, controller);
       }

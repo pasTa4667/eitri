@@ -5,6 +5,8 @@ import { join } from 'node:path';
 import { FrozenBrowserValidator } from '../src/frozen-browser.ts';
 import type {
   FrozenBrowserAcceptance,
+  FrozenBrowserAdmissionObservation,
+  FrozenBrowserAdmissionObserver,
   FrozenBrowserConsumption,
   FrozenBrowserConsumptionJournal,
 } from '../src/frozen-browser.ts';
@@ -132,6 +134,21 @@ function liveResult(accepted: FrozenBrowserAcceptance): FrozenBrowserConsumption
     },
   };
 }
+function liveObservation(
+  acceptance: FrozenBrowserAcceptance,
+  result = liveResult(acceptance),
+): FrozenBrowserAdmissionObservation {
+  return {
+    acceptance: structuredClone(acceptance),
+    consumedRun: {
+      acceptanceId: result.acceptanceId,
+      runId: result.run.runId,
+      requestDigest: result.run.requestDigest,
+    },
+    admittedAt: result.run.admittedAt,
+    deadline: result.run.deadline,
+  };
+}
 function scriptedConsumption(
   t: test.TestContext,
   consume: (accepted: FrozenBrowserAcceptance) => Promise<FrozenBrowserConsumption>,
@@ -147,9 +164,17 @@ function scriptedConsumption(
       const held = journal as unknown as FrozenBrowserConsumptionJournal;
       return Object.freeze({
         ...held,
-        consume: async (accepted: FrozenBrowserAcceptance) => {
+        consume: async (
+          accepted: FrozenBrowserAcceptance,
+          _sample: unknown,
+          _signal: unknown,
+          observeAdmission: FrozenBrowserAdmissionObserver,
+        ) => {
           state.consumes++;
-          return consume(accepted);
+          const original = structuredClone(accepted);
+          const result = await consume(accepted);
+          observeAdmission(liveObservation(original, result));
+          return result;
         },
         close: async () => {
           state.closes++;
@@ -282,16 +307,57 @@ test('transactional append validates live identity and timing, accepts exact rep
   await ready.promise;
   const source = sources(f.directory)[0];
   const capture = { source, binding: { version: 1, ...f.options.offlineWorkerJournal } };
-  const result = liveResult(accepted);
-  const append = (a = accepted, r = result) =>
+  const observation = liveObservation(accepted);
+  const append = (value = observation) =>
     Reflect.apply(Reflect.get(f.controller, 'retainWorkerExecutionFacts'), f.controller, [
       capture,
-      a,
-      r,
+      value,
     ]);
   const changes: Array<
-    [string, (a: FrozenBrowserAcceptance, r: FrozenBrowserConsumption) => void]
+    [string, (a: FrozenBrowserAcceptance, value: FrozenBrowserAdmissionObservation) => void]
   > = [
+    [
+      'missing envelope endpoint',
+      (_a, value) => {
+        Reflect.deleteProperty(value, 'deadline');
+      },
+    ],
+    [
+      'missing acceptance',
+      (_a, value) => {
+        Reflect.deleteProperty(value, 'acceptance');
+      },
+    ],
+    [
+      'null acceptance',
+      (_a, value) => {
+        Reflect.set(value, 'acceptance', null);
+      },
+    ],
+    [
+      'missing selector',
+      (_a, value) => {
+        Reflect.deleteProperty(value, 'consumedRun');
+      },
+    ],
+    [
+      'null selector',
+      (_a, value) => {
+        Reflect.set(value, 'consumedRun', null);
+      },
+    ],
+    [
+      'missing selector field',
+      (_a, value) => {
+        Reflect.deleteProperty(value.consumedRun, 'runId');
+      },
+    ],
+    [
+      'missing acceptance field',
+      (a) => {
+        Reflect.deleteProperty(a, 'acceptedAt');
+      },
+    ],
     ['acceptance selector', (a) => Object.assign(a, { acceptanceId: 'BAD' })],
     [
       'acceptance uppercase ID',
@@ -310,29 +376,27 @@ test('transactional append validates live identity and timing, accepts exact rep
     ['acceptance extra key', (a) => Object.assign(a, { extra: 1 })],
     [
       'returned acceptance',
-      (_a, r) => Object.assign(r, { acceptanceId: '66666666-6666-4666-8666-666666666666' }),
+      (_a, r) =>
+        Object.assign(r.consumedRun, { acceptanceId: '66666666-6666-4666-8666-666666666666' }),
     ],
     ['result extra key', (_a, r) => Object.assign(r, { extra: 1 })],
-    ['pending return', (_a, r) => Object.assign(r.run, { state: 'pending' })],
-    ['run extra key', (_a, r) => Object.assign(r.run, { extra: 1 })],
-    ['run selector', (_a, r) => Object.assign(r.run, { runId: 'bad' })],
-    ['run request', (_a, r) => Object.assign(r.run.request, { allowanceMs: 59999 })],
-    ['run digest', (_a, r) => Object.assign(r.run, { requestDigest: 'f'.repeat(64) })],
-    ['run configuration', (_a, r) => Object.assign(r.run, { configurationDigest: 'f'.repeat(64) })],
-    ['negative actual start', (_a, r) => Object.assign(r.run, { admittedAt: -1 })],
-    ['fractional actual start', (_a, r) => Object.assign(r.run, { admittedAt: 1.5 })],
-    ['zero interval', (_a, r) => Object.assign(r.run, { deadline: r.run.admittedAt })],
+    ['selector extra key', (_a, r) => Object.assign(r.consumedRun, { extra: 1 })],
+    ['run selector', (_a, r) => Object.assign(r.consumedRun, { runId: 'bad' })],
     [
-      'excess actual interval',
-      (_a, r) => Object.assign(r.run, { deadline: r.run.admittedAt + 60001 }),
+      'uppercase run selector',
+      (_a, r) => Object.assign(r.consumedRun, { runId: 'AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA' }),
     ],
-    ['unsafe endpoint', (_a, r) => Object.assign(r.run, { deadline: Number.MAX_SAFE_INTEGER + 1 })],
+    ['run digest', (_a, r) => Object.assign(r.consumedRun, { requestDigest: 'f'.repeat(64) })],
+    ['negative actual start', (_a, r) => Object.assign(r, { admittedAt: -1 })],
+    ['fractional actual start', (_a, r) => Object.assign(r, { admittedAt: 1.5 })],
+    ['zero interval', (_a, r) => Object.assign(r, { deadline: r.admittedAt })],
+    ['excess actual interval', (_a, r) => Object.assign(r, { deadline: r.admittedAt + 60001 })],
+    ['unsafe endpoint', (_a, r) => Object.assign(r, { deadline: Number.MAX_SAFE_INTEGER + 1 })],
   ];
   for (const [name, change] of changes) {
-    const a = structuredClone(accepted);
-    const r = structuredClone(result);
-    change(a, r);
-    assert.throws(() => append(a, r), /invalid-worker-execution-facts/, name);
+    const value = structuredClone(observation);
+    change(value.acceptance, value);
+    assert.throws(() => append(value), /invalid-worker-execution-facts/, name);
     assert.deepEqual(sources(f.directory)[0], source, name);
   }
   const db = new DatabaseSync(join(f.directory, 'catalogue.sqlite'));
@@ -345,6 +409,32 @@ test('transactional append validates live identity and timing, accepts exact rep
   db.prepare("UPDATE metadata SET value=? WHERE key='offline_worker_journal'").run(
     JSON.stringify(binding),
   );
+  for (const change of [
+    (s: typeof source) => {
+      s.action.startedAt++;
+    },
+    (s: typeof source) => {
+      s.kind = s.kind === 'baseline' ? 'browser' : 'baseline';
+    },
+    (s: typeof source) => {
+      s.frozen.revision = 'f'.repeat(40);
+    },
+    (s: typeof source) => {
+      s.workerIntent.request.allowanceMs--;
+    },
+    (s: typeof source) => {
+      s.state = 'selecting';
+    },
+  ]) {
+    const changed = structuredClone(source);
+    change(changed);
+    updateSource(f.directory, changed);
+    assert.throws(
+      () => append(),
+      /worker-execution-facts-conflict|invalid-action-source|invalid-worker-intent/,
+    );
+    assert.deepEqual(sources(f.directory)[0], changed);
+  }
   const { workerIntent: _intent, ...noIntent } = source;
   updateSource(f.directory, noIntent);
   assert.throws(() => append(), /worker-execution-facts-conflict/);
@@ -364,9 +454,12 @@ test('transactional append validates live identity and timing, accepts exact rep
     "CREATE TRIGGER reject_rewrite BEFORE UPDATE ON action_sources BEGIN SELECT RAISE(ABORT, 'unexpected-rewrite'); END",
   );
   append();
-  const conflicting = structuredClone(result);
-  Object.assign(conflicting.run, { runId: '66666666-6666-4666-8666-666666666666' });
-  assert.throws(() => append(accepted, conflicting), /worker-execution-facts-conflict/);
+  const conflicting = structuredClone(observation);
+  Object.assign(conflicting.consumedRun, { runId: '66666666-6666-4666-8666-666666666666' });
+  assert.throws(() => append(conflicting), /worker-execution-facts-conflict/);
+  const conflictingInterval = structuredClone(observation);
+  Object.assign(conflictingInterval, { deadline: observation.deadline + 1 });
+  assert.throws(() => append(conflictingInterval), /worker-execution-facts-conflict/);
   assert.deepEqual(f.controller.inspectWorkerExecutionFacts(id, source.action.id), retained);
   db.exec('DROP TRIGGER reject_rewrite');
   finish.resolve();
