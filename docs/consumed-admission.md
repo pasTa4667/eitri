@@ -28,8 +28,26 @@ Observed outcomes require evidence and must finish by the actual deadline. Finis
 
 Ordinary `admitFrozenBrowserReport` still requires full-allowance timing. Neither function rewrites requests, digests or provenance. They share the private evidence validation and classification implementation.
 
+## Controller query
+
+`Controller.inspectWorkerConsumedAdmission(caseId, actionId)` returns `WorkerConsumedAdmissionObservation` from one immediate `inspectWorkerConsumedHistory` call. The historical query captures original intent and independently retained pins before queueing acquisition. The controller builds the expectation only from those pins and passes `history.value` to the converter after historical closure.
+
+Nonconsumed states remain unchanged. Consumed pending or recorded history returns `conversion.state: 'not-settled'`, even when pins are unavailable. Settled history without retained pins returns `independent-pins-unavailable`. Settled history with retained pins returns `converted` with either a behavioral or blocked admission. Invalid conversion claims reject rather than becoming absence or behavioral failure.
+
+TypeScript callers narrow the pins' own discriminant before reading an unavailable reason.
+
+```ts
+const observed = await controller.inspectWorkerConsumedAdmission(caseId, actionId);
+if (observed.state === 'consumed') {
+	const pins = observed.independentExecutionPins;
+	if (pins.state === 'unavailable') console.log(pins.reason);
+}
+```
+
+The outer inspection promise is tracked synchronously. Controller close drains accepted inspections through conversion and rejects new calls. The [controller history reference](controller-worker-history.md#controller-consumed-report-conversion) describes attribution, busy scopes, and error propagation.
+
 ## Scope
 
 Conversion performs no journal acquisition, writes, execution, cleanup or clock reads. It establishes consistency, not authorship, containment, executed cleanup, current controller authority or daemon quiescence. It does not create a native check receipt.
 
-The [controller facts query](controller-worker-history.md#controller-retained-live-execution-facts) exposes detached original intent, pinned journal binding, consumed-run identity and actual timing retained from successful live consumption returns. The historical query projects the same controller-owned pins separately from journal-derived history. Missing facts remain unavailable and are never backfilled from history. Coverage excludes worker-side final-check rejection and crashes before controller commit. Neither controller query invokes this converter or admits a native check. Complete admission capture, production wiring, native real-check admission, actual fixture validation and M2 acceptance remain separate work. This converter does not enable live integrations.
+The [controller facts query](controller-worker-history.md#controller-retained-live-execution-facts) exposes detached original intent, pinned journal binding, consumed-run identity and actual timing retained from successful live consumption returns. The historical query projects the same controller-owned pins separately from journal-derived history. Missing facts remain unavailable and are never backfilled from history. Coverage excludes worker-side final-check rejection and crashes before controller commit. The raw history and facts queries do not invoke this converter. The consumed-admission query invokes it without admitting a native check. Complete admission capture, production wiring, native real-check admission, actual fixture validation and M2 acceptance remain separate work. This converter does not enable live integrations.

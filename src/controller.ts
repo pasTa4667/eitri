@@ -24,7 +24,11 @@ import type {
   FrozenRevision,
   WorkspaceCheckpoint,
 } from './workspace.ts';
-import { FrozenBrowserValidator, frozenBrowserRequest } from './frozen-browser.ts';
+import {
+  FrozenBrowserValidator,
+  frozenBrowserRequest,
+  admitFrozenBrowserConsumedReport,
+} from './frozen-browser.ts';
 import type {
   FrozenBrowserRequest,
   RecoveryInventory,
@@ -33,6 +37,8 @@ import type {
   FrozenBrowserConsumption,
   FrozenBrowserConsumedRunKey,
   FrozenBrowserConsumedReport,
+  FrozenBrowserConsumedExpectation,
+  FrozenBrowserAdmission,
   HistoricalWorkerSelection,
 } from './frozen-browser.ts';
 import { NativeCase } from './native.ts';
@@ -130,6 +136,26 @@ export type WorkerConsumedHistoryObservation =
       history: Historical<FrozenBrowserConsumedReport>;
       independentExecutionPins: IndependentExecutionPins;
     }>;
+type ConsumedObservation = Extract<WorkerConsumedHistoryObservation, { state: 'consumed' }>;
+type SettledHistory = Extract<FrozenBrowserConsumedReport, { state: 'settled' }>;
+type UnsettledHistory = Exclude<FrozenBrowserConsumedReport, { state: 'settled' }>;
+type RetainedPins = Extract<IndependentExecutionPins, { state: 'retained' }>;
+type UnavailablePins = Extract<IndependentExecutionPins, { state: 'unavailable' }>;
+type ConsumedWith<H extends FrozenBrowserConsumedReport, P extends IndependentExecutionPins> = Omit<
+  ConsumedObservation,
+  'history' | 'independentExecutionPins'
+> &
+  Readonly<{ history: Historical<H>; independentExecutionPins: P }>;
+export type WorkerConsumedAdmissionObservation =
+  | Exclude<WorkerConsumedHistoryObservation, { state: 'consumed' }>
+  | (ConsumedWith<UnsettledHistory, IndependentExecutionPins> &
+      Readonly<{ conversion: Readonly<{ state: 'not-settled' }> }>)
+  | (ConsumedWith<SettledHistory, UnavailablePins> &
+      Readonly<{ conversion: Readonly<{ state: 'independent-pins-unavailable' }> }>)
+  | (ConsumedWith<SettledHistory, RetainedPins> &
+      Readonly<{
+        conversion: Readonly<{ state: 'converted'; admission: FrozenBrowserAdmission }>;
+      }>);
 type WorkspaceBinding = Readonly<{
   caseId: string;
   repositoryId: RepositoryId;
@@ -562,6 +588,17 @@ export class Controller {
     actionId: string,
   ): Promise<WorkerConsumedHistoryObservation> {
     const inspection = this.readWorkerConsumedHistory(id, actionId);
+    this.workerInspections.add(inspection);
+    void inspection.finally(() => this.workerInspections.delete(inspection)).catch(() => {});
+    return inspection;
+  }
+  /** Offline scenario observations, never a receipt or current authority. */
+  inspectWorkerConsumedAdmission(
+    id: string,
+    actionId: string,
+  ): Promise<WorkerConsumedAdmissionObservation> {
+    const history = this.inspectWorkerConsumedHistory(id, actionId);
+    const inspection = history.then(consumedAdmissionObservation);
     this.workerInspections.add(inspection);
     void inspection.finally(() => this.workerInspections.delete(inspection)).catch(() => {});
     return inspection;
@@ -2221,6 +2258,51 @@ export class Controller {
     if (workspaceClosed.some((result) => result.status === 'rejected'))
       fail('workspace-close-failed');
   }
+}
+
+function consumedAdmissionObservation(
+  observed: WorkerConsumedHistoryObservation,
+): WorkerConsumedAdmissionObservation {
+  if (observed.state !== 'consumed') return observed;
+  const { history, independentExecutionPins } = observed;
+  if (history.value.state !== 'settled')
+    return {
+      ...observed,
+      history: { ...history, value: history.value },
+      conversion: { state: 'not-settled' },
+    };
+  const settledHistory = { ...history, value: history.value };
+  if (independentExecutionPins.state === 'unavailable')
+    return {
+      ...observed,
+      history: settledHistory,
+      independentExecutionPins,
+      conversion: { state: 'independent-pins-unavailable' },
+    };
+  return {
+    ...observed,
+    history: settledHistory,
+    independentExecutionPins,
+    conversion: {
+      state: 'converted',
+      admission: admitFrozenBrowserConsumedReport(
+        consumedExpectation(independentExecutionPins),
+        history.value,
+      ),
+    },
+  };
+}
+function consumedExpectation(pins: RetainedPins): FrozenBrowserConsumedExpectation {
+  const request = pins.intent.request;
+  const expected = {
+    configurationDigest: sha256(pins.binding.configurationDigest),
+    consumedRun: pins.facts.consumedRun,
+    admittedAt: pins.facts.admittedAt,
+    deadline: pins.facts.deadline,
+  };
+  return request.role === 'baseline'
+    ? { ...expected, kind: 'baseline', request: { ...request, role: request.role } }
+    : { ...expected, kind: 'browser', request: { ...request, role: request.role } };
 }
 
 function sourceAuthorityValue(source: ActionSource): ActionSourceAuthority {

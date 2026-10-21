@@ -54,8 +54,22 @@ The controller holds its workspace queue through historical acquisition, selecti
 
 Accepted reads are tracked through completion. Controller close drains them before closing catalogue and workspace storage. Reads admitted before close may finish. New reads reject after closing begins. Repeated close shares completion.
 
+## Controller consumed-report conversion
+
+`Controller.inspectWorkerConsumedAdmission(caseId, actionId)` composes the historical query with `admitFrozenBrowserConsumedReport`. Its exported `WorkerConsumedAdmissionObservation` preserves nonconsumed members unchanged. Consumed members add a correlated `conversion` member.
+
+- `not-settled` contains pending or recorded history. This state takes precedence even when independent pins are unavailable.
+- `independent-pins-unavailable` contains settled history without controller-retained facts. The original unavailable reason remains visible.
+- `converted` contains settled history, retained pins, and a `FrozenBrowserAdmission`. Both behavioral and blocked results return normally.
+
+The expectation uses only the captured independent pins' original intent, binding configuration digest, consumed-run selector, and actual interval. The original request role selects baseline or browser conversion. The converter receives `history.value`, not the provenance wrapper. Original allowance and attribution survive later edits, Retry, and controller reopening. The query does not backfill unavailable pins or consult current authority.
+
+The historical call captures inputs immediately, before queued acquisition. Conversion runs after successful historical guard and closure, outside the workspace queue. The controller synchronously tracks the outer promise through projection, so immediate close drains accepted conversion work too. Busy-scope rejection and historical validation errors propagate unchanged. Converter inconsistencies reject with `invalid-frozen-browser-admission`. Inspection rejection does not independently fail controller close.
+
+Returned history, pins, reports, and decoded PNG bytes are detached. The query performs no execution, cleanup, clock reads, writes, artifact insertion, or native check admission. Production main and HTTP do not expose it.
+
 ## Limits
 
 Historical data alone does not establish independently retained execution facts. Controller-retained facts establish consistency relative to later history, not authorship, containment, current authority, executed cleanup, or daemon quiescence. Process-local ownership and file guards do not add cross-process exclusion or hostile same-UID protection.
 
-The [consumed-report converter](consumed-admission.md) still requires independently pinned execution identity and timing. Retained observations expose controller-owned pins separately from history. Neither controller query calls the converter or admits a native check. Controller reopening still inventories the configured journal before recovery. Inspection without journal acquisition does not remove that startup dependency. Production main and HTTP wiring, complete admission capture, native real-check admission, actual fixture validation, and M2 acceptance remain separate work. No table or schema version changes are required. Downgrade compatibility with older strict source parsers is not promised.
+The [consumed-report converter](consumed-admission.md) requires independently pinned execution identity and timing. Retained observations expose controller-owned pins separately from history. The raw history and facts queries do not call the converter. The consumed-admission query composes them from one captured historical observation without admitting a native check. Controller reopening still inventories the configured journal before recovery. Inspection without journal acquisition does not remove that startup dependency. Production main and HTTP wiring, complete admission capture, native real-check admission, actual fixture validation, and M2 acceptance remain separate work. No table or schema version changes are required. Downgrade compatibility with older strict source parsers is not promised.
