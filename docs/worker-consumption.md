@@ -40,15 +40,23 @@ The post-staging check precedes synchronous COMMIT without another await or call
 
 The worker boundary adds independently pinned `mode: 'consumption-only'`. It exposes `accept`, `consume`, `inventory`, and `close`, not ordinary `validate`. The controller retains this handle inside a callback-scoped owner.
 
-The first successful consumption lazily upgrades metadata to version 3. One transaction replaces the original logical action row with a consumed-acceptance record and charges one attempt and one existing context reservation. The nested record retains the complete original acceptance and one pending execution with explicit admitted timing. No controller consumption ledger or second acknowledgment is stored.
+The first committed consumption admission lazily upgrades metadata to version 3. One transaction replaces the original logical action row with a consumed-acceptance record and charges one attempt and one existing context reservation. The nested record retains the complete original acceptance and one pending execution with explicit admitted timing. No controller consumption ledger or second acknowledgment is stored.
 
 Versions 1 and 2 keep their existing strict parsers. Existing ordinary execution still requires its full request-duration timing. Consumed execution uses its explicit shortened admission ceiling. `admitFrozenBrowserReport()` remains unchanged and does not admit this shortened consumption as an ordinary report. Old binaries reject version 3.
 
-Concurrent exact retries join or observe one execution and charge once. Original acceptance retries return the original acknowledgment. Ordinary `validate()` continues rejecting accepted action keys. Missing or conflicting identity, exhausted quota, unknown build, or unresolved cleanup prevents fresh consumption.
+Concurrent exact retries join one execution and charge once. A later existing pending consumption rejects with `validator-unsettled`, without execution. Recorded or settled consumption returns detached history. Original acceptance retries return the original acknowledgment. Ordinary `validate()` continues rejecting accepted action keys. Missing or conflicting identity, exhausted quota, unknown build, or unresolved cleanup prevents fresh consumption.
 
 The [association observation](worker-association.md) preserves the original acceptance fields with optional nested `consumption`. An active consumption has an explicit detached pending state. Recorded and settled executions retain outcome and cleanup history. Inspection uses the held journal without waiting for execution settlement or reopening its exclusive lease.
 
 Reopening pending consumption durably records `interrupted-run-no-replay` uncertainty with null evidence. It does not execute the request again. Journal-only, acceptance-only, and consumption-only opening do not finalize historical cleanup. Default standalone execution opening retains its existing cleanup behavior. Historical observation never restores callback authority.
+
+## Live admission observation
+
+Low-level `consume` accepts an optional fourth argument, `FrozenBrowserAdmissionObserver`. Its detached observation contains `acceptance`, `consumedRun`, `admittedAt`, and `deadline`. Only a newly committed admission notifies its initiating observer. Joined callers and existing or recovered records do not notify.
+
+The observer must synchronously return `undefined`. A throw or invalid return prevents entry into execution, frozen reads, result recording, and cleanup. The charged pending admission remains committed. Raw journal closure releases resources without repeating the observer failure. Worker-only callers can omit the observer and retain their existing offline behavior.
+
+Controller-owned consumption always supplies its private observer. It transactionally retains [independent execution facts](controller-worker-history.md#controller-retained-live-execution-facts) before execution. It never retains facts from a successful historical return. The scope caches retention failure and reports it through controller drainage after releasing the journal. Admission facts do not prove execution started or completed. The [admission-retention verification record](evidence/admission-retention/verification.md) records the temporary-store, authority, and crash checks.
 
 ## Cancellation and ownership
 
