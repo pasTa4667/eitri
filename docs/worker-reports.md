@@ -20,7 +20,7 @@ The query captures these values before asynchronous work. It matches the accepta
 - `recorded` returns no report. Retrieval does not settle or finalize it.
 - `settled` returns the retained `FrozenBrowserReport`, including null evidence or incomplete cleanup when present.
 
-The original request allowance remains unchanged. Actual consumed timing can be shorter. Retained evidence keeps that shortened deadline. The query does not rewrite timing to satisfy `admitFrozenBrowserReport()`, whose ordinary full-allowance checks remain unchanged.
+The original request allowance remains unchanged. Actual consumed timing can be shorter. Retained evidence keeps that shortened deadline. The query does not rewrite timing to satisfy `admitFrozenBrowserReport()`, whose ordinary full-allowance checks remain unchanged. The separate [consumed-report converter](consumed-admission.md) accepts settled history against independently pinned actual timing.
 
 ## Storage and ownership
 

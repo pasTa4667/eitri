@@ -1,0 +1,6 @@
+Baseline ordinary suite passed 134/134 before source mutation.
+Ordinary suite passed 134/134 after shared body extraction.
+Initial focused run passed 273/274. The new no-effects test failed while enumerating validator methods because Reflect.get invoked the existing runs getter on the prototype. No converter failure was observed. The test now inspects own property descriptors without invoking getters.
+Focused rerun passed 274/274 before the final literal-outcome assertion and self-consistent corrupt-PNG rejection were added.
+Initial verify:all passed 995 Node tests and 30 Rust tests before those final test-only additions. Cargo reported dependency future-incompatibility warnings for block 0.1.6 and proc-macro-error2 2.0.1.
+Final logs are consumed-admission-focused.log and consumed-admission-verify-all.log. Their matching .exit files record exit status.

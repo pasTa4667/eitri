@@ -307,6 +307,18 @@ Fresh GPT [source review](evidence/worker-reports/source-review.md) finds no sou
 
 The verification record distinguishes actual temporary SQLite and SIGKILL-created rollback state from scripted external effects. No real Docker dispatch, monitored fixture edit, credential access, service activation, application inference, publication, deployment or containment change occurs. Retained evidence restores no current authority and historical cleanup asserts no current daemon state. Native real-check admission, actual fixture validation and M2 acceptance remain open. Later human-presence gates remain explicit. No remote is configured, so delivery stays local. The requested implementation step is complete.
 
+## Consumed-report conversion continuation on October 21
+
+This continuation resumes from `17c87f3` after historical consumed-report retrieval. Source `0a13199` implements the next bounded prerequisite and is fast-forwarded locally onto main. The [reference](consumed-admission.md) and [verification record](evidence/consumed-admission/verification.md) describe its contract and evidence.
+
+Two independent GPT sketches and a fresh cross-judge select the flat independent expectation and exact unknown settled-history envelope. The pure converter accepts independently pinned actual timing without rewriting the original request, allowance, digest or provenance. It shares ordinary admission's private validation and classification body. Ordinary full-allowance behavior remains unchanged. Pending and recorded history reject. Blocked results do not become behavioral evidence.
+
+Fresh GPT source and comment reviews pass without findings or required removals. Two final test-only additions receive a separate passing GPT review. Parent final focused verification passes 275 tests. Writer final full verification passes 996 Node and 30 Rust tests. Parent integrated `npm run verify:all` at `0a13199` independently passes the same totals with no failures, cancellations or skips. Final hashes match the reviewed source and final test delta, and no executable working-tree diff remains.
+
+The verification record retains one initial writer test-harness failure and two unchanged timing-sensitive failures in the parent's first final full run. Both affected suites pass together without overlapping full runs. The subsequent integrated full run passes without code changes. Scheduling pressure is an inference, not a proven root cause. Existing Rust dependency future-incompatibility warnings remain. All delegated roles use `openai-codex/gpt-6.1-sol`. Source reviewers cannot execute tests; parent and writer runs supply runtime evidence. This is fresh-context independence, not cross-family assurance.
+
+Temporary SQLite journals and literal screenshot-byte assertions establish the recorded offline behavior. External effects remain scripted. Conversion establishes consistency, not authorship, containment, executed cleanup, current authority or daemon quiescence. No production main, controller, native, HTTP, workspace, worker asset, Rust, dependency, schema or containment change occurs. No monitored fixture edit, credential access, live service, application inference, publication or deployment occurs. Native real-check admission, controller retrieval correlation, actual fixture validation and M2 acceptance remain open. No remote is configured, so delivery remains local. The requested next implementation step is complete.
+
 ## Checkpoint policy
 
 Update this file and `decisions.tsv` after each substantial unit. Record commands and actual results. Do not call a simulated run a live model result. No compaction tool is exposed by this harness. These files are the continuation record for automatic or operator-triggered compaction.

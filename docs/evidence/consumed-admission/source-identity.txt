@@ -1,0 +1,8 @@
+0a131995985a2f73539328ddb72e6d1665f8d095
+src/frozen-browser.ts
+test/frozen-browser-consumed-admission.test.ts
+test/frozen-browser-consumed-report.test.ts
+726df1e41c51b3a8d3fd5c7da9ea6054c1a4ce2f2f2ff167d8e40fa5c97b3e3f  src/frozen-browser.ts
+95903f6e3ce67fabc608be99da034be71b721150622363a2291e2f878d41c33c  test/frozen-browser-consumed-admission.test.ts
+61e655ae2d41d5c000e8118e2dd2743acb7b9c6b9b5d7824c70aa9f7d3d7888d  test/frozen-browser-consumed-report.test.ts
+68e4fe35c6474a847fd89997417f2831cfb6036ca1117db0a284eb2f152e9365  -
