@@ -1,0 +1,31 @@
+✔ inspectWorkerExecutionFacts reads detached controller data without journal access (1248.992083ms)
+✔ legacy sources without intent are unavailable and malformed facts never hide behind historical absence (838.684375ms)
+✔ live baseline facts commit before delivery and survive interrupted finish and reopening (2661.332416ms)
+✔ live browser facts commit before delivery and survive interrupted finish and reopening (2819.729167ms)
+✔ transactional append validates live identity and timing, accepts exact repeats and never overwrites conflicts (1956.187916ms)
+✔ actual full execution timing retains diagnostic facts without rewriting original intent (1792.201459ms)
+✔ actual short-near-max execution timing retains diagnostic facts without rewriting original intent (1278.849292ms)
+✔ actual recorded execution timing retains diagnostic facts without rewriting original intent (1291.990916ms)
+✔ adding parsed facts preserves authority but every original source component remains protected (1035.249375ms)
+✔ retention failure before-close rejects joined consumers once, closes the journal and survives completed-drain removal (1282.79125ms)
+✔ retention failure during-close rejects joined consumers once, closes the journal and survives completed-drain removal (1244.616083ms)
+✔ retention failure abandoned rejects joined consumers once, closes the journal and survives completed-drain removal (1266.76325ms)
+✔ late successful worker return after interrupted retains observations without restoring authority (1214.432292ms)
+✔ late successful worker return after settled retains observations without restoring authority (1256.741708ms)
+✔ late successful worker return after closing retains observations without restoring authority (1228.315416ms)
+✔ late successful worker return after expired retains observations without restoring authority (1275.460208ms)
+✔ WorkerExecutionScope shares execution and synchronous detached retention before delivery (1.260833ms)
+✔ WorkerExecutionScope does not turn expected opening revocation action-source-revoked into failed drainage (0.292167ms)
+✔ WorkerExecutionScope does not turn expected opening revocation check-dispatch-denied into failed drainage (0.104625ms)
+✔ WorkerExecutionScope does not turn expected opening revocation check-allowance-exhausted into failed drainage (0.093583ms)
+✔ WorkerExecutionScope does not turn expected opening revocation check-cancelled into failed drainage (0.09525ms)
+✔ WorkerExecutionScope still reports a real journal opening failure during drainage (0.11875ms)
+✔ WorkerExecutionScope caches retention failure and closes its journal before rejecting repeated drainage (0.243167ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 24081.40675

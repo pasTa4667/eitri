@@ -1,0 +1,4 @@
+99c61e46de995e95297af9a64ace7a8c781fdc8cb57e72e804dc0ca8f03c5db2  src/controller.ts
+7c02e6cc8aded930a7f02ee914dc43439a43c72fe23303310fa26c7d67039919  src/worker-execution-scope.ts
+12714f558df163191c78f41d83f945ee6fe8a5cbfe6e38cd75ef5c92e0efe97c  test/controller-worker-execution-facts.test.ts
+599002596853ac5d5e929932c76409d56eff962a3a3ab144bab85a5bace1e156  test/worker-execution-scope.test.ts
