@@ -1,0 +1,19 @@
+Baseline: 800c8fc7f278e77778d503df162c8c9f8a100af4
+Source: 2851c4b041f210d545127fdc4289e1772d856340
+Changed executable file: test/integration/controller-consumed-report-handoff.test.ts
+Final SHA256: 77427598a4e8a7a2f1dfeb4ce3867462da261c567c1e01a6103264bba98fe5d2
+Initial reviewed SHA256: f0c2301ec9342d0b883c9d6ce8f9596299d41b48a2f4c46493eb89d3df2fa7e3
+Intermediate change: delete one comment, no behavior change.
+Final change: expect exactly one recovery epoch increment while comparing every other case field.
+Final review and parent execution confirm the final SHA256.
+
+Recompute source identity:
+git show 2851c4b041f210d545127fdc4289e1772d856340:test/integration/controller-consumed-report-handoff.test.ts | shasum -a 256
+
+Confirm no protected source changes:
+git diff --exit-code 800c8fc7f278e77778d503df162c8c9f8a100af4 2851c4b041f210d545127fdc4289e1772d856340 -- src worker prototypes/chromium operator package.json package-lock.json
+
+Actual local base image:
+sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff
+Tag: eitri-chromium-probe:1.64.1-node26.5.0
+Runtime: Node 26.5.0; ARM64 Docker 29.4.0; explicit orbstack context.

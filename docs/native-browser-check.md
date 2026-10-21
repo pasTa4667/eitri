@@ -61,4 +61,6 @@ Blob-only, manifest-without-receipt, and receipt-without-checkpoint states remai
 
 The [verification record](evidence/native-consumed-check/verification.md) records checks and GPT review. New tests use scripted worker claims with literal PNG bytes and actual temporary native SQLite persistence. Existing process-kill tests cover the retained recovery ordering.
 
-These checks establish consistency and persistence, not actual Docker execution, containment, cleanup, daemon quiescence, or hostile same-UID authorship. Offline tool-level handoff is verified separately in the [handoff record](evidence/report-handoff/verification.md). Production activation, actual fixture validation, M2 acceptance, and later human-presence gates remain separate work.
+These scripted checks establish consistency and persistence, not actual Docker execution or containment. Offline tool-level handoff is verified separately in the [handoff record](evidence/report-handoff/verification.md).
+
+The opt-in [actual-Docker handoff suite](evidence/controller-docker-handoff/verification.md) now verifies synthetic A reproduction and B nonreproduction through `run_check`, real worker consumption, native receipt admission, PNG retrieval, close/reopen, no replay, and observed owned-resource absence. It uses the existing isolation policy and changes no production configuration. It does not prove perpetual daemon quiescence or hostile same-UID authorship. Production activation, monitored fixture validation, M2 acceptance, and later human-presence gates remain separate work.
