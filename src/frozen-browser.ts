@@ -113,6 +113,20 @@ export type FrozenBrowserConsumedReport = Readonly<{
     | Readonly<{ state: 'recorded' }>
     | Readonly<{ state: 'settled'; report: FrozenBrowserReport }>
   );
+export type HistoricalWorkerSelection =
+  | Readonly<{
+      kind: 'legacy-execution';
+      request: FrozenBrowserRequest;
+      requestDigest: Sha256;
+      configurationDigest: Sha256;
+      runId: string;
+    }>
+  | Readonly<{ kind: 'accepted-unconsumed'; acceptance: FrozenBrowserAcceptance }>
+  | Readonly<{
+      kind: 'consumed';
+      acceptance: FrozenBrowserAcceptance;
+      history: FrozenBrowserConsumedReport;
+    }>;
 export type FrozenBrowserCleanupReconciliation = Readonly<{
   acceptanceId: string;
   run: Extract<RecoveryRun, { state: 'settled' }>;
@@ -1199,6 +1213,21 @@ function acknowledgment(record: AcceptanceRecord): FrozenBrowserAcceptance {
   const { kind: _kind, ...accepted } = record;
   return structuredClone(accepted);
 }
+function consumedHistory(record: ConsumedAcceptanceRecord): FrozenBrowserConsumedReport {
+  const { intent, result } = record.execution.run;
+  return {
+    consumedRun: {
+      acceptanceId: record.acceptance.acceptanceId,
+      runId: intent.runId,
+      requestDigest: sha256(intent.requestDigest),
+    },
+    admittedAt: intent.admittedAt,
+    deadline: intent.deadline,
+    ...(result.kind === 'settled'
+      ? { state: 'settled' as const, report: result.report }
+      : { state: result.kind }),
+  };
+}
 function recoveryRun(run: Run): PendingFrozenBrowserConsumption | RecoveryRun {
   const { intent, ledger, result } = run;
   return structuredClone({
@@ -1882,15 +1911,69 @@ export class FrozenBrowserValidator {
       if (!record || record.kind !== 'consumed-acceptance')
         return fail('validator-identity-conflict');
       await journal.guard();
-      const { intent, result } = record.execution.run;
-      return structuredClone({
-        consumedRun,
-        admittedAt: intent.admittedAt,
-        deadline: intent.deadline,
-        ...(result.kind === 'settled'
-          ? { state: 'settled' as const, report: result.report }
-          : { state: result.kind }),
+      return structuredClone(consumedHistory(record));
+    } finally {
+      journal.close();
+    }
+  }
+  /** Selects one action's detached journal history without recovery or report admission. */
+  static async readHistoricalSelection(
+    options: Readonly<{
+      directory: string;
+      expectedIdentity: FrozenBrowserJournalIdentity;
+      action: Readonly<{ caseId: string; actionId: string; epoch: number }>;
+    }>,
+  ): Promise<HistoricalWorkerSelection | null> {
+    const directory = resolve(options.directory);
+    if (options.expectedIdentity === undefined) fail('worker-journal-identity-required');
+    const expected = exact(admissionSnapshot(options.expectedIdentity), [
+      'ownerId',
+      'configurationDigest',
+    ]);
+    const expectedIdentity = {
+      ownerId: id(expected.ownerId),
+      configurationDigest: sha256(expected.configurationDigest),
+    };
+    const selected = exact(admissionSnapshot(options.action), ['caseId', 'actionId', 'epoch']);
+    const action = {
+      caseId: caseId(selected.caseId),
+      actionId: id(selected.actionId),
+      epoch: integer(selected.epoch),
+    };
+    const journal = await FrozenBrowserValidator.acquireJournal({
+      directory,
+      expectedIdentity,
+      storage: 'existing-only',
+      historical: true,
+    });
+    try {
+      const record = journal.records.find((record) => {
+        const request = recordRequest(record);
+        return (
+          request.action.caseId === action.caseId &&
+          request.action.actionId === action.actionId &&
+          request.action.epoch === action.epoch
+        );
       });
+      let selection: HistoricalWorkerSelection | null = null;
+      if (record?.kind === 'execution') {
+        const { intent } = record.run;
+        selection = {
+          kind: 'legacy-execution',
+          request: intent.request,
+          requestDigest: sha256(intent.requestDigest),
+          configurationDigest: sha256(intent.configurationDigest),
+          runId: intent.runId,
+        };
+      } else if (record) {
+        const acceptance = acknowledgment(recordAcceptance(record)!);
+        selection =
+          record.kind === 'offline-acceptance'
+            ? { kind: 'accepted-unconsumed', acceptance }
+            : { kind: 'consumed', acceptance, history: consumedHistory(record) };
+      }
+      await journal.guard();
+      return structuredClone(selection);
     } finally {
       journal.close();
     }
@@ -2044,6 +2127,7 @@ export class FrozenBrowserValidator {
       if (hot) await readRegular(join(directory, 'journal.sqlite-journal'), limits.journal * 2);
       db = new DatabaseSync(journalPath, { readOnly: !fresh && !hot });
       db.exec('PRAGMA trusted_schema=OFF;');
+      if (historical) db.exec('BEGIN');
       if (
         Object.values(db.prepare('PRAGMA integrity_check').get() ?? {})[0] !== 'ok' ||
         Object.values(db.prepare('PRAGMA page_size').get() ?? {})[0] !== 4096

@@ -31,6 +31,8 @@ import type {
   RecoveryRecord,
   FrozenBrowserAcceptance,
   FrozenBrowserConsumption,
+  FrozenBrowserConsumedReport,
+  HistoricalWorkerSelection,
 } from './frozen-browser.ts';
 import { NativeCase } from './native.ts';
 import { WorkerExecutionScope } from './worker-execution-scope.ts';
@@ -86,6 +88,33 @@ export type WorkerAssociationObservation =
   | Readonly<{ state: 'absent'; intent: WorkerIntent }>
   | Readonly<{ state: 'conflict'; intent: WorkerIntent; runs: readonly RecoveryRecord[] }>
   | Readonly<{ state: 'matched'; intent: WorkerIntent; run: RecoveryRecord }>;
+type Historical<T> = Readonly<{ provenance: 'worker-journal'; value: T }>;
+type IndependentExecutionPins = Readonly<{
+  state: 'unavailable';
+  reason: 'not-retained-by-controller';
+}>;
+export type WorkerConsumedHistoryObservation =
+  | Readonly<{ state: 'unrecorded' }>
+  | Readonly<{ state: 'absent'; intent: WorkerIntent }>
+  | Readonly<{
+      state: 'conflict';
+      intent: WorkerIntent;
+      reason: 'request-mismatch' | 'legacy-execution';
+      observed: Historical<HistoricalWorkerSelection>;
+    }>
+  | Readonly<{
+      state: 'accepted-unconsumed';
+      intent: WorkerIntent;
+      acceptance: Historical<FrozenBrowserAcceptance>;
+      independentExecutionPins: IndependentExecutionPins;
+    }>
+  | Readonly<{
+      state: 'consumed';
+      intent: WorkerIntent;
+      acceptance: Historical<FrozenBrowserAcceptance>;
+      history: Historical<FrozenBrowserConsumedReport>;
+      independentExecutionPins: IndependentExecutionPins;
+    }>;
 type WorkspaceBinding = Readonly<{
   caseId: string;
   repositoryId: RepositoryId;
@@ -145,7 +174,7 @@ export class Controller {
   private closure?: Promise<void>;
   private workerScopes = new Map<Action, WorkerExecutionScope>();
   private workerDrains = new Set<Promise<void>>();
-  private workerInspections = new Set<Promise<WorkerAssociationObservation>>();
+  private workerInspections = new Set<Promise<unknown>>();
   private starting = true;
   private tickScheduled = false;
   private polling = false;
@@ -435,6 +464,75 @@ export class Controller {
     )
       return structuredClone({ state: 'conflict', intent, runs });
     return structuredClone({ state: 'matched', intent, run });
+  }
+  /** Correlates retained intent with historical data, not independent execution authority. */
+  inspectWorkerConsumedHistory(
+    id: string,
+    actionId: string,
+  ): Promise<WorkerConsumedHistoryObservation> {
+    const inspection = this.readWorkerConsumedHistory(id, actionId);
+    this.workerInspections.add(inspection);
+    void inspection.finally(() => this.workerInspections.delete(inspection)).catch(() => {});
+    return inspection;
+  }
+  private async readWorkerConsumedHistory(
+    id: string,
+    actionId: string,
+  ): Promise<WorkerConsumedHistoryObservation> {
+    if (!uuid(id) || !uuid(actionId)) fail('invalid-worker-association-id');
+    if (this.closing) fail('controller-closed');
+    const configured = this.options.offlineWorkerJournal ?? fail('offline-worker-journal-required');
+    const binding = { ...configured };
+    const source = this.source(id, actionId);
+    if (!source.workerIntent) return { state: 'unrecorded' };
+    const intent = structuredClone(source.workerIntent);
+    return this.workspaceSerial(async (): Promise<WorkerConsumedHistoryObservation> => {
+      if (this.workerScopes.size !== 0) fail('worker-history-busy');
+      const selected = await FrozenBrowserValidator.readHistoricalSelection({
+        directory: binding.directory,
+        expectedIdentity: {
+          ownerId: binding.ownerId,
+          configurationDigest: sha256(binding.configurationDigest),
+        },
+        action: intent.request.action,
+      });
+      if (!selected) return structuredClone({ state: 'absent', intent });
+      const observed = selected.kind === 'legacy-execution' ? selected : selected.acceptance;
+      if (
+        !isDeepStrictEqual(observed.request, intent.request) ||
+        digest(observed.request) !== intent.requestDigest ||
+        digest(intent.request) !== intent.requestDigest ||
+        observed.requestDigest !== intent.requestDigest ||
+        observed.configurationDigest !== binding.configurationDigest
+      )
+        return structuredClone({
+          state: 'conflict',
+          intent,
+          reason: 'request-mismatch',
+          observed: { provenance: 'worker-journal', value: selected },
+        });
+      if (selected.kind === 'legacy-execution')
+        return structuredClone({
+          state: 'conflict',
+          intent,
+          reason: 'legacy-execution',
+          observed: { provenance: 'worker-journal', value: selected },
+        });
+      return structuredClone({
+        intent,
+        acceptance: { provenance: 'worker-journal', value: selected.acceptance },
+        independentExecutionPins: {
+          state: 'unavailable',
+          reason: 'not-retained-by-controller',
+        },
+        ...(selected.kind === 'consumed'
+          ? {
+              state: 'consumed',
+              history: { provenance: 'worker-journal' as const, value: selected.history },
+            }
+          : { state: 'accepted-unconsumed' }),
+      });
+    });
   }
   private workspaceSerial<T>(work: () => Promise<T>): Promise<T> {
     if (this.closing) return Promise.reject(new ControlError('controller-closed'));

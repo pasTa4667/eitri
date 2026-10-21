@@ -16,6 +16,7 @@ import type {
   FrozenBrowserConsumedRunKey,
   FrozenBrowserConsumedExpectation,
   FrozenBrowserJournalIdentity,
+  HistoricalWorkerSelection,
 } from '../src/frozen-browser.ts';
 import { sha256 } from '../src/workspace.ts';
 import { digest } from '../src/domain.ts';
@@ -214,7 +215,12 @@ for (const mode of ['normal', 'cleanup-fail'])
     if (again.state !== 'settled') throw Error('not-settled');
     assert.deepEqual(again.report, rows.runs[0].execution.run.result.report);
     assert.deepEqual(again.consumedRun, consumedRun);
-    assert.deepEqual(statements, ['PRAGMA trusted_schema=OFF;', 'PRAGMA trusted_schema=OFF;']);
+    assert.deepEqual(statements, [
+      'PRAGMA trusted_schema=OFF;',
+      'BEGIN',
+      'PRAGMA trusted_schema=OFF;',
+      'BEGIN',
+    ]);
     assert.deepEqual(journalRows(f.directory), rows);
     assert.deepEqual(await files(f.directory), before);
     assert.deepEqual((await f.state()).calls, calls);
@@ -307,11 +313,20 @@ test('readConsumedReport requires independent identity and exact nested consumed
     undefined,
     { ...options.expectedIdentity, ownerId: randomUUID() },
     { ...options.expectedIdentity, configurationDigest: sha256('f'.repeat(64)) },
-  ])
+  ]) {
     await assert.rejects(
       read({ ...options, expectedIdentity: expectedIdentity! }),
       /worker-journal-identity-(required|mismatch)/,
     );
+    await assert.rejects(
+      FrozenBrowserValidator.readHistoricalSelection({
+        ...options,
+        expectedIdentity: expectedIdentity!,
+        action: f.request.action,
+      }),
+      /worker-journal-identity-(required|mismatch)/,
+    );
+  }
   assert.deepEqual(await read(options), pendingObservation(options.consumedRun));
   assert.deepEqual(journalRows(f.directory), f.rows);
   assert.deepEqual(await files(f.directory), before);
@@ -433,6 +448,18 @@ test('readConsumedReport validates committed evidence and unrelated rows before 
     (rows) => {
       rows.meta.contribution = 0;
     },
+    (rows) => {
+      rows.runs[1] = structuredClone(rows.runs[0]);
+    },
+    (rows) => {
+      rows.runs[1].acceptance.acceptanceId = rows.runs[0].acceptance.acceptanceId;
+    },
+    (rows) => {
+      rows.runs[1].execution.run = structuredClone(rows.runs[0].execution.run);
+    },
+    (rows) => {
+      rows.runs[1].acceptance.configurationDigest = 'f'.repeat(64);
+    },
   ];
   forbidEffects(t);
   for (const mutate of mutations) {
@@ -440,10 +467,15 @@ test('readConsumedReport validates committed evidence and unrelated rows before 
     mutate(rows);
     writeRows(f.directory, rows);
     const before = await files(f.directory);
-    await assert.rejects(
-      read(options),
-      /frozen-browser|corrupt-validator|corrupt-committed|artifact-/,
-    );
+    for (const reading of [
+      () => read(options),
+      () =>
+        FrozenBrowserValidator.readHistoricalSelection({ ...options, action: f.request.action }),
+    ])
+      await assert.rejects(
+        reading(),
+        /frozen-browser|corrupt-validator|corrupt-committed|artifact-/,
+      );
     assert.deepEqual(journalRows(f.directory), rows);
     assert.deepEqual(await files(f.directory), before);
   }
@@ -515,6 +547,13 @@ for (const hot of [false, true])
       throw Error('sqlite-opened-with-sidecar');
     });
     await assert.rejects(read(f.cleanupOptions), /validator-rollback-sidecar/);
+    await assert.rejects(
+      FrozenBrowserValidator.readHistoricalSelection({
+        ...f.cleanupOptions,
+        action: f.request.action,
+      }),
+      /validator-rollback-sidecar/,
+    );
     assert.deepEqual(await files(f.directory), before);
     assert.deepEqual((await f.state()).calls, []);
     t.mock.restoreAll();
@@ -606,3 +645,256 @@ for (const failure of ['parse', 'guard', 'close', 'acquisition-close'] as const)
     assert.deepEqual(await files(f.directory), before);
     assert.deepEqual((await f.state()).calls, []);
   });
+
+for (const kind of [
+  'absent',
+  'legacy-execution',
+  'accepted-unconsumed',
+  'pending',
+  'recorded',
+  'settled',
+] as const)
+  test(`readHistoricalSelection selects ${kind} from one guarded read-only snapshot`, async (t) => {
+    const f = await cleanupFixture(t, true);
+    const acceptance = {
+      acceptanceId: f.accepted.acceptanceId,
+      request: f.request,
+      requestDigest: f.accepted.requestDigest,
+      configurationDigest: f.accepted.configurationDigest,
+      ownerId: f.accepted.ownerId,
+      acceptedAt: f.accepted.acceptedAt,
+      deadline: f.accepted.deadline,
+    };
+    const record = f.record;
+    const run = record.execution.run;
+    if (kind === 'settled')
+      Reflect.set(run, 'result', {
+        kind: 'settled',
+        report: {
+          runId: run.intent.runId,
+          request: f.request,
+          outcome: { kind: 'uncertain', code: 'historical-uncertain' },
+          cleanup: { kind: 'incomplete', cache: 'retained', code: 'historical-unconfirmed' },
+          evidence: null,
+        },
+      });
+    if (kind === 'recorded')
+      Reflect.set(run, 'result', {
+        kind: 'recorded',
+        outcome: { kind: 'uncertain', code: 'fixture-uncertain' },
+        evidence: null,
+      });
+    if (kind === 'legacy-execution') run.intent.deadline = 1000 + f.request.allowanceMs;
+    const decoy = consumedRecord(otherAcceptance(f.accepted), true);
+    decoy.execution.admission.translatedAt = 2000;
+    decoy.execution.admission.translatedAllowanceMs = 23456;
+    decoy.execution.run.intent.admittedAt = 2000;
+    decoy.execution.run.intent.deadline = 25456;
+    f.rows.runs = [
+      decoy,
+      ...(kind === 'absent'
+        ? []
+        : kind === 'legacy-execution'
+          ? [{ kind: 'execution', run }]
+          : kind === 'accepted-unconsumed'
+            ? [{ kind: 'offline-acceptance', ...acceptance }]
+            : [record]),
+    ];
+    f.rows.meta.attempts = kind === 'absent' || kind === 'accepted-unconsumed' ? 1 : 2;
+    f.rows.meta.contribution = f.rows.meta.attempts * 41943040;
+    writeRows(f.directory, f.rows);
+    const before = await files(f.directory);
+    forbidEffects(t);
+    const statements: string[] = [];
+    const exec = DatabaseSync.prototype.exec;
+    const prepare = DatabaseSync.prototype.prepare;
+    const close = DatabaseSync.prototype.close;
+    let closes = 0;
+    t.mock.method(DatabaseSync.prototype, 'exec', function (this: DatabaseSync, sql: string) {
+      statements.push(sql);
+      assert.throws(() => Reflect.apply(exec, this, ['DELETE FROM runs']), /readonly|read-only/);
+      return Reflect.apply(exec, this, [sql]);
+    });
+    t.mock.method(DatabaseSync.prototype, 'prepare', function (this: DatabaseSync, sql: string) {
+      statements.push(sql);
+      assert.equal(this.isTransaction, true, sql);
+      assert.equal(statements[0], 'PRAGMA trusted_schema=OFF;');
+      assert.equal(statements[1], 'BEGIN');
+      return Reflect.apply(prepare, this, [sql]);
+    });
+    t.mock.method(DatabaseSync.prototype, 'close', function (this: DatabaseSync) {
+      assert.equal(this.isTransaction, true);
+      closes++;
+      return Reflect.apply(close, this, []);
+    });
+    const options = {
+      directory: f.directory,
+      expectedIdentity: { ...f.options.expectedIdentity },
+      action: { ...f.request.action },
+    };
+    const reading = FrozenBrowserValidator.readHistoricalSelection(options);
+    options.directory = join(f.root, 'missing');
+    options.expectedIdentity.ownerId = randomUUID();
+    options.expectedIdentity.configurationDigest = sha256('f'.repeat(64));
+    Object.assign(options.action, { caseId: randomUUID(), actionId: randomUUID(), epoch: 999 });
+    const result = await reading;
+    assert.equal(closes, 1);
+    assert.deepEqual(statements, [
+      'PRAGMA trusted_schema=OFF;',
+      'BEGIN',
+      'PRAGMA integrity_check',
+      'PRAGMA page_size',
+      'SELECT name, type, sql FROM sqlite_master ORDER BY name',
+      'SELECT body, digest FROM meta',
+      'SELECT id, body, digest FROM runs ORDER BY id',
+    ]);
+    const expected =
+      kind === 'absent'
+        ? null
+        : kind === 'legacy-execution'
+          ? {
+              kind,
+              request: f.request,
+              requestDigest: acceptance.requestDigest,
+              configurationDigest: acceptance.configurationDigest,
+              runId: run.intent.runId,
+            }
+          : kind === 'accepted-unconsumed'
+            ? { kind, acceptance }
+            : {
+                kind: 'consumed',
+                acceptance,
+                history: {
+                  consumedRun: selector(record),
+                  admittedAt: 1000,
+                  deadline: 13345,
+                  state: kind,
+                  ...(kind === 'settled' ? { report: Reflect.get(run.result, 'report') } : {}),
+                },
+              };
+    const mutate = (result: HistoricalWorkerSelection | null) => {
+      if (result) {
+        if (result.kind === 'legacy-execution') Object.assign(result.request.action, { epoch: 99 });
+        else {
+          Object.assign(result.acceptance.request.action, { epoch: 99 });
+          if (result.kind === 'consumed')
+            Object.assign(result.history.consumedRun, { runId: randomUUID() });
+        }
+      }
+    };
+    assert.deepEqual(result, expected);
+    t.mock.restoreAll();
+    mutate(result);
+    assert.deepEqual(
+      await FrozenBrowserValidator.readHistoricalSelection({
+        directory: f.directory,
+        expectedIdentity: f.options.expectedIdentity,
+        action: f.request.action,
+      }),
+      expected,
+    );
+    assert.deepEqual(await files(f.directory), before);
+    assert.deepEqual(journalRows(f.directory), f.rows);
+    assert.deepEqual((await f.state()).calls, []);
+  });
+
+for (const kind of ['absent', 'legacy-execution', 'accepted-unconsumed', 'consumed'] as const)
+  test(`readHistoricalSelection guards ${kind} before closing its snapshot`, async (t) => {
+    const f = await cleanupFixture(t, true);
+    const run = f.record.execution.run;
+    if (kind === 'legacy-execution') run.intent.deadline = 1000 + f.request.allowanceMs;
+    f.rows.runs =
+      kind === 'absent'
+        ? []
+        : kind === 'legacy-execution'
+          ? [{ kind: 'execution', run }]
+          : kind === 'accepted-unconsumed'
+            ? [{ kind: 'offline-acceptance', ...f.accepted }]
+            : [f.record];
+    f.rows.meta.attempts = kind === 'absent' || kind === 'accepted-unconsumed' ? 0 : 1;
+    f.rows.meta.contribution = f.rows.meta.attempts * 41943040;
+    writeRows(f.directory, f.rows);
+    const exec = DatabaseSync.prototype.exec;
+    const databases = new Set<DatabaseSync>();
+    t.mock.method(DatabaseSync.prototype, 'exec', function (this: DatabaseSync, sql: string) {
+      const result = Reflect.apply(exec, this, [sql]);
+      if (sql === 'BEGIN') {
+        databases.add(this);
+        writeFileSync(join(f.directory, 'journal.sqlite-journal'), '', { mode: 0o600 });
+      }
+      return result;
+    });
+    const close = DatabaseSync.prototype.close;
+    t.mock.method(DatabaseSync.prototype, 'close', function (this: DatabaseSync) {
+      assert.equal(databases.size, 1);
+      assert.equal(databases.has(this), true);
+      assert.equal(this.isTransaction, true);
+      return Reflect.apply(close, this, []);
+    });
+    await assert.rejects(
+      FrozenBrowserValidator.readHistoricalSelection({
+        directory: f.directory,
+        expectedIdentity: f.options.expectedIdentity,
+        action: f.request.action,
+      }),
+      /validator-rollback-sidecar/,
+    );
+    t.mock.restoreAll();
+    await rm(join(f.directory, 'journal.sqlite-journal'));
+    assert.equal(
+      (
+        await FrozenBrowserValidator.readHistoricalSelection({
+          directory: f.directory,
+          expectedIdentity: f.options.expectedIdentity,
+          action: f.request.action,
+        })
+      )?.kind ?? 'absent',
+      kind,
+    );
+  });
+
+test('readHistoricalSelection validates action and identity before acquisition without invoking accessors', async (t) => {
+  const f = await cleanupFixture(t, true);
+  const options = {
+    directory: f.directory,
+    expectedIdentity: f.options.expectedIdentity,
+    action: f.request.action,
+  };
+  let accessed = 0;
+  const accessor = { ...f.request.action };
+  Object.defineProperty(accessor, 'epoch', {
+    enumerable: true,
+    get: () => {
+      accessed++;
+      return f.request.action.epoch;
+    },
+  });
+  t.mock.method(FrozenBrowserValidator, 'acquireJournal' as never, () => {
+    throw Error('acquired-before-validation');
+  });
+  for (const action of [
+    { ...f.request.action, caseId: 'invalid' },
+    { ...f.request.action, actionId: 'invalid' },
+    { ...f.request.action, epoch: -1 },
+    { ...f.request.action, epoch: 1.5 },
+    { ...f.request.action, extra: true },
+    accessor,
+    new Proxy(f.request.action, {
+      ownKeys: () => {
+        accessed++;
+        return [];
+      },
+    }),
+  ])
+    await assert.rejects(
+      FrozenBrowserValidator.readHistoricalSelection({ ...options, action }),
+      /invalid-workspace-id|invalid-frozen-browser-(id|number|fields|object|admission)/,
+    );
+  assert.equal(accessed, 0);
+  t.mock.restoreAll();
+  assert.deepEqual(await FrozenBrowserValidator.readHistoricalSelection(options), {
+    kind: 'consumed',
+    acceptance: f.accepted,
+    history: pendingObservation(f.cleanupOptions.consumedRun),
+  });
+});

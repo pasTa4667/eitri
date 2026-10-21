@@ -629,10 +629,11 @@ test('retained intent parsing rejects source and digest mutations without changi
         JSON.stringify(corrupt),
         action,
       );
-      await assert.rejects(
-        f.controller.inspectWorkerAssociation(id, action),
-        /invalid-worker-intent|invalid-frozen-browser-request/,
-      );
+      for (const inspect of [
+        () => f.controller.inspectWorkerAssociation(id, action),
+        () => f.controller.inspectWorkerConsumedHistory(id, action),
+      ])
+        await assert.rejects(inspect(), /invalid-worker-intent|invalid-frozen-browser-request/);
     }
   } finally {
     db.prepare('UPDATE action_sources SET value=? WHERE action_id=?').run(
