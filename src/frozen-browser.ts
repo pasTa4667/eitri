@@ -102,6 +102,17 @@ export type FrozenBrowserConsumedRunKey = Readonly<{
   runId: string;
   requestDigest: Sha256;
 }>;
+/** Detached retained history, not current authority or a live cleanup assertion. */
+export type FrozenBrowserConsumedReport = Readonly<{
+  consumedRun: FrozenBrowserConsumedRunKey;
+  admittedAt: number;
+  deadline: number;
+}> &
+  (
+    | Readonly<{ state: 'pending' }>
+    | Readonly<{ state: 'recorded' }>
+    | Readonly<{ state: 'settled'; report: FrozenBrowserReport }>
+  );
 export type FrozenBrowserCleanupReconciliation = Readonly<{
   acceptanceId: string;
   run: Extract<RecoveryRun, { state: 'settled' }>;
@@ -227,6 +238,12 @@ const labelOwner = 'eitri.frozen-browser.owner';
 const labelRun = 'eitri.frozen-browser.run';
 const owners = new Set<string>();
 type Identity = { dev: string; ino: string; mode: number };
+type JournalIdentities = { root: Identity; journal: Identity; marker: Identity; policy: Identity };
+type HistoricalJournal = {
+  records: JournalRecord[];
+  guard(): Promise<void>;
+  close(): void;
+};
 type Resource = { kind: 'none' } | { kind: 'intent' } | { kind: 'acquired'; id: string };
 type Intent = {
   runId: string;
@@ -286,6 +303,41 @@ type ClientResult =
       kind: 'lost';
       code: 'client-error' | 'client-aborted' | 'client-timeout' | 'client-overflow';
     };
+
+async function guardJournalFiles(
+  directory: string,
+  identities: JournalIdentities,
+  marker: Buffer,
+  policy: Buffer,
+  historical = false,
+): Promise<void> {
+  if (
+    (await realpath(directory)) !== directory ||
+    !same(await identity(directory), identities.root) ||
+    !(await lstat(directory)).isDirectory()
+  )
+    fail('validator-root-replaced');
+  for (const [name, expected] of [
+    ['journal.sqlite', identities.journal],
+    ['owner.json', identities.marker],
+    ['seccomp.json', identities.policy],
+  ] as const)
+    if (!same(await identity(join(directory, name)), expected)) fail('validator-file-replaced');
+  if (
+    !same(await readRegular(join(directory, 'owner.json'), 8192), marker) ||
+    !same(await readRegular(join(directory, 'seccomp.json'), limits.control), policy)
+  )
+    fail('validator-ownership-changed');
+  for (const name of await readdir(directory)) {
+    if (historical && name === 'journal.sqlite-journal') fail('validator-rollback-sidecar');
+    if (!['journal.sqlite', 'journal.sqlite-journal', 'owner.json', 'seccomp.json'].includes(name))
+      fail('unexpected-validator-file');
+    await readRegular(
+      join(directory, name),
+      name === 'journal.sqlite-journal' ? limits.journal * 2 : limits.journal,
+    );
+  }
+}
 
 const same = (a: unknown, b: unknown) => digest(a) === digest(b);
 function object(value: unknown): ObjectValue {
@@ -1504,7 +1556,7 @@ export class FrozenBrowserValidator {
   }
   private assets: Assets;
   private marker: Buffer;
-  private identities: { root: Identity; journal: Identity; marker: Identity; policy: Identity };
+  private identities: JournalIdentities;
   private active: {
     request: FrozenBrowserRequest;
     digest: string;
@@ -1528,7 +1580,7 @@ export class FrozenBrowserValidator {
     records: JournalRecord[],
     assets: Assets,
     marker: Buffer,
-    identities: { root: Identity; journal: Identity; marker: Identity; policy: Identity },
+    identities: JournalIdentities,
   ) {
     this.directory = directory;
     this.workspace = workspace;
@@ -1714,13 +1766,85 @@ export class FrozenBrowserValidator {
       await validator.close();
     }
   }
-  private static async acquireJournal(options: {
+  /** Reads exactly one consumed run without recovery, worker effects, or report admission. */
+  static async readConsumedReport(
+    options: Readonly<{
+      directory: string;
+      expectedIdentity: FrozenBrowserJournalIdentity;
+      consumedRun: FrozenBrowserConsumedRunKey;
+    }>,
+  ): Promise<FrozenBrowserConsumedReport> {
+    const directory = resolve(options.directory);
+    if (options.expectedIdentity === undefined) fail('worker-journal-identity-required');
+    const expected = exact(admissionSnapshot(options.expectedIdentity), [
+      'ownerId',
+      'configurationDigest',
+    ]);
+    const expectedIdentity = {
+      ownerId: id(expected.ownerId),
+      configurationDigest: sha256(expected.configurationDigest),
+    };
+    const selected = exact(admissionSnapshot(options.consumedRun), [
+      'acceptanceId',
+      'runId',
+      'requestDigest',
+    ]);
+    const consumedRun: FrozenBrowserConsumedRunKey = {
+      acceptanceId: id(selected.acceptanceId),
+      runId: id(selected.runId),
+      requestDigest: sha256(selected.requestDigest),
+    };
+    const journal = await FrozenBrowserValidator.acquireJournal({
+      directory,
+      expectedIdentity,
+      storage: 'existing-only',
+      historical: true,
+    });
+    try {
+      const record = journal.records.find(
+        (record) =>
+          record.kind === 'consumed-acceptance' &&
+          record.acceptance.acceptanceId === consumedRun.acceptanceId &&
+          record.acceptance.requestDigest === consumedRun.requestDigest &&
+          record.execution.run.intent.runId === consumedRun.runId &&
+          record.execution.run.intent.requestDigest === consumedRun.requestDigest,
+      );
+      if (!record || record.kind !== 'consumed-acceptance')
+        return fail('validator-identity-conflict');
+      await journal.guard();
+      const { intent, result } = record.execution.run;
+      return structuredClone({
+        consumedRun,
+        admittedAt: intent.admittedAt,
+        deadline: intent.deadline,
+        ...(result.kind === 'settled'
+          ? { state: 'settled' as const, report: result.report }
+          : { state: result.kind }),
+      });
+    } finally {
+      journal.close();
+    }
+  }
+  private static acquireJournal(options: {
+    directory: string;
+    expectedIdentity: FrozenBrowserJournalIdentity;
+    storage: 'existing-only';
+    historical: true;
+  }): Promise<HistoricalJournal>;
+  private static acquireJournal(options: {
     workspace: WorkspaceStore;
     directory: string;
     expectedIdentity?: FrozenBrowserJournalIdentity;
     storage: 'create-or-open' | 'existing-only';
-  }): Promise<FrozenBrowserValidator> {
-    const { workspace, directory, expectedIdentity, storage } = options;
+  }): Promise<FrozenBrowserValidator>;
+  private static async acquireJournal(options: {
+    workspace?: WorkspaceStore;
+    directory: string;
+    expectedIdentity?: FrozenBrowserJournalIdentity;
+    storage: 'create-or-open' | 'existing-only';
+    historical?: true;
+  }): Promise<FrozenBrowserValidator | HistoricalJournal> {
+    const { workspace, directory, expectedIdentity, storage, historical } = options;
     if (owners.has(directory)) fail('validator-already-open');
     owners.add(directory);
     let db: DatabaseSync | undefined;
@@ -1846,6 +1970,7 @@ export class FrozenBrowserValidator {
       }
       await readRegular(journalPath, limits.journal);
       const hot = names.includes('journal.sqlite-journal');
+      if (historical && hot) fail('validator-rollback-sidecar');
       if (hot) await readRegular(join(directory, 'journal.sqlite-journal'), limits.journal * 2);
       db = new DatabaseSync(journalPath, { readOnly: !fresh && !hot });
       db.exec('PRAGMA trusted_schema=OFF;');
@@ -1943,6 +2068,26 @@ export class FrozenBrowserValidator {
       )
         fail('worker-journal-identity-mismatch');
       if (!same(journalIdentity, await identity(journalPath))) fail('validator-journal-replaced');
+      if (historical) {
+        const identities: JournalIdentities = {
+          root: rootIdentity,
+          journal: journalIdentity,
+          marker: await identity(markerPath),
+          policy: await identity(policyPath),
+        };
+        const database = db;
+        return {
+          records,
+          guard: () => guardJournalFiles(directory, identities, marker, assets.policy, true),
+          close: () => {
+            try {
+              database.close();
+            } finally {
+              owners.delete(directory);
+            }
+          },
+        };
+      }
       if (!fresh) {
         db.close();
         db = new DatabaseSync(journalPath);
@@ -1952,7 +2097,7 @@ export class FrozenBrowserValidator {
       );
       const validator = new FrozenBrowserValidator(
         directory,
-        workspace,
+        workspace!,
         db,
         meta,
         records,
@@ -1968,8 +2113,11 @@ export class FrozenBrowserValidator {
       if (fresh) await validator.save();
       return validator;
     } catch (error) {
-      db?.close();
-      owners.delete(directory);
+      try {
+        db?.close();
+      } finally {
+        owners.delete(directory);
+      }
       throw error;
     }
   }
@@ -2006,37 +2154,7 @@ export class FrozenBrowserValidator {
   }
   private async guard() {
     if (this.broken) fail('validator-journal-failed');
-    if (
-      (await realpath(this.directory)) !== this.directory ||
-      !same(await identity(this.directory), this.identities.root) ||
-      !(await lstat(this.directory)).isDirectory()
-    )
-      fail('validator-root-replaced');
-    for (const [name, expected] of [
-      ['journal.sqlite', this.identities.journal],
-      ['owner.json', this.identities.marker],
-      ['seccomp.json', this.identities.policy],
-    ] as const)
-      if (!same(await identity(join(this.directory, name)), expected))
-        fail('validator-file-replaced');
-    if (
-      !same(await readRegular(join(this.directory, 'owner.json'), 8192), this.marker) ||
-      !same(
-        await readRegular(join(this.directory, 'seccomp.json'), limits.control),
-        this.assets.policy,
-      )
-    )
-      fail('validator-ownership-changed');
-    for (const name of await readdir(this.directory)) {
-      if (
-        !['journal.sqlite', 'journal.sqlite-journal', 'owner.json', 'seccomp.json'].includes(name)
-      )
-        fail('unexpected-validator-file');
-      await readRegular(
-        join(this.directory, name),
-        name === 'journal.sqlite-journal' ? limits.journal * 2 : limits.journal,
-      );
-    }
+    await guardJournalFiles(this.directory, this.identities, this.marker, this.assets.policy);
   }
   private save(run?: Run, signal?: AbortSignal): Promise<void> {
     const operation = this.journalQueue.then(() => this.saveNow(run, signal));
