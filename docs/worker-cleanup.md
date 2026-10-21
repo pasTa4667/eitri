@@ -33,7 +33,7 @@ Existing ordinary and restricted opening behavior remains unchanged. Journal-onl
 
 ## Limits
 
-This is an offline worker library command. It does not restore callback authority, admit native checks, export trusted reports, or enable production execution. Unknown builds and unresolved acquisition can remain incomplete indefinitely.
+This is an offline worker library command. It does not restore callback authority, admit native checks, export trusted reports, or enable production execution. The separate [historical report query](worker-reports.md) retrieves retained consumed reports without changing cleanup. Unknown builds and unresolved acquisition can remain incomplete indefinitely.
 
 Successful cleanup records historical ownership checks and absence observations. It does not establish daemon quiescence, exclude late effects, or reclaim retained cache. Existing trusted-owner, same-UID, and power-loss limitations remain.
 

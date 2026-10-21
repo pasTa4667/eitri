@@ -62,6 +62,6 @@ Cleanup has its existing separate bounded allowance. It can settle cancelled or 
 
 ## Scope
 
-This is an opt-in offline library handoff. The later [targeted cleanup command](worker-cleanup.md) reconciles historical cleanup for one consumed run without restoring callback authority. Its synthetic verification does not establish actual daemon cleanup. Production main remains unwired. Native real-check admission, trusted live cleanup reconciliation, actual fixture validation, and M2 acceptance remain separate work. No new HTTP or native UI capability enables it.
+This is an opt-in offline library handoff. The later [targeted cleanup command](worker-cleanup.md) reconciles historical cleanup for one consumed run without restoring callback authority. Its synthetic verification does not establish actual daemon cleanup. The separate [historical report query](worker-reports.md) retrieves retained consumed reports without recovery or worker effects. Production main remains unwired. Native real-check admission, trusted live cleanup reconciliation, actual fixture validation, and M2 acceptance remain separate work. No new HTTP or native UI capability enables it.
 
 The [verification record](evidence/worker-consumption/verification.md) distinguishes actual temporary-store and subprocess checks from scripted external effects. Same-UID hostile writers, arbitrary unobserved clock changes, power-loss durability, and hard realtime interruption remain outside the established guarantee.
