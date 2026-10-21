@@ -1,6 +1,6 @@
 # Native consumed-browser checks
 
-`NativeCase.recordConsumedBrowserCheck(action, checkId, value, signal)` records a provenance-bearing baseline or browser receipt from an unknown settled consumed-report envelope. This is a library operation. The existing `run_check` tool and production dispatch do not call it.
+`NativeCase.recordConsumedBrowserCheck(action, checkId, value, signal)` records a provenance-bearing baseline or browser receipt from an unknown settled consumed-report envelope. The `run_check` tool calls this operation when an explicitly configured offline callback requests consumed-report handoff. Production main and HTTP activation remain disabled.
 
 ## Inputs and authority
 
@@ -17,6 +17,14 @@ The optional `RuntimeHost.captureConsumedCheckAuthority` capability supplies a d
 The closure compares its original capture with current authority at publication gates. It does not replace the capture with newer state. Reliable recording can finish during `pause-requested` while the same action remains authorized. Paused, retired, expired, or superseded actions cannot publish historical success.
 
 The native operation constructs its expectation from the anchor and calls the existing `admitFrozenBrowserConsumedReport` converter. It does not trust a previously converted admission or a historical observation as publication authority. Owner attribution comes from the controller binding and admission-retention chain, not the submitted report.
+
+## Offline tool handoff
+
+A configured callback returns `{ type: 'consumed-browser' }` after acceptance and consumption. This marker is valid only for baseline and browser checks. It cannot contain a report, selector, outcome, or artifacts. Existing simulated completion remains unchanged.
+
+The controller waits for the exact worker scope to drain and release its journal. It requires fulfilled consumption matching independently retained facts. It captures current authority and reads the exact consumed run through the existing historical reader. Acquisition is serialized with workspace operations and tracked through shutdown. Failed drainage remains visible to shutdown.
+
+The native tool passes the detached settled report to admission before action retirement. A blocked native result takes failed retirement rather than reliable completion. Behavioral failure still produces an honest failed receipt. Scope revocation does not grant more action allowance or retire the current action.
 
 ## Outcomes
 
@@ -53,4 +61,4 @@ Blob-only, manifest-without-receipt, and receipt-without-checkpoint states remai
 
 The [verification record](evidence/native-consumed-check/verification.md) records checks and GPT review. New tests use scripted worker claims with literal PNG bytes and actual temporary native SQLite persistence. Existing process-kill tests cover the retained recovery ordering.
 
-These checks establish consistency and persistence, not actual Docker execution, containment, cleanup, daemon quiescence, or hostile same-UID authorship. Production report handoff, actual fixture validation, M2 acceptance, and later human-presence gates remain separate work.
+These checks establish consistency and persistence, not actual Docker execution, containment, cleanup, daemon quiescence, or hostile same-UID authorship. Offline tool-level handoff is verified separately in the [handoff record](evidence/report-handoff/verification.md). Production activation, actual fixture validation, M2 acceptance, and later human-presence gates remain separate work.
