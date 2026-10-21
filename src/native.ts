@@ -41,6 +41,7 @@ import {
 } from './artifacts.ts';
 
 import { admitFrozenBrowserConsumedReport } from './frozen-browser.ts';
+import type { FrozenBrowserConsumedReport } from './frozen-browser.ts';
 import {
   consumedExpectation,
   executionLimits,
@@ -55,6 +56,10 @@ import type {
   StoredRealCheck,
 } from './native-browser-check.ts';
 
+export type DispatchedCheckExecution =
+  | CheckExecution
+  | Readonly<{ type: 'consumed-browser'; history: FrozenBrowserConsumedReport }>;
+
 export type RuntimeHost = {
   captureConsumedCheckAuthority?(action: Action, signal: AbortSignal): ConsumedCheckAuthority;
   current(): Case;
@@ -68,7 +73,11 @@ export type RuntimeHost = {
   assess(action: Action, assessment: Assessment, checks: Check[]): Promise<void>;
   checkpoint(action: Action, check: Check): void;
   probe(signal: AbortSignal): Promise<string>;
-  check(action: Action, kind: Check['kind'], signal: AbortSignal): Promise<CheckExecution>;
+  check(
+    action: Action,
+    kind: Check['kind'],
+    signal: AbortSignal,
+  ): Promise<DispatchedCheckExecution>;
   validateCheckAction(action: Action): void;
   fault(point: string): void;
   changed(): void;
@@ -342,6 +351,16 @@ export class NativeCase {
                 const checkId = randomUUID();
                 const kind = args.kind as Check['kind'];
                 const result = await host.check(action, kind, signal);
+                if (result.type === 'consumed-browser') {
+                  const admission = await native.recordConsumedBrowserCheck(
+                    action,
+                    checkId,
+                    result.history,
+                    signal,
+                  );
+                  if (admission.type === 'unavailable') return fail(`check-${admission.reason}`);
+                  return admission.check;
+                }
                 if (result.type !== 'completed') return result;
                 return native.recordCheck(action, checkId, result.check, signal);
               });
@@ -636,7 +655,7 @@ export class NativeCase {
       authority.assertCurrent();
     };
     return this.serializePublication(async () => {
-      await this.persistValidatedCheck(anchor.action, check, admission.outputs, guard);
+      await this.persistValidatedCheck(action, check, admission.outputs, guard);
       return { type: 'recorded', check: projectRealCheck(check).check };
     });
   }

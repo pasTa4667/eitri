@@ -12,6 +12,7 @@ import {
 } from '@earendil-works/pi-ai/providers/faux';
 import { Controller } from '../../src/controller.ts';
 import { NativeCase } from '../../src/native.ts';
+import type { DispatchedCheckExecution } from '../../src/native.ts';
 import type { AdmittedCheckRequest, CheckExecution } from '../../src/domain.ts';
 
 const mode = process.argv[2];
@@ -42,7 +43,7 @@ let release!: (result: CheckExecution) => void;
 const pending = new Promise<CheckExecution>((resolve) => {
   release = resolve;
 });
-let settled: CheckExecution | undefined;
+let settled: DispatchedCheckExecution | undefined;
 const metadata = NativeCase.prototype.metadata;
 let wrapped = false;
 NativeCase.prototype.metadata = async function () {

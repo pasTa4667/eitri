@@ -43,6 +43,7 @@ import type {
   HistoricalWorkerSelection,
 } from './frozen-browser.ts';
 import { NativeCase } from './native.ts';
+import type { DispatchedCheckExecution } from './native.ts';
 import type { NativeExecutionAnchor } from './native-browser-check.ts';
 import { WorkerExecutionScope } from './worker-execution-scope.ts';
 import { ArtifactStore, artifactLimits, validateOutput } from './artifacts.ts';
@@ -67,6 +68,7 @@ import type {
   Case,
   Check,
   CheckExecution,
+  CheckCallbackResult,
   Issue,
   Receipt,
   Selection,
@@ -205,7 +207,7 @@ type Options = {
   check?: (
     request: AdmittedCheckRequest,
     source?: OfflineActionWorkspace,
-  ) => Promise<CheckExecution>;
+  ) => Promise<CheckCallbackResult>;
   issues?: () => Promise<Issue[]>;
   fault?: (point: string, caseId: string) => void;
 };
@@ -1563,12 +1565,17 @@ export class Controller {
     action: Action,
     kind: Check['kind'],
     signal: AbortSignal,
-  ): Promise<CheckExecution> {
+  ): Promise<DispatchedCheckExecution> {
     let request: AdmittedCheckRequest;
     let source: OfflineActionWorkspace | undefined;
     let live = true;
     let workerScope: WorkerExecutionScope | undefined;
     let callbackSettled = false;
+    const consumption: {
+      observation:
+        | { state: 'not-completed' | 'failed' }
+        | { state: 'completed'; value: FrozenBrowserConsumption };
+    } = { observation: { state: 'not-completed' } };
     const callback = this.options.check;
     const revoke = () => {
       live = false;
@@ -1640,7 +1647,26 @@ export class Controller {
             source = Object.freeze({
               ...source!,
               workerAcceptance: Object.freeze({ accept: workerScope.accept }),
-              workerConsumption: Object.freeze({ consume: workerScope.consume }),
+              workerConsumption: Object.freeze({
+                consume: () => {
+                  const observed = workerScope!.consume().then(
+                    (value) => {
+                      if (consumption.observation.state !== 'failed')
+                        consumption.observation = {
+                          state: 'completed',
+                          value: structuredClone(value),
+                        };
+                      return value;
+                    },
+                    (error: unknown) => {
+                      consumption.observation = { state: 'failed' };
+                      throw error;
+                    },
+                  );
+                  void observed.catch(() => {});
+                  return observed;
+                },
+              }),
             });
           } else
             source = Object.freeze({
@@ -1693,7 +1719,7 @@ export class Controller {
         error instanceof ControlError ? error.code : 'check-dispatch-denied',
       );
     }
-    let execution: CheckExecution;
+    let execution: CheckCallbackResult;
     let abort!: () => void;
     let workerAbort!: () => void;
     try {
@@ -1757,6 +1783,56 @@ export class Controller {
       );
     }
     switch (execution.type) {
+      case 'consumed-browser': {
+        try {
+          if (!workerScope) return fail('consumed-check-scope-required');
+          await this.revokeWorkerScope(action, workerScope);
+          if (consumption.observation.state !== 'completed')
+            return fail('consumed-check-consumption-required');
+          const authority = this.captureConsumedCheckAuthority(id, action, signal);
+          const delivered = consumption.observation.value;
+          if (
+            !isDeepStrictEqual(authority.anchor.facts.consumedRun, {
+              acceptanceId: delivered.acceptanceId,
+              runId: delivered.run.runId,
+              requestDigest: delivered.run.requestDigest,
+            })
+          )
+            fail('consumed-check-consumption-mismatch');
+          const binding = this.workerJournalBinding();
+          const acquisition = this.workspaceSerial(async () => {
+            authority.assertCurrent();
+            if (this.workerScopes.size !== 0) fail('worker-history-busy');
+            const history = await FrozenBrowserValidator.readConsumedReport({
+              directory: binding.directory,
+              expectedIdentity: {
+                ownerId: binding.ownerId,
+                configurationDigest: sha256(binding.configurationDigest),
+              },
+              consumedRun: {
+                ...authority.anchor.facts.consumedRun,
+                requestDigest: sha256(authority.anchor.facts.consumedRun.requestDigest),
+              },
+            });
+            authority.assertCurrent();
+            if (history.state !== 'settled') fail('consumed-check-not-settled');
+            return history;
+          });
+          this.workerInspections.add(acquisition);
+          void acquisition
+            .finally(() => this.workerInspections.delete(acquisition))
+            .catch(() => {});
+          const history = await acquisition;
+          authority.assertCurrent();
+          return { type: 'consumed-browser', history: structuredClone(history) };
+        } catch (error) {
+          return this.stopCheck(
+            id,
+            action,
+            error instanceof ControlError ? error.code : 'consumed-check-handoff-failed',
+          );
+        }
+      }
       case 'completed':
         return execution;
       case 'infrastructure':
@@ -2263,20 +2339,22 @@ export class Controller {
       this.watchers.delete(update);
     };
   }
-  private revokeWorkerScope(action: Action, scope: WorkerExecutionScope) {
+  private revokeWorkerScope(action: Action, scope: WorkerExecutionScope): Promise<void> {
     scope.revoke();
     const drainage = scope.close();
-    if (this.workerDrains.has(drainage)) return;
+    if (this.workerDrains.has(drainage)) return drainage;
     this.workerDrains.add(drainage);
+    const cleanup = () => {
+      if (this.workerScopes.get(action) === scope) this.workerScopes.delete(action);
+      this.workerDrains.delete(drainage);
+    };
     void drainage
-      .catch(() => {
+      .then(cleanup, () => {
         this.workerDrainFailed = true;
-      })
-      .finally(() => {
-        if (this.workerScopes.get(action) === scope) this.workerScopes.delete(action);
-        this.workerDrains.delete(drainage);
+        cleanup();
       })
       .catch(() => {});
+    return drainage;
   }
   close(): Promise<void> {
     if (this.closure) return this.closure;
@@ -2495,7 +2573,7 @@ function validateSourceAction(action: Readonly<Action>, c: Case) {
     fail('invalid-action-source');
   actionDeadlineAt(action);
 }
-function parseCheckExecution(value: unknown, kind: Check['kind']): CheckExecution {
+function parseCheckExecution(value: unknown, kind: Check['kind']): CheckCallbackResult {
   if (!value || typeof value !== 'object' || Array.isArray(value))
     return fail('invalid-check-execution');
   const record = value as Record<string, unknown>;
@@ -2504,6 +2582,9 @@ function parseCheckExecution(value: unknown, kind: Check['kind']): CheckExecutio
   if (type !== 'completed') {
     if (keys.length !== 1 || keys[0] !== 'type') return fail('invalid-check-execution');
     switch (type) {
+      case 'consumed-browser':
+        if (kind !== 'baseline' && kind !== 'browser') return fail('invalid-check-execution');
+        return { type };
       case 'infrastructure':
       case 'unrelated-failure':
       case 'cancelled':

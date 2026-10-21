@@ -141,6 +141,7 @@ export type CheckExecution =
   | { type: 'cancelled' }
   | { type: 'uncertain' }
   | { type: 'cleanup-incomplete' };
+export type CheckCallbackResult = CheckExecution | Readonly<{ type: 'consumed-browser' }>;
 type CheckFields = {
   id: string;
   caseId: string;
