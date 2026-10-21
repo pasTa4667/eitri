@@ -32,4 +32,4 @@ Ordinary `admitFrozenBrowserReport` still requires full-allowance timing. Neithe
 
 Conversion performs no journal acquisition, writes, execution, cleanup or clock reads. It establishes consistency, not authorship, containment, executed cleanup, current controller authority or daemon quiescence. It does not create a native check receipt.
 
-Controller retrieval correlation, native real-check admission, actual fixture validation and M2 acceptance remain separate work. This converter does not enable live integrations.
+The separate [controller historical query](controller-worker-history.md) correlates retained requests with journal-derived history. It does not supply independent execution pins or invoke this converter. Durable execution-fact retention, native real-check admission, actual fixture validation and M2 acceptance remain separate work. This converter does not enable live integrations.

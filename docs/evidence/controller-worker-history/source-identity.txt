@@ -1,0 +1,5 @@
+9bd7a301345f59302a996ea48c770393394d51b6f669bf5a09fb37e7035be962  src/controller.ts
+2e27738f5ebf13d7dd48bec16d11cf4b7adf911005c4b00a51387af8543a282b  src/frozen-browser.ts
+2760f9e0477c727ede0caa67f1475f7382a53cea07d5835288875c2b36dd1ff6  test/controller-worker-association.test.ts
+1ea1dd174b7db6c62aad6abd9dd412b2ef3f74db587f1aed41c63fd83f45748b  test/frozen-browser-consumed-report.test.ts
+38ba7d8ea772989b4ff08c3f5fee6b7b91a8d6c2b6bac37d95aff8a1897471da  test/controller-worker-consumed-history.test.ts

@@ -319,6 +319,18 @@ The verification record retains one initial writer test-harness failure and two 
 
 Temporary SQLite journals and literal screenshot-byte assertions establish the recorded offline behavior. External effects remain scripted. Conversion establishes consistency, not authorship, containment, executed cleanup, current authority or daemon quiescence. No production main, controller, native, HTTP, workspace, worker asset, Rust, dependency, schema or containment change occurs. No monitored fixture edit, credential access, live service, application inference, publication or deployment occurs. Native real-check admission, controller retrieval correlation, actual fixture validation and M2 acceptance remain open. No remote is configured, so delivery remains local. The requested next implementation step is complete.
 
+## Controller historical correlation continuation on October 21
+
+This continuation resumes from `9500610` after consumed-report conversion. Source `4a5cc23cf0424cfe925bc7b52d9c16da8d9246b1` implements the next bounded offline prerequisite. The [reference](controller-worker-history.md) and [verification record](evidence/controller-worker-history/verification.md) describe the contract and retained results.
+
+Two independent GPT sketches and a fresh cross-judge select an action-only historical query with existing source validation and one read-only SQLite snapshot. The controller matches its retained original request and pinned journal binding. Results explicitly label execution identity and timing as journal-derived and independent execution pins as unavailable. No converter or native evidence admission follows the query. Existing queue ownership and shutdown drainage cover the entire acquisition through closure. Registered worker scopes cause an explicit busy rejection.
+
+Fresh GPT source review passes without blockers. Its optional queued-input capture regression is deferred, not a demonstrated defect. The separate comment audit requires zero deletions and finds no suppressions. Parent hashes match the reviewed source and tests before and after verification. All delegated roles use `openai-codex/gpt-6.1-sol`. This is fresh-context same-family review, not cross-family assurance.
+
+Parent `npm run verify:all` independently passes 1,024 Node and 30 Rust tests with no failures, cancellations, or skips. Parent focused verification at the source commit passes all 65 tests. The owner separately passes 73 focused, 1,024 Node, and 30 Rust tests. Its initial combined verification stops on a test lint warning and is not counted as a full pass. Initial typing errors, an incomplete controller run, and one intermediate gated test timeout remain recorded. Final source uses no suppression. Existing Rust dependency future-incompatibility notices remain.
+
+Temporary stores and seeded historical rows establish offline behavior, not actual Docker containment or live cleanup. Startup remains recovery-capable. Production main, HTTP, native, workspace, worker assets, Rust, dependencies, schema, accounting, and containment remain unchanged. Durable execution-fact retention, native real-check admission, actual fixture validation, and M2 acceptance remain open. No credentials, live services, application inference, monitored fixture edits, publication, or deployment occur. No remote is configured. This requested next implementation step is complete.
+
 ## Checkpoint policy
 
 Update this file and `decisions.tsv` after each substantial unit. Record commands and actual results. Do not call a simulated run a live model result. No compaction tool is exposed by this harness. These files are the continuation record for automatic or operator-triggered compaction.

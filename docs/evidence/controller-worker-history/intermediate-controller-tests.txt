@@ -1,0 +1,30 @@
+✔ inspectWorkerConsumedHistory returns detached literal baseline states with original intent and no effects (1689.757666ms)
+✔ inspectWorkerConsumedHistory returns detached literal browser states with original intent and no effects (1626.865709ms)
+✔ inspectWorkerConsumedHistory preserves source validation and never acquires for unrecorded intent (988.672167ms)
+✔ inspectWorkerConsumedHistory matches the complete request before legacy classification and selects the exact tuple (1129.837209ms)
+✔ inspectWorkerConsumedHistory keeps original attribution after edits, interruption, Retry, epoch advancement and reopen (2947.544333ms)
+✔ inspectWorkerConsumedHistory rejects lazy worker scopes without historical acquisition (998.758958ms)
+✔ inspectWorkerConsumedHistory rejects acquiring worker scopes without historical acquisition (955.594333ms)
+✔ inspectWorkerConsumedHistory rejects held worker scopes without historical acquisition (1009.890334ms)
+✔ inspectWorkerConsumedHistory rejects revoked-draining worker scopes without historical acquisition (990.137667ms)
+✔ inspectWorkerConsumedHistory holds the queue through guard and closure while close drains both admitted reads (1062.213209ms)
+✔ historical closure precedes queued acceptance-only opening (977.883084ms)
+✖ a scope registered after the busy check opens only after historical closure (30018.268208ms)
+✔ historical acquisition failure rejects the query, drains close and releases ownership (1473.68525ms)
+✔ historical guard failure rejects the query, drains close and releases ownership (1479.110875ms)
+✔ historical close failure rejects the query, drains close and releases ownership (1514.405417ms)
+✔ historical storage absence, foreign identity and external ownership reject rather than claim absence (989.311792ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 1
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 50167.120958
+
+✖ failing tests:
+
+test at test/controller-worker-consumed-history.test.ts:732:1
+✖ a scope registered after the busy check opens only after historical closure (30018.268208ms)
+  'test timed out after 30000ms'
