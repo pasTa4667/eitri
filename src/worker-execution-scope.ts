@@ -7,6 +7,11 @@ import type {
   RecoveryInventory,
 } from './frozen-browser.ts';
 
+type RetainConsumedExecution = (
+  acceptance: FrozenBrowserAcceptance,
+  consumption: FrozenBrowserConsumption,
+) => void;
+
 export class WorkerExecutionScope {
   private live = true;
   private controller = new AbortController();
@@ -15,20 +20,24 @@ export class WorkerExecutionScope {
   private consumption?: Promise<FrozenBrowserConsumption>;
   private operations = new Set<Promise<unknown>>();
   private drainage?: Promise<void>;
+  private retentionFailure?: { error: unknown };
   readonly signal = this.controller.signal;
 
   private request: FrozenBrowserRequest;
   private open: () => Promise<FrozenBrowserConsumptionJournal>;
   private sample: () => number;
+  private retain: RetainConsumedExecution;
 
   constructor(
     request: FrozenBrowserRequest,
     open: () => Promise<FrozenBrowserConsumptionJournal>,
     sample: () => number,
+    retain: RetainConsumedExecution,
   ) {
-    this.request = request;
+    this.request = structuredClone(request);
     this.open = open;
     this.sample = sample;
+    this.retain = retain;
   }
 
   currentAllowance = (): number => {
@@ -57,7 +66,7 @@ export class WorkerExecutionScope {
       (async () => {
         const journal = await this.ownedJournal();
         this.currentAllowance();
-        const accepted = await journal.accept(this.request, () => {
+        const accepted = await journal.accept(structuredClone(this.request), () => {
           this.currentAllowance();
           return true;
         });
@@ -76,7 +85,18 @@ export class WorkerExecutionScope {
         this.consumption ??= (async () => {
           const journal = await this.ownedJournal();
           this.currentAllowance();
-          return journal.consume(accepted, this.currentAllowance, this.signal);
+          const result = await journal.consume(
+            structuredClone(accepted),
+            this.currentAllowance,
+            this.signal,
+          );
+          try {
+            this.retain(structuredClone(accepted), structuredClone(result));
+          } catch (error) {
+            this.retentionFailure = { error };
+            throw error;
+          }
+          return result;
         })();
         const result = await this.consumption;
         this.currentAllowance();
@@ -97,8 +117,21 @@ export class WorkerExecutionScope {
     this.revoke();
     return (this.drainage ??= (async () => {
       await Promise.allSettled(this.operations);
-      const journal = await this.journal;
+      const journal = await this.journal?.catch((error: unknown) => {
+        if (
+          error instanceof ControlError &&
+          [
+            'action-source-revoked',
+            'check-dispatch-denied',
+            'check-allowance-exhausted',
+            'check-cancelled',
+          ].includes(error.code)
+        )
+          return undefined;
+        throw error;
+      });
       await journal?.close();
+      if (this.retentionFailure) throw this.retentionFailure.error;
     })());
   }
 }

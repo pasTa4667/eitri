@@ -31,6 +31,7 @@ import type {
   RecoveryRecord,
   FrozenBrowserAcceptance,
   FrozenBrowserConsumption,
+  FrozenBrowserConsumedRunKey,
   FrozenBrowserConsumedReport,
   HistoricalWorkerSelection,
 } from './frozen-browser.ts';
@@ -89,10 +90,24 @@ export type WorkerAssociationObservation =
   | Readonly<{ state: 'conflict'; intent: WorkerIntent; runs: readonly RecoveryRecord[] }>
   | Readonly<{ state: 'matched'; intent: WorkerIntent; run: RecoveryRecord }>;
 type Historical<T> = Readonly<{ provenance: 'worker-journal'; value: T }>;
-type IndependentExecutionPins = Readonly<{
-  state: 'unavailable';
-  reason: 'not-retained-by-controller';
+type WorkerExecutionFacts = Readonly<{
+  consumedRun: FrozenBrowserConsumedRunKey;
+  admittedAt: number;
+  deadline: number;
 }>;
+export type WorkerExecutionFactsObservation =
+  | Readonly<{
+      state: 'unavailable';
+      reason: 'no-worker-intent' | 'not-retained-by-controller';
+    }>
+  | Readonly<{
+      state: 'retained';
+      provenance: 'controller-live-consumption';
+      intent: WorkerIntent;
+      binding: WorkerJournalBinding;
+      facts: WorkerExecutionFacts;
+    }>;
+type IndependentExecutionPins = WorkerExecutionFactsObservation;
 export type WorkerConsumedHistoryObservation =
   | Readonly<{ state: 'unrecorded' }>
   | Readonly<{ state: 'absent'; intent: WorkerIntent }>
@@ -126,7 +141,7 @@ type WorkspaceBinding = Readonly<{
     | Readonly<{ state: 'ready'; baseRevision: GitRevision }>
     | Readonly<{ state: 'uncertain'; reason: string }>
   );
-type ActionSource = Readonly<{
+type ActionSourceAuthority = Readonly<{
   action: Readonly<Action>;
   kind: Check['kind'];
   workerIntent?: WorkerIntent;
@@ -137,6 +152,15 @@ type ActionSource = Readonly<{
     | Readonly<{ state: 'settled'; frozen: FrozenRevision }>
     | Readonly<{ state: 'interrupted'; reason: string; frozen: FrozenRevision | null }>
   );
+type ActionSource = ActionSourceAuthority &
+  Readonly<{
+    workerExecutionFacts?: WorkerExecutionFacts;
+  }>;
+type WorkerExecutionCapture = Readonly<{
+  source: Extract<ActionSourceAuthority, { state: 'selected' }> &
+    Readonly<{ workerIntent: WorkerIntent }>;
+  binding: WorkerJournalBinding;
+}>;
 type Options = {
   directory: string;
   policy: { project: string; environment: string; repository: string };
@@ -174,6 +198,7 @@ export class Controller {
   private closure?: Promise<void>;
   private workerScopes = new Map<Action, WorkerExecutionScope>();
   private workerDrains = new Set<Promise<void>>();
+  private workerDrainFailed = false;
   private workerInspections = new Set<Promise<unknown>>();
   private starting = true;
   private tickScheduled = false;
@@ -465,6 +490,72 @@ export class Controller {
       return structuredClone({ state: 'conflict', intent, runs });
     return structuredClone({ state: 'matched', intent, run });
   }
+  private workerJournalBinding(): WorkerJournalBinding {
+    const row = this.db
+      .prepare("SELECT value FROM metadata WHERE key='offline_worker_journal'")
+      .get();
+    const configured = this.options.offlineWorkerJournal ?? fail('offline-worker-journal-required');
+    const binding = row ? JSON.parse(String(row.value)) : fail('invalid-worker-journal-binding');
+    if (
+      !binding ||
+      !hasFields(binding, ['version', 'directory', 'ownerId', 'configurationDigest']) ||
+      !isDeepStrictEqual(binding, { version: 1, ...configured })
+    )
+      fail('invalid-worker-journal-binding');
+    return binding;
+  }
+  private retainWorkerExecutionFacts(
+    capture: WorkerExecutionCapture,
+    accepted: FrozenBrowserAcceptance,
+    result: FrozenBrowserConsumption,
+  ): void {
+    this.transaction(() => {
+      const original = capture.source;
+      const current = this.source(original.action.caseId, original.action.id);
+      const binding = this.workerJournalBinding();
+      if (
+        !isDeepStrictEqual(binding, capture.binding) ||
+        current.state === 'selecting' ||
+        !current.frozen ||
+        !isDeepStrictEqual(current.action, original.action) ||
+        current.kind !== original.kind ||
+        !isDeepStrictEqual(current.frozen, original.frozen) ||
+        !isDeepStrictEqual(current.workerIntent, original.workerIntent)
+      )
+        fail('worker-execution-facts-conflict');
+      const facts = validateLiveWorkerExecutionFacts(capture, accepted, result);
+      if (current.workerExecutionFacts) {
+        if (!isDeepStrictEqual(current.workerExecutionFacts, facts))
+          fail('worker-execution-facts-conflict');
+        return;
+      }
+      this.db
+        .prepare('UPDATE action_sources SET value=? WHERE action_id=?')
+        .run(JSON.stringify({ ...current, workerExecutionFacts: facts }), original.action.id);
+    });
+  }
+  inspectWorkerExecutionFacts(id: string, actionId: string): WorkerExecutionFactsObservation {
+    if (!uuid(id) || !uuid(actionId)) fail('invalid-worker-association-id');
+    if (this.closing) fail('controller-closed');
+    const source = this.source(id, actionId);
+    if (!source.workerIntent) return { state: 'unavailable', reason: 'no-worker-intent' };
+    return this.workerExecutionFactsObservation(source, this.workerJournalBinding());
+  }
+  private workerExecutionFactsObservation(
+    source: ActionSource,
+    binding: WorkerJournalBinding,
+  ): WorkerExecutionFactsObservation {
+    if (!source.workerIntent) return { state: 'unavailable', reason: 'no-worker-intent' };
+    if (!source.workerExecutionFacts)
+      return { state: 'unavailable', reason: 'not-retained-by-controller' };
+    return structuredClone({
+      state: 'retained',
+      provenance: 'controller-live-consumption',
+      intent: source.workerIntent,
+      binding,
+      facts: source.workerExecutionFacts,
+    });
+  }
   /** Correlates retained intent with historical data, not independent execution authority. */
   inspectWorkerConsumedHistory(
     id: string,
@@ -486,6 +577,10 @@ export class Controller {
     const source = this.source(id, actionId);
     if (!source.workerIntent) return { state: 'unrecorded' };
     const intent = structuredClone(source.workerIntent);
+    const independentExecutionPins = this.workerExecutionFactsObservation(
+      source,
+      this.workerJournalBinding(),
+    );
     return this.workspaceSerial(async (): Promise<WorkerConsumedHistoryObservation> => {
       if (this.workerScopes.size !== 0) fail('worker-history-busy');
       const selected = await FrozenBrowserValidator.readHistoricalSelection({
@@ -521,10 +616,7 @@ export class Controller {
       return structuredClone({
         intent,
         acceptance: { provenance: 'worker-journal', value: selected.acceptance },
-        independentExecutionPins: {
-          state: 'unavailable',
-          reason: 'not-retained-by-controller',
-        },
+        independentExecutionPins,
         ...(selected.kind === 'consumed'
           ? {
               state: 'consumed',
@@ -672,6 +764,7 @@ export class Controller {
         'kind',
         'state',
         ...(s.workerIntent === undefined ? [] : ['workerIntent']),
+        ...(Object.hasOwn(s, 'workerExecutionFacts') ? ['workerExecutionFacts'] : []),
         ...(s.state === 'selecting'
           ? ['expected']
           : s.state === 'interrupted'
@@ -723,6 +816,10 @@ export class Controller {
         request.allowanceMs > s.action.limitMs
       )
         fail('invalid-worker-intent');
+    }
+    if (Object.hasOwn(s, 'workerExecutionFacts')) {
+      if (!s.workerIntent) return fail('invalid-worker-execution-facts');
+      validateRetainedWorkerExecutionFacts(s.workerExecutionFacts, s.workerIntent);
     }
     return s;
   }
@@ -863,6 +960,7 @@ export class Controller {
             action: s.action,
             kind: s.kind,
             ...(s.workerIntent ? { workerIntent: s.workerIntent } : {}),
+            ...(s.workerExecutionFacts ? { workerExecutionFacts: s.workerExecutionFacts } : {}),
             state: 'interrupted',
             reason: 'interrupted-source-selection',
             frozen: s.state === 'selected' ? s.frozen : null,
@@ -1422,14 +1520,18 @@ export class Controller {
         });
         this.options.fault?.('after-worker-intent', id);
         if (this.options.offlineWorkerAcceptance) {
-          const retained = this.source(id, action.id);
+          const retained = sourceAuthorityValue(this.source(id, action.id));
           const assertCurrentAuthority = (): true => {
             this.sourceAuthority(id, action, signal, () => live);
-            if (!isDeepStrictEqual(this.source(id, action.id), retained))
+            if (!isDeepStrictEqual(sourceAuthorityValue(this.source(id, action.id)), retained))
               fail('worker-acceptance-source-changed');
             return true;
           };
           if (this.options.offlineWorkerConsumption) {
+            const capture = captureWorkerExecutionAnchor(
+              this.source(id, action.id),
+              this.workerJournalBinding(),
+            );
             workerScope = new WorkerExecutionScope(
               workerRequest,
               () =>
@@ -1450,6 +1552,7 @@ export class Controller {
                 assertCurrentAuthority();
                 return this.checkAllowance(id, action, signal).remainingMs;
               },
+              (accepted, result) => this.retainWorkerExecutionFacts(capture, accepted, result),
             );
             this.workerScopes.set(action, workerScope);
             source = Object.freeze({
@@ -1618,6 +1721,7 @@ export class Controller {
               action: s.action,
               kind: s.kind,
               ...(s.workerIntent ? { workerIntent: s.workerIntent } : {}),
+              ...(s.workerExecutionFacts ? { workerExecutionFacts: s.workerExecutionFacts } : {}),
               state: 'interrupted',
               reason: 'source-action-interrupted',
               frozen: s.state === 'selected' ? s.frozen : null,
@@ -2083,6 +2187,9 @@ export class Controller {
     if (this.workerDrains.has(drainage)) return;
     this.workerDrains.add(drainage);
     void drainage
+      .catch(() => {
+        this.workerDrainFailed = true;
+      })
       .finally(() => {
         if (this.workerScopes.get(action) === scope) this.workerScopes.delete(action);
         this.workerDrains.delete(drainage);
@@ -2109,10 +2216,138 @@ export class Controller {
     this.db.close();
     openDirectories.delete(this.directory);
     if (closed.some((result) => result.status === 'rejected')) fail('native-close-failed');
-    if (workersClosed.some((result) => result.status === 'rejected')) fail('worker-close-failed');
+    if (this.workerDrainFailed || workersClosed.some((result) => result.status === 'rejected'))
+      fail('worker-close-failed');
     if (workspaceClosed.some((result) => result.status === 'rejected'))
       fail('workspace-close-failed');
   }
+}
+
+function sourceAuthorityValue(source: ActionSource): ActionSourceAuthority {
+  const { workerExecutionFacts: _facts, ...authority } = source;
+  return authority;
+}
+function captureWorkerExecutionAnchor(
+  source: ActionSource,
+  binding: WorkerJournalBinding,
+): WorkerExecutionCapture {
+  const authority = sourceAuthorityValue(source);
+  if (
+    authority.state !== 'selected' ||
+    !authority.workerIntent ||
+    (authority.kind !== 'baseline' && authority.kind !== 'browser')
+  )
+    return fail('invalid-worker-execution-facts');
+  return structuredClone({
+    source: { ...authority, workerIntent: authority.workerIntent },
+    binding,
+  });
+}
+function validateLiveWorkerExecutionFacts(
+  capture: WorkerExecutionCapture,
+  accepted: FrozenBrowserAcceptance,
+  result: FrozenBrowserConsumption,
+): WorkerExecutionFacts {
+  try {
+    const { request, requestDigest } = capture.source.workerIntent;
+    const { binding } = capture;
+    if (
+      !accepted ||
+      !hasFields(accepted, [
+        'acceptanceId',
+        'request',
+        'requestDigest',
+        'configurationDigest',
+        'ownerId',
+        'acceptedAt',
+        'deadline',
+      ]) ||
+      !workerIdentifier(accepted.acceptanceId) ||
+      !workerIdentifier(accepted.ownerId) ||
+      !isDeepStrictEqual(frozenBrowserRequest(accepted.request), request) ||
+      digest(accepted.request) !== requestDigest ||
+      digest(request) !== requestDigest ||
+      accepted.requestDigest !== requestDigest ||
+      accepted.configurationDigest !== binding.configurationDigest ||
+      accepted.ownerId !== binding.ownerId ||
+      ![accepted.acceptedAt, accepted.deadline].every((n) => Number.isSafeInteger(n) && n >= 0) ||
+      accepted.deadline - accepted.acceptedAt !== request.allowanceMs ||
+      !result ||
+      !hasFields(result, ['acceptanceId', 'run']) ||
+      result.acceptanceId !== accepted.acceptanceId
+    )
+      return fail('invalid-worker-execution-facts');
+    const run = result.run;
+    if (
+      !run ||
+      !['recorded', 'settled'].includes(run.state) ||
+      !hasFields(run, [
+        'runId',
+        'request',
+        'requestDigest',
+        'configurationDigest',
+        'admittedAt',
+        'deadline',
+        'build',
+        'image',
+        'container',
+        'state',
+        'outcome',
+        'cleanup',
+      ]) ||
+      !isDeepStrictEqual(frozenBrowserRequest(run.request), request) ||
+      digest(run.request) !== requestDigest ||
+      run.requestDigest !== requestDigest ||
+      run.configurationDigest !== binding.configurationDigest
+    )
+      return fail('invalid-worker-execution-facts');
+    return validateRetainedWorkerExecutionFacts(
+      {
+        consumedRun: {
+          acceptanceId: result.acceptanceId,
+          runId: run.runId,
+          requestDigest: run.requestDigest,
+        },
+        admittedAt: run.admittedAt,
+        deadline: run.deadline,
+      },
+      capture.source.workerIntent,
+    );
+  } catch {
+    return fail('invalid-worker-execution-facts');
+  }
+}
+function validateRetainedWorkerExecutionFacts(
+  value: unknown,
+  intent: WorkerIntent,
+): WorkerExecutionFacts {
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    Array.isArray(value) ||
+    !hasFields(value, ['consumedRun', 'admittedAt', 'deadline'])
+  )
+    return fail('invalid-worker-execution-facts');
+  const facts = value as WorkerExecutionFacts;
+  const key = facts.consumedRun;
+  if (
+    !key ||
+    typeof key !== 'object' ||
+    Array.isArray(key) ||
+    !hasFields(key, ['acceptanceId', 'runId', 'requestDigest']) ||
+    !workerIdentifier(key.acceptanceId) ||
+    !workerIdentifier(key.runId) ||
+    key.requestDigest !== intent.requestDigest ||
+    !/^[0-9a-f]{64}$/.test(key.requestDigest) ||
+    ![facts.admittedAt, facts.deadline].every((n) => Number.isSafeInteger(n) && n >= 0) ||
+    facts.deadline <= facts.admittedAt ||
+    facts.deadline - facts.admittedAt > intent.request.allowanceMs
+  )
+    return fail('invalid-worker-execution-facts');
+  return structuredClone(facts);
+}
+function workerIdentifier(value: unknown): value is string {
+  return typeof value === 'string' && uuid(value) && value === value.toLowerCase();
 }
 
 function offlineSourceDigest(offline: OfflineWorkspaceOptions): string {
