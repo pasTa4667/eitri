@@ -192,6 +192,12 @@ export type FrozenBrowserExpectation =
       kind: 'browser';
       request: FrozenBrowserRequest & Readonly<{ role: 'candidate' }>;
     }>;
+export type FrozenBrowserConsumedExpectation = FrozenBrowserExpectation &
+  Readonly<{
+    consumedRun: FrozenBrowserConsumedRunKey;
+    admittedAt: number;
+    deadline: number;
+  }>;
 type BehavioralOutcome = Readonly<{
   kind: 'baseline-reproduced' | 'baseline-not-reproduced' | 'candidate-passed' | 'candidate-failed';
 }>;
@@ -658,6 +664,92 @@ function admissionSnapshot(value: unknown): Json {
   return copy(value, 0);
 }
 
+function parseAdmissionExpectation(e: ObjectValue): FrozenBrowserExpectation {
+  const request = frozenBrowserRequest(e.request);
+  const configurationDigest = sha256(e.configurationDigest);
+  if (e.kind === 'baseline' && request.role === 'baseline')
+    return { kind: 'baseline', configurationDigest, request: { ...request, role: 'baseline' } };
+  if (e.kind === 'browser' && request.role === 'candidate')
+    return { kind: 'browser', configurationDigest, request: { ...request, role: 'candidate' } };
+  return fail('invalid-frozen-browser-admission');
+}
+
+function admitReportSnapshot(
+  expected: FrozenBrowserExpectation,
+  r: ObjectValue,
+  actualTiming: Readonly<{ admittedAt: number; deadline: number }> | null,
+): FrozenBrowserAdmission {
+  const { request, configurationDigest } = expected;
+  const returnedRequest = frozenBrowserRequest(r.request);
+  if (!same(request, returnedRequest)) fail('invalid-frozen-browser-admission');
+  const report: FrozenBrowserReport = {
+    runId: id(r.runId),
+    request: returnedRequest,
+    outcome: outcome(r.outcome),
+    cleanup: cleanup(r.cleanup),
+    evidence: evidence(r.evidence),
+  };
+  const observedOutcome = !['infrastructure-failed', 'cancelled', 'uncertain'].includes(
+    report.outcome.kind,
+  );
+  if (report.evidence) {
+    const p = report.evidence.provenance;
+    const observed = report.evidence.observations;
+    scenarioObservations(observed);
+    if (Object.hasOwn(p.applied, 'inspectionSha256')) sha256(p.applied.inspectionSha256);
+    if (
+      p.requestDigest !== digest(request) ||
+      p.configurationDigest !== configurationDigest ||
+      !same(p.frozen, request.frozen) ||
+      (actualTiming === null
+        ? !Number.isSafeInteger(p.admittedAt + request.allowanceMs) ||
+          p.deadline !== p.admittedAt + request.allowanceMs
+        : p.admittedAt !== actualTiming.admittedAt || p.deadline !== actualTiming.deadline) ||
+      p.finishedAt < p.admittedAt ||
+      p.exitCode !== 0 ||
+      new Set(p.transfer.map((f) => f.path)).size !== p.transfer.length ||
+      p.transfer.reduce((n, f) => n + f.size, 0) > 32 * 1024 ** 2 ||
+      !same(p.transfer, observed.manifest) ||
+      (observedOutcome &&
+        (p.finishedAt > p.deadline || !same(classify(request, observed), report.outcome))) ||
+      report.cleanup.kind === 'not-needed'
+    )
+      fail('invalid-frozen-browser-admission');
+  } else if (observedOutcome) fail('invalid-frozen-browser-admission');
+  if (report.cleanup.kind === 'incomplete')
+    return { type: 'blocked', report, reason: 'cleanup-incomplete' };
+  switch (report.outcome.kind) {
+    case 'infrastructure-failed':
+      return { type: 'blocked', report, reason: 'infrastructure' };
+    case 'unrelated-failure':
+    case 'cancelled':
+    case 'uncertain':
+      return { type: 'blocked', report, reason: report.outcome.kind };
+    default: {
+      const retained = report.evidence;
+      if (!retained || report.cleanup.kind !== 'owned-removed')
+        return fail('invalid-frozen-browser-admission');
+      return {
+        type: 'behavioral',
+        report: {
+          ...report,
+          outcome: { kind: report.outcome.kind },
+          cleanup: { kind: report.cleanup.kind, cache: report.cleanup.cache },
+          evidence: retained,
+        },
+        passed: ['baseline-reproduced', 'candidate-passed'].includes(report.outcome.kind),
+        outputs: [
+          {
+            label: 'Frozen browser screenshot',
+            mime: 'image/png',
+            bytes: Buffer.from(retained.png.base64, 'base64'),
+          },
+        ],
+      };
+    }
+  }
+}
+
 /** Converts detached report claims into scenario data, not controller admission or a receipt.
  * Matching digests establish consistency, not authorship, containment, or executed cleanup.
  */
@@ -670,81 +762,59 @@ export function admitFrozenBrowserReport(
     const reportData = admissionSnapshot(value);
     const e = exact(expectedData, ['configurationDigest', 'kind', 'request']);
     const r = exact(reportData, ['runId', 'request', 'outcome', 'cleanup', 'evidence']);
-    const request = frozenBrowserRequest(e.request);
-    const returnedRequest = frozenBrowserRequest(r.request);
-    const configurationDigest = sha256(e.configurationDigest);
+    return admitReportSnapshot(parseAdmissionExpectation(e), r, null);
+  } catch {
+    return fail('invalid-frozen-browser-admission');
+  }
+}
+
+/** Converts settled historical claims against independent selector and timing pins.
+ * Establishes consistency, not authorship, current authority or live cleanup.
+ */
+export function admitFrozenBrowserConsumedReport(
+  expected: FrozenBrowserConsumedExpectation,
+  value: unknown,
+): FrozenBrowserAdmission {
+  try {
+    const expectedData = admissionSnapshot(expected);
+    const historyData = admissionSnapshot(value);
+    const e = exact(expectedData, [
+      'configurationDigest',
+      'kind',
+      'request',
+      'consumedRun',
+      'admittedAt',
+      'deadline',
+    ]);
+    const parsed = parseAdmissionExpectation(e);
+    const selected = exact(e.consumedRun, ['acceptanceId', 'runId', 'requestDigest']);
+    const consumedRun: FrozenBrowserConsumedRunKey = {
+      acceptanceId: id(selected.acceptanceId),
+      runId: id(selected.runId),
+      requestDigest: sha256(selected.requestDigest),
+    };
+    const admittedAt = integer(e.admittedAt);
+    const deadline = integer(e.deadline);
     if (
-      !(
-        (e.kind === 'baseline' && request.role === 'baseline') ||
-        (e.kind === 'browser' && request.role === 'candidate')
-      ) ||
-      !same(request, returnedRequest)
+      consumedRun.requestDigest !== digest(parsed.request) ||
+      deadline <= admittedAt ||
+      deadline - admittedAt > parsed.request.allowanceMs
     )
       fail('invalid-frozen-browser-admission');
-    const report: FrozenBrowserReport = {
-      runId: id(r.runId),
-      request: returnedRequest,
-      outcome: outcome(r.outcome),
-      cleanup: cleanup(r.cleanup),
-      evidence: evidence(r.evidence),
-    };
-    const observedOutcome = !['infrastructure-failed', 'cancelled', 'uncertain'].includes(
-      report.outcome.kind,
-    );
-    if (report.evidence) {
-      const p = report.evidence.provenance;
-      const observed = report.evidence.observations;
-      scenarioObservations(observed);
-      if (Object.hasOwn(p.applied, 'inspectionSha256')) sha256(p.applied.inspectionSha256);
-      if (
-        p.requestDigest !== digest(request) ||
-        p.configurationDigest !== configurationDigest ||
-        !same(p.frozen, request.frozen) ||
-        !Number.isSafeInteger(p.admittedAt + request.allowanceMs) ||
-        p.deadline !== p.admittedAt + request.allowanceMs ||
-        p.finishedAt < p.admittedAt ||
-        p.exitCode !== 0 ||
-        new Set(p.transfer.map((f) => f.path)).size !== p.transfer.length ||
-        p.transfer.reduce((n, f) => n + f.size, 0) > 32 * 1024 ** 2 ||
-        !same(p.transfer, observed.manifest) ||
-        (observedOutcome &&
-          (p.finishedAt > p.deadline || !same(classify(request, observed), report.outcome))) ||
-        report.cleanup.kind === 'not-needed'
-      )
-        fail('invalid-frozen-browser-admission');
-    } else if (observedOutcome) fail('invalid-frozen-browser-admission');
-    if (report.cleanup.kind === 'incomplete')
-      return { type: 'blocked', report, reason: 'cleanup-incomplete' };
-    switch (report.outcome.kind) {
-      case 'infrastructure-failed':
-        return { type: 'blocked', report, reason: 'infrastructure' };
-      case 'unrelated-failure':
-      case 'cancelled':
-      case 'uncertain':
-        return { type: 'blocked', report, reason: report.outcome.kind };
-      default: {
-        const retained = report.evidence;
-        if (!retained || report.cleanup.kind !== 'owned-removed')
-          return fail('invalid-frozen-browser-admission');
-        return {
-          type: 'behavioral',
-          report: {
-            ...report,
-            outcome: { kind: report.outcome.kind },
-            cleanup: { kind: report.cleanup.kind, cache: report.cleanup.cache },
-            evidence: retained,
-          },
-          passed: ['baseline-reproduced', 'candidate-passed'].includes(report.outcome.kind),
-          outputs: [
-            {
-              label: 'Frozen browser screenshot',
-              mime: 'image/png',
-              bytes: Buffer.from(retained.png.base64, 'base64'),
-            },
-          ],
-        };
-      }
-    }
+    const h = exact(historyData, ['consumedRun', 'admittedAt', 'deadline', 'state', 'report']);
+    const returned = exact(h.consumedRun, ['acceptanceId', 'runId', 'requestDigest']);
+    if (
+      h.state !== 'settled' ||
+      id(returned.acceptanceId) !== consumedRun.acceptanceId ||
+      id(returned.runId) !== consumedRun.runId ||
+      sha256(returned.requestDigest) !== consumedRun.requestDigest ||
+      integer(h.admittedAt) !== admittedAt ||
+      integer(h.deadline) !== deadline
+    )
+      fail('invalid-frozen-browser-admission');
+    const r = exact(h.report, ['runId', 'request', 'outcome', 'cleanup', 'evidence']);
+    if (id(r.runId) !== consumedRun.runId) fail('invalid-frozen-browser-admission');
+    return admitReportSnapshot(parsed, r, { admittedAt, deadline });
   } catch {
     return fail('invalid-frozen-browser-admission');
   }

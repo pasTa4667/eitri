@@ -7,12 +7,18 @@ import { once } from 'node:events';
 import { mkdir, readdir, readFile, rename, chmod, writeFile, rm, lstat } from 'node:fs/promises';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { FrozenBrowserValidator, admitFrozenBrowserReport } from '../src/frozen-browser.ts';
+import {
+  FrozenBrowserValidator,
+  admitFrozenBrowserReport,
+  admitFrozenBrowserConsumedReport,
+} from '../src/frozen-browser.ts';
 import type {
   FrozenBrowserConsumedRunKey,
+  FrozenBrowserConsumedExpectation,
   FrozenBrowserJournalIdentity,
 } from '../src/frozen-browser.ts';
 import { sha256 } from '../src/workspace.ts';
+import { digest } from '../src/domain.ts';
 import { journalRows } from './controller-worker-association-fixture.ts';
 import { consumptionFixture } from './frozen-browser-consumption-fixture.ts';
 import {
@@ -60,116 +66,159 @@ function pendingObservation(consumedRun: FrozenBrowserConsumedRunKey, state = 'p
   return { consumedRun, admittedAt: 1000, deadline: 13345, state };
 }
 
-test('readConsumedReport exports retained shortened report and literal PNG without changing any exhausted history or file', async (t) => {
-  const f = await consumptionFixture(t, 'cleanup-fail');
-  const originalNow = Date.now;
-  Date.now = () => 1000000;
-  try {
-    await f.journal.consume(f.accepted, () => 12345, new AbortController().signal);
-  } finally {
-    Date.now = originalNow;
-  }
-  await f.journal.close();
-  const rows = journalRows(f.directory);
-  const consumedRun = selector(rows.runs[0]);
-  for (let i = 1; i < 16; i++) {
-    const record = consumedRecord(otherAcceptance(f.accepted), true);
-    if (i === 2) {
-      record.execution.run.intent.deadline = 61000;
-      rows.runs.push({ kind: 'execution', run: record.execution.run });
-    } else rows.runs.push(record);
-  }
-  rows.runs.push({ kind: 'offline-acceptance', ...otherAcceptance(f.accepted) });
-  rows.meta.attempts = 16;
-  rows.meta.contribution = 671088640;
-  writeRows(f.directory, rows);
-  const before = await files(f.directory);
-  const calls = (await f.state()).calls;
-  const options = {
-    directory: f.directory,
-    expectedIdentity: f.options.expectedIdentity,
-    consumedRun,
-  };
-  forbidEffects(t);
-  const statements: string[] = [];
-  const exec = DatabaseSync.prototype.exec;
-  t.mock.method(DatabaseSync.prototype, 'exec', function (this: DatabaseSync, sql: string) {
-    statements.push(sql);
-    assert.throws(() => Reflect.apply(exec, this, ['DELETE FROM runs']), /readonly|read-only/);
-    return Reflect.apply(exec, this, [sql]);
-  });
-  const result = await read(options);
-  assert.equal(result.state, 'settled');
-  if (result.state !== 'settled') throw Error('not-settled');
-  const { evidence, ...report } = result.report;
-  assert.deepEqual(
-    { ...result, report },
-    {
-      consumedRun,
-      admittedAt: 1000000,
-      deadline: 1012345,
-      state: 'settled',
-      report: {
-        runId: consumedRun.runId,
-        request: f.request,
-        outcome: { kind: 'baseline-reproduced' },
-        cleanup: { kind: 'incomplete', cache: 'retained', code: 'owned-cleanup-unconfirmed' },
+for (const mode of ['normal', 'cleanup-fail'])
+  test(`readConsumedReport exports and converts shortened ${mode} history without changing any exhausted history or file`, async (t) => {
+    const f = await consumptionFixture(t, mode);
+    let consumed;
+    const originalNow = Date.now;
+    Date.now = () => 1000000;
+    try {
+      consumed = await f.journal.consume(f.accepted, () => 12345, new AbortController().signal);
+    } finally {
+      Date.now = originalNow;
+    }
+    const expected: FrozenBrowserConsumedExpectation = {
+      kind: 'baseline',
+      configurationDigest: f.accepted.configurationDigest,
+      request: { ...f.request, role: 'baseline' },
+      consumedRun: {
+        acceptanceId: f.accepted.acceptanceId,
+        runId: consumed.run.runId,
+        requestDigest: sha256(digest(f.request)),
       },
-    },
-  );
-  assert.deepEqual(evidence?.png, png);
-  assert.deepEqual(
-    Buffer.from(evidence!.png.base64, 'base64'),
-    Buffer.from(
-      '89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000b49444154789c6360000200000500017a5eab3f0000000049454e44ae426082',
-      'hex',
-    ),
-  );
-  assert.deepEqual(
-    {
-      allowanceMs: result.report.request.allowanceMs,
-      admittedAt: evidence?.provenance.admittedAt,
-      deadline: evidence?.provenance.deadline,
-      finishedAt: evidence?.provenance.finishedAt,
-      literal: evidence?.observations.literal,
-      stage: evidence?.observations.stage,
-    },
-    {
-      allowanceMs: 60000,
       admittedAt: 1000000,
       deadline: 1012345,
-      finishedAt: 1000000,
-      literal: 'A',
-      stage: 'complete',
-    },
-  );
-  assert.deepEqual(result.report, rows.runs[0].execution.run.result.report);
-  assert.throws(
-    () =>
-      admitFrozenBrowserReport(
-        {
-          kind: 'baseline',
-          configurationDigest: f.accepted.configurationDigest,
-          request: { ...f.request, role: 'baseline' },
+    };
+    await f.journal.close();
+    const rows = journalRows(f.directory);
+    const consumedRun = selector(rows.runs[0]);
+    for (let i = 1; i < 16; i++) {
+      const record = consumedRecord(otherAcceptance(f.accepted), true);
+      if (i === 2) {
+        record.execution.run.intent.deadline = 61000;
+        rows.runs.push({ kind: 'execution', run: record.execution.run });
+      } else rows.runs.push(record);
+    }
+    rows.runs.push({ kind: 'offline-acceptance', ...otherAcceptance(f.accepted) });
+    rows.meta.attempts = 16;
+    rows.meta.contribution = 671088640;
+    writeRows(f.directory, rows);
+    const before = await files(f.directory);
+    const calls = (await f.state()).calls;
+    const options = {
+      directory: f.directory,
+      expectedIdentity: f.options.expectedIdentity,
+      consumedRun,
+    };
+    forbidEffects(t);
+    const statements: string[] = [];
+    const exec = DatabaseSync.prototype.exec;
+    t.mock.method(DatabaseSync.prototype, 'exec', function (this: DatabaseSync, sql: string) {
+      statements.push(sql);
+      assert.throws(() => Reflect.apply(exec, this, ['DELETE FROM runs']), /readonly|read-only/);
+      return Reflect.apply(exec, this, [sql]);
+    });
+    const result = await read(options);
+    assert.equal(result.state, 'settled');
+    if (result.state !== 'settled') throw Error('not-settled');
+    const { evidence, ...report } = result.report;
+    assert.deepEqual(
+      { ...result, report },
+      {
+        consumedRun,
+        admittedAt: 1000000,
+        deadline: 1012345,
+        state: 'settled',
+        report: {
+          runId: consumedRun.runId,
+          request: f.request,
+          outcome: { kind: 'baseline-reproduced' },
+          cleanup:
+            mode === 'cleanup-fail'
+              ? { kind: 'incomplete', cache: 'retained', code: 'owned-cleanup-unconfirmed' }
+              : { kind: 'owned-removed', cache: 'retained' },
         },
-        result.report,
+      },
+    );
+    assert.deepEqual(evidence?.png, png);
+    assert.deepEqual(
+      Buffer.from(evidence!.png.base64, 'base64'),
+      Buffer.from(
+        '89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000b49444154789c6360000200000500017a5eab3f0000000049454e44ae426082',
+        'hex',
       ),
-    /invalid-frozen-browser-admission/,
-  );
-  Object.assign(result.consumedRun, { runId: randomUUID() });
-  Object.assign(result.report.request.action, { epoch: 99 });
-  Object.assign(evidence!.provenance, { deadline: 0 });
-  Object.assign(evidence!.png, { base64: '' });
-  const again = await read(options);
-  assert.equal(again.state, 'settled');
-  if (again.state !== 'settled') throw Error('not-settled');
-  assert.deepEqual(again.report, rows.runs[0].execution.run.result.report);
-  assert.deepEqual(again.consumedRun, consumedRun);
-  assert.deepEqual(statements, ['PRAGMA trusted_schema=OFF;', 'PRAGMA trusted_schema=OFF;']);
-  assert.deepEqual(journalRows(f.directory), rows);
-  assert.deepEqual(await files(f.directory), before);
-  assert.deepEqual((await f.state()).calls, calls);
-});
+    );
+    assert.deepEqual(
+      {
+        allowanceMs: result.report.request.allowanceMs,
+        admittedAt: evidence?.provenance.admittedAt,
+        deadline: evidence?.provenance.deadline,
+        finishedAt: evidence?.provenance.finishedAt,
+        literal: evidence?.observations.literal,
+        stage: evidence?.observations.stage,
+      },
+      {
+        allowanceMs: 60000,
+        admittedAt: 1000000,
+        deadline: 1012345,
+        finishedAt: 1000000,
+        literal: 'A',
+        stage: 'complete',
+      },
+    );
+    assert.deepEqual(result.report, rows.runs[0].execution.run.result.report);
+    assert.throws(
+      () =>
+        admitFrozenBrowserReport(
+          {
+            kind: 'baseline',
+            configurationDigest: f.accepted.configurationDigest,
+            request: { ...f.request, role: 'baseline' },
+          },
+          result.report,
+        ),
+      /invalid-frozen-browser-admission/,
+    );
+    assert.deepEqual(result.consumedRun, expected.consumedRun);
+    assert.equal(
+      result.report.evidence!.provenance.requestDigest,
+      expected.consumedRun.requestDigest,
+    );
+    const admission = admitFrozenBrowserConsumedReport(expected, result);
+    assert.deepEqual(
+      admission,
+      mode === 'cleanup-fail'
+        ? { type: 'blocked', report: result.report, reason: 'cleanup-incomplete' }
+        : {
+            type: 'behavioral',
+            report: result.report,
+            passed: true,
+            outputs: [
+              {
+                label: 'Frozen browser screenshot',
+                mime: 'image/png',
+                bytes: Buffer.from(
+                  '89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000b49444154789c6360000200000500017a5eab3f0000000049454e44ae426082',
+                  'hex',
+                ),
+              },
+            ],
+          },
+    );
+    Object.assign(result.consumedRun, { runId: randomUUID() });
+    Object.assign(result.report.request.action, { epoch: 99 });
+    Object.assign(evidence!.provenance, { deadline: 0 });
+    Object.assign(evidence!.png, { base64: '' });
+    const again = await read(options);
+    assert.equal(again.state, 'settled');
+    if (again.state !== 'settled') throw Error('not-settled');
+    assert.deepEqual(again.report, rows.runs[0].execution.run.result.report);
+    assert.deepEqual(again.consumedRun, consumedRun);
+    assert.deepEqual(statements, ['PRAGMA trusted_schema=OFF;', 'PRAGMA trusted_schema=OFF;']);
+    assert.deepEqual(journalRows(f.directory), rows);
+    assert.deepEqual(await files(f.directory), before);
+    assert.deepEqual((await f.state()).calls, calls);
+  });
 
 for (const state of ['pending', 'recorded', 'settled'] as const)
   test(`readConsumedReport preserves selected ${state} history with no normalization or worker effects`, async (t) => {
