@@ -101,21 +101,28 @@ export type Assessment = {
 };
 export type ArtifactMime = 'text/plain' | 'image/png';
 export type ArtifactOutput = { label: string; mime: ArtifactMime; bytes: Uint8Array };
-export type Artifact = Readonly<{
+type ArtifactFields = Readonly<{
   id: string;
   caseId: string;
   actionId: string;
   checkId: string;
   revision: string;
   configuration: string;
-  simulated: boolean;
   createdAt: number;
   label: string;
   mime: ArtifactMime;
   size: number;
   sha256: string;
 }>;
-export type CheckResult = Omit<Check, 'id' | 'caseId' | 'actionId' | 'artifacts'> & {
+export type Artifact = ArtifactFields &
+  (
+    | { simulated: true }
+    | { simulated: false; mime: 'image/png'; label: 'Frozen browser screenshot' }
+  );
+export type CheckResult = Pick<
+  SimulatedCheck,
+  'kind' | 'candidate' | 'configuration' | 'passed' | 'simulated'
+> & {
   outputs: readonly ArtifactOutput[];
 };
 export type AdmittedCheckRequest = Readonly<{
@@ -134,17 +141,52 @@ export type CheckExecution =
   | { type: 'cancelled' }
   | { type: 'uncertain' }
   | { type: 'cleanup-incomplete' };
-export type Check = {
+type CheckFields = {
   id: string;
   caseId: string;
   actionId: string;
-  kind: 'baseline' | 'checkpoint' | 'unit' | 'regression' | 'build' | 'browser';
   candidate: string;
   configuration: string;
   passed: boolean;
-  simulated: boolean;
   artifacts: string[];
 };
+export type SimulatedCheck = CheckFields & {
+  kind: 'baseline' | 'checkpoint' | 'unit' | 'regression' | 'build' | 'browser';
+  simulated: true;
+};
+export type NativeBrowserProvenance = Readonly<{
+  kind: 'frozen-browser-consumed-v1';
+  epoch: number;
+  ownerId: string;
+  acceptanceId: string;
+  runId: string;
+  requestDigest: string;
+  admittedAt: number;
+  deadline: number;
+  finishedAt: number;
+  outcome:
+    | 'baseline-reproduced'
+    | 'baseline-not-reproduced'
+    | 'candidate-passed'
+    | 'candidate-failed';
+}>;
+export type RealBrowserCheck = CheckFields & {
+  kind: 'baseline' | 'browser';
+  simulated: false;
+  provenance: NativeBrowserProvenance;
+};
+export type Check = SimulatedCheck | RealBrowserCheck;
+export type NativeRealCheckResult =
+  | { type: 'recorded'; check: RealBrowserCheck }
+  | {
+      type: 'unavailable';
+      reason:
+        | 'cleanup-incomplete'
+        | 'infrastructure'
+        | 'unrelated-failure'
+        | 'cancelled'
+        | 'uncertain';
+    };
 export type Action = {
   id: string;
   caseId: string;

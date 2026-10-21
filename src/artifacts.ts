@@ -69,7 +69,10 @@ export function validateArtifact(artifact: Artifact, caseId: string) {
     ![artifact.configuration, artifact.sha256].every(
       (value) => typeof value === 'string' && /^[0-9a-f]{64}$/.test(value),
     ) ||
-    artifact.simulated !== true ||
+    (artifact.simulated !== true &&
+      (artifact.simulated !== false ||
+        artifact.mime !== 'image/png' ||
+        artifact.label !== 'Frozen browser screenshot')) ||
     !Number.isSafeInteger(artifact.createdAt) ||
     artifact.createdAt < 0 ||
     !validLabel(artifact.label) ||

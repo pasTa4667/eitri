@@ -43,6 +43,7 @@ import type {
   HistoricalWorkerSelection,
 } from './frozen-browser.ts';
 import { NativeCase } from './native.ts';
+import type { NativeExecutionAnchor } from './native-browser-check.ts';
 import { WorkerExecutionScope } from './worker-execution-scope.ts';
 import { ArtifactStore, artifactLimits, validateOutput } from './artifacts.ts';
 import {
@@ -860,6 +861,48 @@ export class Controller {
     }
     return s;
   }
+  private captureConsumedCheckAuthority(id: string, supplied: Action, signal: AbortSignal) {
+    const action = structuredClone(supplied);
+    const capture = () => {
+      const { c } = this.checkAllowance(id, action, signal);
+      const source = this.source(id, action.id);
+      if (
+        source.state !== 'selected' ||
+        !sameAction(source.action, action) ||
+        (source.kind !== 'baseline' && source.kind !== 'browser') ||
+        !source.workerIntent ||
+        !source.workerExecutionFacts
+      )
+        return fail('consumed-check-authority-unavailable');
+      const workspace = this.binding(id);
+      const revision =
+        source.kind === 'baseline'
+          ? (c.base ?? (workspace.state === 'ready' ? workspace.baseRevision : null))
+          : c.candidate;
+      if (!revision || source.frozen.revision !== revision) fail('consumed-check-revision-changed');
+      const binding = this.workerJournalBinding();
+      const anchor: NativeExecutionAnchor = {
+        action,
+        kind: source.kind,
+        frozen: source.frozen,
+        intent: source.workerIntent,
+        binding: {
+          version: 1,
+          ownerId: binding.ownerId,
+          configurationDigest: binding.configurationDigest,
+        },
+        facts: source.workerExecutionFacts,
+      };
+      return structuredClone({ anchor, source, binding });
+    };
+    const original = capture();
+    return {
+      anchor: structuredClone(original.anchor),
+      assertCurrent: () => {
+        if (!isDeepStrictEqual(capture(), original)) fail('consumed-check-authority-changed');
+      },
+    };
+  }
   private sourceAuthority(id: string, action: Action, signal: AbortSignal, live: () => boolean) {
     if (!live()) fail('action-source-revoked');
     const { c } = this.checkAllowance(id, action, signal);
@@ -1340,6 +1383,8 @@ export class Controller {
               Promise.resolve('Scripted probe; no external effect.'),
             check: (action, kind, signal) => this.dispatchCheck(id, action, kind, signal),
             validateCheckAction: (action) => this.validateCheckAction(id, action),
+            captureConsumedCheckAuthority: (action, signal) =>
+              this.captureConsumedCheckAuthority(id, action, signal),
             fault: (point) => this.options.fault?.(point, id),
             changed: this.changed,
           },

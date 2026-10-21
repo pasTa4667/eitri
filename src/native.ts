@@ -28,6 +28,8 @@ import type {
   Check,
   CheckResult,
   CheckExecution,
+  ArtifactOutput,
+  NativeRealCheckResult,
   Message,
 } from './domain.ts';
 import {
@@ -38,7 +40,23 @@ import {
   validateOutput,
 } from './artifacts.ts';
 
+import { admitFrozenBrowserConsumedReport } from './frozen-browser.ts';
+import {
+  consumedExpectation,
+  executionLimits,
+  executionSize,
+  projectRealCheck,
+  realCheckFields,
+} from './native-browser-check.ts';
+import type {
+  ConsumedCheckAuthority,
+  NativeRealExecutionV1,
+  StoredCheck,
+  StoredRealCheck,
+} from './native-browser-check.ts';
+
 export type RuntimeHost = {
+  captureConsumedCheckAuthority?(action: Action, signal: AbortSignal): ConsumedCheckAuthority;
   current(): Case;
   admit(kind: 'model' | 'tool', limit: number): Action;
   permit(action: Action | undefined): void;
@@ -66,7 +84,7 @@ const Identity = defineDoc({
 type EvidenceDocument = {
   caseId: string;
   artifacts: Record<string, Artifact>;
-  checks: Record<string, Check>;
+  checks: Record<string, StoredCheck>;
 };
 const Evidence = defineDoc({
   kind: 'eitri.artifacts',
@@ -95,6 +113,9 @@ export class NativeCase {
   root: Conversation;
   host: RuntimeHost;
   private store: ArtifactStore;
+  private publication: Promise<void> = Promise.resolve();
+  private closing = false;
+  private closure?: Promise<void>;
   constructor(harness: Harness, root: Conversation, host: RuntimeHost, store: ArtifactStore) {
     this.harness = harness;
     this.root = root;
@@ -404,10 +425,18 @@ export class NativeCase {
     if (value.caseId !== caseId || !value.artifacts || !value.checks)
       fail('invalid-artifact-document');
     const artifacts = Object.values(value.artifacts);
-    const checks = Object.values(value.checks);
+    const storedChecks = Object.values(value.checks);
+    const checks: Check[] = [];
+    if (
+      storedChecks.reduce(
+        (sum, check) => sum + (check.simulated === false ? executionSize(check.execution) : 0),
+        0,
+      ) > executionLimits.caseBytes
+    )
+      fail('check-execution-case-limit');
     if (
       artifacts.length > artifactLimits.caseCount ||
-      checks.length > artifactLimits.checks ||
+      storedChecks.length > artifactLimits.checks ||
       artifacts.reduce((sum, artifact) => sum + artifact.size, 0) > artifactLimits.caseBytes
     )
       fail('artifact-case-limit');
@@ -416,6 +445,26 @@ export class NativeCase {
       if (id !== artifact.id) fail('invalid-artifact-document');
     }
     for (const [id, check] of Object.entries(value.checks)) {
+      if (check.simulated === false) {
+        const projected = projectRealCheck(check);
+        if (id !== check.id || check.caseId !== caseId) fail('invalid-check-receipt');
+        const artifact = value.artifacts[check.artifacts[0]];
+        if (
+          !artifact ||
+          artifact.checkId !== check.id ||
+          artifact.actionId !== check.actionId ||
+          artifact.caseId !== check.caseId ||
+          artifact.revision !== check.candidate ||
+          artifact.configuration !== check.configuration ||
+          artifact.simulated !== false
+        )
+          fail('artifact-provenance-mismatch');
+        const bytes = await this.store.read(artifact);
+        validateOutput({ label: artifact.label, mime: artifact.mime, bytes });
+        if (!bytes.equals(Buffer.from(projected.output.bytes))) fail('artifact-integrity');
+        checks.push(projected.check);
+        continue;
+      }
       if (
         Object.keys(check).some(
           (key) =>
@@ -450,6 +499,7 @@ export class NativeCase {
         new Set(check.artifacts).size !== check.artifacts.length
       )
         fail('invalid-check-receipt');
+      checks.push(check);
     }
     return { checks, artifacts };
   }
@@ -473,6 +523,11 @@ export class NativeCase {
     return { artifact, bytes: await this.store.read(artifact) };
   }
   async verifyArtifacts(check: Check) {
+    if (check.simulated === false) {
+      const stored = (await this.metadata()).checks.find((item) => item.id === check.id);
+      if (!stored || stored.simulated !== false) fail('invalid-check-receipt');
+      return;
+    }
     let total = 0;
     for (const id of check.artifacts) {
       const { artifact } = await this.readArtifact(id);
@@ -490,7 +545,18 @@ export class NativeCase {
     if (total > artifactLimits.checkBytes) fail('artifact-check-limit');
   }
   async recordCheck(action: Action, checkId: string, result: CheckResult, signal: AbortSignal) {
+    return this.serializePublication(() =>
+      this.recordSimulatedCheck(action, checkId, result, signal),
+    );
+  }
+  private async recordSimulatedCheck(
+    action: Action,
+    checkId: string,
+    result: CheckResult,
+    signal: AbortSignal,
+  ) {
     const guard = () => {
+      this.assertOpen();
       signal.throwIfAborted();
       this.host.validateCheckAction(action);
     };
@@ -501,6 +567,8 @@ export class NativeCase {
         (key) =>
           !['kind', 'candidate', 'configuration', 'passed', 'simulated', 'outputs'].includes(key),
       ) ||
+      !uuid(checkId) ||
+      !['baseline', 'checkpoint', 'unit', 'regression', 'build', 'browser'].includes(result.kind) ||
       typeof result.candidate !== 'string' ||
       !/^[0-9a-f]{40,64}$/.test(result.candidate) ||
       typeof result.configuration !== 'string' ||
@@ -516,10 +584,6 @@ export class NativeCase {
       artifactLimits.checkBytes
     )
       fail('artifact-check-limit');
-    const outputs = result.outputs.map((output) => {
-      const bytes = validateOutput(output);
-      return { label: output.label, mime: output.mime, bytes };
-    });
     const check: Check = {
       id: checkId,
       caseId: action.caseId,
@@ -528,24 +592,107 @@ export class NativeCase {
       candidate: result.candidate,
       configuration: result.configuration,
       passed: result.passed,
-      simulated: this.host.current().simulated,
+      simulated: true,
       artifacts: [],
     };
+    return this.persistValidatedCheck(action, check, result.outputs, guard);
+  }
+
+  async recordConsumedBrowserCheck(
+    action: Action,
+    checkId: string,
+    value: unknown,
+    signal: AbortSignal,
+  ): Promise<NativeRealCheckResult> {
+    this.assertOpen();
+    if (!uuid(checkId)) fail('invalid-check-receipt');
+    const authority =
+      this.host.captureConsumedCheckAuthority?.(action, signal) ??
+      fail('consumed-check-authority-unavailable');
+    const anchor = structuredClone(authority.anchor);
+    const expected = consumedExpectation(anchor);
+    const admission = admitFrozenBrowserConsumedReport(expected, value);
+    if (admission.type === 'blocked') return { type: 'unavailable', reason: admission.reason };
+    const execution: NativeRealExecutionV1 = {
+      version: 1,
+      anchor,
+      history: {
+        state: 'settled',
+        ...anchor.facts,
+        consumedRun: expected.consumedRun,
+        report: admission.report,
+      },
+    };
+    if (executionSize(execution) > executionLimits.executionBytes) fail('check-execution-limit');
+    const check: StoredRealCheck = {
+      id: checkId,
+      ...realCheckFields(anchor, admission),
+      artifacts: [],
+      execution,
+    };
+    const guard = () => {
+      this.assertOpen();
+      signal.throwIfAborted();
+      authority.assertCurrent();
+    };
+    return this.serializePublication(async () => {
+      await this.persistValidatedCheck(anchor.action, check, admission.outputs, guard);
+      return { type: 'recorded', check: projectRealCheck(check).check };
+    });
+  }
+
+  private assertOpen() {
+    if (this.closing) fail('native-closed');
+  }
+  private serializePublication<T>(operation: () => Promise<T>): Promise<T> {
+    this.assertOpen();
+    const result = this.publication.then(operation);
+    this.publication = result.then(
+      () => {},
+      () => {},
+    );
+    return result;
+  }
+  private async persistValidatedCheck(
+    action: Action,
+    check: StoredCheck,
+    rawOutputs: readonly ArtifactOutput[],
+    guard: () => void,
+  ) {
+    guard();
+    const outputs = rawOutputs.map((output) => ({ ...output, bytes: validateOutput(output) }));
     const artifacts: Artifact[] = outputs.map((output) => ({
       id: randomUUID(),
       caseId: action.caseId,
       actionId: action.id,
-      checkId,
+      checkId: check.id,
       revision: check.candidate,
       configuration: check.configuration,
-      simulated: check.simulated,
+      ...(check.simulated
+        ? { simulated: true as const, label: output.label, mime: output.mime }
+        : {
+            simulated: false as const,
+            label: 'Frozen browser screenshot' as const,
+            mime: 'image/png' as const,
+          }),
       createdAt: Date.now(),
-      label: output.label,
-      mime: output.mime,
       size: output.bytes.length,
       sha256: checksum(output.bytes),
     }));
     const existing = await this.metadata();
+    guard();
+    if (existing.checks.some((item) => item.id === check.id || item.actionId === check.actionId))
+      fail('duplicate-check-receipt');
+    if (check.simulated === false) {
+      let bytes = executionSize(check.execution);
+      await this.root.commit(async (tx) => {
+        const doc = await tx.doc(Evidence, this.root.id);
+        for (const item of Object.values(doc.checks))
+          if (item.simulated === false) bytes += executionSize(item.execution);
+      }, context);
+      guard();
+      if (bytes > executionLimits.caseBytes) fail('check-execution-case-limit');
+    }
     const total = artifacts.reduce((sum, artifact) => sum + artifact.size, 0);
     if (total > artifactLimits.checkBytes) fail('artifact-check-limit');
     if (
@@ -572,11 +719,13 @@ export class NativeCase {
       guard();
       doc.checks[check.id] = check;
     }, context);
-    await this.note(`check-${check.id}`, 'eitri.check', check);
+    guard();
+    const publicCheck = check.simulated ? check : projectRealCheck(check).check;
+    await this.note(`check-${check.id}`, 'eitri.check', publicCheck);
     this.host.fault('after-check-receipt');
     guard();
-    this.host.checkpoint(action, check);
-    return check;
+    this.host.checkpoint(action, publicCheck);
+    return publicCheck;
   }
 
   async note(requestId: string, kind: string, data: unknown) {
@@ -672,8 +821,10 @@ export class NativeCase {
   async reconcile() {
     await this.root.abort(context, { background: true });
   }
-  async close() {
-    await this.harness.close(context);
+  close(): Promise<void> {
+    if (this.closure) return this.closure;
+    this.closing = true;
+    return (this.closure = this.publication.then(() => this.harness.close(context)));
   }
 }
 function actionLifetime(host: RuntimeHost, action: Action) {

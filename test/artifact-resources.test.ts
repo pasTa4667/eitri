@@ -189,7 +189,7 @@ for (const mode of [
         const check = result();
         if (mode === 'forged-ids')
           return { type: 'completed', check: { ...check, artifacts: [randomUUID()] } };
-        if (mode === 'live-result') check.simulated = false;
+        if (mode === 'live-result') Reflect.set(check, 'simulated', false);
         if (mode === 'check-count')
           check.outputs = Array.from({ length: 9 }, () => check.outputs[0]);
         if (mode === 'case-count')
@@ -302,7 +302,10 @@ test('native manifests bind every evidence reference to its case, action, receip
     { bytes: [1, 2, 3] },
   ]) {
     await native.root.commit(async (tx) => {
-      (await tx.doc(docToken, native.root.id)).artifacts[original.id] = { ...original, ...changed };
+      (await tx.doc(docToken, native.root.id)).artifacts[original.id] = {
+        ...original,
+        ...changed,
+      } as Artifact;
     }, context);
     await assert.rejects(native.verifyArtifacts(checks[0]));
   }
