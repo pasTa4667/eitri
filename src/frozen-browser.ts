@@ -724,7 +724,7 @@ function admitReportSnapshot(
   if (report.evidence) {
     const p = report.evidence.provenance;
     const observed = report.evidence.observations;
-    scenarioObservations(observed, request);
+    scenarioObservations(observed, request, p.transfer);
     if (Object.hasOwn(p.applied, 'inspectionSha256')) sha256(p.applied.inspectionSha256);
     if (
       p.requestDigest !== digest(request) ||
@@ -1570,7 +1570,7 @@ function observations(
     r.canaryAfter !== 'ENOENT'
   )
     fail('runtime-restrictions');
-  scenarioObservations(r, request);
+  scenarioObservations(r, request, manifest);
   return r;
 }
 const profileDefinitionSha256 = checksum(Buffer.from(JSON.stringify(profileNameDefinition)));
@@ -1602,7 +1602,7 @@ function reviewedProfileHelper(manifest: Json): boolean {
     }),
   );
 }
-function scenarioObservations(r: ObjectValue, request: FrozenBrowserRequest) {
+function scenarioObservations(r: ObjectValue, request: FrozenBrowserRequest, manifest: Manifest) {
   if (!['startup-failed', 'action-failed', 'complete'].includes(string(r.stage)))
     fail('scenario-stage');
   if (request.scenarioId === 'profile-name-v1') {
@@ -1611,8 +1611,11 @@ function scenarioObservations(r: ObjectValue, request: FrozenBrowserRequest) {
     const p = exact(r.profile, ['definitionSha256', 'actuals', 'diagnostic']);
     if (p.definitionSha256 !== profileDefinitionSha256) fail('profile-definition');
     const actuals = profileActuals(p.actuals);
-    if (r.stage === 'complete' && actuals.length !== profileNameDefinition.cases.length)
-      fail('profile-incomplete');
+    if (r.stage === 'complete') {
+      if (actuals.length !== profileNameDefinition.cases.length) fail('profile-incomplete');
+      if (!manifest.some((entry) => entry.path === profileNameDefinition.helper))
+        fail('profile-helper');
+    }
     if (p.diagnostic !== null) {
       exact(p.diagnostic, ['caseId', 'nativeTypeError', 'name', 'message', 'firstFrame']);
       if (

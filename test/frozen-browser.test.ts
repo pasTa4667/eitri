@@ -23,6 +23,7 @@ import { promisify } from 'node:util';
 import { once } from 'node:events';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
+import { runInNewContext } from 'node:vm';
 import { FrozenBrowserValidator, frozenBrowserRequest } from '../src/frozen-browser.ts';
 import type { FrozenBrowserJournal, RecoveryInventory } from '../src/frozen-browser.ts';
 import { digest } from '../src/domain.ts';
@@ -2198,6 +2199,31 @@ test('profile-name-v1 binds execution, consumption and durable replay to its act
   } finally {
     await reopened.close();
   }
+});
+
+test('trusted profile invocation rejects a trailing high surrogate without reading a prototype getter and accepts astral strings', async () => {
+  const result = await runTrustedDriver('profile-normal');
+  assert.equal(result.exitCode, 0, result.stderr);
+  const declaration = result.protocol!.find((call) => call.name === 'Runtime.callFunctionOn')!.args
+    .functionDeclaration;
+  const events: string[] = [];
+  const actual = runInNewContext(
+    `Object.defineProperty(String.prototype, '1', {
+      get() { console.error('surrogate getter read'); return '\\udc00'; }
+    });
+    const candidate = () => '\\ud800';
+    candidate.invoke = (${declaration});
+    candidate.invoke({});`,
+    { console: { error: (text: string) => events.push(text) } },
+  );
+  assert.equal(actual, null);
+  assert.deepEqual(events, []);
+  assert.equal(
+    runInNewContext(`const candidate = () => '\\ud83d\\ude00';
+      candidate.invoke = (${declaration});
+      candidate.invoke({});`),
+    '😀',
+  );
 });
 
 for (const [mode, kind] of [

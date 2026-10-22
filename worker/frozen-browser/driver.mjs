@@ -287,6 +287,7 @@ async function probeProfile(page, origin) {
             for (let i = 0; i < value.length; i++) {
               const char = value[i];
               if (char >= '\\ud800' && char <= '\\udbff') {
+                if (i + 1 >= value.length) return null;
                 const next = value[++i];
                 if (!(next >= '\\udc00' && next <= '\\udfff')) return null;
               } else if (char >= '\\udc00' && char <= '\\udfff') return null;

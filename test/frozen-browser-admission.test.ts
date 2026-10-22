@@ -1034,6 +1034,27 @@ test('profile-name-v1 admits exact strings and pinned native reproduction indepe
   }
 });
 
+for (const transfer of [[], [{ path: 'src/index.html', size: 12, sha256: 'e'.repeat(64) }]]) {
+  test(`profile-name-v1 rejects complete passing evidence without helper in ${transfer.length}-entry manifest`, () => {
+    const f = profileFixture();
+    Object.assign(f.report.evidence!.provenance, { transfer });
+    f.observed.manifest = structuredClone(transfer);
+    invalid(f.expected, f.report);
+  });
+}
+
+test('profile-name-v1 admits candidate helper bytes independently of reviewed baseline', () => {
+  const f = profileFixture();
+  const transfer = f.report.evidence!.provenance.transfer;
+  transfer[0].size = 123;
+  transfer[0].sha256 = 'b'.repeat(64);
+  f.observed.manifest = structuredClone(transfer);
+  const result = admitFrozenBrowserReport(f.expected, f.report);
+  assert.equal(result.type, 'behavioral');
+  assert.equal(result.type === 'behavioral' && result.passed, true);
+  assert.deepEqual(result.report.outcome, { kind: 'candidate-passed' });
+});
+
 for (const [name, actual] of [
   ['wrong case', { caseId: 'trimmed-name', kind: 'returned', value: 'ADA LOVELACE' }],
   ['untrimmed', { caseId: 'trimmed-name', kind: 'returned', value: '  Ada Lovelace  ' }],

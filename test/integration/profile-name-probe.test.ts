@@ -310,6 +310,37 @@ test(
 );
 
 test(
+  'actual profile invocation rejects a trailing high surrogate without reading a prototype getter',
+  { timeout: 900000 },
+  async (t) => {
+    const f = await fixture(t);
+    const report = await f.run(
+      String.raw`Object.defineProperty(String.prototype, '1', {
+      get() { console.error('surrogate getter read'); return '\udc00'; }
+    });
+    export function getUserDisplayName() { return '\ud800'; }`,
+      'candidate-failed',
+    );
+    const profile = report.evidence!.observations.profile as { actuals: { kind: string }[] };
+    assert.deepEqual(
+      profile.actuals.map((actual) => actual.kind),
+      [
+        'invalid-return',
+        'invalid-return',
+        'invalid-return',
+        'invalid-return',
+        'invalid-return',
+        'invalid-return',
+        'invalid-return',
+        'invalid-return',
+        'invalid-return',
+      ],
+    );
+    assert.deepEqual(report.evidence!.observations.events, []);
+  },
+);
+
+test(
   'actual profile protocol rejects substitution, serialization, poisoned intrinsics and DOM authority',
   { timeout: 900000 },
   async (t) => {
