@@ -1,6 +1,6 @@
 # Prepare the live integrations
 
-Implementation starts without credentials. Keep live remediation disabled until M0 through M5 pass and you explicitly enable M6.
+The default controller starts without credentials. Keep live remediation disabled until M0 through M5 pass and you explicitly enable M6. The separately invoked read-only connection probe below does not enable remediation.
 
 ## Review the 1Password account
 
@@ -28,15 +28,24 @@ Enable the desktop application's CLI integration when ready. Desktop approval ca
 
 The first push remains gated on verified repository privacy, default branch, and your confirmation of the target branch. Do not rename `master` or replace the existing README.
 
-## Prepare the Sentry token after installation
+## Check the existing hosted Sentry connection
 
-1. Wait until the pinned local Sentry installation passes its readiness checks.
-2. Create or select the demonstration project in the local Sentry interface.
-3. Create an API token with the read permissions required for project issues and events.
-4. Grant only the issue write permission needed for the selected review and assignment actions.
-5. Store the token directly in the reviewed vault as a `token` field in an item named `Sentry`.
+The operator confirmed CLI integration and vault-access review, and supplied an existing hosted Sentry project: organization `pasta-re`, project ID `4512275993002064`. This replaces the local-installation prerequisite for this connection check only; it does not establish M3 completion or change the live-remediation gates.
 
-The controller must verify the installation's actual API permissions and behavior before enabling updates. The browser SDK DSN is not this API token. `op://Eitri/Sentry/token` is a proposed reference.
+The API token is stored as the **password** field of `Eitri/Sentry`: `op://Eitri/Sentry/password`. No field rename is required. This must be a Sentry API token, not a browser SDK DSN. The item website may remain the supplied issues-page URL; it is not used as a credential destination.
+
+```sh
+op account list
+npm run check:sentry -- --account <account-UUID-or-sign-in-hostname>
+```
+
+Select the reviewed company account explicitly. The probe uses the installed `/opt/homebrew/bin/op`, with desktop approval, to read only the fixed password reference into process memory. It excludes ambient `OP_*` credentials, bounds CLI output and execution time, and discards subprocess error details. It never prints the token or writes it to disk. Locking 1Password does not erase an already loaded copy; the one-shot process exits after the check.
+
+The probe sends one GET to `https://sentry.io/api/0/organizations/pasta-re/issues/`, filtered to project `4512275993002064` with a one-issue limit and a 14-day window. Redirects are refused rather than forwarding authorization. Responses are time/size bounded and only a non-secret connection summary is printed. Zero sampled issues means the API returned an empty list, not that the project has no historical errors. An empty response cannot independently verify project existence or event-detail access.
+
+Issue-list access requires `event:read` (or a broader existing scope). No write scope is needed for this check. A 401/403 requires checking token validity and access; a redirect/network failure requires reviewing the regional API origin before changing the fixed endpoint. Do not paste raw API or CLI output containing credentials into chat.
+
+The live check succeeded with zero sampled issues. Event-detail reads, polling, redacted evidence ingestion, review/assignment mutations, and production controller wiring remain unimplemented. The controller must verify API permissions and behavior before enabling updates. `npm start` still runs only synthetic cases.
 
 ## Complete OpenAI sign-in at M4
 

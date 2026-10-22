@@ -37,6 +37,14 @@ npm start
 
 The controller binds `127.0.0.1:43127`. Data defaults to `~/Library/Application Support/eitri`; set `EITRI_DATA_DIR` to select a private test directory. The mode-0600 `connection.json` contains the current bearer capability. Do not copy it into chat or a URL. `Check now` admits only synthetic issues. No live provider or publication route is enabled.
 
+## Check the 1Password / Sentry connection
+
+```sh
+npm run check:sentry -- --account <1Password-account-UUID-or-hostname>
+```
+
+This opt-in probe reads only `op://Eitri/Sentry/password` with desktop approval and tests read-only issue access to the configured hosted project. It prints no credentials or issue contents and does not change `npm start` or enable live remediation. See [setup and limitations](docs/setup.md#check-the-existing-hosted-sentry-connection).
+
 ## Run the native operator
 
 In a second terminal, with the same `EITRI_DATA_DIR` if overridden:
