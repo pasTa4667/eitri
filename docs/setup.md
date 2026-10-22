@@ -45,7 +45,7 @@ The probe sends one GET to `https://sentry.io/api/0/organizations/pasta-re/issue
 
 Issue-list access requires `event:read` (or a broader existing scope). No write scope is needed for this check. A 401/403 requires checking token validity and access; a redirect/network failure requires reviewing the regional API origin before changing the fixed endpoint. Do not paste raw API or CLI output containing credentials into chat.
 
-The live check succeeded with zero sampled issues. Event-detail reads, polling, redacted evidence ingestion, review/assignment mutations, and production controller wiring remain unimplemented. The controller must verify API permissions and behavior before enabling updates. `npm start` still runs only synthetic cases.
+The live check succeeded with zero sampled issues. The separate [read-only observation library](sentry-observation.md) now reads one selected issue and latest event with a strict metadata allowlist. Mocked tests do not establish hosted event-detail access. Polling, diagnostic-text ingestion, review/assignment mutations, and production controller wiring remain unimplemented. The controller must verify API permissions and behavior before enabling updates. `npm start` still runs only synthetic cases.
 
 ## Complete OpenAI sign-in at M4
 
