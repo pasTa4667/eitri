@@ -45,7 +45,13 @@ npm run check:sentry -- --account <1Password-account-UUID-or-hostname>
 
 This opt-in probe reads only `op://Eitri/Sentry/password` with desktop approval and tests read-only issue access to the configured hosted project. It prints no credentials or issue contents and does not change `npm start` or enable live remediation. See [setup and limitations](docs/setup.md#check-the-existing-hosted-sentry-connection).
 
-The [read-only observation library](docs/sentry-observation.md) retrieves one selected issue and its latest event. It returns only validated identity, native classification, event time, and structural counts. Its mocked boundary tests do not establish hosted event-detail access. Sentry controller intake remains disabled.
+To observe one explicitly selected issue, run the opt-in command:
+
+```sh
+npm run --silent observe:sentry -- --account <explicit-account> --issue <positive-decimal-id>
+```
+
+The command prints one JSON observation with validated identity, native classification, event time, and structural counts. This operational metadata is not anonymous. Use `--silent` for machine consumption without npm's banner. See the [read-only observation interface and limits](docs/sentry-observation.md). Live event-detail access remains unverified. Sentry controller intake remains disabled, and `npm start` is unchanged.
 
 ## Run the native operator
 
