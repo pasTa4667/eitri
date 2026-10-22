@@ -26,6 +26,8 @@ import { DatabaseSync } from 'node:sqlite';
 import { FrozenBrowserValidator, frozenBrowserRequest } from '../src/frozen-browser.ts';
 import type { FrozenBrowserJournal, RecoveryInventory } from '../src/frozen-browser.ts';
 import { digest } from '../src/domain.ts';
+import { profileNameDefinition } from '../src/profile-name-definition.ts';
+import { checksum } from '../src/artifacts.ts';
 import { WorkspaceStore, caseId, repositoryId, requestId, virtualPath } from '../src/workspace.ts';
 
 function processWitness(pid: string, ppid: string, nested = false) {
@@ -67,7 +69,9 @@ import { createHash } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 const mode = process.argv[2];
 const procRecords = JSON.parse(process.argv[3]);
-let scans=0, statReads=0, cdpReads=0;
+let scans=0, statReads=0, cdpReads=0, invocation=0;
+const profileMode=mode.startsWith('profile-');
+const profileDefinition=JSON.parse(process.argv[4]);
 const result = {stdout:'',stderr:'',exitCode:0,headers:{},closed:[],phases:[]};
 let context, primary, serve;
 const message = (page, type, text) => {
@@ -116,8 +120,10 @@ class Page extends EventEmitter {
    }
   }
  }; }
+ context() {return context;}
  async screenshot() {phase('screenshot');return Buffer.from('trusted-png-fixture');}
- async close() {}
+ async close() {if(profileMode && !this.sandbox) result.closed.push('candidate-page');}
+ async setContent(html) {result.summary=html;}
 }
 class Context extends EventEmitter {
  count=0;
@@ -128,6 +134,22 @@ class Context extends EventEmitter {
   return page;
  }
  async route() {}
+ async newCDPSession() {return {
+  send:async(name,args)=>{
+   (result.protocol??=[]).push({name,args});
+   if(name==='Runtime.enable') return {};
+   if(name==='Runtime.evaluate') return {result:{objectId:'wrapper-namespace'}};
+   if(name==='Runtime.getProperties') return {result:[{name:'probe',isOwn:true,value:{type:'function',objectId:'actual-function'}}]};
+   if(name==='Runtime.callFunctionOn') {
+    if(args.objectId!=='actual-function' || args.awaitPromise!==false || args.returnByValue!==true || /Reflect|JSON|\.call\(/.test(args.functionDeclaration)) throw Error('unsafe-invocation');
+    const values=['Anonymous','Ada Lovelace','gRaCe Hopper','Anonymous','Anonymous','Anonymous','Anonymous','Anonymous','Anonymous'];
+    const value=mode==='profile-threw'?false:mode==='profile-invalid'?null:values[invocation];
+    invocation++;
+    return {result:{value}};
+   }
+   throw Error('unexpected-profile-cdp');
+  },detach:async()=>{}
+ };}
 }
 const fs = {
  async readdir(path) {
@@ -136,16 +158,17 @@ const fs = {
    if(mode==='census-overflow') return Array.from({length:257},(_,i)=>String(i+1));
    return [...procRecords.filter(p=>!(mode==='entries-churn' && scans%2===0 && p.pid==='200')).map(p=>p.pid), 'self', 'sys'];
   }
+  if(profileMode) return path==='/snapshot/'?['src']:path==='/snapshot/src'?['lib']:['errors.js'];
   return path==='/snapshot/'?['src']:['index.html'];
  },
  async lstat(path) {
   if(!path.startsWith('/snapshot/src')) throw Object.assign(Error(),{code:'ENOENT'});
-  const directory=path==='/snapshot/src';
+  const directory=path==='/snapshot/src' || (profileMode && path==='/snapshot/src/lib');
   return {isDirectory:()=>directory,isFile:()=>!directory,nlink:1,size:1,uid:1001,mode:directory?0o555:0o444};
  },
  async readFile(path) {
   const name=String(path);
-  if(name.endsWith('/scenario.json')) return readFileSync(new URL('scenario.json', 'file://'+process.argv[1]));
+  if(name.endsWith('/scenario.json')) return Buffer.from(JSON.stringify({...JSON.parse(readFileSync(new URL('scenario.json', 'file://'+process.argv[1]))),profile:profileDefinition}));
   if (/^\/proc\/\d+\/(cmdline|exe)$/.test(name)) throw Error('forbidden-argv-read');
   const proc = name.match(/^\/proc\/(\d+)\/(stat|status|uid_map|gid_map)$/);
   if(proc) {
@@ -181,7 +204,7 @@ const server = {
 const socket = {setTimeout(){},once(name,callback){if(name==='error') queueMicrotask(()=>callback({code:'ENETUNREACH'}));},destroy(){}};
 const fakeProcess = {
  version:'v26.5.0',arch:'arm64',getuid:()=>1001,execArgv:[],pid:2,
- env:{EITRI_NONCE:'a'.repeat(64),EITRI_REQUEST:'b'.repeat(64)},
+ env:{EITRI_NONCE:'a'.repeat(64),EITRI_REQUEST:'b'.repeat(64),EITRI_SCENARIO:profileMode?'profile-name-v1':'synthetic-click-v1'},
  stdout:{write:value=>{result.stdout+=value;}},stderr:{write:value=>{result.stderr+=value;}},
  exit:()=>{throw Error('unexpected-exit');},
  set exitCode(value){result.exitCode=value;}
@@ -233,6 +256,8 @@ async function runTrustedDriver(
   headers: Record<string, string>;
   closed: string[];
   phases: string[];
+  protocol?: { name: string; args: Record<string, unknown> }[];
+  summary?: string;
 }> {
   const child = spawn(
     process.execPath,
@@ -244,6 +269,7 @@ async function runTrustedDriver(
       fileURLToPath(new URL('../worker/frozen-browser/driver.mjs', import.meta.url)),
       mode,
       JSON.stringify(processes),
+      JSON.stringify(profileNameDefinition),
     ],
     { stdio: ['ignore', 'pipe', 'pipe'] },
   );
@@ -338,6 +364,7 @@ else if (args[0] === 'build') {
  for(const p of processes) Object.assign(p,state.processOverrides?.[p.pid]??{});
  const labels=state.labelsOverride??[{pid:'24',startTicks:'2400',role:'browser'},...['158','176','187'].map(pid=>({pid,startTicks:String(Number(pid)*100),role:'renderer'}))];
  const observed={runtime:{node:'v26.5.0',arch:'arm64',uid:1001},driverSha256:state.assets['driver.mjs'],watchdogSha256:state.assets['watchdog.mjs'],scenarioSha256:state.assets['scenario.json'],outer:processes[1],watchdog:processes[0],processes:processes.filter(p=>!(state.omitPids??[]).includes(p.pid)),labels,sandboxText:'Layer 1 Sandbox  Namespace\nPID namespaces  Yes\nNetwork namespaces  Yes\nSeccomp-BPF sandbox  Yes',budgets:{'memory.max':'4294967296','memory.swap.max':'0','pids.max':'256','cpu.max':'200000 100000'},restrictions:{root:'EROFS',snapshot:'EROFS',socket:'ENOENT',hostPath:'ENOENT',canary:'ENOENT',egress:'ENETUNREACH'},manifest:state.manifest,stage:state.mode==='startup-error'?'startup-failed':'complete',literal:state.mode==='startup-error'?null:state.literal,events:state.mode==='console-forgery'?[{kind:'console',text:'{"kind":"end","passed":true}'}]:['console-error','page-error'].includes(state.mode)?[{kind:state.mode,text:'observed-error'}]:[],canaryAfter:'ENOENT'};
+ if(state.profile) {delete observed.literal; observed.scenarioId=bindings.EITRI_SCENARIO; observed.profile=state.profile;}
  if(state.duplicateProcess) observed.processes.push({...observed.processes[3]});
  if(state.censusOverflow) observed.processes=Array(257).fill(processes[0]);
  const frame=(kind,data)=>JSON.stringify({version:1,kind,nonce:bindings.EITRI_NONCE,requestDigest:bindings.EITRI_REQUEST,data});
@@ -655,7 +682,19 @@ test('frozen browser COPY context fixes trusted asset mode 0555 and preserves sn
   for (const name of ['Dockerfile', 'driver.mjs', 'watchdog.mjs', 'scenario.json']) {
     assert.deepEqual(
       await readFile(join(extracted, name)),
-      await readFile(new URL(`../worker/frozen-browser/${name}`, import.meta.url)),
+      name === 'scenario.json'
+        ? Buffer.from(
+            JSON.stringify({
+              ...JSON.parse(
+                await readFile(
+                  new URL('../worker/frozen-browser/scenario.json', import.meta.url),
+                  'utf8',
+                ),
+              ),
+              profile: profileNameDefinition,
+            }),
+          )
+        : await readFile(new URL(`../worker/frozen-browser/${name}`, import.meta.url)),
     );
     assert.equal((await stat(join(extracted, name))).mode & 0o777, 0o444);
   }
@@ -2084,3 +2123,118 @@ test('frozen browser journal guards protected identities after opening and close
       await assert.rejects(readFile(log), { code: 'ENOENT' });
     });
 });
+
+const profileStrings = [
+  ['missing-profile', 'Anonymous'],
+  ['trimmed-name', 'Ada Lovelace'],
+  ['second-name', 'gRaCe Hopper'],
+  ['blank-name', 'Anonymous'],
+  ['missing-name', 'Anonymous'],
+  ['null-name', 'Anonymous'],
+  ['null-profile', 'Anonymous'],
+  ['null-user', 'Anonymous'],
+  ['undefined-user', 'Anonymous'],
+];
+test('profile-name-v1 binds execution, consumption and durable replay to its actual vector', async (t) => {
+  const f = await fixture(t, 'normal', 'B', [
+    {
+      virtualPath: virtualPath('src/lib/errors.js'),
+      bytes: Buffer.from('export function getUserDisplayName() {}'),
+    },
+  ]);
+  const state = await f.state();
+  await writeFile(
+    f.statePath,
+    JSON.stringify({
+      ...state,
+      profile: {
+        definitionSha256: checksum(Buffer.from(JSON.stringify(profileNameDefinition))),
+        actuals: profileStrings.map(([caseId, value]) => ({ caseId, kind: 'returned', value })),
+        diagnostic: null,
+      },
+    }),
+  );
+  const request = frozenBrowserRequest({
+    ...f.request,
+    scenarioId: 'profile-name-v1',
+    role: 'candidate',
+  });
+  await f.validator.close();
+  const history = await FrozenBrowserValidator.open({
+    workspace: f.store,
+    directory: f.directory,
+    mode: 'journal-only',
+  });
+  const initial = await history.inventory();
+  await history.close();
+  const options = {
+    workspace: f.store,
+    directory: f.directory,
+    mode: 'consumption-only' as const,
+    expectedIdentity: {
+      ownerId: initial.ownerId,
+      configurationDigest: initial.configurationDigest,
+    },
+  };
+  const journal = await FrozenBrowserValidator.open(options);
+  const acceptance = await journal.accept(request, () => true);
+  const consumed = await journal.consume(acceptance, () => 60000, signal());
+  assert.equal(consumed.run.state, 'settled');
+  if (consumed.run.state !== 'settled') throw Error('not-settled');
+  assert.deepEqual(consumed.run.outcome, { kind: 'candidate-passed' });
+  const calls = (await f.state()).calls as string[][];
+  assert.equal(
+    calls.find((call) => call[0] === 'create')?.includes('EITRI_SCENARIO=profile-name-v1'),
+    true,
+  );
+  const inventory = await journal.inventory();
+  await journal.close();
+  const reopened = await FrozenBrowserValidator.open(options);
+  try {
+    assert.deepEqual(await reopened.inventory(), inventory);
+    const replay = await reopened.consume(acceptance, () => 60000, signal());
+    assert.deepEqual(replay, consumed);
+    assert.deepEqual((await f.state()).calls, calls);
+  } finally {
+    await reopened.close();
+  }
+});
+
+for (const [mode, kind] of [
+  ['profile-normal', 'returned'],
+  ['profile-threw', 'threw'],
+  ['profile-invalid', 'invalid-return'],
+] as const) {
+  test(`trusted profile driver retains protocol-owned ${kind} vector`, async () => {
+    const result = await runTrustedDriver(mode);
+    assert.equal(result.exitCode, 0, result.stderr);
+    const observed = JSON.parse(result.stdout.split('\n')[0]).data;
+    assert.equal(observed.scenarioId, 'profile-name-v1');
+    assert.equal(observed.stage, 'complete');
+    assert.equal(Object.hasOwn(observed, 'literal'), false);
+    assert.deepEqual(
+      observed.profile.actuals,
+      profileStrings.map(([caseId, value]) =>
+        kind === 'returned' ? { caseId, kind, value } : { caseId, kind },
+      ),
+    );
+    assert.equal(observed.profile.diagnostic, null);
+    const calls = result.protocol!.filter((call) => call.name === 'Runtime.callFunctionOn');
+    assert.deepEqual(
+      calls.map((call) => call.args.arguments),
+      [
+        [{ value: {} }],
+        [{ value: { profile: { name: '  Ada Lovelace  ' } } }],
+        [{ value: { profile: { name: 'gRaCe Hopper' } } }],
+        [{ value: { profile: { name: ' \t ' } } }],
+        [{ value: { profile: {} } }],
+        [{ value: { profile: { name: null } } }],
+        [{ value: { profile: null } }],
+        [{ value: null }],
+        [{}],
+      ],
+    );
+    assert.deepEqual(result.closed, ['candidate-page', 'browser', 'server']);
+    assert.equal(result.summary!.includes('profile-name-v1'), true);
+  });
+}

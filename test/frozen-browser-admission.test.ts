@@ -5,6 +5,7 @@ import { admitFrozenBrowserReport, frozenBrowserRequest } from '../src/frozen-br
 import type { FrozenBrowserExpectation, FrozenBrowserOutcome } from '../src/frozen-browser.ts';
 import { ControlError, digest } from '../src/domain.ts';
 import { checksum } from '../src/artifacts.ts';
+import { profileNameDefinition } from '../src/profile-name-definition.ts';
 import { sha256 } from '../src/workspace.ts';
 
 const caseId = '11111111-1111-1111-1111-111111111111';
@@ -949,4 +950,173 @@ test('admitFrozenBrowserReport accepts fabricated unsafe containment claims with
     passed: true,
     outputs: [{ label: 'Frozen browser screenshot', mime: 'image/png', bytes: png }],
   });
+});
+
+function profileFixture(role: 'baseline' | 'candidate' = 'candidate') {
+  const f = fixture(role);
+  const request = frozenBrowserRequest({ ...f.report.request, scenarioId: 'profile-name-v1' });
+  const expected = { ...f.expected, request } as FrozenBrowserExpectation;
+  const report: import('../src/frozen-browser.ts').FrozenBrowserReport = {
+    ...f.report,
+    request,
+    evidence: structuredClone(f.report.evidence),
+    outcome: { kind: role === 'baseline' ? 'baseline-reproduced' : 'candidate-passed' },
+  };
+  const evidence = report.evidence!;
+  Object.assign(evidence.provenance, { requestDigest: digest(request) });
+  Object.assign(evidence.provenance, {
+    transfer: [
+      {
+        path: 'src/lib/errors.js',
+        size: 525,
+        sha256: '5fa6710bb0c4f120408d489d0b16f6a21bfc6e539081ab1d9fda7a3bddb1fa07',
+      },
+    ],
+  });
+  Object.assign(evidence, {
+    observations: {
+      stage: 'complete',
+      scenarioId: 'profile-name-v1',
+      events: [],
+      manifest: structuredClone(evidence.provenance.transfer),
+      profile: {
+        definitionSha256: checksum(Buffer.from(JSON.stringify(profileNameDefinition))),
+        actuals: [
+          { caseId: 'missing-profile', kind: 'returned', value: 'Anonymous' },
+          { caseId: 'trimmed-name', kind: 'returned', value: 'Ada Lovelace' },
+          { caseId: 'second-name', kind: 'returned', value: 'gRaCe Hopper' },
+          { caseId: 'blank-name', kind: 'returned', value: 'Anonymous' },
+          { caseId: 'missing-name', kind: 'returned', value: 'Anonymous' },
+          { caseId: 'null-name', kind: 'returned', value: 'Anonymous' },
+          { caseId: 'null-profile', kind: 'returned', value: 'Anonymous' },
+          { caseId: 'null-user', kind: 'returned', value: 'Anonymous' },
+          { caseId: 'undefined-user', kind: 'returned', value: 'Anonymous' },
+        ],
+        diagnostic: null,
+      },
+    },
+  });
+  if (role === 'baseline') {
+    const p = evidence.observations.profile as Record<string, unknown>;
+    p.actuals = (p.actuals as Record<string, unknown>[]).map((v, i) =>
+      i === 0 ? { caseId: 'missing-profile', kind: 'threw' } : v,
+    );
+    p.diagnostic = structuredClone(profileNameDefinition.diagnostic);
+  }
+  return {
+    expected,
+    report,
+    observed: evidence.observations,
+    profile: evidence.observations.profile as Record<string, unknown>,
+  };
+}
+
+test('profile-name-v1 request preserves exact scenario without new request fields', () => {
+  const f = profileFixture();
+  assert.equal(f.expected.request.scenarioId, 'profile-name-v1');
+  for (const change of [
+    { scenarioId: 'profile-name-v2' },
+    { capture: {} },
+    { selector: '#result' },
+  ])
+    assert.throws(() => frozenBrowserRequest({ ...f.expected.request, ...change }));
+});
+
+test('profile-name-v1 admits exact strings and pinned native reproduction independently', () => {
+  for (const role of ['candidate', 'baseline'] as const) {
+    const f = profileFixture(role);
+    const result = admitFrozenBrowserReport(f.expected, f.report);
+    assert.equal(result.type, 'behavioral');
+    assert.equal(result.type === 'behavioral' && result.passed, true);
+    assert.deepEqual(result.report.outcome, {
+      kind: role === 'candidate' ? 'candidate-passed' : 'baseline-reproduced',
+    });
+  }
+});
+
+for (const [name, actual] of [
+  ['wrong case', { caseId: 'trimmed-name', kind: 'returned', value: 'ADA LOVELACE' }],
+  ['untrimmed', { caseId: 'trimmed-name', kind: 'returned', value: '  Ada Lovelace  ' }],
+  ['fallback', { caseId: 'trimmed-name', kind: 'returned', value: 'Anonymous' }],
+  ['exception', { caseId: 'trimmed-name', kind: 'threw' }],
+  ['invalid return', { caseId: 'trimmed-name', kind: 'invalid-return' }],
+] as const) {
+  test(`profile-name-v1 rejects promotion of ${name}`, () => {
+    const f = profileFixture();
+    (f.profile.actuals as unknown[])[1] = actual;
+    invalid(f.expected, f.report);
+    const report = { ...f.report, outcome: { kind: 'candidate-failed' as const } };
+    const result = admitFrozenBrowserReport(f.expected, report);
+    assert.equal(result.type, 'behavioral');
+    assert.equal(result.type === 'behavioral' && result.passed, false);
+  });
+}
+
+for (const name of [
+  'definition',
+  'order',
+  'truncated',
+  'extra',
+  'diagnostic',
+  'helper hash',
+  'helper size',
+  'scenario',
+  'literal',
+  'event',
+] as const) {
+  test(`profile-name-v1 rejects forged ${name}`, () => {
+    const f = profileFixture('baseline');
+    if (name === 'definition') f.profile.definitionSha256 = 'a'.repeat(64);
+    if (name === 'order') (f.profile.actuals as unknown[]).reverse();
+    if (name === 'truncated') (f.profile.actuals as unknown[]).pop();
+    if (name === 'extra')
+      (f.profile.actuals as unknown[]).push({
+        caseId: 'forged',
+        kind: 'returned',
+        value: 'Anonymous',
+      });
+    if (name === 'diagnostic')
+      (f.profile.diagnostic as Record<string, unknown>).message = 'forged TypeError';
+    if (name === 'helper hash' || name === 'helper size') {
+      const transfer = f.report.evidence!.provenance.transfer;
+      if (name === 'helper hash') transfer[0].sha256 = 'a'.repeat(64);
+      else transfer[0].size = 526;
+      f.observed.manifest = structuredClone(transfer);
+    }
+    if (name === 'scenario') f.observed.scenarioId = 'synthetic-click-v1';
+    if (name === 'literal') f.observed.literal = 'B';
+    if (name === 'event') f.observed.events = [{ kind: 'page-error', text: 'late' }];
+    invalid(f.expected, f.report);
+  });
+}
+
+test('profile-name-v1 cannot replay a synthetic report or relabel a profile vector', () => {
+  const f = profileFixture();
+  invalid(f.expected, fixture().report);
+  const request = frozenBrowserRequest({ ...f.report.request, scenarioId: 'synthetic-click-v1' });
+  const report = structuredClone(f.report);
+  Object.assign(report.evidence!.provenance, { requestDigest: digest(request) });
+  invalid({ ...f.expected, request }, { ...report, request });
+});
+
+test('profile-name-v1 requires the diagnostic as well as the reviewed helper identity', () => {
+  const f = profileFixture('baseline');
+  f.profile.diagnostic = null;
+  invalid(f.expected, f.report);
+  assert.equal(
+    admitFrozenBrowserReport(f.expected, {
+      ...f.report,
+      outcome: { kind: 'baseline-not-reproduced' },
+    }).report.outcome.kind,
+    'baseline-not-reproduced',
+  );
+  f.report.evidence!.provenance.transfer[0].sha256 = 'b'.repeat(64);
+  f.observed.manifest = structuredClone(f.report.evidence!.provenance.transfer);
+  invalid(f.expected, f.report);
+  const blocked = admitFrozenBrowserReport(f.expected, {
+    ...f.report,
+    outcome: { kind: 'unrelated-failure' },
+  });
+  assert.equal(blocked.type, 'blocked');
+  assert.equal(blocked.type === 'blocked' && blocked.reason, 'unrelated-failure');
 });

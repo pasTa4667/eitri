@@ -7,6 +7,8 @@ import { spawn } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
 import { types } from 'node:util';
 import { checksum, validateOutput } from './artifacts.ts';
+import { profileNameDefinition } from './profile-name-definition.ts';
+import type { ProfileNameActual } from './profile-name-definition.ts';
 import { digest, fail, uuid } from './domain.ts';
 import { caseId, gitRevision, sha256, virtualPath } from './workspace.ts';
 import type { WorkspaceStore, FrozenRevision, CaseId, Sha256 } from './workspace.ts';
@@ -22,7 +24,7 @@ type ControlEpoch = number & { readonly __brand: 'FrozenBrowserControlEpoch' };
 export type FrozenBrowserRequest = Readonly<{
   frozen: FrozenRevision;
   action: Readonly<{ caseId: CaseId; actionId: ActionId; epoch: ControlEpoch }>;
-  scenarioId: 'synthetic-click-v1';
+  scenarioId: 'synthetic-click-v1' | 'profile-name-v1';
   role: 'baseline' | 'candidate';
   allowanceMs: number;
 }>;
@@ -432,14 +434,14 @@ export function frozenBrowserRequest(value: unknown): FrozenBrowserRequest {
   };
   if (
     action.caseId !== frozen.caseId ||
-    r.scenarioId !== 'synthetic-click-v1' ||
+    !['synthetic-click-v1', 'profile-name-v1'].includes(string(r.scenarioId)) ||
     (r.role !== 'baseline' && r.role !== 'candidate')
   )
     return fail('invalid-frozen-browser-request');
   return {
     frozen,
     action,
-    scenarioId: 'synthetic-click-v1',
+    scenarioId: r.scenarioId as FrozenBrowserRequest['scenarioId'],
     role: r.role,
     allowanceMs: integer(r.allowanceMs, 1, 60000),
   };
@@ -722,7 +724,7 @@ function admitReportSnapshot(
   if (report.evidence) {
     const p = report.evidence.provenance;
     const observed = report.evidence.observations;
-    scenarioObservations(observed);
+    scenarioObservations(observed, request);
     if (Object.hasOwn(p.applied, 'inspectionSha256')) sha256(p.applied.inspectionSha256);
     if (
       p.requestDigest !== digest(request) ||
@@ -972,6 +974,7 @@ function validateRecorded(
         `EITRI_DEADLINE=${intent.deadline}`,
         `EITRI_NONCE=${intent.nonce}`,
         `EITRI_REQUEST=${intent.requestDigest}`,
+        `EITRI_SCENARIO=${intent.request.scenarioId}`,
       ]),
     )
   )
@@ -1029,7 +1032,7 @@ function validateRecorded(
     ).length !== 1
   )
     fail('corrupt-committed-seccomp');
-  observations(saved.evidence.observations, manifest, assets);
+  observations(saved.evidence.observations, manifest, assets, intent.request);
   if (
     behavioral &&
     (integer(p.finishedAt) > intent.deadline ||
@@ -1504,7 +1507,12 @@ function verifyCensus(r: ObjectValue) {
       fail('unwitnessed-renderer-parent-capability');
   }
 }
-function observations(value: unknown, manifest: Manifest, assets: Assets): ObjectValue {
+function observations(
+  value: unknown,
+  manifest: Manifest,
+  assets: Assets,
+  request: FrozenBrowserRequest,
+): ObjectValue {
   const r = exact(value, [
     'runtime',
     'driverSha256',
@@ -1519,7 +1527,7 @@ function observations(value: unknown, manifest: Manifest, assets: Assets): Objec
     'restrictions',
     'manifest',
     'stage',
-    'literal',
+    ...(request.scenarioId === 'profile-name-v1' ? ['scenarioId', 'profile'] : ['literal']),
     'events',
     'canaryAfter',
   ]);
@@ -1562,16 +1570,67 @@ function observations(value: unknown, manifest: Manifest, assets: Assets): Objec
     r.canaryAfter !== 'ENOENT'
   )
     fail('runtime-restrictions');
-  scenarioObservations(r);
+  scenarioObservations(r, request);
   return r;
 }
-function scenarioObservations(r: ObjectValue) {
-  if (
-    !['startup-failed', 'action-failed', 'complete'].includes(string(r.stage)) ||
-    (r.stage === 'complete' ? typeof r.literal !== 'string' : r.literal !== null)
-  )
+const profileDefinitionSha256 = checksum(Buffer.from(JSON.stringify(profileNameDefinition)));
+function profileActuals(value: unknown): ProfileNameActual[] {
+  const values = array(value, profileNameDefinition.cases.length);
+  return values.map((value, index) => {
+    const r = object(value);
+    if (r.caseId !== profileNameDefinition.cases[index].id) fail('profile-case-order');
+    if (r.kind === 'returned') {
+      exact(r, ['caseId', 'kind', 'value']);
+      return {
+        caseId: profileNameDefinition.cases[index].id,
+        kind: r.kind,
+        value: string(r.value, 4096),
+      };
+    }
+    exact(r, ['caseId', 'kind']);
+    if (r.kind !== 'threw' && r.kind !== 'invalid-return') return fail('profile-actual');
+    return { caseId: profileNameDefinition.cases[index].id, kind: r.kind };
+  });
+}
+function reviewedProfileHelper(manifest: Json): boolean {
+  const source = profileNameDefinition.reviewedCapture.source;
+  return array(manifest, 1024).some((entry) =>
+    same(entry, {
+      path: source.virtualPath,
+      size: source.size,
+      sha256: source.sha256,
+    }),
+  );
+}
+function scenarioObservations(r: ObjectValue, request: FrozenBrowserRequest) {
+  if (!['startup-failed', 'action-failed', 'complete'].includes(string(r.stage)))
     fail('scenario-stage');
-  if (r.literal !== null) string(r.literal, 1024);
+  if (request.scenarioId === 'profile-name-v1') {
+    if (Object.hasOwn(r, 'literal') || r.scenarioId !== request.scenarioId)
+      fail('profile-scenario');
+    const p = exact(r.profile, ['definitionSha256', 'actuals', 'diagnostic']);
+    if (p.definitionSha256 !== profileDefinitionSha256) fail('profile-definition');
+    const actuals = profileActuals(p.actuals);
+    if (r.stage === 'complete' && actuals.length !== profileNameDefinition.cases.length)
+      fail('profile-incomplete');
+    if (p.diagnostic !== null) {
+      exact(p.diagnostic, ['caseId', 'nativeTypeError', 'name', 'message', 'firstFrame']);
+      if (
+        !reviewedProfileHelper(r.manifest) ||
+        actuals[0]?.kind !== 'threw' ||
+        !same(p.diagnostic, profileNameDefinition.diagnostic)
+      )
+        fail('profile-diagnostic');
+    }
+  } else {
+    if (
+      Object.hasOwn(r, 'profile') ||
+      Object.hasOwn(r, 'scenarioId') ||
+      (r.stage === 'complete' ? typeof r.literal !== 'string' : r.literal !== null)
+    )
+      fail('scenario-stage');
+    if (r.literal !== null) string(r.literal, 1024);
+  }
   let eventBytes = 0;
   for (const value of array(r.events, 32)) {
     const event = exact(value, ['kind', 'text']);
@@ -1604,7 +1663,7 @@ function protocol(bytes: Buffer, intent: Intent, manifest: Manifest, assets: Ass
       fail('invalid-wire-binding');
     return r.data;
   };
-  const observed = observations(frame(lines[0], 'observations'), manifest, assets);
+  const observed = observations(frame(lines[0], 'observations'), manifest, assets, intent.request);
   const p = exact(frame(lines[1], 'png'), ['mime', 'base64']);
   const end = exact(frame(lines[2], 'end'), ['observationsSha256', 'pngSha256']);
   const base64 = string(p.base64, Math.ceil((4 * 1024 ** 2) / 3) * 4);
@@ -1631,6 +1690,27 @@ function classify(request: FrozenBrowserRequest, observed: ObjectValue): FrozenB
     array(observed.events, 32).some((e) => object(e).kind !== 'console')
   )
     return { kind: 'unrelated-failure' };
+  if (request.scenarioId === 'profile-name-v1') {
+    const p = object(observed.profile);
+    const actuals = profileActuals(p.actuals);
+    if (request.role === 'baseline')
+      return {
+        kind: !reviewedProfileHelper(observed.manifest)
+          ? 'unrelated-failure'
+          : same(p.diagnostic, profileNameDefinition.diagnostic)
+            ? 'baseline-reproduced'
+            : 'baseline-not-reproduced',
+      };
+    return {
+      kind: actuals.every(
+        (actual, index) =>
+          actual.kind === 'returned' &&
+          actual.value === profileNameDefinition.cases[index].expected,
+      )
+        ? 'candidate-passed'
+        : 'candidate-failed',
+    };
+  }
   if (observed.literal !== 'A' && observed.literal !== 'B') return { kind: 'unrelated-failure' };
   return {
     kind:
@@ -2061,6 +2141,12 @@ export class FrozenBrowserValidator {
         })
       )
         fail('unreviewed-worker-configuration');
+      assets.scenario = Buffer.from(
+        JSON.stringify({
+          ...object(parseJson(assets.scenario)),
+          profile: profileNameDefinition,
+        }),
+      );
       const configurationDigest = digest({
         version: 1,
         assets: Object.fromEntries(Object.entries(assets).map(([k, v]) => [k, checksum(v)])),
@@ -2991,6 +3077,7 @@ export class FrozenBrowserValidator {
         `EITRI_DEADLINE=${deadline}`,
         `EITRI_NONCE=${run.intent.nonce}`,
         `EITRI_REQUEST=${run.intent.requestDigest}`,
+        `EITRI_SCENARIO=${request.scenarioId}`,
       ];
       const expectedEnv = envSet([...before.env, ...bindings]);
       run.ledger.container = { kind: 'intent' };

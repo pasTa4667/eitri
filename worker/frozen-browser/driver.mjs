@@ -6,6 +6,10 @@ import net from 'node:net';
 
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const scenario = JSON.parse(await readFile(new URL('scenario.json', import.meta.url), 'utf8'));
+const scenarioId = process.env.EITRI_SCENARIO;
+const profile = scenario.profile;
+const isProfile = scenarioId === profile?.id;
+if (!isProfile && scenarioId !== scenario.id) process.exit(126);
 const nonce = process.env.EITRI_NONCE;
 const requestDigest = process.env.EITRI_REQUEST;
 if (!/^[a-f0-9]{64}$/.test(nonce) || !/^[a-f0-9]{64}$/.test(requestDigest)) process.exit(126);
@@ -195,6 +199,124 @@ async function egress() {
   });
 }
 
+async function probeProfile(page, origin) {
+  const observation = {
+    definitionSha256: hash(JSON.stringify(profile)),
+    actuals: [],
+    diagnostic: null,
+  };
+  let stage = 'startup-failed';
+  let session;
+  try {
+    const response = await page.goto(`${origin}${profile.document}`, {
+      waitUntil: 'load',
+      timeout: 10000,
+    });
+    if (response?.status() !== 200) throw new Error('profile-document');
+    page.on('framenavigated', () => record('page-error', 'unexpected-profile-navigation'));
+    session = await page.context().newCDPSession(page);
+    await session.send('Runtime.enable');
+    const imported = await session.send('Runtime.evaluate', {
+      expression: `import(${JSON.stringify(origin + profile.wrapper)})`,
+      awaitPromise: true,
+      returnByValue: false,
+    });
+    if (imported.exceptionDetails || !imported.result.objectId) throw new Error('profile-import');
+    const properties = await session.send('Runtime.getProperties', {
+      objectId: imported.result.objectId,
+      ownProperties: true,
+    });
+    const exported = properties.result.find((property) => property.name === 'probe');
+    if (!exported?.isOwn || exported.value?.type !== 'function' || !exported.value.objectId)
+      throw new Error('profile-export');
+    const objectId = exported.value.objectId;
+    const source = profile.reviewedCapture.source;
+    const reviewedHelperMatches = manifest.some(
+      (file) =>
+        file.path === source.virtualPath &&
+        file.size === source.size &&
+        file.sha256 === source.sha256,
+    );
+    stage = 'action-failed';
+    for (const test of profile.cases) {
+      const args = [test.input.kind === 'undefined' ? {} : { value: test.input.value }];
+      if (reviewedHelperMatches && test.id === profile.diagnostic.caseId) {
+        const raw = await session.send('Runtime.callFunctionOn', {
+          objectId,
+          functionDeclaration: 'function(input) { return (0,this)(input); }',
+          arguments: args,
+          awaitPromise: false,
+          returnByValue: false,
+        });
+        if (raw.exceptionDetails?.exception?.objectId) {
+          const exceptionId = raw.exceptionDetails.exception.objectId;
+          const primitive = async (functionDeclaration) => {
+            const result = await session.send('Runtime.callFunctionOn', {
+              objectId: exceptionId,
+              functionDeclaration,
+              awaitPromise: false,
+              returnByValue: true,
+            });
+            if (result.exceptionDetails) throw new Error('profile-diagnostic');
+            return result.result.value;
+          };
+          const nativeTypeError = await primitive(
+            'function() { return this instanceof TypeError; }',
+          );
+          const name = await primitive('function() { return this.name; }');
+          const message = await primitive('function() { return this.message; }');
+          const stack = await primitive('function() { return this.stack; }');
+          if (typeof stack !== 'string' || Buffer.byteLength(stack) > 8192)
+            throw new Error('profile-diagnostic');
+          const firstFrame = stack.split('\n')[1]?.trim().replace(`(${origin}/`, '(/');
+          const diagnostic = { caseId: test.id, nativeTypeError, name, message, firstFrame };
+          if (JSON.stringify(diagnostic) === JSON.stringify(profile.diagnostic))
+            observation.diagnostic = diagnostic;
+          observation.actuals.push({ caseId: test.id, kind: 'threw' });
+          continue;
+        }
+        throw new Error('profile-baseline-diagnostic');
+      }
+      // Language operations avoid candidate-replaced intrinsics and never inspect a thrown value.
+      const result = await session.send('Runtime.callFunctionOn', {
+        objectId,
+        functionDeclaration: `function(input) {
+          try {
+            const value = (0,this)(input);
+            if (typeof value !== 'string' || value.length > 1024) return null;
+            for (let i = 0; i < value.length; i++) {
+              const char = value[i];
+              if (char >= '\\ud800' && char <= '\\udbff') {
+                const next = value[++i];
+                if (!(next >= '\\udc00' && next <= '\\udfff')) return null;
+              } else if (char >= '\\udc00' && char <= '\\udfff') return null;
+            }
+            return value;
+          } catch { return false; }
+        }`,
+        arguments: args,
+        awaitPromise: false,
+        returnByValue: true,
+      });
+      if (result.exceptionDetails) throw new Error('profile-invocation-protocol');
+      const value = result.result.value;
+      if (typeof value === 'string')
+        observation.actuals.push({ caseId: test.id, kind: 'returned', value });
+      else if (value === false) observation.actuals.push({ caseId: test.id, kind: 'threw' });
+      else if (value === null)
+        observation.actuals.push({ caseId: test.id, kind: 'invalid-return' });
+      else throw new Error('profile-result');
+    }
+    stage = 'complete';
+  } catch {
+    observation.diagnostic = null;
+  } finally {
+    await session?.detach().catch(() => {});
+    await page.close();
+  }
+  return { stage, scenarioId, profile: observation };
+}
+
 let browser;
 let server;
 const events = [];
@@ -242,7 +364,22 @@ try {
       response.end();
       return;
     }
-    const file = request.method === 'GET' && files.get(request.url);
+    let file;
+    if (request.method === 'GET') {
+      if (isProfile && request.url === profile.document)
+        file = {
+          bytes: Buffer.from('<!doctype html><title>Protected profile probe</title>'),
+          type: mime.get('html'),
+        };
+      else if (isProfile && request.url === profile.wrapper)
+        file = {
+          bytes: Buffer.from(
+            `import { ${profile.exportName} } from '/${profile.helper}'; export { ${profile.exportName} as probe };`,
+          ),
+          type: mime.get('js'),
+        };
+      else if (!isProfile || request.url === `/${profile.helper}`) file = files.get(request.url);
+    }
     if (!file) {
       response.writeHead(404);
       response.end();
@@ -291,31 +428,44 @@ try {
     return route.abort('blockedbyclient');
   });
   const page = await context.newPage();
-  let stage = 'startup-failed';
-  let literal = null;
-  try {
-    const response = await page.goto(`${origin}/${scenario.entry}`, {
-      waitUntil: 'load',
-      timeout: 10000,
-    });
-    if (
-      response?.status() !== 200 ||
-      (await page.locator(scenario.button).count()) !== 1 ||
-      (await page.locator(scenario.output).count()) !== 1 ||
-      (await page.locator(scenario.output).innerText()) !== scenario.initial ||
-      events.some((e) => e.kind !== 'console')
-    )
-      throw new Error('startup-failed');
-    stage = 'action-failed';
-    await page.locator(scenario.button).click({ timeout: 5000 });
-    literal = await page.locator(scenario.output).innerText({ timeout: 5000 });
-    if (events.some((e) => e.kind !== 'console')) throw new Error('action-failed');
-    stage = 'complete';
-  } catch {
-    literal = null;
+  let measured;
+  let screenshotPage = page;
+  if (isProfile) {
+    measured = await probeProfile(page, origin);
+    screenshotPage = await context.newPage();
+    await screenshotPage.setContent(
+      '<!doctype html><title>Profile observations</title><pre>' +
+        JSON.stringify(measured, null, 2).replaceAll('&', '&amp;').replaceAll('<', '&lt;') +
+        '</pre>',
+    );
+  } else {
+    let stage = 'startup-failed';
+    let literal = null;
+    try {
+      const response = await page.goto(`${origin}/${scenario.entry}`, {
+        waitUntil: 'load',
+        timeout: 10000,
+      });
+      if (
+        response?.status() !== 200 ||
+        (await page.locator(scenario.button).count()) !== 1 ||
+        (await page.locator(scenario.output).count()) !== 1 ||
+        (await page.locator(scenario.output).innerText()) !== scenario.initial ||
+        events.some((e) => e.kind !== 'console')
+      )
+        throw new Error('startup-failed');
+      stage = 'action-failed';
+      await page.locator(scenario.button).click({ timeout: 5000 });
+      literal = await page.locator(scenario.output).innerText({ timeout: 5000 });
+      if (events.some((e) => e.kind !== 'console')) throw new Error('action-failed');
+      stage = 'complete';
+    } catch {
+      literal = null;
+    }
+    measured = { stage, literal };
   }
   if (eventFailure) throw new Error(eventFailure);
-  const png = await page.screenshot({ type: 'png', timeout: 5000 });
+  const png = await screenshotPage.screenshot({ type: 'png', timeout: 5000 });
   if (png.length > 4 * 1024 * 1024) throw new Error('png-limit');
   const session = await browser.newBrowserCDPSession();
   const discovery = await census(session);
@@ -330,8 +480,7 @@ try {
     budgets,
     restrictions,
     manifest: manifest.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0)),
-    stage,
-    literal,
+    ...measured,
     events,
     canaryAfter: await absent('/tmp/project-node-executed'),
   };
