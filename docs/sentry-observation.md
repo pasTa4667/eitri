@@ -10,9 +10,15 @@ npm run --silent observe:sentry -- --account <explicit-account> --issue <positiv
 
 This opt-in command reads only `op://Eitri/Sentry/password` through `/opt/homebrew/bin/op` with explicit account selection and desktop approval. It loads the token once and observes the selected issue once. It does not poll, write files, admit controller intake, or enable remediation. `npm start` is unchanged.
 
+Add `--reported-context` to include the event's reported environment and release when available. The flag is optional and accepts no value.
+
+```sh
+npm run --silent observe:sentry -- --account <explicit-account> --issue <positive-decimal-id> --reported-context
+```
+
 Supply `--account` and `--issue` exactly once, in either order. Both `--name value` and `--name=value` are accepted. The account must contain 1 to 253 ASCII characters, start with a letter or digit, and otherwise contain only letters, digits, dots, or hyphens. The issue ID must contain 1 to 20 ASCII digits with no leading zero. Unknown options, duplicate options, positional arguments, option terminators, and empty or malformed values fail before credential loading. There is no token flag or target override.
 
-Success exits with code 0, writes one serialized `SentryObservation` JSON line to stdout, and leaves stderr empty. Use `npm run --silent` for machine consumption because npm otherwise prints its own banner. Invalid input exits with code 1 and writes only the following line to stderr:
+Success exits with code 0, writes one JSON observation line to stdout, and leaves stderr empty. Use `npm run --silent` for machine consumption because npm otherwise prints its own banner. Invalid input exits with code 1 and writes only the following line to stderr:
 
 ```text
 Usage: npm run observe:sentry -- --account <explicit-account> --issue <positive-decimal-id>
@@ -26,16 +32,20 @@ Operational failures exit with code 1 and write only `Sentry observation failed.
 import { observeSentryIssue } from './src/sentry.ts';
 
 const observation = await observeSentryIssue(token, issueId, { signal });
+const contextual = await observeSentryIssue(token, issueId, {
+  eventContext: 'reported-environment-release',
+  signal,
+});
 ```
 
-The caller supplies an already loaded API token, a positive decimal issue ID of at most 20 digits, and an optional cancellation signal. The function does not load credentials, log evidence, write files, poll, or mutate Sentry.
+The caller supplies an already loaded API token, a positive decimal issue ID of at most 20 digits, and an optional cancellation signal. Set `eventContext` to `'reported-environment-release'` to request context. The default call returns `SentryObservation`; the opt-in call returns `SentryEventContextObservation`. An options variable with an optional mode returns the union of both types. The function does not load credentials, log evidence, write files, poll, or mutate Sentry.
 
 The source is fixed to `https://sentry.io`, organization `pasta-re`, and project `4512275993002064`. Each call performs at most two sequential GETs.
 
 1. Read the selected issue through the [issue-details endpoint](https://docs.sentry.io/api/events/retrieve-an-issue/).
 2. After validating issue and project identity, read its latest event through the [issue-event endpoint](https://docs.sentry.io/api/events/retrieve-an-issue-event/).
 
-The function follows no response links, redirects, pagination, or retries. The requests omit ambient credentials and carry only the supplied bearer token and JSON Accept header.
+The function follows no response links, redirects, pagination, or retries. The requests omit ambient credentials and carry only the supplied bearer token and JSON Accept header. An absent or undefined `eventContext` selects the default mode. Any other runtime value except the supported literal rejects before making a request.
 
 ## Returned evidence
 
@@ -45,6 +55,13 @@ The result contains these allowlisted fields.
 - Native Sentry priority and status, labeled with their Sentry origin. Missing or unfamiliar bounded strings become `unknown`.
 - An available-event variant with `eventID`, a UTC-normalized `dateCreated`, and reported exception and stack-frame counts.
 - An unavailable-event variant only when the latest-event endpoint returns HTTP 404.
+- In opt-in mode, an available event also contains `context.environment` and `context.release`. Each is either `{ kind: 'reported', value }` or `{ kind: 'not-reported' }`.
+
+In opt-in mode, the parser reads only `tags[].key === 'environment'` and `release.version` from the event body. It ignores top-level environment fields and unrelated release properties. Missing or null `tags` means environment is not-reported. Missing or null `release`, or a missing or null `release.version`, means release is not-reported. A missing environment tag means environment is not-reported. An empty, non-string, or malformed selected value rejects the observation.
+
+The environment grammar is ASCII. It starts with one letter or digit, followed by zero to 63 letters, digits, dots, underscores, or hyphens. The release grammar starts with one letter or digit, followed by zero to 199 letters, digits, dots, underscores, plus signs, at signs, or hyphens. The parser does not trim, coerce, or accept Unicode.
+
+The parser accepts at most 128 tags. Every tag must be an object with a string `key` of at most 200 characters. It rejects non-array tags, malformed tag entries, and every duplicate environment tag, even when duplicate values match. Unrelated tag values are not inspected. `release` must be an object when present and non-null. Other release fields are ignored.
 
 Event identity uses `eventID`, not the separate `id` field. The event must identify the selected issue through `groupID` and the configured project through `projectID`.
 
@@ -52,9 +69,9 @@ An unavailable event means the endpoint returned not-found. It does not prove th
 
 ## Privacy and limits
 
-The function omits all free-text telemetry. Titles, exception types and values, functions, filenames, source context, environment, release, tags, users, requests, breadcrumbs, arbitrary contexts, and extras do not enter the result. It makes no attempt to redact arbitrary text into safe diagnostic evidence.
+By default, the function omits all free-text telemetry, including environment, release, and tags. In opt-in mode, it includes only the validated environment tag value and release version. Titles, exception types and values, functions, filenames, source context, users, requests, breadcrumbs, arbitrary contexts, and extras do not enter the result. It makes no attempt to redact arbitrary text into safe diagnostic evidence.
 
-The returned IDs, timestamps, classifications, and counts remain operational metadata. They are not anonymous data. The caller owns any later display or persistence policy.
+The returned IDs, timestamps, classifications, counts, and opted-in identifiers remain operational metadata. They are not anonymous data. The caller owns any later display or persistence policy.
 
 One 15-second deadline covers both requests and streamed bodies. Each body is limited to 1 MiB. The parser accepts at most 32 event entries, eight reported exceptions, 128 frames per stacktrace, and 1,024 total frames. The normalized JSON result is limited to 2,048 UTF-8 bytes. Exceeded limits reject instead of returning silently truncated evidence.
 
@@ -76,4 +93,4 @@ Prior library verification recorded 196 focused tests and `npm run verify:all` w
 
 Fresh `openai-codex/gpt-6.1-sol` standards and specification/security reviews report no findings on the command integration. Reviewers inspect source only. They do not independently execute tests. Both reviews use the same model family.
 
-They do not establish hosted event-detail permission, populated-response compatibility, or real socket cleanup. A later explicit hosted check remains separate. No environment, repository association, deployed revision, regression flag, escalation flag, fix eligibility, or remediation authority is inferred. There is no controller intake, UI, or event persistence in this unit.
+They do not establish hosted event-detail permission, populated-response compatibility, or real socket cleanup. A later explicit hosted check remains separate. Reported environment and release are bounded metadata from the returned event. They do not prove a deployed revision, repository association, fix eligibility, or admission to remediation. The observation also infers no regression or escalation status. There is no controller intake, UI, or event persistence in this unit.

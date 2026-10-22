@@ -35,19 +35,51 @@ function serve(t: TestContext, values: Response[]) {
   return fetch;
 }
 
-function typeChecks(token: string, issueId: string, options: SentryIssueObservationOptions) {
-  const ordinary: Promise<SentryObservation> = observeSentryIssue(token, issueId, {
-    signal: options.signal,
-  });
-  const contextual: Promise<SentryEventContextObservation> = observeSentryIssue(token, issueId, {
+type Equal<Left, Right> =
+  (<Value>() => Value extends Left ? 1 : 2) extends <Value>() => Value extends Right ? 1 : 2
+    ? (<Value>() => Value extends Right ? 1 : 2) extends <Value>() => Value extends Left ? 1 : 2
+      ? true
+      : false
+    : false;
+type Expect<Value extends true> = Value;
+
+function assertType<Value extends true>(_value: Value): void {}
+
+function typeChecks(
+  token: string,
+  issueId: string,
+  options: SentryIssueObservationOptions,
+  optionalOptions?: SentryIssueObservationOptions,
+) {
+  const defaultResult = observeSentryIssue(token, issueId);
+  const explicitDefaultResult = observeSentryIssue(token, issueId, { signal: options.signal });
+  const contextualResult = observeSentryIssue(token, issueId, {
     eventContext: 'reported-environment-release',
   });
-  const union: Promise<SentryObservation | SentryEventContextObservation> = observeSentryIssue(
-    token,
-    issueId,
-    options,
-  );
-  void [ordinary, contextual, union];
+  const broadResult = observeSentryIssue(token, issueId, options);
+  const optionalResult = observeSentryIssue(token, issueId, optionalOptions);
+  const undefinedResult = observeSentryIssue(token, issueId, undefined);
+
+  type DefaultResult = Expect<Equal<typeof defaultResult, Promise<SentryObservation>>>;
+  type ExplicitDefaultResult = Expect<
+    Equal<typeof explicitDefaultResult, Promise<SentryObservation>>
+  >;
+  type ContextualResult = Expect<
+    Equal<typeof contextualResult, Promise<SentryEventContextObservation>>
+  >;
+  type BroadResult = Expect<
+    Equal<typeof broadResult, Promise<SentryObservation | SentryEventContextObservation>>
+  >;
+  type OptionalResult = Expect<
+    Equal<typeof optionalResult, Promise<SentryObservation | SentryEventContextObservation>>
+  >;
+  type UndefinedResult = Expect<Equal<typeof undefinedResult, Promise<SentryObservation>>>;
+  assertType<DefaultResult>(true);
+  assertType<ExplicitDefaultResult>(true);
+  assertType<ContextualResult>(true);
+  assertType<BroadResult>(true);
+  assertType<OptionalResult>(true);
+  assertType<UndefinedResult>(true);
 }
 void typeChecks;
 
@@ -56,10 +88,7 @@ const context: SentryEventContext = {
   release: { kind: 'reported', value: 'v2.4.1+build@prod' },
 };
 
-function contextualOutput(
-  event: Record<string, unknown>,
-  expectedContext: SentryEventContext = context,
-) {
+function contextualOutput(expectedContext: SentryEventContext = context) {
   return {
     source: {
       provider: 'sentry',
@@ -121,7 +150,7 @@ describe('reported Sentry event context', { concurrency: false }, () => {
     const result = await observeSentryIssue('token', '12345', {
       eventContext: 'reported-environment-release',
     });
-    assert.deepEqual(result, contextualOutput({}));
+    assert.deepEqual(result, contextualOutput());
     assert.equal(request.mock.callCount(), 2);
     assert.deepEqual(
       request.mock.calls.map(({ arguments: [url] }) => String(url)),
@@ -146,15 +175,45 @@ describe('reported Sentry event context', { concurrency: false }, () => {
     ]);
     assert.deepEqual(
       await observeSentryIssue('token', '12345', { eventContext: 'reported-environment-release' }),
-      contextualOutput(
-        {},
-        {
-          environment: { kind: 'not-reported' },
-          release: { kind: 'not-reported' },
-        },
-      ),
+      contextualOutput({
+        environment: { kind: 'not-reported' },
+        release: { kind: 'not-reported' },
+      }),
     );
     assert.equal(request.mock.callCount(), 2);
+  });
+
+  test('reports absent release, version and tags as not-reported', async (t) => {
+    const missingFields = [
+      { ...baseEvent },
+      { ...baseEvent, release: {} },
+      { ...baseEvent, release: { version: null } },
+      { ...baseEvent, release: { version: undefined } },
+      { ...baseEvent, tags: undefined },
+    ];
+    for (const event of missingFields) {
+      serve(t, [
+        response(
+          {
+            id: '12345',
+            project: { id: '4512275993002064' },
+            priority: 'high',
+            status: 'unresolved',
+          },
+          issueUrl,
+        ),
+        response(event, eventUrl),
+      ]);
+      assert.deepEqual(
+        await observeSentryIssue('token', '12345', {
+          eventContext: 'reported-environment-release',
+        }),
+        contextualOutput({
+          environment: { kind: 'not-reported' },
+          release: { kind: 'not-reported' },
+        }),
+      );
+    }
   });
 
   test('default observation ignores malformed context fields and preserves its exact output', async (t) => {
@@ -209,11 +268,26 @@ describe('reported Sentry event context', { concurrency: false }, () => {
     assert.equal(request.mock.callCount(), 2);
   });
 
+  test('binds opt-in event context to the selected issue, project and event identity', async (t) => {
+    for (const override of [
+      { groupID: '54321' },
+      { projectID: '4512275993002065' },
+      { eventID: 'not-an-event-id' },
+    ]) {
+      const request = serve(t, [
+        response({ id: '12345', project: { id: '4512275993002064' } }, issueUrl),
+        response({ ...baseEvent, ...override }, eventUrl),
+      ]);
+      await rejectObservation(
+        observeSentryIssue('token', '12345', { eventContext: 'reported-environment-release' }),
+      );
+      assert.equal(request.mock.callCount(), 2);
+    }
+  });
+
   test('accepts grammar boundaries and rejects malformed selected context', async (t) => {
     const goodEnvironment = `A${'a'.repeat(63)}`;
-    assert.equal(goodEnvironment.length, 64);
     const goodRelease = `A${'a'.repeat(199)}`;
-    assert.equal(goodRelease.length, 200);
     const validEvents = [
       {
         ...baseEvent,
@@ -225,6 +299,7 @@ describe('reported Sentry event context', { concurrency: false }, () => {
         tags: Array(128).fill({ key: 'other', value: 'ignored' }),
         release: { version: 'A' },
       },
+      { ...baseEvent, tags: [{ key: 'x'.repeat(200), value: 'ignored' }] },
       { ...baseEvent, tags: [{ key: 'other', value: { ignored: true } }] },
     ];
     const expectedContexts: SentryEventContext[] = [
@@ -235,6 +310,10 @@ describe('reported Sentry event context', { concurrency: false }, () => {
       {
         environment: { kind: 'not-reported' },
         release: { kind: 'reported', value: 'A' },
+      },
+      {
+        environment: { kind: 'not-reported' },
+        release: { kind: 'not-reported' },
       },
       {
         environment: { kind: 'not-reported' },
@@ -255,8 +334,6 @@ describe('reported Sentry event context', { concurrency: false }, () => {
       );
       assert.equal(fetch.mock.callCount(), 2);
     }
-    assert.equal(goodEnvironment.length <= 64, true);
-    assert.equal(goodRelease.length <= 200, true);
   });
 
   test('rejects malformed tags, duplicate environment tags and invalid selected values', async (t) => {
@@ -274,6 +351,12 @@ describe('reported Sentry event context', { concurrency: false }, () => {
         tags: [
           { key: 'environment', value: 'production' },
           { key: 'environment', value: 'production' },
+        ],
+      },
+      {
+        tags: [
+          { key: 'environment', value: 'production' },
+          { key: 'environment', value: 'staging' },
         ],
       },
       { tags: [{ key: 'environment', value: '' }] },
@@ -325,6 +408,30 @@ describe('reported Sentry event context', { concurrency: false }, () => {
     await setImmediate();
     assert.equal(body.locked, true);
     t.mock.timers.tick(15_000);
+    await pending;
+    assert.equal(request.mock.callCount(), 2);
+    assert.equal(request.mock.calls[0].arguments[1]?.signal?.aborted, true);
+    assert.equal(body.locked, false);
+  });
+
+  test('active caller cancellation aborts a pending opt-in event read', async (t) => {
+    const caller = new AbortController();
+    const body = new ReadableStream<Uint8Array>({ pull: () => new Promise<void>(() => {}) });
+    const eventResponse = new Response(body, { status: 200 });
+    Object.defineProperty(eventResponse, 'url', { value: eventUrl });
+    const request = serve(t, [
+      response({ id: '12345', project: { id: '4512275993002064' } }, issueUrl),
+      eventResponse,
+    ]);
+    const pending = rejectObservation(
+      observeSentryIssue('token', '12345', {
+        eventContext: 'reported-environment-release',
+        signal: caller.signal,
+      }),
+    );
+    await setImmediate();
+    assert.equal(body.locked, true);
+    caller.abort();
     await pending;
     assert.equal(request.mock.callCount(), 2);
     assert.equal(request.mock.calls[0].arguments[1]?.signal?.aborted, true);

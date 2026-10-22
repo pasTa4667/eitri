@@ -53,7 +53,7 @@ To observe one explicitly selected issue, run the opt-in command:
 npm run --silent observe:sentry -- --account <explicit-account> --issue <positive-decimal-id>
 ```
 
-The command prints one JSON observation with validated identity, native classification, event time, and structural counts. This operational metadata is not anonymous. Use `--silent` for machine consumption without npm's banner. See the [read-only observation interface and limits](docs/sentry-observation.md). Live event-detail access remains unverified. Sentry controller intake remains disabled, and `npm start` is unchanged.
+The command prints one JSON observation with validated identity, native classification, event time, and structural counts. Add `--reported-context` to include a validated event environment and release when Sentry reports them. This operational metadata is not anonymous. Use `--silent` for machine consumption without npm's banner. See the [read-only observation interface and limits](docs/sentry-observation.md). Live event-detail access remains unverified. Sentry controller intake remains disabled, and `npm start` is unchanged.
 
 ## Run the native operator
 

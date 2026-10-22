@@ -391,12 +391,12 @@ export function observeSentryIssue(
 export function observeSentryIssue(
   token: string,
   issueId: string,
-  options?: Readonly<{ signal?: AbortSignal }>,
+  options?: Readonly<{ signal?: AbortSignal; eventContext?: undefined }>,
 ): Promise<SentryObservation>;
 export function observeSentryIssue(
   token: string,
   issueId: string,
-  options: SentryIssueObservationOptions,
+  options: SentryIssueObservationOptions | undefined,
 ): Promise<SentryObservation | SentryEventContextObservation>;
 export async function observeSentryIssue(
   token: string,
