@@ -121,6 +121,30 @@ export type SentryObservation = Readonly<{
       }>;
 }>;
 
+export type SentryReportedIdentifier =
+  | Readonly<{ kind: 'not-reported' }>
+  | Readonly<{ kind: 'reported'; value: string }>;
+
+export type SentryEventContext = Readonly<{
+  environment: SentryReportedIdentifier;
+  release: SentryReportedIdentifier;
+}>;
+
+type SentryAvailableEvent = Extract<SentryObservation['event'], { kind: 'available' }>;
+
+export type SentryEventContextObservation = Readonly<{
+  source: SentryObservation['source'];
+  classification: SentryObservation['classification'];
+  event:
+    | (SentryAvailableEvent & Readonly<{ context: SentryEventContext }>)
+    | Extract<SentryObservation['event'], { kind: 'unavailable' }>;
+}>;
+
+export type SentryIssueObservationOptions = Readonly<{
+  signal?: AbortSignal;
+  eventContext?: 'reported-environment-release';
+}>;
+
 function sentryObject(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error();
   return value as Record<string, unknown>;
@@ -225,6 +249,41 @@ function parseSentryEvent(
   };
 }
 
+function parseSentryReportedIdentifier(value: unknown, grammar: RegExp): SentryReportedIdentifier {
+  if (value === undefined || value === null) return { kind: 'not-reported' };
+  if (typeof value !== 'string' || !grammar.test(value)) throw new Error();
+  return { kind: 'reported', value };
+}
+
+function parseSentryEventContext(value: unknown): SentryEventContext {
+  const event = sentryObject(value);
+  let environment: SentryReportedIdentifier = { kind: 'not-reported' };
+  if (event.tags !== undefined && event.tags !== null) {
+    if (!Array.isArray(event.tags) || event.tags.length > 128) throw new Error();
+    let environmentTags = 0;
+    for (const value of event.tags) {
+      const tag = sentryObject(value);
+      if (typeof tag.key !== 'string' || tag.key.length > 200) throw new Error();
+      if (tag.key !== 'environment') continue;
+      environmentTags++;
+      if (environmentTags > 1 || tag.value === undefined || tag.value === null) throw new Error();
+      environment = parseSentryReportedIdentifier(
+        tag.value,
+        /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}(?![\s\S])/,
+      );
+    }
+  }
+  let release: SentryReportedIdentifier = { kind: 'not-reported' };
+  if (event.release !== undefined && event.release !== null) {
+    const releaseValue = sentryObject(event.release).version;
+    release = parseSentryReportedIdentifier(
+      releaseValue,
+      /^[A-Za-z0-9][A-Za-z0-9._+@-]{0,199}(?![\s\S])/,
+    );
+  }
+  return { environment, release };
+}
+
 function cancelSentryBody(body: ReadableStream<Uint8Array> | null): void {
   try {
     void body?.cancel().catch(() => {});
@@ -323,11 +382,27 @@ async function withSentryRead<T>(
   }
 }
 
-export async function observeSentryIssue(
+export function observeSentryIssue(
+  token: string,
+  issueId: string,
+  options: SentryIssueObservationOptions &
+    Readonly<{ eventContext: 'reported-environment-release' }>,
+): Promise<SentryEventContextObservation>;
+export function observeSentryIssue(
   token: string,
   issueId: string,
   options?: Readonly<{ signal?: AbortSignal }>,
-): Promise<SentryObservation> {
+): Promise<SentryObservation>;
+export function observeSentryIssue(
+  token: string,
+  issueId: string,
+  options: SentryIssueObservationOptions,
+): Promise<SentryObservation | SentryEventContextObservation>;
+export async function observeSentryIssue(
+  token: string,
+  issueId: string,
+  options?: SentryIssueObservationOptions,
+): Promise<SentryObservation | SentryEventContextObservation> {
   try {
     if (
       typeof token !== 'string' ||
@@ -336,7 +411,9 @@ export async function observeSentryIssue(
       /\s|[^\x21-\x7e]/.test(token) ||
       typeof issueId !== 'string' ||
       !/^[1-9][0-9]{0,19}$/.test(issueId) ||
-      options?.signal?.aborted
+      options?.signal?.aborted ||
+      (options?.eventContext !== undefined &&
+        options.eventContext !== 'reported-environment-release')
     )
       throw new Error();
 
@@ -345,11 +422,16 @@ export async function observeSentryIssue(
       const classification = parseSentryIssue(await readJson(url, false), issueId);
       checkLifetime();
       const value = await readJson(`${url}events/latest/`, true);
-      const event: SentryObservation['event'] =
+      const event: SentryObservation['event'] | SentryEventContextObservation['event'] =
         value === undefined
           ? { kind: 'unavailable', reason: 'latest-event-not-found' }
-          : parseSentryEvent(value, issueId);
-      const observation: SentryObservation = {
+          : options?.eventContext === 'reported-environment-release'
+            ? {
+                ...parseSentryEvent(value, issueId),
+                context: parseSentryEventContext(value),
+              }
+            : parseSentryEvent(value, issueId);
+      const observation: SentryObservation | SentryEventContextObservation = {
         source: {
           provider: 'sentry',
           organization: sentryTarget.organization,
