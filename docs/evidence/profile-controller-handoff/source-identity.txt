@@ -1,0 +1,3 @@
+1c88759865fc7c4ded183fa840439694b5a9c9bd43b636269f899df57e5f3b64  src/controller.ts
+dd28498e315b83fb72031bc7da868d9f39c276a94f66ee837628463b0b25a0d6  test/controller-worker-scenario.test.ts
+8fe5f9b512ee766fdeca85b06a4df1c8ed6984e08cf8738e67d769ef2f212ac1  test/integration/controller-profile-name-handoff.test.ts

@@ -1,0 +1,198 @@
+{
+  "sourceCommit": "4253e09dc61f1ed8d7e994807e4351ca1e5e7517",
+  "sourceFiles": {
+    "src/controller.ts": "1c88759865fc7c4ded183fa840439694b5a9c9bd43b636269f899df57e5f3b64",
+    "test/controller-worker-scenario.test.ts": "dd28498e315b83fb72031bc7da868d9f39c276a94f66ee837628463b0b25a0d6",
+    "test/integration/controller-profile-name-handoff.test.ts": "8fe5f9b512ee766fdeca85b06a4df1c8ed6984e08cf8738e67d769ef2f212ac1"
+  },
+  "verification": {
+    "verifyAll": {
+      "exit": 0,
+      "nodePassed": 1284,
+      "rustPassed": 30,
+      "failures": 0,
+      "skips": 0
+    },
+    "newProfileControllerDocker": {
+      "exit": 0,
+      "passed": 1,
+      "failures": 0,
+      "skips": 0
+    },
+    "unchangedDockerSuites": {
+      "exit": 0,
+      "passed": 5,
+      "failures": 0,
+      "skips": 0
+    }
+  },
+  "profileController": {
+    "root": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-controller-profile-oG4bTq",
+    "ownerId": "214bf68f-f6f8-4767-857f-430ec9a17d65",
+    "runId": "b538b160-ee10-4f49-ab65-d853c2e0de48",
+    "requestDigest": "93eba46e25083ff83b0a8b5b7ce675515bf47fe8ad5d8ea94c8cd854eaf23d51",
+    "configurationDigest": "09ea9b45df0cb45c87b47bdbb51702a49fd8567692b8b03063d6d92eb25a55fd",
+    "outcome": {
+      "kind": "baseline-reproduced"
+    },
+    "request": {
+      "frozen": {
+        "caseId": "38ae259b-b757-4207-a6c1-cfcf104a7105",
+        "revision": "a8714a77b446b8d9412c5a8fcdaa6c61bc3692a6",
+        "manifestDigest": "d020ea4fb5028681d3a9734c3f2c00edd1d8720202d0e9a8ab385e5fe57a909d"
+      },
+      "action": {
+        "caseId": "38ae259b-b757-4207-a6c1-cfcf104a7105",
+        "actionId": "e2c18237-00a1-4858-816f-d16914989ff9",
+        "epoch": 3
+      },
+      "scenarioId": "profile-name-v1",
+      "role": "baseline",
+      "allowanceMs": 59656
+    },
+    "profile": {
+      "definitionSha256": "0713e901c909c474f9ad3bc947537c765a4589db583fb588592194e1ed659481",
+      "actuals": [
+        {
+          "caseId": "missing-profile",
+          "kind": "threw"
+        },
+        {
+          "caseId": "trimmed-name",
+          "kind": "returned",
+          "value": "  ADA LOVELACE  "
+        },
+        {
+          "caseId": "second-name",
+          "kind": "returned",
+          "value": "GRACE HOPPER"
+        },
+        {
+          "caseId": "blank-name",
+          "kind": "returned",
+          "value": " \t "
+        },
+        {
+          "caseId": "missing-name",
+          "kind": "threw"
+        },
+        {
+          "caseId": "null-name",
+          "kind": "threw"
+        },
+        {
+          "caseId": "null-profile",
+          "kind": "threw"
+        },
+        {
+          "caseId": "null-user",
+          "kind": "threw"
+        },
+        {
+          "caseId": "undefined-user",
+          "kind": "threw"
+        }
+      ],
+      "diagnostic": {
+        "caseId": "missing-profile",
+        "nativeTypeError": true,
+        "name": "TypeError",
+        "message": "Cannot read properties of undefined (reading 'name')",
+        "firstFrame": "at getUserDisplayName (/src/lib/errors.js:5:23)"
+      }
+    },
+    "cleanup": {
+      "kind": "owned-removed",
+      "cache": "retained"
+    },
+    "png": {
+      "mime": "image/png",
+      "size": 25603,
+      "sha256": "94d09928d7bfd2a4bb5a46667cce465053949f2a2cadbc8a156e771192b77d4e"
+    },
+    "imageId": "sha256:312a83531ed7c810dbb364be75bd57e09a83c48fc2e2e3ab89e4532ac9bde34f",
+    "containerId": "f54ede09d0bb2ee3776b84a9b4f904e02272bfa6e1a8ef2684f91681c0bc2d61"
+  },
+  "currentResourceObservation": [
+    {
+      "command": [
+        "docker",
+        "--context",
+        "orbstack",
+        "container",
+        "ls",
+        "--all",
+        "--no-trunc",
+        "--quiet",
+        "--filter",
+        "label=eitri.frozen-browser.owner=214bf68f-f6f8-4767-857f-430ec9a17d65"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "docker",
+        "--context",
+        "orbstack",
+        "image",
+        "ls",
+        "--all",
+        "--no-trunc",
+        "--quiet",
+        "--filter",
+        "label=eitri.frozen-browser.owner=214bf68f-f6f8-4767-857f-430ec9a17d65"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "docker",
+        "--context",
+        "orbstack",
+        "container",
+        "ls",
+        "--all",
+        "--no-trunc",
+        "--quiet",
+        "--filter",
+        "id=f54ede09d0bb2ee3776b84a9b4f904e02272bfa6e1a8ef2684f91681c0bc2d61"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "docker",
+        "--context",
+        "orbstack",
+        "image",
+        "ls",
+        "--all",
+        "--no-trunc",
+        "--quiet"
+      ],
+      "stdout": "sha256:c2783f04c052ad9c0c44f003f7fbe0a57242450620689c4329c83fbec6c1f326\nsha256:ad6c27be2db5a2c4a8d92e6e7cf509750d8e1d46b081f6e36e9c54e041f4302f\nsha256:4a575582287ea05af02f25671a035cf0572b258a6cee1ae89e9df18f65ba4726\nsha256:cb556cb4b6fa08f7a98f62d3ea4ecb6720bf968f31b2de1532e641b24a8993d1\nsha256:46c0333d9207544829a7e626a22a87e6cfc67d29c27c2be3b60f80d3de18d3be\nsha256:fe6e097cc0ae933718ab49694ca0c6b0d31027d736c57e48b6a960417bfb13e0\nsha256:b47524a2130cf5368bc6052dfe05b48e2447e5c63a82c543ab4a61201a4b9009\nsha256:3d82b6a6fe365b2a9a0ec2b0d4e2b4af2e3caa2e886bc8e00519f016d15b3818\nsha256:7b535c5a1db7288307d48bb284dd3c1913055ec0f39b1969fd54a11f2a98309a\nsha256:15bf118648c66ecc0866279479fdab0ed35454837f62adf729debb0a404b92f5\nsha256:7ce5b634738433c576e46a5e43f1179ef6510a3bfb5b0df852266c4d95f3ca79\nsha256:4379f59868cc160a709ebc26cacc8d697bc75f9dd543d54a24400c13e88073ca\nsha256:1b21d1141bfd9faae8774724e20fd92f9e429139c21499a8344d45e8abe4ff9b\nsha256:fc064692f1ae56a8d8a9a64f2236f3cf50d3000dcfd0636eedc20cfb75ba1941\nsha256:02bea415d8305b52f55fceabe4b0a9114cf20b7b46ae7713d8e5bbea577e35dc\nsha256:e688eda1bc72ea5a347d04bf37803d495036e4fe069a0e707c43dd596e1cadfb\nsha256:56137f2638d6c877273108f15b79c48000065a3f28ef8f2fa9e574daf0445b8d\nsha256:dea629c91947f2d5294fc937906fe48a28fc6319f04c8a91d4ea950ce7fba768\nsha256:9006c4f8939ba183b4a9e4b267957faeba1f169493dcecefb10e1e9c3d3d8507\nsha256:62e65a78563f3a4b9fd658faf5e80ae9f7b6ace7e2f7904110c96ebc35a1e5a3\nsha256:868bbfb4597dff7244c4f722d3b3e7049b8f39fec996ce3718a900cd4c86563d\nsha256:17f999e64b055e29bda6799f93efd7770e5384b38c749cb1fb0518f748ec1319\nsha256:d6b7319b035e119bfb25505879f1d00d2ea254c52f95e830d4c0aefeb34c92c2\nsha256:48e7d3ad1caab5de05a2d9792b3e5ea0b3a5db520112b548c047938a00ecfd98\nsha256:d1ebcd5650ce6665c31e8def53c18ccc7e2ed489ffff372b0a18b6a0295c5f33\nsha256:ca4671f36e6ce9a91e116c9cf3760407216a8353c0ddf8b854d81302a6111d76\nsha256:53f76d0b81fea606aa63d0b485615e535f8f92701e9cc90b4450be26a0353d1c\nsha256:0fe7227336227f15c2258649d3859acc55106e69e5a41d50ee09c6dca9529e56\nsha256:84d074e6df3acd893ad18af3cecc08c511f9ac864440d02173b11cb40cb5f997\nsha256:93ae42fc0ff29438deffe89b90256e8a0f60b905241a27745c24465bd3a7dfc3\nsha256:d6b97336647ba604e0db9eebe5871f6a0b2a66a5d925eef9f06a45c02ec0a06e\nsha256:7ce5737dde4af23cd050de9e167a0c307327f69207baba6593af7e81ff989119\nsha256:0561d7b6d2b3a42f34c0bb654fe8a158fc297a0234d9368129315ecbe53c5236\nsha256:bf8d4ab2ed829c057707f8a0a2b23f41be4157a61167f9f4a039791cdb1912f6\nsha256:532a920591b427d557c0d45fbc5a2460b4590e1c7fe71f6435c3e56344b514f5\nsha256:40c573d67eeed74811efd35c2c8c18e957121dc55c5c472fca498c007cc035f6\nsha256:3224c2ec0385425da5dc0e891eee6e9e82d9ce199b7118cdd26b987aab942765\nsha256:f8f4fa40f2b6027989fde66f4a3a2647ddb1ccbcff646dfc75a006b767cc6280\nsha256:648cb152d0cbebf2d9076757ded6cf524926ead17388f3ad34e20a254f1e8d86\nsha256:759f40ab27d861c1bcf4f7acbc45079ec9fb38c36797de1aace407994be369ca\nsha256:5517a7e52ec496b103b388877b60526873e79a5050e5980f12b0c19b709a5ef5\nsha256:2811f47c010e57c04b1b5739c03555acef782bd3caf9991f244b17cfd9a9e542\nsha256:99a9fb7cf8a16176b848bfceffeee766a7ef089aefba3a63123d5cedd5a66219\nsha256:807802e0316834617069f595cedc7c6340a350d5a06eda5e613fe063b785c2b9\nsha256:e542c5aa257b79dc5f6c0b82bd8aac42131bf060722e2f305e9e603974df1ee8\nsha256:e19923f909f2ead8b6b3b11ca5d8c853e6f6830d2257e5115506df05a74426e1\nsha256:b82dadb71d9f61cf9f1028d3536c8dfb62a8a5e74b60e10d9dbc092e95981ab8\nsha256:59868a056833c0a88f0e2614331db443b2b55560812dc38a3cc95c329abedb57\nsha256:f442f28fb92f7c73c9bcf5b39c37e0c8c2d9202b9eeb9a8b20ad7888d26ff9e5\nsha256:9ec8d8d4ef851cd440b2a53109de0606864bc29c09a3618bce34474fa5b966b1\nsha256:d14a2fbc1d6c0bca69299a283e1422b3b1f97c58e97c21e4d1bef5e712ea9500\nsha256:220660793af92f1d9bb5850fe6e12f4aa91f018eb0414511913fa5f9360ffee6\nsha256:c0856b399f7ec52cf4496426e5b218ff5affaf6b5d7c952a96640774a51bbb01\nsha256:348ba293503ffe73e5c5175a76d5329b4e94dae02cc445ab825680ac031fb005\nsha256:3053e64d402a1489572eb0a6dbbde74a802bf506ff67ed65a1b3bd2f488960b1\nsha256:fac882200383da392df6be594a358d6f4335986171050b116c36dc6c0090888b\nsha256:5c4938e23b57f7bf5b8435063a69383ca3038bb4722fa026e73cfbd79e3e7fe4\nsha256:8af6a677a37c96599df41bb9a64e3e7cff7311996a659c7413edcde402a4269f\nsha256:b55bf490abe4fecdcc763ec276f709abc6e3779dc6a0d056d7f015fbc52a5252\nsha256:97dc109c6de63ee98079dfe944e21d1587226de21c8096f73f6630ecbd4d9acd\nsha256:0a532616950f638bec9cbf7a3359d78c687e983a3677a56f4cf46b0efc12e790\nsha256:ffa417382c8236c0f5904b563d2358cb3cfd34d00d31ecf1a913c1554abed80f\nsha256:6ba240f07684610afc5945edc0127cb01d95b0b8e80b3dc64cfbdad63f854945\nsha256:281bccb4269001af891b28b58b94bd7c3eea8cd2855d987544b97d3befce4675\nsha256:694d45030b6bc918be49e013e18f7ee782ecabadf726c01afc2721deeeb35ea5\nsha256:4c9ab07e01f50632394e35e4797225110990c127384127be514882e773418d45\nsha256:4451b9a937e9986592c755ea0c9c2367fec61a6cde55e53174890593b3d5d160\nsha256:8960e2151d311c702ab840c517680110e86a7d458dbd2ee1f2524a06bb0b546a\nsha256:b77f781d12171f68aad683282da1b004945b7adac2b91ffe02c513fd245313a1\nsha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff\nsha256:9672e4d80f3609f77d6942f9df501d12aca812088a34e748b48000ca377b7c5e\nsha256:46d73461ffd52db2357cdf0bd6b17d22b68460d080d53b4345c0d136e6b04924\nsha256:ed883b28c9952305d935555b9c6e4d9fa6a3d7ba8764e562dae53d41ca4b102a\nsha256:db7b7c641e9a4b575d1304b092809474beb374aa096995f851c7887c227ef22e\nsha256:587e1d93485ee9e32dce53c271dd9b0fe54a1651c6313ebeb9ea6f05b4451911\nsha256:e2244d054e2be2c612f820c27442e8f2a62c64df3c767af06941e651d5fef9af\nsha256:367e08ac9f3394bcce9f53758cce6d33e573825df04f3e475916ff35caa0976d\nsha256:e9b00c709ee2b73dd4f112a862c666a4c547f78399a83ab6cb03e7eb88f35c75\nsha256:d9a73c758da358bd9b4d6d98fb344696c9bd7c3a00c99b6d6944f56d1ace3c7f\nsha256:118c06052040468166332c1fef7d10e4fea939e12dc236b75ef5839c6bb083b9\nsha256:cca47dca56ae1c76aa6279b5a6a5922a7b6d8ee63e4662d9af81bd8d270c04de\nsha256:3036cb7a2fc584a10b0fd577af9334bbae0211f94a2cfda37fb6d1086217cb5b\nsha256:f0f64ac6ec9fd599f61ca30208d8669bcf547d16e0e8e483d09e7bf5c0d03f1f\nsha256:e9146dcb1c2662f47c0392844e0275a4a9d67e717a187bb5338d28ef6f8017c1\nsha256:786186a5fa68aca7bc5fdf52c5320445e3c721ce793af6e8407d3bc4ce901f9e\nsha256:43651357677a71578fd4b69e40f504b7f112616f2986a919396f4a23efade660\nsha256:51965525a7b22019f7ec552f82123bba690030cf03fdafa0172e1ca00a358977\nsha256:4a20d54703bc7cfadbc81df5a8046ff577512a6e5451a3bbce9090d9e06fdbf4\nsha256:76d9540c3ef6d137d5588cb762158e31bf156221b6b9e87cd4d7aaae8f5cbed3\nsha256:9baeef37571bf389fedfef9e98fc596db79a4b4a3b2c8f0266b9548f631f48d4\nsha256:c23dfa4bea3a19accaeff9e490aea6a96443bf012c60a2fa68b322fc8b1ade64\nsha256:90d59e150ca2f791c93ca3b843d40a05363305e98d918db65c379a15123b0fcf\nsha256:de742df91dda50f09c51dad56498d004f98c31b439da8c9642c3817d40fb1b9f\nsha256:27c18cf92cf52836c3e5709c1587e36b6b5e6fefa4b6cf0a2f0d5fbe961e3328\nsha256:52ae141f6f7fb30ee3fdb7e113c86b382481d2de79ceed04b57dc7c33df75fe9\nsha256:f423d812b1460b7df100cf65065c965eec21d4435b7cf7c0fdc4d37f9500573f\nsha256:e8498d8f47dba48b07bd67ee6e6fb6a1ae24e4c857b0ed06b19725b56e6ea302\nsha256:8c8e0bfc2bc0bae722534f37232f048662dfb65c48e1c7974a8be542d9feab7d\nsha256:1529e5bbabca972584d90afc0012b8df0d67d7132a0ad1ac1ee00c59feeb46fe\nsha256:4a0dcc04aa339487250356d02c37251adde9086a372e43dbe78678aa994b2a96\nsha256:b591b6426b17e7b51c3186a73d3929b516c9d7d7c846416cbe4b4271d8e47a29\nsha256:329b6de2abf6374c16f69a1a977139b1db20b857f674d051fb83d25f82c5021c\nsha256:e37ca563771b69b13611ae3bc0762c8c38e5f5da80b9384399c63445070bbd4e\nsha256:fbabc2374e0bebcaca097704db9478942f5df1357f11f98e828cebdf961659b7\nsha256:a523641ca8380650f1eff786308dcb341e40d432a21b560f4fe64fc3bde11731\nsha256:56d94b8e35a49c18069d59ff63c6136c4506330c50bd4864ac811487566f8138\nsha256:ef83ecfde154fd07694e93eb50063ecfe3e2fdce4abcb0954987dcb32a026bb7\nsha256:71c5b0fed728d60d0fbcdb41eaeddb6f0256b69fe9f3cbf02b4f98169c4bdc94\nsha256:58101edd605d09b9238217804dea4a9cc20296cfdbbebb638ddbe16863e23c28\nsha256:2eb085ca3ba80498cf1a2858ec007927bb21c81a6c6dc722a3cffe68bd78dc07\nsha256:b69ff87d4106df746af3be9f11685614e7d9ff0685083d16bb58d97bb2ac1d99\nsha256:19ae2ec34fc4d7279dd3e33593dabdd3abacf7ed0922e585a8ba9bd323c224a7\nsha256:a82fd14192e835de07f57d14d658351a75aeaf4a2cd01b033064e025594814c2\nsha256:64f04d7f5ff5fdec1dbbea04e58a5b107059f0393dff0d65751ee033a2eb6dc5\nsha256:4da08c95ad665ce8cc99fe8807c3ffe9340de5c115b49a3043c7f76c2fd5b3ff\nsha256:e8f7b17911bd83367b47a2786b5f8392df75db1c13d871ad2c3dac1dee48912d\nsha256:0ab885cf71916beded83c51df1ea71acddeab24048fd957b4f4471f59dcb9bc5\nsha256:1991bd789d7184290c3cce84fd6af068b8b745e9bddf178661ce7f5ecf68135c\nsha256:d607865cd608e923b7f4adbd4a79ecbe2466157e244d6b9ef2262fae7163afef\nsha256:4db8f27a0bd377468b3629643669c76519d6f5ed0200e384dbfb417093e6ac72\nsha256:80dd823f4d2bf93dd5e418a0ae2817319a1ba279953e234082e54a5a18306223\nsha256:fa081718c3d0e5a676ebe51cecbf3d0eb64e2c338926f7d5c80eaa6d25592ed5\nsha256:b778fa8560d6571595aad29a97c6e1932225b2b912588b9f0f3fdb23c91dca56\nsha256:c428f40149cf08f445c42984e8a9007366c895abd337a36a0ae9d462586b7116\nsha256:a550aed4c086eb77700b6e0150c4ca9cc95645d16d922c0c5db5e4d474176da9\nsha256:f29aebaa9b6a10012ea7039e64530f891ae7e07c9f265d69bea3e7c9f8f96646\nsha256:6bb5eca0f48bd30862920ce73344fbc53765b1f28fbdc6fb68a0c0cc15534189\nsha256:b2a181c9c7630f5014033e36b116262e0e58bd071fc81a110984e0339dd38a7e\nsha256:92decb13dfcedf311dc07e9678ff5a3869ebc258d17c95f5a1621d4d6f32af2a\nsha256:f53ed023c640f3691333cfaab5b10885e657c868d70ef9aaa5986cfa5c5de5b2\nsha256:0777d15d89ecedd8739877d62d8983e9f4b081efa23140db06299b0abe7a985b\nsha256:ac0f176ac1038811a69b9004b6619d7eebe5ddbb521645bd9bfb3167816babb3\nsha256:48b3b3e6415ffa969075ee67f9d289849aa11a5870eeb130f9fb4f76dc0900a3\n",
+      "stderr": ""
+    }
+  ],
+  "protectedTrackedFilesUnchanged": 114,
+  "siblingMetadataAndGitStatusUnchanged": true,
+  "siblingHelper": {
+    "sha256": "5fa6710bb0c4f120408d489d0b16f6a21bfc6e539081ab1d9fda7a3bddb1fa07",
+    "size": 525,
+    "ino": 159754832,
+    "dev": 16777233,
+    "mode": 33188,
+    "mtime_ns": 1792307661564031494,
+    "ctime_ns": 1792307661564031494
+  },
+  "limits": [
+    "Faux provider remains simulated",
+    "Helper baseline only, not React or normal-suite compatibility",
+    "Production dispatch disabled",
+    "Temporary roots and Docker build cache retained",
+    "Current absence is not a physical disk reclamation guarantee"
+  ]
+}

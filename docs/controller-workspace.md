@@ -1,6 +1,6 @@
 # Controller-owned offline workspaces
 
-Trusted scripted callers can configure the controller to own synthetic source workspaces. Each admitted check receives one frozen source selection tied to its persisted action and epoch. The native operator and production entry point do not enable this configuration.
+Trusted offline callers can configure the controller to own copied source workspaces. Each admitted check receives one frozen source selection tied to its persisted action and epoch. The native operator and production entry point do not enable this configuration.
 
 `WorkspaceStore` remains the sole Git and file-integrity owner. The controller catalogue owns case bindings, action authority and selection history. No additional database or coordinator is involved.
 
@@ -12,11 +12,20 @@ Trusted scripted callers can configure the controller to own synthetic source wo
 | --- | --- |
 | `repositoryId` | A trusted branded repository UUID. Cases share the repository but have separate branches and worktrees. |
 | `regressionDirectory` | The canonical virtual directory used by existing file-broker restrictions. |
-| `baseline` | Synthetic virtual paths and file bytes, copied before the first await. No source-checkout path is accepted. |
+| `baseline` | Trusted virtual paths and file bytes, copied before the first await. No source-checkout path is accepted. |
+| `workerScenarioId` | Optional `synthetic-click-v1` or `profile-name-v1`. Omission or `undefined` selects synthetic. An explicit selection requires `offlineWorkerJournal`. |
 
 The store is the private `workspaces` child of the controller directory. First enablement requires an empty catalogue. Existing scripted cases cannot silently acquire a source identity.
 
-The catalogue records configuration identity and a bootstrap intent before store creation. Reopening requires the same repository, regression directory and baseline paths and bytes. Omitting offline configuration cannot downgrade an established offline catalogue to scripted-only operation. A missing, empty or foreign established store is not recreated.
+The catalogue records configuration identity and a bootstrap intent before store creation. Reopening requires the same repository, regression directory, baseline paths and bytes, and effective worker scenario. Explicit synthetic and omission preserve the original synthetic configuration digest. Profile selection contributes to that digest without changing the worker-journal binding or execution configuration. The digest identifies controller configuration, not a Git revision. Omitting offline configuration cannot downgrade an established offline catalogue to scripted-only operation. A missing, empty or foreign established store is not recreated.
+
+## Browser scenario selection
+
+Set `offlineWorkspace.workerScenarioId` to `profile-name-v1` to select the [protected helper probe](profile-name-probe.md) for baseline and browser requests. The controller snapshots the selector with the baseline bytes before its first await. It rejects other runtime values without coercion. Changing the scenario requires a fresh controller directory, including when an established catalogue has no cases.
+
+Selection enables neither acceptance nor consumption. Those retain their separate opt-ins and current action-authority checks. Other check kinds receive no browser-worker intent. Persisted complete requests retain their original scenario and digest across reopen.
+
+A configured consumed-browser callback can hand the settled profile report to [native real-check admission](native-browser-check.md#offline-tool-handoff). A real check does not make a faux-provider case a genuine model fix. Production main remains unconfigured. React tests, build checks, protected-test reconciliation, and M2 acceptance remain separate work.
 
 ## Check callback
 
@@ -50,11 +59,11 @@ Close disables new operations, drains admitted workspace operations and closes t
 
 ## Limits
 
-Source selection is provenance, not validation evidence. `CheckResult.candidate` retains its existing simulated semantics and is not equated to the selected source SHA. Real browser reports and non-simulated receipts remain unaccepted.
+Source selection is provenance, not validation evidence. Scripted callback results retain their simulated semantics. The separate consumed-browser handoff binds real browser receipts to the selected source revision; it does not certify callback behavior or a genuine model fix.
 
 The existing workspace lifetime quotas and shared-inventory uncertainty remain. Callback configuration identity does not certify callback behavior. Close does not prove that unrelated callback effects have drained. Same-UID hostile races, multi-process store ownership and power-loss durability remain outside the guarantee.
 
-Docker dispatch, real source ingestion, model-edit tools, real fixture changes, credentials, live inference, publication and M2 acceptance remain deferred.
+Production dispatch, React fixture integration, model-edit tools, original fixture changes, credentials, live inference, publication, and M2 acceptance remain deferred.
 
 ## Verification
 

@@ -4,7 +4,7 @@
 
 ## Interface
 
-The existing request shape is unchanged. `scenarioId` also accepts `profile-name-v1`.
+The existing request shape is unchanged. `scenarioId` also accepts `profile-name-v1`. Trusted offline controller callers can set [`offlineWorkspace.workerScenarioId`](controller-workspace.md#browser-scenario-selection) to select this probe through the existing accepted-request and native-report handoff. Production main remains unconfigured.
 
 ```ts
 const request = frozenBrowserRequest({
@@ -57,6 +57,6 @@ Fresh synthetic runs retain their existing A/B meaning under the new configurati
 
 ## Limits
 
-The suite can reject constant fallback and partial fixes, but it cannot exclude hardcoding every fixed input. It neither reconciles the demonstration project's protected tests nor validates its build, UI, other helpers, or Sentry behavior. It does not enable controller dispatch, genuine model inference, publication, or deployment.
+The suite can reject constant fallback and partial fixes, but it cannot exclude hardcoding every fixed input. It neither reconciles the demonstration project's protected tests nor validates its build, UI, other helpers, or Sentry behavior. Production controller dispatch remains disabled. The probe does not enable genuine model inference, publication, or deployment.
 
 Actual Docker acceptance and GPT review are recorded separately in the work log when complete. Fast tests alone are not browser or containment acceptance.
