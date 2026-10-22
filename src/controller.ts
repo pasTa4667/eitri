@@ -79,6 +79,7 @@ export type OfflineWorkspaceOptions = Readonly<{
   repositoryId: RepositoryId;
   regressionDirectory: VirtualPath;
   baseline: readonly BaselineFile[];
+  workerScenarioId?: FrozenBrowserRequest['scenarioId'];
 }>;
 export type OfflineActionWorkspace = Readonly<{
   workerAcceptance?: Readonly<{ accept(): Promise<FrozenBrowserAcceptance> }>;
@@ -297,11 +298,21 @@ export class Controller {
     }
     if (options.offlineWorkspace) {
       const offline = options.offlineWorkspace;
+      const workerScenarioId = offline.workerScenarioId;
+      if (
+        workerScenarioId !== undefined &&
+        workerScenarioId !== 'synthetic-click-v1' &&
+        workerScenarioId !== 'profile-name-v1'
+      )
+        fail('invalid-offline-worker-scenario');
+      if (workerScenarioId !== undefined && !options.offlineWorkerJournal)
+        fail('offline-worker-scenario-journal-required');
       if (!Array.isArray(offline.baseline) || offline.baseline.length > workspaceLimits.files)
         fail('workspace-size-limit');
       options = {
         ...options,
-        offlineWorkspace: {
+        offlineWorkspace: Object.freeze({
+          workerScenarioId: workerScenarioId ?? 'synthetic-click-v1',
           repositoryId: repositoryId(offline.repositoryId),
           regressionDirectory: virtualPath(offline.regressionDirectory),
           baseline: offline.baseline.map((file) => {
@@ -314,7 +325,7 @@ export class Controller {
               return fail('workspace-file-size-limit');
             return { virtualPath: virtualPath(file.virtualPath), bytes: Buffer.from(file.bytes) };
           }),
-        },
+        }),
       };
     }
     const directory = resolve(options.directory);
@@ -1599,7 +1610,7 @@ export class Controller {
         const workerRequest = frozenBrowserRequest({
           frozen: selected.frozen,
           action: { caseId: id, actionId: action.id, epoch: action.epoch },
-          scenarioId: 'synthetic-click-v1',
+          scenarioId: this.options.offlineWorkspace!.workerScenarioId!,
           role: kind === 'baseline' ? 'baseline' : 'candidate',
           allowanceMs: Math.min(60_000, remainingMs),
         });
@@ -2533,6 +2544,9 @@ function workerIdentifier(value: unknown): value is string {
 function offlineSourceDigest(offline: OfflineWorkspaceOptions): string {
   return digest({
     version: 1,
+    ...(offline.workerScenarioId === 'profile-name-v1'
+      ? { workerScenarioId: offline.workerScenarioId }
+      : {}),
     repositoryId: offline.repositoryId,
     regressionDirectory: offline.regressionDirectory,
     baseline: offline.baseline
