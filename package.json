@@ -7,6 +7,7 @@
     "doctor": "node scripts/doctor.mjs",
     "check:sdk": "node scripts/check-sdk.mjs",
     "check:sentry": "node scripts/check-sentry.ts",
+    "list:sentry": "node scripts/list-sentry.ts",
     "observe:sentry": "node scripts/observe-sentry.ts",
     "probe:sdk": "node prototypes/sdk-compatibility.mjs",
     "check": "tsc --noEmit && node --check scripts/doctor.mjs && node --check scripts/check-sdk.mjs && node --check prototypes/sdk-compatibility.mjs && node --check prototypes/chromium/probe.mjs && node --check prototypes/chromium/run.mjs && node --check prototypes/chromium/policy.mjs",

@@ -45,6 +45,8 @@ npm run check:sentry -- --account <1Password-account-UUID-or-hostname>
 
 This opt-in probe reads only `op://Eitri/Sentry/password` with desktop approval and tests read-only issue access to the configured hosted project. It prints no credentials or issue contents and does not change `npm start` or enable live remediation. See [setup and limitations](docs/setup.md#check-the-existing-hosted-sentry-connection).
 
+To find issue IDs first, use the opt-in [single-page discovery command](docs/sentry-discovery.md).
+
 To observe one explicitly selected issue, run the opt-in command:
 
 ```sh

@@ -231,6 +231,98 @@ function cancelSentryBody(body: ReadableStream<Uint8Array> | null): void {
   } catch {}
 }
 
+async function withSentryRead<T>(
+  token: string,
+  signal: AbortSignal | undefined,
+  read: (scope: {
+    readJson(url: string, latest: boolean): Promise<unknown>;
+    checkLifetime(): void;
+  }) => Promise<T>,
+): Promise<T> {
+  const controller = new AbortController();
+  const deadline = Date.now() + 15_000;
+  let finished = false;
+  const stopped = Promise.withResolvers<never>();
+  const stop = () => {
+    controller.abort();
+    stopped.reject(new Error());
+  };
+  void stopped.promise.catch(() => {});
+  const timer = setTimeout(stop, 15_000);
+  function checkLifetime(): void {
+    if (Date.now() >= deadline) stop();
+    if (controller.signal.aborted) throw new Error();
+  }
+
+  async function readJson(url: string, latest: boolean): Promise<unknown> {
+    checkLifetime();
+    const pending = fetch(new URL(url), {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+      redirect: 'error',
+      credentials: 'omit',
+      signal: controller.signal,
+    }).then((response) => {
+      if (finished || controller.signal.aborted) {
+        cancelSentryBody(response.body);
+        throw new Error();
+      }
+      return response;
+    });
+    const response = await Promise.race([pending, stopped.promise]);
+    let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+    let consumed = false;
+    try {
+      checkLifetime();
+      if (response.redirected || response.url !== url) throw new Error();
+      if (latest && response.status === 404) return undefined;
+      if (response.status !== 200 || !response.body) throw new Error();
+      reader = response.body.getReader();
+      const chunks: Uint8Array[] = [];
+      let size = 0;
+      while (true) {
+        checkLifetime();
+        const chunk = await Promise.race([reader.read(), stopped.promise]);
+        checkLifetime();
+        if (chunk.done) break;
+        size += chunk.value.byteLength;
+        if (size > 1_048_576) throw new Error();
+        chunks.push(chunk.value);
+      }
+      consumed = true;
+      const value: unknown = JSON.parse(
+        new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks)),
+      );
+      checkLifetime();
+      return value;
+    } finally {
+      if (reader) {
+        if (!consumed) {
+          try {
+            void reader.cancel().catch(() => {});
+          } catch {}
+        }
+        reader.releaseLock();
+      } else {
+        cancelSentryBody(response.body);
+      }
+    }
+  }
+
+  try {
+    signal?.addEventListener('abort', stop, { once: true });
+    checkLifetime();
+    return await read({ readJson, checkLifetime });
+  } catch {
+    controller.abort();
+    throw new Error();
+  } finally {
+    finished = true;
+    clearTimeout(timer);
+    signal?.removeEventListener('abort', stop);
+  }
+}
+
 export async function observeSentryIssue(
   token: string,
   issueId: string,
@@ -248,80 +340,7 @@ export async function observeSentryIssue(
     )
       throw new Error();
 
-    const controller = new AbortController();
-    const deadline = Date.now() + 15_000;
-    let finished = false;
-    const stopped = Promise.withResolvers<never>();
-    const stop = () => {
-      controller.abort();
-      stopped.reject(new Error());
-    };
-    void stopped.promise.catch(() => {});
-    const timer = setTimeout(stop, 15_000);
-    const signal = options?.signal;
-    function checkLifetime(): void {
-      if (Date.now() >= deadline) stop();
-      if (controller.signal.aborted) throw new Error();
-    }
-
-    async function readJson(url: string, latest: boolean): Promise<unknown> {
-      checkLifetime();
-      const pending = fetch(new URL(url), {
-        method: 'GET',
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-        redirect: 'error',
-        credentials: 'omit',
-        signal: controller.signal,
-      }).then((response) => {
-        if (finished || controller.signal.aborted) {
-          cancelSentryBody(response.body);
-          throw new Error();
-        }
-        return response;
-      });
-      const response = await Promise.race([pending, stopped.promise]);
-      let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
-      let consumed = false;
-      try {
-        checkLifetime();
-        if (response.redirected || response.url !== url) throw new Error();
-        if (latest && response.status === 404) return undefined;
-        if (response.status !== 200 || !response.body) throw new Error();
-        reader = response.body.getReader();
-        const chunks: Uint8Array[] = [];
-        let size = 0;
-        while (true) {
-          checkLifetime();
-          const chunk = await Promise.race([reader.read(), stopped.promise]);
-          checkLifetime();
-          if (chunk.done) break;
-          size += chunk.value.byteLength;
-          if (size > 1_048_576) throw new Error();
-          chunks.push(chunk.value);
-        }
-        consumed = true;
-        const value: unknown = JSON.parse(
-          new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks)),
-        );
-        checkLifetime();
-        return value;
-      } finally {
-        if (reader) {
-          if (!consumed) {
-            try {
-              void reader.cancel().catch(() => {});
-            } catch {}
-          }
-          reader.releaseLock();
-        } else {
-          cancelSentryBody(response.body);
-        }
-      }
-    }
-
-    try {
-      signal?.addEventListener('abort', stop, { once: true });
-      checkLifetime();
+    return await withSentryRead(token, options?.signal, async ({ readJson, checkLifetime }) => {
       const url = `https://sentry.io/api/0/organizations/${sentryTarget.organization}/issues/${issueId}/`;
       const classification = parseSentryIssue(await readJson(url, false), issueId);
       checkLifetime();
@@ -343,15 +362,90 @@ export async function observeSentryIssue(
       if (Buffer.byteLength(JSON.stringify(observation), 'utf8') > 2048) throw new Error();
       checkLifetime();
       return observation;
-    } catch {
-      controller.abort();
-      throw new Error();
-    } finally {
-      finished = true;
-      clearTimeout(timer);
-      signal?.removeEventListener('abort', stop);
-    }
+    });
   } catch {
     throw new Error('Sentry observation failed.');
+  }
+}
+
+const sentryDiscoveryScope = Object.freeze({
+  coverage: 'single-page-only',
+  statsPeriod: '14d',
+  query: '',
+  sort: 'date',
+  maxResults: 25,
+} as const);
+
+export type SentryIssuePage = Readonly<{
+  source: Omit<SentryObservation['source'], 'issueId'>;
+  scope: typeof sentryDiscoveryScope;
+  items: readonly Readonly<{
+    issueId: string;
+    classification: SentryObservation['classification'];
+  }>[];
+}>;
+
+function discoveryIdentity(value: unknown): string {
+  const id = sentryIdentity(value);
+  if (!/^[1-9][0-9]{0,19}(?![\s\S])/.test(id)) throw new Error();
+  return id;
+}
+
+function parseSentryIssuePage(value: unknown): SentryIssuePage {
+  if (!Array.isArray(value) || value.length > sentryDiscoveryScope.maxResults) throw new Error();
+  const ids = new Set<string>();
+  const items = value.map((value) => {
+    const issue = sentryObject(value);
+    const issueId = discoveryIdentity(issue.id);
+    if (
+      ids.has(issueId) ||
+      discoveryIdentity(sentryObject(issue.project).id) !== sentryTarget.projectId
+    )
+      throw new Error();
+    ids.add(issueId);
+    return { issueId, classification: parseSentryIssue(issue, issueId) };
+  });
+  return {
+    source: {
+      provider: 'sentry',
+      organization: sentryTarget.organization,
+      projectId: sentryTarget.projectId,
+    },
+    scope: sentryDiscoveryScope,
+    items,
+  };
+}
+
+export async function listSentryIssues(
+  token: string,
+  options?: Readonly<{ signal?: AbortSignal }>,
+): Promise<SentryIssuePage> {
+  try {
+    if (
+      typeof token !== 'string' ||
+      !token ||
+      token.length > 8192 ||
+      /\s|[^\x21-\x7e]/.test(token) ||
+      options?.signal?.aborted
+    )
+      throw new Error();
+    return await withSentryRead(token, options?.signal, async ({ readJson, checkLifetime }) => {
+      const url = new URL(
+        `https://sentry.io/api/0/organizations/${sentryTarget.organization}/issues/`,
+      );
+      url.search = new URLSearchParams({
+        project: sentryTarget.projectId,
+        query: sentryDiscoveryScope.query,
+        statsPeriod: sentryDiscoveryScope.statsPeriod,
+        limit: String(sentryDiscoveryScope.maxResults),
+        sort: sentryDiscoveryScope.sort,
+      }).toString();
+      const page = parseSentryIssuePage(await readJson(url.href, false));
+      if (Buffer.byteLength(JSON.stringify(page), 'utf8') > 8192) throw new Error();
+      checkLifetime();
+      return page;
+    });
+  } catch {
+    throw new Error('Sentry discovery failed.');
   }
 }
