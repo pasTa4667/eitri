@@ -1,0 +1,3 @@
+5ae3b6a4169b3c52208c8fe405fdd22082265bf9beab381511a5b476076b0bac  src/fixture-profile-name.ts
+01190e604795c243f36da492f01d1a354d0dca3f22d7a9558bf8b32e24404ecf  test/fixture-profile-name.test.ts
+28b17bee901847db581c76c998c928975ea7d984639d762f40d2c12214e6ffe7  test/fixture-profile-name-worker.ts

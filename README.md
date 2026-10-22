@@ -49,7 +49,7 @@ The pinned GPUI 0.2.2 build uses process-local Xcode selection, not a toolchain 
 
 ## Offline workspace preparation
 
-The [workspace library](docs/workspace.md) adds managed Git, guarded one-file edits, durable crash receipts, and immutable exports. It remains disconnected from controller routes and agent tools. Its tests use synthetic temporary repositories, not the demonstration fixture.
+The [workspace library](docs/workspace.md) adds managed Git, guarded one-file edits, durable crash receipts, and immutable exports. It remains disconnected from controller routes and agent tools. Its tests use synthetic temporary repositories, not the demonstration fixture. The separate [profile-name capture](docs/fixture-profile-name.md) now acquires only the actual helper's bytes with explicit uncommitted-copy provenance. It does not execute project code or enable a browser scenario.
 
 ## Unwired browser validation
 
