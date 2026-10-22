@@ -81,4 +81,4 @@ Errors use `ControlError` codes without native filesystem paths or messages.
 
 ## Verification boundary
 
-The [verification record](evidence/fixture-profile-name/verification.md) records actual helper capture, independent parent checks, GPT reviews, and exact source identities. Browser probing, React build integration, fixture-contract reconciliation, and M2 acceptance remain separate work.
+The [verification record](evidence/fixture-profile-name/verification.md) records actual helper capture, independent parent checks, GPT reviews, and exact source identities. The separate [protected browser probe](profile-name-probe.md) now consumes the captured helper through managed frozen revisions. React build integration, fixture-contract reconciliation, and M2 acceptance remain open.

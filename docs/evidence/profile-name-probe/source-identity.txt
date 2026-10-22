@@ -1,0 +1,6 @@
+2450ecb4f97e6e1367ee08d4f3e72a215860883085d750de5624b7de28e2b86e  src/frozen-browser.ts
+2bf47122851dea6c4bd8ae4968c3a2d5ea976f3f4fc28bc6687888efc871dd25  src/profile-name-definition.ts
+b8afb450dac8eb17f3696f31a50acef97ecbb4c8131447fc7f9f9b4439e4e519  worker/frozen-browser/driver.mjs
+4b523075f614d27664761baa3ed8a86f24b9627d7056e92c4681a792edf15fde  test/frozen-browser-admission.test.ts
+aabd3d8044cfd094ee9a85d6a213633f15b6e339be1b870d00da40e9bcc8d2c3  test/frozen-browser.test.ts
+32c545f6a65979ef40bdd459dbedd743b1cfb5408d1a777eb36061351e755441  test/integration/profile-name-probe.test.ts

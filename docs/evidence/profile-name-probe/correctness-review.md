@@ -1,0 +1,13 @@
+## Review
+
+- **Correct.** The finite vector has one protected definition. Static wrapper imports avoid helper-exported `then` substitution, and CDP retrieves the actual function handle (`src/profile-name-definition.ts:6-62`, `worker/frozen-browser/driver.mjs:216-242`). Native diagnostic extraction requires reviewed helper bytes. Candidate invocation exceptions are caught without inspecting their properties.
+
+- **Finding P1.** The surrogate validator can execute candidate-controlled prototype getters (`worker/frozen-browser/driver.mjs:289-291`). When a returned string ends with a high surrogate, `value[++i]` accesses an out-of-range index and searches `String.prototype`. A candidate can install a getter at index `"1"` and return `"\ud800"`. The trusted wrapper then invokes that getter. If it supplies `"\udc00"`, the wrapper transfers the original malformed string, which host validation rejects as infrastructure failure instead of recording `invalid-return`. This violates getter isolation and classification requirements. **Smallest fix.** Check that another code unit exists before reading it. Add an adversarial case asserting `invalid-return` and no getter events. This is source-proven, not an executed repro or demonstrated sandbox escape.
+
+- **Finding P2.** Complete candidate evidence does not require the helper to exist in its transfer manifest (`src/frozen-browser.ts:1610-1624,1693-1709`). Starting with `profileFixture()` in the admission tests, replacing both transfer and observed manifest with `[]` leaves the passing vector admissible. Live execution cannot produce that result because the wrapper import fails without the helper. Pure admission intentionally does not authenticate execution, but this claim is internally inconsistent with source binding. **Smallest fix.** Require a designated-helper manifest entry for complete profile observations, without requiring candidates to match baseline bytes. Test removal of that entry.
+
+- **Fixed.** None. Review-only restrictions were respected.
+
+- **Scope and verification.** Read the selected contract, complete supplied patch, hash list, comment audit, and all six current files. Observed differences from the supplied patch match the permitted rename, comment deletion, and protected-root poison fixtures. No broader whole-tree verification was available. No tests, Docker, edits, or independent hash computation were performed.
+
+- **Merge verdict. BLOCK.** Correct P1 before treating this source-review gate as cleared. Then the parent should run the explicit-opt-in actual Docker profile suite, including the new surrogate-poisoning case, and existing synthetic/controller Docker regressions. This review supplies no runtime acceptance evidence.
