@@ -1,0 +1,522 @@
+{
+  "source": "parent integrated managed helper run",
+  "journalSha256": "3917e14ed483fafb3f3191bf15d67965aeca285080d453083e8597d37068360f",
+  "observations": [
+    {
+      "runId": "e543b78c-9335-4a56-af1a-d1f84fabcff1",
+      "role": "candidate",
+      "outcome": {
+        "kind": "candidate-passed"
+      },
+      "cleanup": {
+        "kind": "owned-removed",
+        "cache": "retained"
+      },
+      "provenance": {
+        "requestDigest": "c6dd245f7264339516a26fa3f725dab43ebb2cd3b5612db588418346e5876eed",
+        "configurationDigest": "47eeb7cb129217de287f9244d5f539bf24657c57b57f6d41cc2677103963b8f3",
+        "frozen": {
+          "caseId": "8c14789e-afe6-4183-9be0-22508ef5ffd6",
+          "revision": "e2d228f1a674af1f3108dd4822dee67459519177",
+          "manifestDigest": "907dcdcf2de29f81ee9df15041a7d0cb2abd2415ef032080f9a807c376b4b88a"
+        },
+        "transfer": [
+          {
+            "path": "__eitri_profile.html",
+            "size": 60,
+            "sha256": "664496cc6f59100a81ebebdd7fa676d87e2ec361cc9cd702a8a9cca5bc0897b7"
+          },
+          {
+            "path": "__eitri_profile.mjs",
+            "size": 40,
+            "sha256": "dea31e9e62fc2fed1a07a036683ba7b2a48542aba60ffc4ab426fa782b4ef693"
+          },
+          {
+            "path": "src/index.html",
+            "size": 54,
+            "sha256": "37cdcdee843adc3b55f64d9005d74e3db35760a3bc05473d76ce600ef39392b7"
+          },
+          {
+            "path": "src/lib/errors.js",
+            "size": 158,
+            "sha256": "07ee30fcaac0bac8783c1bf5df761f630d7e94ea2c9a49ad540368bf3a83922e"
+          }
+        ],
+        "contextBytes": 33280,
+        "contextSha256": "efd2080f13676958a2b8a9edefe089c784c2db3484b300f88d4090986b466b4e",
+        "assets": {
+          "dockerfile": "ea2f93c7c5c271019cf5022c3f209c0f2dc03cf956e3a0238540b10e1a626976",
+          "driver": "b8afb450dac8eb17f3696f31a50acef97ecbb4c8131447fc7f9f9b4439e4e519",
+          "watchdog": "f272ff69098c3d10f3907db67ab181e26979f958aeb70c2bbe917e3e1420baef",
+          "scenario": "803d5d0319b3794f5b91ed1235a1a3557c368364fef6f56cc5bc7a413ad78b6c",
+          "policy": "c85c2b40abc8ca15cace108b94f91e337b73313c8288b03c41d1ca51fe239bd7"
+        },
+        "policy": {
+          "sha256": "c85c2b40abc8ca15cace108b94f91e337b73313c8288b03c41d1ca51fe239bd7",
+          "engineCommit": "daa0cb7f23594cdbcce5002e370027d3fd36ffd7",
+          "baselineSha256": "01536f1d1df938ae611eba20d6349e0de7a99b6ecdee1549427a0b01b8301e28"
+        },
+        "engine": {
+          "version": "29.4.0",
+          "arch": "arm64",
+          "commit": "daa0cb7f",
+          "security": [
+            "name=seccomp,profile=builtin",
+            "name=cgroupns"
+          ]
+        },
+        "baseBefore": {
+          "id": "sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff",
+          "architecture": "arm64",
+          "os": "linux",
+          "rootFS": {
+            "Type": "layers",
+            "Layers": [
+              "sha256:1e9178dc90058fa454a60803300219ee8c17e515be8718817ed824b96fa1207b",
+              "sha256:1d38b7af782dce9e2df5cc7b5c8e94587259b17bb93110de639e2c815bf4a9e7",
+              "sha256:472ad09fba4cd8693c98d51891a4d5738b3159293649c3372492a09a04944af8",
+              "sha256:f961188457542bd7a109688fcf635d59e9e00ec065a96305b16c6a12a56f7048",
+              "sha256:17ef8e1840b43e248cb97e872b9549deb255cf90be50daa985c72c1cc48e63df",
+              "sha256:1ac9e58fe1af6fc1f0154e24bd1e5b9dd5f99e24945acbadab50271f2586678d",
+              "sha256:a9e15583932640eec3161df8feaab852469f184960a9f79d281b0ee16f5aba3d",
+              "sha256:d745008c8a5d0869378a69dbd059d0fee7aa3b6fa472bc42623af1898bd70741",
+              "sha256:c9b16ca40ef340c8df47968c33cf2ca2e4b46468a8ec4c670a3a24713bbed6ec",
+              "sha256:d1772fa77dc101c66d80440fe6ba8afe2c2577daebafda376b9472b77a39c22d",
+              "sha256:9f0487aca0b17cb7441a6df8fd6ea817901ec53fdf3c8ee8905f7bd3036ef4cb"
+            ]
+          },
+          "env": [
+            "HOME=/tmp",
+            "LANG=C.UTF-8",
+            "LC_ALL=C.UTF-8",
+            "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+            "PLAYWRIGHT_BROWSERS_PATH=/ms-playwright"
+          ]
+        },
+        "baseAfter": {
+          "id": "sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff",
+          "architecture": "arm64",
+          "os": "linux",
+          "rootFS": {
+            "Type": "layers",
+            "Layers": [
+              "sha256:1e9178dc90058fa454a60803300219ee8c17e515be8718817ed824b96fa1207b",
+              "sha256:1d38b7af782dce9e2df5cc7b5c8e94587259b17bb93110de639e2c815bf4a9e7",
+              "sha256:472ad09fba4cd8693c98d51891a4d5738b3159293649c3372492a09a04944af8",
+              "sha256:f961188457542bd7a109688fcf635d59e9e00ec065a96305b16c6a12a56f7048",
+              "sha256:17ef8e1840b43e248cb97e872b9549deb255cf90be50daa985c72c1cc48e63df",
+              "sha256:1ac9e58fe1af6fc1f0154e24bd1e5b9dd5f99e24945acbadab50271f2586678d",
+              "sha256:a9e15583932640eec3161df8feaab852469f184960a9f79d281b0ee16f5aba3d",
+              "sha256:d745008c8a5d0869378a69dbd059d0fee7aa3b6fa472bc42623af1898bd70741",
+              "sha256:c9b16ca40ef340c8df47968c33cf2ca2e4b46468a8ec4c670a3a24713bbed6ec",
+              "sha256:d1772fa77dc101c66d80440fe6ba8afe2c2577daebafda376b9472b77a39c22d",
+              "sha256:9f0487aca0b17cb7441a6df8fd6ea817901ec53fdf3c8ee8905f7bd3036ef4cb"
+            ]
+          },
+          "env": [
+            "HOME=/tmp",
+            "LANG=C.UTF-8",
+            "LC_ALL=C.UTF-8",
+            "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+            "PLAYWRIGHT_BROWSERS_PATH=/ms-playwright"
+          ]
+        },
+        "imageId": "sha256:2e5feeaae3005eaf18385d06e096e0bb410381ee62235345fb0ba3ede55f3383",
+        "containerId": "2d9b49352b0f6c1cb3dc6d021773b646e7be477a3ca3cbb3b1d2573eaf165f4f",
+        "applied": {
+          "image": "sha256:2e5feeaae3005eaf18385d06e096e0bb410381ee62235345fb0ba3ede55f3383",
+          "inspectionSha256": "5f4c7f45e0ed588e7fd214fa3bc94ac1f58bdf3a089a3c2915e623a07571c1b1",
+          "config": {
+            "User": "1001:1001",
+            "WorkingDir": "/opt/eitri",
+            "Entrypoint": [
+              "/usr/local/bin/node",
+              "/opt/eitri/frozen-browser/watchdog.mjs"
+            ],
+            "Cmd": [],
+            "StopTimeout": 2,
+            "OpenStdin": false,
+            "Tty": false,
+            "Env": [
+              "EITRI_DEADLINE=1792750215475",
+              "EITRI_NONCE=392894b2bb5c6c083bf50cfb75d63349c5a89c6c015227300f6d1de8d59adb9d",
+              "EITRI_REQUEST=c6dd245f7264339516a26fa3f725dab43ebb2cd3b5612db588418346e5876eed",
+              "EITRI_SCENARIO=profile-name-v1",
+              "HOME=/tmp",
+              "LANG=C.UTF-8",
+              "LC_ALL=C.UTF-8",
+              "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+              "PLAYWRIGHT_BROWSERS_PATH=/ms-playwright"
+            ],
+            "Labels": {
+              "eitri.frozen-browser.owner": "1d3eba2d-635d-4b08-a465-bd4f7eb94a79",
+              "eitri.frozen-browser.run": "e543b78c-9335-4a56-af1a-d1f84fabcff1"
+            }
+          },
+          "hostConfig": {
+            "NetworkMode": "none",
+            "ReadonlyRootfs": true,
+            "Privileged": false,
+            "CapAdd": null,
+            "CapDrop": [
+              "ALL"
+            ],
+            "SecurityOpt": [
+              "no-new-privileges",
+              "seccomp={\"defaultAction\":\"SCMP_ACT_ERRNO\",\"defaultErrnoRet\":1,\"archMap\":[{\"architecture\":\"SCMP_ARCH_X86_64\",\"subArchitectures\":[\"SCMP_ARCH_X86\",\"SCMP_ARCH_X32\"]},{\"architecture\":\"SCMP_ARCH_AARCH64\",\"subArchitectures\":[\"SCMP_ARCH_ARM\"]},{\"architecture\":\"SCMP_ARCH_MIPS64\",\"subArchitectures\":[\"SCMP_ARCH_MIPS\",\"SCMP_ARCH_MIPS64N32\"]},{\"architecture\":\"SCMP_ARCH_MIPS64N32\",\"subArchitectures\":[\"SCMP_ARCH_MIPS\",\"SCMP_ARCH_MIPS64\"]},{\"architecture\":\"SCMP_ARCH_MIPSEL64\",\"subArchitectures\":[\"SCMP_ARCH_MIPSEL\",\"SCMP_ARCH_MIPSEL64N32\"]},{\"architecture\":\"SCMP_ARCH_MIPSEL64N32\",\"subArchitectures\":[\"SCMP_ARCH_MIPSEL\",\"SCMP_ARCH_MIPSEL64\"]},{\"architecture\":\"SCMP_ARCH_S390X\",\"subArchitectures\":[\"SCMP_ARCH_S390\"]},{\"architecture\":\"SCMP_ARCH_RISCV64\",\"subArchitectures\":null}],\"syscalls\":[{\"names\":[\"accept\",\"accept4\",\"access\",\"adjtimex\",\"alarm\",\"bind\",\"brk\",\"cachestat\",\"capget\",\"capset\",\"chdir\",\"chmod\",\"chown\",\"chown32\",\"clock_adjtime\",\"clock_adjtime64\",\"clock_getres\",\"clock_getres_time64\",\"clock_gettime\",\"clock_gettime64\",\"clock_nanosleep\",\"clock_nanosleep_time64\",\"close\",\"close_range\",\"connect\",\"copy_file_range\",\"creat\",\"dup\",\"dup2\",\"dup3\",\"epoll_create\",\"epoll_create1\",\"epoll_ctl\",\"epoll_ctl_old\",\"epoll_pwait\",\"epoll_pwait2\",\"epoll_wait\",\"epoll_wait_old\",\"eventfd\",\"eventfd2\",\"execve\",\"execveat\",\"exit\",\"exit_group\",\"faccessat\",\"faccessat2\",\"fadvise64\",\"fadvise64_64\",\"fallocate\",\"fanotify_mark\",\"fchdir\",\"fchmod\",\"fchmodat\",\"fchmodat2\",\"fchown\",\"fchown32\",\"fchownat\",\"fcntl\",\"fcntl64\",\"fdatasync\",\"fgetxattr\",\"flistxattr\",\"flock\",\"fork\",\"fremovexattr\",\"fsetxattr\",\"fstat\",\"fstat64\",\"fstatat64\",\"fstatfs\",\"fstatfs64\",\"fsync\",\"ftruncate\",\"ftruncate64\",\"futex\",\"futex_requeue\",\"futex_time64\",\"futex_wait\",\"futex_waitv\",\"futex_wake\",\"futimesat\",\"getcpu\",\"getcwd\",\"getdents\",\"getdents64\",\"getegid\",\"getegid32\",\"geteuid\",\"geteuid32\",\"getgid\",\"getgid32\",\"getgroups\",\"getgroups32\",\"getitimer\",\"getpeername\",\"getpgid\",\"getpgrp\",\"getpid\",\"getppid\",\"getpriority\",\"getrandom\",\"getresgid\",\"getresgid32\",\"getresuid\",\"getresuid32\",\"getrlimit\",\"get_robust_list\",\"getrusage\",\"getsid\",\"getsockname\",\"getsockopt\",\"get_thread_area\",\"gettid\",\"gettimeofday\",\"getuid\",\"getuid32\",\"getxattr\",\"getxattrat\",\"inotify_add_watch\",\"inotify_init\",\"inotify_init1\",\"inotify_rm_watch\",\"io_cancel\",\"ioctl\",\"io_destroy\",\"io_getevents\",\"io_pgetevents\",\"io_pgetevents_time64\",\"ioprio_get\",\"ioprio_set\",\"io_setup\",\"io_submit\",\"ipc\",\"kill\",\"landlock_add_rule\",\"landlock_create_ruleset\",\"landlock_restrict_self\",\"lchown\",\"lchown32\",\"lgetxattr\",\"link\",\"linkat\",\"listen\",\"listmount\",\"listxattr\",\"listxattrat\",\"llistxattr\",\"_llseek\",\"lremovexattr\",\"lseek\",\"lsetxattr\",\"lstat\",\"lstat64\",\"madvise\",\"map_shadow_stack\",\"membarrier\",\"memfd_create\",\"memfd_secret\",\"mincore\",\"mkdir\",\"mkdirat\",\"mknod\",\"mknodat\",\"mlock\",\"mlock2\",\"mlockall\",\"mmap\",\"mmap2\",\"mprotect\",\"mq_getsetattr\",\"mq_notify\",\"mq_open\",\"mq_timedreceive\",\"mq_timedreceive_time64\",\"mq_timedsend\",\"mq_timedsend_time64\",\"mq_unlink\",\"mremap\",\"mseal\",\"msgctl\",\"msgget\",\"msgrcv\",\"msgsnd\",\"msync\",\"munlock\",\"munlockall\",\"munmap\",\"name_to_handle_at\",\"nanosleep\",\"newfstatat\",\"_newselect\",\"open\",\"openat\",\"openat2\",\"pause\",\"pidfd_open\",\"pidfd_send_signal\",\"pipe\",\"pipe2\",\"pkey_alloc\",\"pkey_free\",\"pkey_mprotect\",\"poll\",\"ppoll\",\"ppoll_time64\",\"prctl\",\"pread64\",\"preadv\",\"preadv2\",\"prlimit64\",\"process_mrelease\",\"pselect6\",\"pselect6_time64\",\"pwrite64\",\"pwritev\",\"pwritev2\",\"read\",\"readahead\",\"readlink\",\"readlinkat\",\"readv\",\"recv\",\"recvfrom\",\"recvmmsg\",\"recvmmsg_time64\",\"recvmsg\",\"remap_file_pages\",\"removexattr\",\"removexattrat\",\"rename\",\"renameat\",\"renameat2\",\"restart_syscall\",\"riscv_hwprobe\",\"rmdir\",\"rseq\",\"rt_sigaction\",\"rt_sigpending\",\"rt_sigprocmask\",\"rt_sigqueueinfo\",\"rt_sigreturn\",\"rt_sigsuspend\",\"rt_sigtimedwait\",\"rt_sigtimedwait_time64\",\"rt_tgsigqueueinfo\",\"sched_getaffinity\",\"sched_getattr\",\"sched_getparam\",\"sched_get_priority_max\",\"sched_get_priority_min\",\"sched_getscheduler\",\"sched_rr_get_interval\",\"sched_rr_get_interval_time64\",\"sched_setaffinity\",\"sched_setattr\",\"sched_setparam\",\"sched_setscheduler\",\"sched_yield\",\"seccomp\",\"select\",\"semctl\",\"semget\",\"semop\",\"semtimedop\",\"semtimedop_time64\",\"send\",\"sendfile\",\"sendfile64\",\"sendmmsg\",\"sendmsg\",\"sendto\",\"setfsgid\",\"setfsgid32\",\"setfsuid\",\"setfsuid32\",\"setgid\",\"setgid32\",\"setgroups\",\"setgroups32\",\"setitimer\",\"setpgid\",\"setpriority\",\"setregid\",\"setregid32\",\"setresgid\",\"setresgid32\",\"setresuid\",\"setresuid32\",\"setreuid\",\"setreuid32\",\"setrlimit\",\"set_robust_list\",\"setsid\",\"setsockopt\",\"set_thread_area\",\"set_tid_address\",\"setuid\",\"setuid32\",\"setxattr\",\"setxattrat\",\"shmat\",\"shmctl\",\"shmdt\",\"shmget\",\"shutdown\",\"sigaltstack\",\"signalfd\",\"signalfd4\",\"sigprocmask\",\"sigreturn\",\"socketcall\",\"socketpair\",\"splice\",\"stat\",\"stat64\",\"statfs\",\"statfs64\",\"statmount\",\"statx\",\"symlink\",\"symlinkat\",\"sync\",\"sync_file_range\",\"syncfs\",\"sysinfo\",\"tee\",\"tgkill\",\"time\",\"timer_create\",\"timer_delete\",\"timer_getoverrun\",\"timer_gettime\",\"timer_gettime64\",\"timer_settime\",\"timer_settime64\",\"timerfd_create\",\"timerfd_gettime\",\"timerfd_gettime64\",\"timerfd_settime\",\"timerfd_settime64\",\"times\",\"tkill\",\"truncate\",\"truncate64\",\"ugetrlimit\",\"umask\",\"uname\",\"unlink\",\"unlinkat\",\"uretprobe\",\"utime\",\"utimensat\",\"utimensat_time64\",\"utimes\",\"vfork\",\"vmsplice\",\"wait4\",\"waitid\",\"waitpid\",\"write\",\"writev\"],\"action\":\"SCMP_ACT_ALLOW\"},{\"names\":[\"process_vm_readv\",\"process_vm_writev\",\"ptrace\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"minKernel\":\"4.8\"}},{\"names\":[\"socket\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":40,\"op\":\"SCMP_CMP_NE\"}]},{\"names\":[\"personality\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":0,\"op\":\"SCMP_CMP_EQ\"}]},{\"names\":[\"personality\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":8,\"op\":\"SCMP_CMP_EQ\"}]},{\"names\":[\"personality\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":131072,\"op\":\"SCMP_CMP_EQ\"}]},{\"names\":[\"personality\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":131080,\"op\":\"SCMP_CMP_EQ\"}]},{\"names\":[\"personality\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":4294967295,\"op\":\"SCMP_CMP_EQ\"}]},{\"names\":[\"sync_file_range2\",\"swapcontext\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"ppc64le\"]}},{\"names\":[\"arm_fadvise64_64\",\"arm_sync_file_range\",\"sync_file_range2\",\"breakpoint\",\"cacheflush\",\"set_tls\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"arm\",\"arm64\"]}},{\"names\":[\"arch_prctl\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"amd64\",\"x32\"]}},{\"names\":[\"modify_ldt\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"amd64\",\"x32\",\"x86\"]}},{\"names\":[\"s390_pci_mmio_read\",\"s390_pci_mmio_write\",\"s390_runtime_instr\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"s390\",\"s390x\"]}},{\"names\":[\"riscv_flush_icache\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"riscv64\"]}},{\"names\":[\"open_by_handle_at\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_DAC_READ_SEARCH\"]}},{\"names\":[\"bpf\",\"clone\",\"clone3\",\"fanotify_init\",\"fsconfig\",\"fsmount\",\"fsopen\",\"fspick\",\"lookup_dcookie\",\"lsm_get_self_attr\",\"lsm_list_modules\",\"lsm_set_self_attr\",\"mount\",\"mount_setattr\",\"move_mount\",\"open_tree\",\"perf_event_open\",\"quotactl\",\"quotactl_fd\",\"setdomainname\",\"sethostname\",\"setns\",\"syslog\",\"umount\",\"umount2\",\"unshare\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_ADMIN\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":2114060288,\"op\":\"SCMP_CMP_MASKED_EQ\"}],\"excludes\":{\"caps\":[\"CAP_SYS_ADMIN\"],\"arches\":[\"s390\",\"s390x\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":1,\"value\":2114060288,\"op\":\"SCMP_CMP_MASKED_EQ\"}],\"comment\":\"s390 parameter ordering for clone is different\",\"includes\":{\"arches\":[\"s390\",\"s390x\"]},\"excludes\":{\"caps\":[\"CAP_SYS_ADMIN\"]}},{\"names\":[\"clone3\"],\"action\":\"SCMP_ACT_ERRNO\",\"errnoRet\":38,\"excludes\":{\"caps\":[\"CAP_SYS_ADMIN\"]}},{\"names\":[\"reboot\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_BOOT\"]}},{\"names\":[\"chroot\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_CHROOT\"]}},{\"names\":[\"delete_module\",\"init_module\",\"finit_module\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_MODULE\"]}},{\"names\":[\"acct\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_PACCT\"]}},{\"names\":[\"kcmp\",\"pidfd_getfd\",\"process_madvise\",\"process_vm_readv\",\"process_vm_writev\",\"ptrace\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_PTRACE\"]}},{\"names\":[\"iopl\",\"ioperm\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_RAWIO\"]}},{\"names\":[\"settimeofday\",\"stime\",\"clock_settime\",\"clock_settime64\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_TIME\"]}},{\"names\":[\"vhangup\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_TTY_CONFIG\"]}},{\"names\":[\"get_mempolicy\",\"mbind\",\"set_mempolicy\",\"set_mempolicy_home_node\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_NICE\"]}},{\"names\":[\"syslog\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYSLOG\"]}},{\"names\":[\"bpf\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_BPF\"]}},{\"names\":[\"perf_event_open\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_PERFMON\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":268435473,\"op\":\"SCMP_CMP_EQ\"}],\"includes\":{\"arches\":[\"arm64\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":805306385,\"op\":\"SCMP_CMP_EQ\"}],\"includes\":{\"arches\":[\"arm64\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":1342177297,\"op\":\"SCMP_CMP_EQ\"}],\"includes\":{\"arches\":[\"arm64\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":1879048209,\"op\":\"SCMP_CMP_EQ\"}],\"includes\":{\"arches\":[\"arm64\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":536870929,\"op\":\"SCMP_CMP_EQ\"}],\"includes\":{\"arches\":[\"arm64\"]}},{\"names\":[\"unshare\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":268435456,\"op\":\"SCMP_CMP_EQ\"}],\"includes\":{\"arches\":[\"arm64\"]}},{\"names\":[\"chroot\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"arm64\"]}}]}"
+            ],
+            "Memory": 4294967296,
+            "MemorySwap": 4294967296,
+            "NanoCpus": 2000000000,
+            "PidsLimit": 256,
+            "IpcMode": "private",
+            "ShmSize": 268435456,
+            "Tmpfs": {
+              "/tmp": "rw,exec,nosuid,size=256m,uid=1001,gid=1001"
+            },
+            "Ulimits": [
+              {
+                "Name": "core",
+                "Hard": 0,
+                "Soft": 0
+              }
+            ],
+            "PublishAllPorts": false,
+            "AutoRemove": false,
+            "Runtime": "runc",
+            "CgroupnsMode": "private",
+            "RestartPolicy": {
+              "Name": "no",
+              "MaximumRetryCount": 0
+            }
+          },
+          "mounts": []
+        },
+        "admittedAt": 1792750155475,
+        "deadline": 1792750215475,
+        "finishedAt": 1792750158355,
+        "exitCode": 0,
+        "oomKilled": false,
+        "stdoutSha256": "36b12585994676cfd64bfbe88701643fd30f1d56eb73559dfb5c859c8a4c3a5b",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "buildStdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "buildStderrSha256": "b8134853792e275f1c2819d53dc4ea79a469c08c9f8f80598c5f9529917eaf53"
+      },
+      "profile": {
+        "definitionSha256": "35d237dc1f5f753c7a89772b9b258c48631e04d758a7632fee5d9724710aa412",
+        "actuals": [
+          {
+            "caseId": "missing-profile",
+            "kind": "returned",
+            "value": "Anonymous"
+          },
+          {
+            "caseId": "trimmed-name",
+            "kind": "returned",
+            "value": "Ada Lovelace"
+          },
+          {
+            "caseId": "second-name",
+            "kind": "returned",
+            "value": "gRaCe Hopper"
+          },
+          {
+            "caseId": "blank-name",
+            "kind": "returned",
+            "value": "Anonymous"
+          },
+          {
+            "caseId": "missing-name",
+            "kind": "returned",
+            "value": "Anonymous"
+          },
+          {
+            "caseId": "null-name",
+            "kind": "returned",
+            "value": "Anonymous"
+          },
+          {
+            "caseId": "null-profile",
+            "kind": "returned",
+            "value": "Anonymous"
+          },
+          {
+            "caseId": "null-user",
+            "kind": "returned",
+            "value": "Anonymous"
+          },
+          {
+            "caseId": "undefined-user",
+            "kind": "returned",
+            "value": "Anonymous"
+          }
+        ],
+        "diagnostic": null
+      },
+      "screenshot": {
+        "mime": "image/png",
+        "size": 27073,
+        "sha256": "eaf41d4de45c01882cf5505176845c9c3d2c67f0908048fd9ce676d2833c0a79"
+      }
+    },
+    {
+      "runId": "33e3d46f-c050-44fb-b675-2601836df12f",
+      "role": "baseline",
+      "outcome": {
+        "kind": "baseline-reproduced"
+      },
+      "cleanup": {
+        "kind": "owned-removed",
+        "cache": "retained"
+      },
+      "provenance": {
+        "requestDigest": "914b7735884ce14ec25f7c0f122a47cf1a98260ef4450e03aa05467aef19fefc",
+        "configurationDigest": "47eeb7cb129217de287f9244d5f539bf24657c57b57f6d41cc2677103963b8f3",
+        "frozen": {
+          "caseId": "8c14789e-afe6-4183-9be0-22508ef5ffd6",
+          "revision": "a4e49322fb5aa8ce2a30066157ec63dee72f9ecb",
+          "manifestDigest": "20e32fbbf5b672b7760c8413a152fac36eb5f5caecda5c83323ffb61851e8b37"
+        },
+        "transfer": [
+          {
+            "path": "__eitri_profile.html",
+            "size": 60,
+            "sha256": "664496cc6f59100a81ebebdd7fa676d87e2ec361cc9cd702a8a9cca5bc0897b7"
+          },
+          {
+            "path": "__eitri_profile.mjs",
+            "size": 40,
+            "sha256": "dea31e9e62fc2fed1a07a036683ba7b2a48542aba60ffc4ab426fa782b4ef693"
+          },
+          {
+            "path": "src/index.html",
+            "size": 54,
+            "sha256": "37cdcdee843adc3b55f64d9005d74e3db35760a3bc05473d76ce600ef39392b7"
+          },
+          {
+            "path": "src/lib/errors.js",
+            "size": 534,
+            "sha256": "cd69431e5b7fda7ec116377d033d192a7b214a9c42a8101bd8c809c862af80f4"
+          }
+        ],
+        "contextBytes": 33792,
+        "contextSha256": "c816fc8840ffa20a469d790ae5cd8afcf72ebb35ad4b0eecb843212efc891379",
+        "assets": {
+          "dockerfile": "ea2f93c7c5c271019cf5022c3f209c0f2dc03cf956e3a0238540b10e1a626976",
+          "driver": "b8afb450dac8eb17f3696f31a50acef97ecbb4c8131447fc7f9f9b4439e4e519",
+          "watchdog": "f272ff69098c3d10f3907db67ab181e26979f958aeb70c2bbe917e3e1420baef",
+          "scenario": "803d5d0319b3794f5b91ed1235a1a3557c368364fef6f56cc5bc7a413ad78b6c",
+          "policy": "c85c2b40abc8ca15cace108b94f91e337b73313c8288b03c41d1ca51fe239bd7"
+        },
+        "policy": {
+          "sha256": "c85c2b40abc8ca15cace108b94f91e337b73313c8288b03c41d1ca51fe239bd7",
+          "engineCommit": "daa0cb7f23594cdbcce5002e370027d3fd36ffd7",
+          "baselineSha256": "01536f1d1df938ae611eba20d6349e0de7a99b6ecdee1549427a0b01b8301e28"
+        },
+        "engine": {
+          "version": "29.4.0",
+          "arch": "arm64",
+          "commit": "daa0cb7f",
+          "security": [
+            "name=seccomp,profile=builtin",
+            "name=cgroupns"
+          ]
+        },
+        "baseBefore": {
+          "id": "sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff",
+          "architecture": "arm64",
+          "os": "linux",
+          "rootFS": {
+            "Type": "layers",
+            "Layers": [
+              "sha256:1e9178dc90058fa454a60803300219ee8c17e515be8718817ed824b96fa1207b",
+              "sha256:1d38b7af782dce9e2df5cc7b5c8e94587259b17bb93110de639e2c815bf4a9e7",
+              "sha256:472ad09fba4cd8693c98d51891a4d5738b3159293649c3372492a09a04944af8",
+              "sha256:f961188457542bd7a109688fcf635d59e9e00ec065a96305b16c6a12a56f7048",
+              "sha256:17ef8e1840b43e248cb97e872b9549deb255cf90be50daa985c72c1cc48e63df",
+              "sha256:1ac9e58fe1af6fc1f0154e24bd1e5b9dd5f99e24945acbadab50271f2586678d",
+              "sha256:a9e15583932640eec3161df8feaab852469f184960a9f79d281b0ee16f5aba3d",
+              "sha256:d745008c8a5d0869378a69dbd059d0fee7aa3b6fa472bc42623af1898bd70741",
+              "sha256:c9b16ca40ef340c8df47968c33cf2ca2e4b46468a8ec4c670a3a24713bbed6ec",
+              "sha256:d1772fa77dc101c66d80440fe6ba8afe2c2577daebafda376b9472b77a39c22d",
+              "sha256:9f0487aca0b17cb7441a6df8fd6ea817901ec53fdf3c8ee8905f7bd3036ef4cb"
+            ]
+          },
+          "env": [
+            "HOME=/tmp",
+            "LANG=C.UTF-8",
+            "LC_ALL=C.UTF-8",
+            "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+            "PLAYWRIGHT_BROWSERS_PATH=/ms-playwright"
+          ]
+        },
+        "baseAfter": {
+          "id": "sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff",
+          "architecture": "arm64",
+          "os": "linux",
+          "rootFS": {
+            "Type": "layers",
+            "Layers": [
+              "sha256:1e9178dc90058fa454a60803300219ee8c17e515be8718817ed824b96fa1207b",
+              "sha256:1d38b7af782dce9e2df5cc7b5c8e94587259b17bb93110de639e2c815bf4a9e7",
+              "sha256:472ad09fba4cd8693c98d51891a4d5738b3159293649c3372492a09a04944af8",
+              "sha256:f961188457542bd7a109688fcf635d59e9e00ec065a96305b16c6a12a56f7048",
+              "sha256:17ef8e1840b43e248cb97e872b9549deb255cf90be50daa985c72c1cc48e63df",
+              "sha256:1ac9e58fe1af6fc1f0154e24bd1e5b9dd5f99e24945acbadab50271f2586678d",
+              "sha256:a9e15583932640eec3161df8feaab852469f184960a9f79d281b0ee16f5aba3d",
+              "sha256:d745008c8a5d0869378a69dbd059d0fee7aa3b6fa472bc42623af1898bd70741",
+              "sha256:c9b16ca40ef340c8df47968c33cf2ca2e4b46468a8ec4c670a3a24713bbed6ec",
+              "sha256:d1772fa77dc101c66d80440fe6ba8afe2c2577daebafda376b9472b77a39c22d",
+              "sha256:9f0487aca0b17cb7441a6df8fd6ea817901ec53fdf3c8ee8905f7bd3036ef4cb"
+            ]
+          },
+          "env": [
+            "HOME=/tmp",
+            "LANG=C.UTF-8",
+            "LC_ALL=C.UTF-8",
+            "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+            "PLAYWRIGHT_BROWSERS_PATH=/ms-playwright"
+          ]
+        },
+        "imageId": "sha256:6e49e0742fb3f2e376a54f1313e3065e1ba086acd4797036e0ab9405cdda508f",
+        "containerId": "540bc48d237cfd624786eb8856bffdc7307ae7c018626fa8eb94afaa2f42bb63",
+        "applied": {
+          "image": "sha256:6e49e0742fb3f2e376a54f1313e3065e1ba086acd4797036e0ab9405cdda508f",
+          "inspectionSha256": "22ea8e619f451a37c4b1aa072aedc488368e7f91e62c71c58cf212c6f19d4108",
+          "config": {
+            "User": "1001:1001",
+            "WorkingDir": "/opt/eitri",
+            "Entrypoint": [
+              "/usr/local/bin/node",
+              "/opt/eitri/frozen-browser/watchdog.mjs"
+            ],
+            "Cmd": [],
+            "StopTimeout": 2,
+            "OpenStdin": false,
+            "Tty": false,
+            "Env": [
+              "EITRI_DEADLINE=1792750218736",
+              "EITRI_NONCE=e7c543d65e0c6abaadd925253d3c619074e7cfb11cbfca974048a0ac3c8d3fa3",
+              "EITRI_REQUEST=914b7735884ce14ec25f7c0f122a47cf1a98260ef4450e03aa05467aef19fefc",
+              "EITRI_SCENARIO=profile-name-v1",
+              "HOME=/tmp",
+              "LANG=C.UTF-8",
+              "LC_ALL=C.UTF-8",
+              "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+              "PLAYWRIGHT_BROWSERS_PATH=/ms-playwright"
+            ],
+            "Labels": {
+              "eitri.frozen-browser.owner": "1d3eba2d-635d-4b08-a465-bd4f7eb94a79",
+              "eitri.frozen-browser.run": "33e3d46f-c050-44fb-b675-2601836df12f"
+            }
+          },
+          "hostConfig": {
+            "NetworkMode": "none",
+            "ReadonlyRootfs": true,
+            "Privileged": false,
+            "CapAdd": null,
+            "CapDrop": [
+              "ALL"
+            ],
+            "SecurityOpt": [
+              "no-new-privileges",
+              "seccomp={\"defaultAction\":\"SCMP_ACT_ERRNO\",\"defaultErrnoRet\":1,\"archMap\":[{\"architecture\":\"SCMP_ARCH_X86_64\",\"subArchitectures\":[\"SCMP_ARCH_X86\",\"SCMP_ARCH_X32\"]},{\"architecture\":\"SCMP_ARCH_AARCH64\",\"subArchitectures\":[\"SCMP_ARCH_ARM\"]},{\"architecture\":\"SCMP_ARCH_MIPS64\",\"subArchitectures\":[\"SCMP_ARCH_MIPS\",\"SCMP_ARCH_MIPS64N32\"]},{\"architecture\":\"SCMP_ARCH_MIPS64N32\",\"subArchitectures\":[\"SCMP_ARCH_MIPS\",\"SCMP_ARCH_MIPS64\"]},{\"architecture\":\"SCMP_ARCH_MIPSEL64\",\"subArchitectures\":[\"SCMP_ARCH_MIPSEL\",\"SCMP_ARCH_MIPSEL64N32\"]},{\"architecture\":\"SCMP_ARCH_MIPSEL64N32\",\"subArchitectures\":[\"SCMP_ARCH_MIPSEL\",\"SCMP_ARCH_MIPSEL64\"]},{\"architecture\":\"SCMP_ARCH_S390X\",\"subArchitectures\":[\"SCMP_ARCH_S390\"]},{\"architecture\":\"SCMP_ARCH_RISCV64\",\"subArchitectures\":null}],\"syscalls\":[{\"names\":[\"accept\",\"accept4\",\"access\",\"adjtimex\",\"alarm\",\"bind\",\"brk\",\"cachestat\",\"capget\",\"capset\",\"chdir\",\"chmod\",\"chown\",\"chown32\",\"clock_adjtime\",\"clock_adjtime64\",\"clock_getres\",\"clock_getres_time64\",\"clock_gettime\",\"clock_gettime64\",\"clock_nanosleep\",\"clock_nanosleep_time64\",\"close\",\"close_range\",\"connect\",\"copy_file_range\",\"creat\",\"dup\",\"dup2\",\"dup3\",\"epoll_create\",\"epoll_create1\",\"epoll_ctl\",\"epoll_ctl_old\",\"epoll_pwait\",\"epoll_pwait2\",\"epoll_wait\",\"epoll_wait_old\",\"eventfd\",\"eventfd2\",\"execve\",\"execveat\",\"exit\",\"exit_group\",\"faccessat\",\"faccessat2\",\"fadvise64\",\"fadvise64_64\",\"fallocate\",\"fanotify_mark\",\"fchdir\",\"fchmod\",\"fchmodat\",\"fchmodat2\",\"fchown\",\"fchown32\",\"fchownat\",\"fcntl\",\"fcntl64\",\"fdatasync\",\"fgetxattr\",\"flistxattr\",\"flock\",\"fork\",\"fremovexattr\",\"fsetxattr\",\"fstat\",\"fstat64\",\"fstatat64\",\"fstatfs\",\"fstatfs64\",\"fsync\",\"ftruncate\",\"ftruncate64\",\"futex\",\"futex_requeue\",\"futex_time64\",\"futex_wait\",\"futex_waitv\",\"futex_wake\",\"futimesat\",\"getcpu\",\"getcwd\",\"getdents\",\"getdents64\",\"getegid\",\"getegid32\",\"geteuid\",\"geteuid32\",\"getgid\",\"getgid32\",\"getgroups\",\"getgroups32\",\"getitimer\",\"getpeername\",\"getpgid\",\"getpgrp\",\"getpid\",\"getppid\",\"getpriority\",\"getrandom\",\"getresgid\",\"getresgid32\",\"getresuid\",\"getresuid32\",\"getrlimit\",\"get_robust_list\",\"getrusage\",\"getsid\",\"getsockname\",\"getsockopt\",\"get_thread_area\",\"gettid\",\"gettimeofday\",\"getuid\",\"getuid32\",\"getxattr\",\"getxattrat\",\"inotify_add_watch\",\"inotify_init\",\"inotify_init1\",\"inotify_rm_watch\",\"io_cancel\",\"ioctl\",\"io_destroy\",\"io_getevents\",\"io_pgetevents\",\"io_pgetevents_time64\",\"ioprio_get\",\"ioprio_set\",\"io_setup\",\"io_submit\",\"ipc\",\"kill\",\"landlock_add_rule\",\"landlock_create_ruleset\",\"landlock_restrict_self\",\"lchown\",\"lchown32\",\"lgetxattr\",\"link\",\"linkat\",\"listen\",\"listmount\",\"listxattr\",\"listxattrat\",\"llistxattr\",\"_llseek\",\"lremovexattr\",\"lseek\",\"lsetxattr\",\"lstat\",\"lstat64\",\"madvise\",\"map_shadow_stack\",\"membarrier\",\"memfd_create\",\"memfd_secret\",\"mincore\",\"mkdir\",\"mkdirat\",\"mknod\",\"mknodat\",\"mlock\",\"mlock2\",\"mlockall\",\"mmap\",\"mmap2\",\"mprotect\",\"mq_getsetattr\",\"mq_notify\",\"mq_open\",\"mq_timedreceive\",\"mq_timedreceive_time64\",\"mq_timedsend\",\"mq_timedsend_time64\",\"mq_unlink\",\"mremap\",\"mseal\",\"msgctl\",\"msgget\",\"msgrcv\",\"msgsnd\",\"msync\",\"munlock\",\"munlockall\",\"munmap\",\"name_to_handle_at\",\"nanosleep\",\"newfstatat\",\"_newselect\",\"open\",\"openat\",\"openat2\",\"pause\",\"pidfd_open\",\"pidfd_send_signal\",\"pipe\",\"pipe2\",\"pkey_alloc\",\"pkey_free\",\"pkey_mprotect\",\"poll\",\"ppoll\",\"ppoll_time64\",\"prctl\",\"pread64\",\"preadv\",\"preadv2\",\"prlimit64\",\"process_mrelease\",\"pselect6\",\"pselect6_time64\",\"pwrite64\",\"pwritev\",\"pwritev2\",\"read\",\"readahead\",\"readlink\",\"readlinkat\",\"readv\",\"recv\",\"recvfrom\",\"recvmmsg\",\"recvmmsg_time64\",\"recvmsg\",\"remap_file_pages\",\"removexattr\",\"removexattrat\",\"rename\",\"renameat\",\"renameat2\",\"restart_syscall\",\"riscv_hwprobe\",\"rmdir\",\"rseq\",\"rt_sigaction\",\"rt_sigpending\",\"rt_sigprocmask\",\"rt_sigqueueinfo\",\"rt_sigreturn\",\"rt_sigsuspend\",\"rt_sigtimedwait\",\"rt_sigtimedwait_time64\",\"rt_tgsigqueueinfo\",\"sched_getaffinity\",\"sched_getattr\",\"sched_getparam\",\"sched_get_priority_max\",\"sched_get_priority_min\",\"sched_getscheduler\",\"sched_rr_get_interval\",\"sched_rr_get_interval_time64\",\"sched_setaffinity\",\"sched_setattr\",\"sched_setparam\",\"sched_setscheduler\",\"sched_yield\",\"seccomp\",\"select\",\"semctl\",\"semget\",\"semop\",\"semtimedop\",\"semtimedop_time64\",\"send\",\"sendfile\",\"sendfile64\",\"sendmmsg\",\"sendmsg\",\"sendto\",\"setfsgid\",\"setfsgid32\",\"setfsuid\",\"setfsuid32\",\"setgid\",\"setgid32\",\"setgroups\",\"setgroups32\",\"setitimer\",\"setpgid\",\"setpriority\",\"setregid\",\"setregid32\",\"setresgid\",\"setresgid32\",\"setresuid\",\"setresuid32\",\"setreuid\",\"setreuid32\",\"setrlimit\",\"set_robust_list\",\"setsid\",\"setsockopt\",\"set_thread_area\",\"set_tid_address\",\"setuid\",\"setuid32\",\"setxattr\",\"setxattrat\",\"shmat\",\"shmctl\",\"shmdt\",\"shmget\",\"shutdown\",\"sigaltstack\",\"signalfd\",\"signalfd4\",\"sigprocmask\",\"sigreturn\",\"socketcall\",\"socketpair\",\"splice\",\"stat\",\"stat64\",\"statfs\",\"statfs64\",\"statmount\",\"statx\",\"symlink\",\"symlinkat\",\"sync\",\"sync_file_range\",\"syncfs\",\"sysinfo\",\"tee\",\"tgkill\",\"time\",\"timer_create\",\"timer_delete\",\"timer_getoverrun\",\"timer_gettime\",\"timer_gettime64\",\"timer_settime\",\"timer_settime64\",\"timerfd_create\",\"timerfd_gettime\",\"timerfd_gettime64\",\"timerfd_settime\",\"timerfd_settime64\",\"times\",\"tkill\",\"truncate\",\"truncate64\",\"ugetrlimit\",\"umask\",\"uname\",\"unlink\",\"unlinkat\",\"uretprobe\",\"utime\",\"utimensat\",\"utimensat_time64\",\"utimes\",\"vfork\",\"vmsplice\",\"wait4\",\"waitid\",\"waitpid\",\"write\",\"writev\"],\"action\":\"SCMP_ACT_ALLOW\"},{\"names\":[\"process_vm_readv\",\"process_vm_writev\",\"ptrace\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"minKernel\":\"4.8\"}},{\"names\":[\"socket\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":40,\"op\":\"SCMP_CMP_NE\"}]},{\"names\":[\"personality\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":0,\"op\":\"SCMP_CMP_EQ\"}]},{\"names\":[\"personality\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":8,\"op\":\"SCMP_CMP_EQ\"}]},{\"names\":[\"personality\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":131072,\"op\":\"SCMP_CMP_EQ\"}]},{\"names\":[\"personality\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":131080,\"op\":\"SCMP_CMP_EQ\"}]},{\"names\":[\"personality\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":4294967295,\"op\":\"SCMP_CMP_EQ\"}]},{\"names\":[\"sync_file_range2\",\"swapcontext\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"ppc64le\"]}},{\"names\":[\"arm_fadvise64_64\",\"arm_sync_file_range\",\"sync_file_range2\",\"breakpoint\",\"cacheflush\",\"set_tls\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"arm\",\"arm64\"]}},{\"names\":[\"arch_prctl\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"amd64\",\"x32\"]}},{\"names\":[\"modify_ldt\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"amd64\",\"x32\",\"x86\"]}},{\"names\":[\"s390_pci_mmio_read\",\"s390_pci_mmio_write\",\"s390_runtime_instr\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"s390\",\"s390x\"]}},{\"names\":[\"riscv_flush_icache\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"riscv64\"]}},{\"names\":[\"open_by_handle_at\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_DAC_READ_SEARCH\"]}},{\"names\":[\"bpf\",\"clone\",\"clone3\",\"fanotify_init\",\"fsconfig\",\"fsmount\",\"fsopen\",\"fspick\",\"lookup_dcookie\",\"lsm_get_self_attr\",\"lsm_list_modules\",\"lsm_set_self_attr\",\"mount\",\"mount_setattr\",\"move_mount\",\"open_tree\",\"perf_event_open\",\"quotactl\",\"quotactl_fd\",\"setdomainname\",\"sethostname\",\"setns\",\"syslog\",\"umount\",\"umount2\",\"unshare\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_ADMIN\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":2114060288,\"op\":\"SCMP_CMP_MASKED_EQ\"}],\"excludes\":{\"caps\":[\"CAP_SYS_ADMIN\"],\"arches\":[\"s390\",\"s390x\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":1,\"value\":2114060288,\"op\":\"SCMP_CMP_MASKED_EQ\"}],\"comment\":\"s390 parameter ordering for clone is different\",\"includes\":{\"arches\":[\"s390\",\"s390x\"]},\"excludes\":{\"caps\":[\"CAP_SYS_ADMIN\"]}},{\"names\":[\"clone3\"],\"action\":\"SCMP_ACT_ERRNO\",\"errnoRet\":38,\"excludes\":{\"caps\":[\"CAP_SYS_ADMIN\"]}},{\"names\":[\"reboot\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_BOOT\"]}},{\"names\":[\"chroot\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_CHROOT\"]}},{\"names\":[\"delete_module\",\"init_module\",\"finit_module\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_MODULE\"]}},{\"names\":[\"acct\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_PACCT\"]}},{\"names\":[\"kcmp\",\"pidfd_getfd\",\"process_madvise\",\"process_vm_readv\",\"process_vm_writev\",\"ptrace\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_PTRACE\"]}},{\"names\":[\"iopl\",\"ioperm\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_RAWIO\"]}},{\"names\":[\"settimeofday\",\"stime\",\"clock_settime\",\"clock_settime64\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_TIME\"]}},{\"names\":[\"vhangup\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_TTY_CONFIG\"]}},{\"names\":[\"get_mempolicy\",\"mbind\",\"set_mempolicy\",\"set_mempolicy_home_node\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYS_NICE\"]}},{\"names\":[\"syslog\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_SYSLOG\"]}},{\"names\":[\"bpf\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_BPF\"]}},{\"names\":[\"perf_event_open\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"caps\":[\"CAP_PERFMON\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":268435473,\"op\":\"SCMP_CMP_EQ\"}],\"includes\":{\"arches\":[\"arm64\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":805306385,\"op\":\"SCMP_CMP_EQ\"}],\"includes\":{\"arches\":[\"arm64\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":1342177297,\"op\":\"SCMP_CMP_EQ\"}],\"includes\":{\"arches\":[\"arm64\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":1879048209,\"op\":\"SCMP_CMP_EQ\"}],\"includes\":{\"arches\":[\"arm64\"]}},{\"names\":[\"clone\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":536870929,\"op\":\"SCMP_CMP_EQ\"}],\"includes\":{\"arches\":[\"arm64\"]}},{\"names\":[\"unshare\"],\"action\":\"SCMP_ACT_ALLOW\",\"args\":[{\"index\":0,\"value\":268435456,\"op\":\"SCMP_CMP_EQ\"}],\"includes\":{\"arches\":[\"arm64\"]}},{\"names\":[\"chroot\"],\"action\":\"SCMP_ACT_ALLOW\",\"includes\":{\"arches\":[\"arm64\"]}}]}"
+            ],
+            "Memory": 4294967296,
+            "MemorySwap": 4294967296,
+            "NanoCpus": 2000000000,
+            "PidsLimit": 256,
+            "IpcMode": "private",
+            "ShmSize": 268435456,
+            "Tmpfs": {
+              "/tmp": "rw,exec,nosuid,size=256m,uid=1001,gid=1001"
+            },
+            "Ulimits": [
+              {
+                "Name": "core",
+                "Hard": 0,
+                "Soft": 0
+              }
+            ],
+            "PublishAllPorts": false,
+            "AutoRemove": false,
+            "Runtime": "runc",
+            "CgroupnsMode": "private",
+            "RestartPolicy": {
+              "Name": "no",
+              "MaximumRetryCount": 0
+            }
+          },
+          "mounts": []
+        },
+        "admittedAt": 1792750158736,
+        "deadline": 1792750218736,
+        "finishedAt": 1792750160837,
+        "exitCode": 0,
+        "oomKilled": false,
+        "stdoutSha256": "c4b5e278991b1a5cbbb28ed5875b72185091a6faf44a6c11017602a005aea2a9",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "buildStdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "buildStderrSha256": "8c32303a4cfb5b3b5d452fc7d8c3bb3f1b308688c089d0260bb17321337689ac"
+      },
+      "profile": {
+        "definitionSha256": "35d237dc1f5f753c7a89772b9b258c48631e04d758a7632fee5d9724710aa412",
+        "actuals": [
+          {
+            "caseId": "missing-profile",
+            "kind": "threw"
+          },
+          {
+            "caseId": "trimmed-name",
+            "kind": "returned",
+            "value": "Ada Lovelace"
+          },
+          {
+            "caseId": "second-name",
+            "kind": "returned",
+            "value": "gRaCe Hopper"
+          },
+          {
+            "caseId": "blank-name",
+            "kind": "returned",
+            "value": "Anonymous"
+          },
+          {
+            "caseId": "missing-name",
+            "kind": "returned",
+            "value": "Anonymous"
+          },
+          {
+            "caseId": "null-name",
+            "kind": "returned",
+            "value": "Anonymous"
+          },
+          {
+            "caseId": "null-profile",
+            "kind": "threw"
+          },
+          {
+            "caseId": "null-user",
+            "kind": "threw"
+          },
+          {
+            "caseId": "undefined-user",
+            "kind": "threw"
+          }
+        ],
+        "diagnostic": {
+          "caseId": "missing-profile",
+          "nativeTypeError": true,
+          "name": "TypeError",
+          "message": "Cannot read properties of undefined (reading 'name')",
+          "firstFrame": "at getUserDisplayName (/src/lib/errors.js:5:23)"
+        }
+      },
+      "screenshot": {
+        "mime": "image/png",
+        "size": 25896,
+        "sha256": "f87ca415ec578197bed6487a94213f67f7b22ea0eca883334f2cdfa64af34b13"
+      }
+    }
+  ]
+}
