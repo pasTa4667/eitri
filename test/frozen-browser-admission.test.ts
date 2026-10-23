@@ -968,8 +968,8 @@ function profileFixture(role: 'baseline' | 'candidate' = 'candidate') {
     transfer: [
       {
         path: 'src/lib/errors.js',
-        size: 525,
-        sha256: '5fa6710bb0c4f120408d489d0b16f6a21bfc6e539081ab1d9fda7a3bddb1fa07',
+        size: 534,
+        sha256: 'cd69431e5b7fda7ec116377d033d192a7b214a9c42a8101bd8c809c862af80f4',
       },
     ],
   });
@@ -998,8 +998,12 @@ function profileFixture(role: 'baseline' | 'candidate' = 'candidate') {
   });
   if (role === 'baseline') {
     const p = evidence.observations.profile as Record<string, unknown>;
-    p.actuals = (p.actuals as Record<string, unknown>[]).map((v, i) =>
-      i === 0 ? { caseId: 'missing-profile', kind: 'threw' } : v,
+    p.actuals = (p.actuals as Record<string, unknown>[]).map((v) =>
+      ['missing-profile', 'null-profile', 'null-user', 'undefined-user'].includes(
+        v.caseId as string,
+      )
+        ? { caseId: v.caseId, kind: 'threw' }
+        : v,
     );
     p.diagnostic = structuredClone(profileNameDefinition.diagnostic);
   }
@@ -1101,7 +1105,7 @@ for (const name of [
     if (name === 'helper hash' || name === 'helper size') {
       const transfer = f.report.evidence!.provenance.transfer;
       if (name === 'helper hash') transfer[0].sha256 = 'a'.repeat(64);
-      else transfer[0].size = 526;
+      else transfer[0].size = 535;
       f.observed.manifest = structuredClone(transfer);
     }
     if (name === 'scenario') f.observed.scenarioId = 'synthetic-click-v1';

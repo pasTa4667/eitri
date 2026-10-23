@@ -1,0 +1,178 @@
+[
+  {
+    "path": "package.json",
+    "before": {
+      "size": 696,
+      "sha256": "53e898131805bc71065e89b506155c6ad1a93b46da0928e2d357a6f33fc6c0c6"
+    },
+    "baseline": {
+      "size": 696,
+      "sha256": "53e898131805bc71065e89b506155c6ad1a93b46da0928e2d357a6f33fc6c0c6"
+    }
+  },
+  {
+    "path": "package-lock.json",
+    "before": {
+      "size": 74142,
+      "sha256": "54feec3ed89c934178637a54a07f97a3cac5b1bb997acd1b946ea1bcb861a610"
+    },
+    "baseline": {
+      "size": 74142,
+      "sha256": "54feec3ed89c934178637a54a07f97a3cac5b1bb997acd1b946ea1bcb861a610"
+    }
+  },
+  {
+    "path": "index.html",
+    "before": {
+      "size": 305,
+      "sha256": "cb68589e6cd30ba368471bc86e4113749a5193aa40603383ec77db15bc8ef237"
+    },
+    "baseline": {
+      "size": 305,
+      "sha256": "cb68589e6cd30ba368471bc86e4113749a5193aa40603383ec77db15bc8ef237"
+    }
+  },
+  {
+    "path": "vite.config.js",
+    "before": {
+      "size": 338,
+      "sha256": "8cf9489a44c8d77d9bf874fe80a2c1fa0b9b665f2ffde1bcd52b60c5e837efc9"
+    },
+    "baseline": {
+      "size": 338,
+      "sha256": "8cf9489a44c8d77d9bf874fe80a2c1fa0b9b665f2ffde1bcd52b60c5e837efc9"
+    }
+  },
+  {
+    "path": "playwright.config.js",
+    "before": {
+      "size": 278,
+      "sha256": "bf7cc60468a5cd32c5bab17dad3544077ec26c139837841467e327eb97596fd0"
+    },
+    "baseline": {
+      "size": 278,
+      "sha256": "bf7cc60468a5cd32c5bab17dad3544077ec26c139837841467e327eb97596fd0"
+    }
+  },
+  {
+    "path": "src/main.jsx",
+    "before": {
+      "size": 328,
+      "sha256": "02b5f4db998efe24ec308c8ee28546c5cf187f232b140938541ef56a54358545"
+    },
+    "baseline": {
+      "size": 328,
+      "sha256": "02b5f4db998efe24ec308c8ee28546c5cf187f232b140938541ef56a54358545"
+    }
+  },
+  {
+    "path": "src/instrument.js",
+    "before": {
+      "size": 337,
+      "sha256": "b26cc38fab06089efda0e4e45d8c98369ef2af4c0b045253bc6200671a80147b"
+    },
+    "baseline": {
+      "size": 337,
+      "sha256": "b26cc38fab06089efda0e4e45d8c98369ef2af4c0b045253bc6200671a80147b"
+    }
+  },
+  {
+    "path": "src/App.jsx",
+    "before": {
+      "size": 1185,
+      "sha256": "a4d362b44207fbe349c0e23624b9cc4f951a6a37b3e6d910982e05d8cdb48160"
+    },
+    "baseline": {
+      "size": 1185,
+      "sha256": "a4d362b44207fbe349c0e23624b9cc4f951a6a37b3e6d910982e05d8cdb48160"
+    }
+  },
+  {
+    "path": "src/App.test.jsx",
+    "before": {
+      "size": 1566,
+      "sha256": "ac3efd3b466391ec6b46605eedd15db5bb29c4c4681cbbc2f8adc81866559ee5"
+    },
+    "baseline": {
+      "size": 1485,
+      "sha256": "29568029bd04adc751a0555f6f2775c1174de27571823111bd2d1907d96081f2"
+    }
+  },
+  {
+    "path": "src/setupTests.js",
+    "before": {
+      "size": 42,
+      "sha256": "977afde26bba6a51325908cd7713cbfdc87d18f06b78b237c8f364c44864b7de"
+    },
+    "baseline": {
+      "size": 42,
+      "sha256": "977afde26bba6a51325908cd7713cbfdc87d18f06b78b237c8f364c44864b7de"
+    }
+  },
+  {
+    "path": "src/lib/errors.js",
+    "before": {
+      "size": 525,
+      "sha256": "5fa6710bb0c4f120408d489d0b16f6a21bfc6e539081ab1d9fda7a3bddb1fa07"
+    },
+    "baseline": {
+      "size": 534,
+      "sha256": "cd69431e5b7fda7ec116377d033d192a7b214a9c42a8101bd8c809c862af80f4"
+    }
+  },
+  {
+    "path": "src/lib/errors.test.js",
+    "before": {
+      "size": 1181,
+      "sha256": "ac97491a98eb301f923f2d808073cdaf0dd4550e4c9ebd706c88469b1815fc5d"
+    },
+    "baseline": {
+      "size": 1383,
+      "sha256": "f6098346b1bb292bf3651ff1e777a6c26af09fc398885a65b289ac6954b4fd6f"
+    }
+  },
+  {
+    "path": "src/pages/RenderErrorPage.jsx",
+    "before": {
+      "size": 568,
+      "sha256": "ee11bf3fe2f9abccfd33d9989512a1fe9ff09eb856e3dfece6eb9e75a7b265a8"
+    },
+    "baseline": {
+      "size": 568,
+      "sha256": "ee11bf3fe2f9abccfd33d9989512a1fe9ff09eb856e3dfece6eb9e75a7b265a8"
+    }
+  },
+  {
+    "path": "src/pages/ClickErrorPage.jsx",
+    "before": {
+      "size": 410,
+      "sha256": "af1a573bb2bb30697bbed9ab2e0cebd2f19b8e5d7231dcde2d767c7d4e988ae8"
+    },
+    "baseline": {
+      "size": 410,
+      "sha256": "af1a573bb2bb30697bbed9ab2e0cebd2f19b8e5d7231dcde2d767c7d4e988ae8"
+    }
+  },
+  {
+    "path": "src/pages/AsyncErrorPage.jsx",
+    "before": {
+      "size": 365,
+      "sha256": "bb34a94cd9309cda8496eff55c9add65e5600a7ae3d66dcfeacbb45bf9252cba"
+    },
+    "baseline": {
+      "size": 365,
+      "sha256": "bb34a94cd9309cda8496eff55c9add65e5600a7ae3d66dcfeacbb45bf9252cba"
+    }
+  },
+  {
+    "path": "e2e/errors.spec.js",
+    "before": {
+      "size": 948,
+      "sha256": "9c7c029c5b2574414b607ea73e003dff9af00e098b976fd4445659f8ae1ea08f"
+    },
+    "baseline": {
+      "size": 1020,
+      "sha256": "00017efea512224cd171635c7a7d8e2982c50fb45fe27b88d72252c97bd96b9f"
+    }
+  }
+]

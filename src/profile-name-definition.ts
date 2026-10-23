@@ -16,10 +16,10 @@ export const profileNameDefinition = {
     provenance: { kind: 'uncommitted-copy' },
     source: {
       virtualPath: 'src/lib/errors.js',
-      size: 525,
-      sha256: '5fa6710bb0c4f120408d489d0b16f6a21bfc6e539081ab1d9fda7a3bddb1fa07',
+      size: 534,
+      sha256: 'cd69431e5b7fda7ec116377d033d192a7b214a9c42a8101bd8c809c862af80f4',
     },
-    captureDigest: '4a0ca6e84af5aa34eb429049c177762746b9acc0c6c0f35d75503900e51c2312',
+    captureDigest: '709e1a12ba7bfd02a33adb2d12b9f13c2cf5c831b1c224943b10bee111b65fe0',
   },
   cases: [
     { id: 'missing-profile', input: { kind: 'json', value: {} }, expected: 'Anonymous' },

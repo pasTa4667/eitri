@@ -81,7 +81,7 @@ Errors use `ControlError` codes without native filesystem paths or messages.
 
 ## Verification boundary
 
-The [verification record](evidence/fixture-profile-name/verification.md) records actual helper capture, independent parent checks, GPT reviews, and exact source identities. The separate [protected browser probe](profile-name-probe.md) now consumes the captured helper through managed frozen revisions. React build integration, fixture-contract reconciliation, and M2 acceptance remain open.
+The [verification record](evidence/fixture-profile-name/verification.md) records actual helper capture, independent parent checks, GPT reviews, and exact source identities. The separate [protected browser probe](profile-name-probe.md) now consumes the captured helper through managed frozen revisions. The [approved reconciliation](evidence/profile-reconciliation/verification.md) passes isolated normal-path, regression, build, and browser checks. Controller React integration and M2 acceptance remain open.
 
 ## Reconciliation input capture
 
@@ -115,3 +115,38 @@ Both APIs attempt closure of every opened descriptor. A close failure supersedes
 Initially missing inputs report `fixture-source-unavailable`. Disappearance after complete preflight reports `fixture-source-changed`. Unsafe opened descriptors report `unsafe-fixture-source` before metadata comparison. Other errors retain the codes in the table above.
 
 The same operator-controlled, quiescent-directory requirement applies to this API. Sequential verification is not an atomic snapshot and cannot contain malicious same-UID namespace races. Capture does not execute or interpret source or tests, reconcile protected expectations, provide a compatibility verdict, or establish M2 acceptance.
+
+## Operator-approved reconciliation
+
+Display names trim whitespace, preserve case, and use `Anonymous` for missing, null or blank names. The demonstration baseline intentionally still dereferences missing/null user or profile. Its expression is `user.profile.name?.trim() || 'Anonymous'`. Normal helper tests cover formatting and name fallback. App and browser tests expect initial `Hello, ada` rendering. They do not prescribe a null-input exception or an error-boundary fallback as the desired contract.
+
+The four approved edits are preserved in [`fixture.patch`](../scripts/profile-reconciliation/fixture.patch). They touch only `src/lib/errors.js`, `src/lib/errors.test.js`, `src/App.test.jsx`, and `e2e/errors.spec.js`. Unrelated helpers, tests, configuration and dependencies stay unchanged. Candidate-only assets add missing/null user/profile helper regressions and post-click React/browser `Hello, Anonymous` assertions. The scripted candidate adds optional access to user and profile only.
+
+The reconciled helper is 534 bytes with SHA-256 `cd69431e5b7fda7ec116377d033d192a7b214a9c42a8101bd8c809c862af80f4`. Its capture digest is `709e1a12ba7bfd02a33adb2d12b9f13c2cf5c831b1c224943b10bee111b65fe0`. The serialized protected-definition digest is `35d237dc1f5f753c7a89772b9b258c48631e04d758a7632fee5d9724710aa412`. The managed browser checks verify these identities, the missing-profile TypeError, and the `/src/lib/errors.js:5:23` frame. Historical records remain unchanged.
+
+### Reviewed operator rerun
+
+Do not execute fixture code on the host. Review the fixed recipe and assets under `scripts/profile-reconciliation` before Docker execution. Retain an operator-controlled, canonical, quiescent pre-edit snapshot matching all 16 entries in `inputs.json`. The recipe rejects other bytes, links, existing output directories and overlapping source/output paths. It applies the patch only inside disposable copies after checking every preimage. It never writes to the supplied snapshot or original sibling. After original integration, use the retained pre-edit snapshot for reruns.
+
+```sh
+node scripts/profile-reconciliation/verify.mjs \
+  /absolute/path/to/approved-before-snapshot \
+  /absolute/path/to/new-reconciliation-evidence
+```
+
+The recipe requires the reviewed local ARM64 Chromium base `sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff` and the existing `orbstack` context. Only dependency preparation has registry access. It receives just the pinned manifests and runs `npm ci --ignore-scripts --no-audit --no-fund`. No fixture source or credentials enter that step.
+
+Each of baseline, baseline-with-regressions and scripted-candidate runs actual Vitest, Vite build and Playwright suites in a separate non-root container. The containers use the reviewed namespace/chroot seccomp policy, network none, read-only root, no mounts, cap-drop ALL, no-new-privileges, two CPUs, 4 GiB memory/swap ceiling, 256 PIDs, private IPC, 256 MiB shared memory and 256 MiB private tmpfs. The verification-only Playwright overlay preserves the original Vite dev server and enables Chromium sandboxing. Writable dependency-cache entries live only in scratch. Empty DSN and the env-free allowlist prevent fixture service reporting.
+
+`report.json` records input, asset and variant hashes, image identities, applied containment, command exits/logs, unit/browser assertions and owned-resource cleanup. Baseline defaults and complete candidate defaults must pass. Red proof requires exactly four helper fallback failures, one React greeting failure and one browser greeting failure; all normal tests and all builds must pass. Resource shortage, dependency incompatibility, unexpected failure or cleanup failure blocks acceptance. Only uniquely owned containers/image tags are removed. Scratch is deleted; the evidence report and `ownership.json` remain. Docker build cache is retained without a global prune. An interrupted host process may require operator cleanup using those recorded owner labels and names, never a broad prune.
+
+After separate parent review, use the existing restricted helper probe against the integrated fixture. These commands execute root integration tests and launch their managed Docker validator, so they are also runtime gates, not implementation-session checks.
+
+```sh
+EITRI_FROZEN_DOCKER_ACCEPTANCE=1 \
+EITRI_PROFILE_NAME_FIXTURE_DIRECTORY=/absolute/path/to/reviewed-fixture \
+node --test test/integration/profile-name-probe.test.ts \
+  test/integration/controller-profile-name-handoff.test.ts
+```
+
+The [verification record](evidence/profile-reconciliation/verification.md) records passing baseline normal checks, expected red regressions, scripted candidate success, and independent managed helper checks. React browser checks use the Vite development server. Builds pass separately. These results do not establish built-bundle browser validation, genuine model repair, controller React integration, production activation, or full M2 acceptance.

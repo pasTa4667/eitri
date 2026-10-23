@@ -27,7 +27,7 @@ The fixed cases exercise missing profile, trimmed mixed-case names, a second nam
 
 One browser page runs the ordered calls with fresh literal arguments. Results describe sequential execution, not isolated calls or complete correctness.
 
-The reviewed baseline has 525 bytes and source SHA-256 `5fa6710bb0c4f120408d489d0b16f6a21bfc6e539081ab1d9fda7a3bddb1fa07`. Its capture digest is `4a0ca6e84af5aa34eb429049c177762746b9acc0c6c0f35d75503900e51c2312`. These identities describe an `uncommitted-copy`, not an original Git revision or authenticated source provenance.
+The [reconciled baseline](evidence/profile-reconciliation/verification.md) has 534 bytes and source SHA-256 `cd69431e5b7fda7ec116377d033d192a7b214a9c42a8101bd8c809c862af80f4`. Its capture digest is `709e1a12ba7bfd02a33adb2d12b9f13c2cf5c831b1c224943b10bee111b65fe0`. These identities describe an `uncommitted-copy`, not an original Git revision or authenticated source provenance.
 
 ## Protected measurement
 
@@ -35,7 +35,7 @@ The driver serves a fixed inert document and wrapper module. The wrapper statica
 
 CDP obtains the wrapper's own function export and invokes its remote handle. The trusted call declaration returns only a bounded primitive string or a fixed non-string tag. It does not await returned thenables, serialize candidate objects, call candidate-replaceable utility methods, inspect thrown candidate properties, or accept DOM and console pass markers.
 
-Only the byte-pinned reviewed helper permits native exception property reads. Its designated missing-profile call must produce the measured native TypeError, message `Cannot read properties of undefined (reading 'name')`, and first frame `at getUserDisplayName (/src/lib/errors.js:5:23)`. Normalization removes only the actual local origin. The other baseline failures and uppercase, untrimmed outputs remain separate observations.
+Only the byte-pinned reviewed helper permits native exception property reads. Its designated missing-profile call must produce the measured native TypeError, message `Cannot read properties of undefined (reading 'name')`, and first frame `at getUserDisplayName (/src/lib/errors.js:5:23)`. Normalization removes only the actual local origin. The reconciled baseline returns the expected formatted names and missing-name fallbacks. Missing or null user/profile inputs still throw. These observations remain separate from the designated diagnostic.
 
 The driver creates the vector in its own memory. The host validates case identities, vector completeness, protected definition digest, actual helper manifest, and classification. The screenshot displays the measured vector on a separate trusted page after the candidate page closes. It illustrates evidence but does not determine the outcome.
 

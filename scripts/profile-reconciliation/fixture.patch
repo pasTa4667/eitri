@@ -1,0 +1,77 @@
+--- a/src/App.test.jsx
++++ b/src/App.test.jsx
+@@ -1,4 +1,4 @@
+-import { describe, expect, it, vi } from 'vitest'
++import { describe, expect, it } from 'vitest'
+ import { render, screen } from '@testing-library/react'
+ import userEvent from '@testing-library/user-event'
+ import { MemoryRouter } from 'react-router-dom'
+@@ -20,12 +20,11 @@
+     expect(screen.getByRole('link', { name: 'Async error' })).toBeInTheDocument()
+   })
+ 
+-  it('render error page falls back to the error boundary', async () => {
+-    vi.spyOn(console, 'error').mockImplementation(() => {})
++  it('render error page initially shows the profile name', () => {
+     renderAt('/render-error')
+-    expect(screen.getByTestId('badge')).toHaveTextContent('Hello, ADA')
+-    await userEvent.click(screen.getByRole('button', { name: 'Trigger render error' }))
+-    expect(screen.getByRole('alert')).toHaveTextContent('Something went wrong')
++    expect(screen.getByTestId('badge')).toHaveTextContent('Hello, ada')
++    expect(screen.getByRole('button', { name: 'Trigger render error' })).toBeInTheDocument()
++    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+   })
+ 
+   it('click error page throws from the handler', async () => {
+--- a/src/lib/errors.js
++++ b/src/lib/errors.js
+@@ -2,7 +2,7 @@
+ 
+ export function getUserDisplayName(user) {
+   // Throws TypeError when user is null/undefined.
+-  return user.profile.name.toUpperCase()
++  return user.profile.name?.trim() || 'Anonymous'
+ }
+ 
+ export function parseConfig(json) {
+--- a/src/lib/errors.test.js
++++ b/src/lib/errors.test.js
+@@ -4,11 +4,18 @@
+ afterEach(() => vi.unstubAllGlobals())
+ 
+ describe('getUserDisplayName', () => {
+-  it('uppercases the profile name', () => {
+-    expect(getUserDisplayName({ profile: { name: 'ada' } })).toBe('ADA')
++  it.each([
++    ['ada', 'ada'],
++    ['  Ada Lovelace  ', 'Ada Lovelace'],
++    ['gRaCe Hopper', 'gRaCe Hopper'],
++    [' \t ', 'Anonymous'],
++    [undefined, 'Anonymous'],
++    [null, 'Anonymous'],
++  ])('formats profile name %j as %s', (name, expected) => {
++    expect(getUserDisplayName({ profile: { name } })).toBe(expected)
+   })
+-  it('throws a TypeError for a missing user', () => {
+-    expect(() => getUserDisplayName(null)).toThrow(TypeError)
++  it('falls back for a missing name', () => {
++    expect(getUserDisplayName({ profile: {} })).toBe('Anonymous')
+   })
+ })
+ 
+--- a/e2e/errors.spec.js
++++ b/e2e/errors.spec.js
+@@ -1,9 +1,10 @@
+ import { expect, test } from '@playwright/test'
+ 
+-test('render error page shows the fallback', async ({ page }) => {
++test('render error page initially shows the profile name', async ({ page }) => {
+   await page.goto('/render-error')
+-  await page.getByRole('button', { name: 'Trigger render error' }).click()
+-  await expect(page.getByRole('alert')).toContainText('Something went wrong')
++  await expect(page.getByTestId('badge')).toHaveText('Hello, ada')
++  await expect(page.getByRole('button', { name: 'Trigger render error' })).toBeVisible()
++  await expect(page.getByRole('alert')).toHaveCount(0)
+ })
+ 
+ test('click error page raises an uncaught error', async ({ page }) => {

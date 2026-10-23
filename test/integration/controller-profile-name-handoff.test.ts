@@ -84,14 +84,14 @@ test(
       process.env.EITRI_PROFILE_NAME_FIXTURE_DIRECTORY!,
     );
     assert.deepEqual(captured.provenance, { kind: 'uncommitted-copy' });
-    assert.equal(captured.source.size, 525);
+    assert.equal(captured.source.size, 534);
     assert.equal(
       captured.source.sha256,
-      '5fa6710bb0c4f120408d489d0b16f6a21bfc6e539081ab1d9fda7a3bddb1fa07',
+      'cd69431e5b7fda7ec116377d033d192a7b214a9c42a8101bd8c809c862af80f4',
     );
     assert.equal(
       captured.captureDigest,
-      '4a0ca6e84af5aa34eb429049c177762746b9acc0c6c0f35d75503900e51c2312',
+      '709e1a12ba7bfd02a33adb2d12b9f13c2cf5c831b1c224943b10bee111b65fe0',
     );
     const root = await realpath(await mkdtemp(join(tmpdir(), 'eitri-controller-profile-')));
     t.diagnostic(`Profile diagnostics retained at ${root}`);
@@ -348,15 +348,15 @@ test(
     };
     assert.equal(
       profile.definitionSha256,
-      '0713e901c909c474f9ad3bc947537c765a4589db583fb588592194e1ed659481',
+      '35d237dc1f5f753c7a89772b9b258c48631e04d758a7632fee5d9724710aa412',
     );
     assert.deepEqual(profile.actuals, [
       { caseId: 'missing-profile', kind: 'threw' },
-      { caseId: 'trimmed-name', kind: 'returned', value: '  ADA LOVELACE  ' },
-      { caseId: 'second-name', kind: 'returned', value: 'GRACE HOPPER' },
-      { caseId: 'blank-name', kind: 'returned', value: ' \t ' },
-      { caseId: 'missing-name', kind: 'threw' },
-      { caseId: 'null-name', kind: 'threw' },
+      { caseId: 'trimmed-name', kind: 'returned', value: 'Ada Lovelace' },
+      { caseId: 'second-name', kind: 'returned', value: 'gRaCe Hopper' },
+      { caseId: 'blank-name', kind: 'returned', value: 'Anonymous' },
+      { caseId: 'missing-name', kind: 'returned', value: 'Anonymous' },
+      { caseId: 'null-name', kind: 'returned', value: 'Anonymous' },
       { caseId: 'null-profile', kind: 'threw' },
       { caseId: 'null-user', kind: 'threw' },
       { caseId: 'undefined-user', kind: 'threw' },
@@ -392,8 +392,8 @@ test(
     assert.deepEqual(provenance.transfer, [
       {
         path: 'src/lib/errors.js',
-        size: 525,
-        sha256: '5fa6710bb0c4f120408d489d0b16f6a21bfc6e539081ab1d9fda7a3bddb1fa07',
+        size: 534,
+        sha256: 'cd69431e5b7fda7ec116377d033d192a7b214a9c42a8101bd8c809c862af80f4',
       },
     ]);
     const admission = await controller.inspectWorkerConsumedAdmission(id, real.actionId);

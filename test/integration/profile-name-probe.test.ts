@@ -69,14 +69,14 @@ async function fixture(t: TestContext) {
   const captured = await captureProfileNameFixture(
     process.env.EITRI_PROFILE_NAME_FIXTURE_DIRECTORY!,
   );
-  assert.equal(captured.source.size, 525);
+  assert.equal(captured.source.size, 534);
   assert.equal(
     captured.source.sha256,
-    '5fa6710bb0c4f120408d489d0b16f6a21bfc6e539081ab1d9fda7a3bddb1fa07',
+    'cd69431e5b7fda7ec116377d033d192a7b214a9c42a8101bd8c809c862af80f4',
   );
   assert.equal(
     captured.captureDigest,
-    '4a0ca6e84af5aa34eb429049c177762746b9acc0c6c0f35d75503900e51c2312',
+    '709e1a12ba7bfd02a33adb2d12b9f13c2cf5c831b1c224943b10bee111b65fe0',
   );
   const root = await realpath(await mkdtemp(join(tmpdir(), 'eitri-profile-docker-')));
   console.log(`Profile forensic root retained at ${root}`);
@@ -190,7 +190,7 @@ async function fixture(t: TestContext) {
       transfer?.sha256,
       bytes === null ? captured.source.sha256 : checksum(Buffer.from(bytes)),
     );
-    assert.equal(transfer?.size, bytes === null ? 525 : Buffer.byteLength(bytes));
+    assert.equal(transfer?.size, bytes === null ? 534 : Buffer.byteLength(bytes));
     const png = validateOutput({
       label: 'Profile screenshot',
       mime: 'image/png',
@@ -244,12 +244,15 @@ test(
     };
     assert.deepEqual(p.actuals, [
       { caseId: 'missing-profile', kind: 'threw' },
-      { caseId: 'trimmed-name', kind: 'returned', value: '  ADA LOVELACE  ' },
-      { caseId: 'second-name', kind: 'returned', value: 'GRACE HOPPER' },
-      { caseId: 'blank-name', kind: 'returned', value: ' \t ' },
-      ...['missing-name', 'null-name', 'null-profile', 'null-user', 'undefined-user'].map(
-        (caseId) => ({ caseId, kind: 'threw' }),
-      ),
+      { caseId: 'trimmed-name', kind: 'returned', value: 'Ada Lovelace' },
+      { caseId: 'second-name', kind: 'returned', value: 'gRaCe Hopper' },
+      { caseId: 'blank-name', kind: 'returned', value: 'Anonymous' },
+      { caseId: 'missing-name', kind: 'returned', value: 'Anonymous' },
+      { caseId: 'null-name', kind: 'returned', value: 'Anonymous' },
+      ...['null-profile', 'null-user', 'undefined-user'].map((caseId) => ({
+        caseId,
+        kind: 'threw',
+      })),
     ]);
     assert.deepEqual(p.diagnostic, {
       caseId: 'missing-profile',
