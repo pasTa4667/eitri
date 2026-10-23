@@ -1,0 +1,401 @@
+{
+  "version": 1,
+  "sourceCommit": "36144ee4ca88ea20ac897f02fc00902d5bc74b97",
+  "claim": "Fixed trusted built-bundle recipe, not model-generated repair or M2 acceptance",
+  "runtimeAssets": [
+    {
+      "path": "inputs.json",
+      "size": 4716,
+      "sha256": "6427679278f5b1988b4450862591c353fede3374646d8ff9cb80ed51b4e3b32d"
+    },
+    {
+      "path": "fixture.patch",
+      "size": 3119,
+      "sha256": "47e1b234a527b37c14876123ee1ac22e1ddebc063666ff08c5c8a6ff852c4a18"
+    },
+    {
+      "path": "verify.mjs",
+      "size": 15543,
+      "sha256": "5f512343bb4b567c35937b8df49162d7843836a2ac95ea984ca18c7966ee37d0"
+    },
+    {
+      "path": "run.mjs",
+      "size": 12089,
+      "sha256": "5f06136ef2569e7c434472ebf5cf39074f6d5a62e3c7d0aca9028e6bbea04cbb"
+    },
+    {
+      "path": "playwright.config.mjs",
+      "size": 616,
+      "sha256": "ee94c51f5c93cf6d493e7e8fde69bc950ea40046c37fc481bdf709ef152612cd"
+    },
+    {
+      "path": "built-assets.spec.js",
+      "size": 6452,
+      "sha256": "9e3cd4e23104129a4e5e5f1a9025d7939093f4408d38dc6647dbc591c93fb235"
+    },
+    {
+      "path": "regressions/profile-name.test.js",
+      "size": 404,
+      "sha256": "748620d86dbca7e84b79fb1f608ab11211022eb2a3956b0ad70f7f08183b4948"
+    },
+    {
+      "path": "regressions/profile-name.test.jsx",
+      "size": 738,
+      "sha256": "11f272fc4ad87288e89717ba1912d3dbaa40f6c74efe5212b6a065179ab59f7d"
+    },
+    {
+      "path": "regressions/profile-name.spec.js",
+      "size": 553,
+      "sha256": "69de533fce4189ab199e388feef8d9f5836ca39698496648a7117c9d16e404fd"
+    }
+  ],
+  "variants": [
+    {
+      "name": "baseline",
+      "inputDigest": "f7fef7c5f9a40cb4b65d03ed57dd2b1a3c599bc040a8452b93a33c5565944616",
+      "unit": {
+        "total": 14,
+        "passed": 14,
+        "failed": 0
+      },
+      "browser": {
+        "passed": 4,
+        "failed": 0,
+        "skipped": 0,
+        "flaky": 0
+      },
+      "expectedRedAssertions": [],
+      "builtBundle": {
+        "version": 1,
+        "server": "vite-preview",
+        "origin": "http://127.0.0.1:4173",
+        "manifest": {
+          "version": 1,
+          "files": [
+            {
+              "path": "assets/index-sORsu-Qo.js",
+              "size": 422162,
+              "sha256": "c0afd1bcd11542cc0a16460f74edb325986e14dfe21efe3a5d70ec8c5b154265"
+            },
+            {
+              "path": "assets/index-sORsu-Qo.js.map",
+              "size": 2814837,
+              "sha256": "5ba90a1dd554d470c73a854140ad6195594fe228c36e4333f5c05be3f1ad0535"
+            },
+            {
+              "path": "index.html",
+              "size": 329,
+              "sha256": "620408cbf8ac047cf3bc2136025814cb66785d564ed6a260f104341fd03bc8fa"
+            }
+          ],
+          "digest": "45719905e8419606ef446b33e61cac3cbac327cb76493c5337b56b86573ff4a0"
+        },
+        "observed": [
+          {
+            "path": "index.html",
+            "status": 200,
+            "size": 329,
+            "sha256": "620408cbf8ac047cf3bc2136025814cb66785d564ed6a260f104341fd03bc8fa",
+            "kind": "document"
+          },
+          {
+            "path": "assets/index-sORsu-Qo.js",
+            "status": 200,
+            "size": 422162,
+            "sha256": "c0afd1bcd11542cc0a16460f74edb325986e14dfe21efe3a5d70ec8c5b154265",
+            "kind": "javascript"
+          }
+        ],
+        "proofPassed": true
+      },
+      "previewStopped": true
+    },
+    {
+      "name": "baseline-with-regressions",
+      "inputDigest": "5db1ead50f479fe2a2eb0346983af16ca122d3b27db90d154370b69f93aa51a0",
+      "unit": {
+        "total": 19,
+        "passed": 14,
+        "failed": 5
+      },
+      "browser": {
+        "passed": 4,
+        "failed": 1,
+        "skipped": 0,
+        "flaky": 0
+      },
+      "expectedRedAssertions": [
+        "profile fallback regression missing-profile returns Anonymous",
+        "profile fallback regression null-profile returns Anonymous",
+        "profile fallback regression null-user returns Anonymous",
+        "profile fallback regression undefined-user returns Anonymous",
+        "profile caller regression renders Anonymous after clearing the user",
+        "profile caller renders Anonymous after clearing the user"
+      ],
+      "builtBundle": {
+        "version": 1,
+        "server": "vite-preview",
+        "origin": "http://127.0.0.1:4173",
+        "manifest": {
+          "version": 1,
+          "files": [
+            {
+              "path": "assets/index-sORsu-Qo.js",
+              "size": 422162,
+              "sha256": "c0afd1bcd11542cc0a16460f74edb325986e14dfe21efe3a5d70ec8c5b154265"
+            },
+            {
+              "path": "assets/index-sORsu-Qo.js.map",
+              "size": 2814837,
+              "sha256": "5ba90a1dd554d470c73a854140ad6195594fe228c36e4333f5c05be3f1ad0535"
+            },
+            {
+              "path": "index.html",
+              "size": 329,
+              "sha256": "620408cbf8ac047cf3bc2136025814cb66785d564ed6a260f104341fd03bc8fa"
+            }
+          ],
+          "digest": "45719905e8419606ef446b33e61cac3cbac327cb76493c5337b56b86573ff4a0"
+        },
+        "observed": [
+          {
+            "path": "index.html",
+            "status": 200,
+            "size": 329,
+            "sha256": "620408cbf8ac047cf3bc2136025814cb66785d564ed6a260f104341fd03bc8fa",
+            "kind": "document"
+          },
+          {
+            "path": "assets/index-sORsu-Qo.js",
+            "status": 200,
+            "size": 422162,
+            "sha256": "c0afd1bcd11542cc0a16460f74edb325986e14dfe21efe3a5d70ec8c5b154265",
+            "kind": "javascript"
+          }
+        ],
+        "proofPassed": true
+      },
+      "previewStopped": true
+    },
+    {
+      "name": "scripted-candidate",
+      "inputDigest": "6a84fa84fed6e773081f96088b745f306021daa82617d22c0565b07af0f1d15a",
+      "unit": {
+        "total": 19,
+        "passed": 19,
+        "failed": 0
+      },
+      "browser": {
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0,
+        "flaky": 0
+      },
+      "expectedRedAssertions": [],
+      "builtBundle": {
+        "version": 1,
+        "server": "vite-preview",
+        "origin": "http://127.0.0.1:4173",
+        "manifest": {
+          "version": 1,
+          "files": [
+            {
+              "path": "assets/index-SKPAXo8m.js",
+              "size": 422164,
+              "sha256": "f604937e6a628e1d9a6c576ba6578195c270fb68886ad1bd5bc33850f9246086"
+            },
+            {
+              "path": "assets/index-SKPAXo8m.js.map",
+              "size": 2814839,
+              "sha256": "368be650059c25797eb2161992275e969cbe7534dec2ddb7793e415d26a9da43"
+            },
+            {
+              "path": "index.html",
+              "size": 329,
+              "sha256": "b23267e36b33f11162aab73bad854fcf404456a5018fdb5912cbd349aa5cdf54"
+            }
+          ],
+          "digest": "b6876d16dc6cc1ee0691ab627c84f515746d0c459438bef2356127d3d63cf5b3"
+        },
+        "observed": [
+          {
+            "path": "index.html",
+            "status": 200,
+            "size": 329,
+            "sha256": "b23267e36b33f11162aab73bad854fcf404456a5018fdb5912cbd349aa5cdf54",
+            "kind": "document"
+          },
+          {
+            "path": "assets/index-SKPAXo8m.js",
+            "status": 200,
+            "size": 422164,
+            "sha256": "f604937e6a628e1d9a6c576ba6578195c270fb68886ad1bd5bc33850f9246086",
+            "kind": "javascript"
+          }
+        ],
+        "proofPassed": true
+      },
+      "previewStopped": true
+    }
+  ],
+  "actualNegativeControls": [
+    {
+      "name": "dev-substitution",
+      "exit": 1,
+      "previewStopped": true,
+      "errors": {
+        "global": [],
+        "tests": [
+          {
+            "location": {
+              "file": "/tmp/work/e2e/built-assets.spec.js",
+              "column": 12,
+              "line": 40
+            },
+            "message": "AssertionError: Source or development traffic rejected\n\n  38 |     const url = new URL(value);\n  39 |     assert.equal(url.origin, baseURL, 'Unexpected application origin');\n> 40 |     assert.doesNotMatch(\n     |            ^\n  41 |       decodeURIComponent(url.pathname),\n  42 |       /^\\/(?:src|@vite|@react-refresh|@fs|@id|node_modules)(?:\\/|$)/,\n  43 |       'Source or development traffic rejected',\n    at checkURL (/tmp/work/e2e/built-assets.spec.js:40:12)\n    at _Page.onRequest (/tmp/work/e2e/built-assets.spec.js:50:7)"
+          }
+        ]
+      }
+    },
+    {
+      "name": "post-inventory-mutation",
+      "exit": 1,
+      "previewStopped": true,
+      "errors": {
+        "global": [],
+        "tests": [
+          {
+            "location": {
+              "file": "/tmp/work/e2e/built-assets.spec.js",
+              "column": 14,
+              "line": 104
+            },
+            "message": "AssertionError: Built response SHA-256: assets/index-sORsu-Qo.js\n\u001b[32mactual\u001b[39m \u001b[31mexpected\u001b[39m\n\n\u001b[39m'\u001b[39m\u001b[32m4\u001b[39m\u001b[32m7\u001b[39m\u001b[32m6\u001b[39m\u001b[32me\u001b[39m\u001b[32m9\u001b[39m\u001b[31mc\u001b[39m\u001b[31m0\u001b[39m\u001b[39ma\u001b[39m\u001b[32m7\u001b[39m\u001b[32me\u001b[39m\u001b[32me\u001b[39m\u001b[32m7\u001b[39m\u001b[31mf\u001b[39m\u001b[39md\u001b[39m\u001b[32m7\u001b[39m\u001b[32m6\u001b[39m\u001b[32m6\u001b[39m\u001b[39m1\u001b[39m\u001b[32m9\u001b[39m\u001b[32m6\u001b[39m\u001b[32m4\u001b[39m\u001b[32mf\u001b[39m\u001b[32m4\u001b[39m\u001b[32m5\u001b[39m\u001b[32m5\u001b[39m\u001b[31mb\u001b[39m\u001b[39mc\u001b[39m\u001b[39md\u001b[39m\u001b[32me\u001b[39m\u001b[32ma\u001b[39m\u001b[32me\u001b[39m\u001b[32m9\u001b[39m\u001b[32mf\u001b[39m\u001b[31m1\u001b[39m\u001b[31m1\u001b[39m\u001b[31m5\u001b[39m\u001b[31m4\u001b[39m\u001b[39m2\u001b[39m\u001b[39mc\u001b[39m\u001b[32m9\u001b[39m\u001b[39mc\u001b[39m\u001b[31m0\u001b[39m\u001b[31ma\u001b[39m\u001b[31m1\u001b[39m\u001b[31m6\u001b[39m\u001b[31m4\u001b[39m\u001b[31m6\u001b[39m\u001b[31m0\u001b[39m\u001b[39mf\u001b[39m\u001b[31m7\u001b[39m\u001b[39m4\u001b[39m\u001b[32ma\u001b[39m\u001b[39me\u001b[39m\u001b[39md\u001b[39m\u001b[32mc\u001b[39m\u001b[32m7\u001b[39m\u001b[32m6\u001b[39m\u001b[32m9\u001b[39m\u001b[32m3\u001b[39m\u001b[32m7\u001b[39m\u001b[32ma\u001b[39m\u001b[39mb\u001b[39m\u001b[32m6\u001b[39m\u001b[32ma\u001b[39m\u001b[39m3\u001b[39m\u001b[32me\u001b[39m\u001b[32m0\u001b[39m\u001b[32m5\u001b[39m\u001b[32m7\u001b[39m\u001b[39m2\u001b[39m\u001b[32me\u001b[39m\u001b[31m5\u001b[39m\u001b[31m9\u001b[39m\u001b[39m8\u001b[39m\u001b[31m6\u001b[39m\u001b[31me\u001b[39m\u001b[31m1\u001b[39m\u001b[31m4\u001b[39m\u001b[39md\u001b[39m\u001b[32ma\u001b[39m\u001b[32m5\u001b[39m\u001b[31mf\u001b[39m\u001b[31me\u001b[39m\u001b[31m2\u001b[39m\u001b[39m1\u001b[39m\u001b[31me\u001b[39m\u001b[39mf\u001b[39m\u001b[39me\u001b[39m\u001b[31m3\u001b[39m\u001b[31ma\u001b[39m\u001b[31m5\u001b[39m\u001b[31md\u001b[39m\u001b[31m7\u001b[39m\u001b[31m0\u001b[39m\u001b[31me\u001b[39m\u001b[39mc\u001b[39m\u001b[32mf\u001b[39m\u001b[31m8\u001b[39m\u001b[31mc\u001b[39m\u001b[31m5\u001b[39m\u001b[31mb\u001b[39m\u001b[31m1\u001b[39m\u001b[31m5\u001b[39m\u001b[31m4\u001b[39m\u001b[31m2\u001b[39m\u001b[31m6\u001b[39m\u001b[31m5\u001b[39m\u001b[39m'\u001b[39m\n\n\n  102 |       assert.equal(body.length, file.size, `Built response size: ${path}`);\n  103 |       const hash = sha256(body);\n> 104 |       assert.equal(hash, file.sha256, `Built response SHA-256: ${path}`);\n      |              ^\n  105 |       observed.push({ path, status: 200, size: body.length, sha256: hash, kind });\n  106 |     };\n  107 |     pending.push(\n    at collect (/tmp/work/e2e/built-assets.spec.js:104:14)"
+          }
+        ]
+      }
+    },
+    {
+      "name": "missing-output",
+      "exit": 1,
+      "previewStopped": true,
+      "errors": {
+        "global": [
+          {
+            "message": "Error: Timed out waiting 30000ms from config.webServer.",
+            "stack": "Error: Timed out waiting 30000ms from config.webServer."
+          }
+        ],
+        "tests": []
+      }
+    },
+    {
+      "name": "failed-build",
+      "exit": 1,
+      "previewStopped": true,
+      "errors": {
+        "runner": "AssertionError [ERR_ASSERTION]: Vite build must pass before browser startup\n\n1 !== 0\n\n    at file:///tmp/failed-build-run.mjs:199:10",
+        "buildExit": 1,
+        "commandCount": 2
+      }
+    }
+  ],
+  "originalFixture": {
+    "allowlistedFiles": 16,
+    "bytesAndInodesAndMtimesUnchanged": true
+  },
+  "verification": {
+    "nodeTests": 1777,
+    "rustTests": 30,
+    "focusedTests": 9,
+    "lintFormatAndTypesPassed": true,
+    "integratedLog": ".audit/built-bundle-integrated-verify-all-retry.txt",
+    "retainedFailedIntegratedRun": {
+      "log": ".audit/built-bundle-integrated-verify-all.txt",
+      "test": "trusted check output rejects case-count without accepting evidence",
+      "failure": "Case did not settle within the existing five-second polling deadline",
+      "isolatedReruns": 3,
+      "unchangedFullSuiteRetry": "passed",
+      "cause": "unproved; timing sensitivity inferred"
+    }
+  },
+  "resources": [
+    {
+      "owner": "eitri-profile-f356b1b1-d184-4987-89bf-fdecbe32a0c3",
+      "containers": [],
+      "images": [],
+      "baseAlias": [],
+      "cleanup": [
+        {
+          "name": "eitri-profile-f356b1b1-d184-4987-89bf-fdecbe32a0c3-scripted-candidate",
+          "removed": true
+        },
+        {
+          "name": "eitri-profile-f356b1b1-d184-4987-89bf-fdecbe32a0c3-baseline-with-regressions",
+          "removed": true
+        },
+        {
+          "name": "eitri-profile-f356b1b1-d184-4987-89bf-fdecbe32a0c3-baseline",
+          "removed": true
+        },
+        {
+          "tag": "eitri-profile-f356b1b1-d184-4987-89bf-fdecbe32a0c3-runtime:local",
+          "removed": true
+        },
+        {
+          "tag": "eitri-profile-f356b1b1-d184-4987-89bf-fdecbe32a0c3-dependencies:local",
+          "removed": true
+        },
+        {
+          "tag": "eitri-profile-f356b1b1-d184-4987-89bf-fdecbe32a0c3-base:local",
+          "removed": true
+        },
+        {
+          "scratchRemoved": true
+        }
+      ]
+    },
+    {
+      "owner": "eitri-profile-5626c3e8-81bf-4463-ab2a-575b4e1bebb7",
+      "containers": [],
+      "images": [],
+      "baseAlias": [],
+      "cleanup": [
+        {
+          "name": "eitri-profile-5626c3e8-81bf-4463-ab2a-575b4e1bebb7-scripted-candidate",
+          "removed": true
+        },
+        {
+          "name": "eitri-profile-5626c3e8-81bf-4463-ab2a-575b4e1bebb7-baseline-with-regressions",
+          "removed": true
+        },
+        {
+          "name": "eitri-profile-5626c3e8-81bf-4463-ab2a-575b4e1bebb7-baseline",
+          "removed": true
+        },
+        {
+          "tag": "eitri-profile-5626c3e8-81bf-4463-ab2a-575b4e1bebb7-runtime:local",
+          "removed": true
+        },
+        {
+          "tag": "eitri-profile-5626c3e8-81bf-4463-ab2a-575b4e1bebb7-dependencies:local",
+          "removed": true
+        },
+        {
+          "tag": "eitri-profile-5626c3e8-81bf-4463-ab2a-575b4e1bebb7-base:local",
+          "removed": true
+        },
+        {
+          "scratchRemoved": true
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "One dedicated provenance navigation per variant observes actual HTML and loaded entry JavaScript. It does not attest every request in the other browser scenarios.",
+    "Source maps are inventoried but not required to load. No stylesheet is emitted by this fixture.",
+    "Chromium sandboxing is requested and launch flags are checked. This recipe does not independently inspect sandbox internals.",
+    "Runtime and registry preparation remain distinct. Docker build cache and local reports are retained.",
+    "Runtime negative controls use instrumented disposable recipe copies. Committed subprocess tests use fail-closed doubles."
+  ]
+}

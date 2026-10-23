@@ -149,4 +149,4 @@ node --test test/integration/profile-name-probe.test.ts \
   test/integration/controller-profile-name-handoff.test.ts
 ```
 
-The [verification record](evidence/profile-reconciliation/verification.md) records historical passing baseline normal checks, expected red regressions, scripted candidate success, and independent managed helper checks. Those React browser checks used the Vite development server, with separate successful builds. Actual restricted Docker execution of the preview-backed recipe remains pending. Historical results do not establish built-bundle browser validation, genuine model repair, controller React integration, production activation, or full M2 acceptance.
+The [reconciliation record](evidence/profile-reconciliation/verification.md) retains historical development-server results and independent managed helper checks. The later [built-bundle verification](evidence/built-bundle/verification.md) records passing preview-backed variants, actual response hashes, isolated negative controls and cleanup. These scripted results do not establish genuine model repair, controller React integration, production activation or full M2 acceptance.

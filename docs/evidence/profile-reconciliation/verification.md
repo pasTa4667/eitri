@@ -49,6 +49,6 @@ Local evidence is `.audit/approved-reconciliation-baseline.txt`, `.audit/approve
 
 ## Limits
 
-This finishes the approved profile-name reconciliation step, not M2. React browser checks use the Vite development server. Builds pass separately, so built-bundle browser validation remains unproved. The second planned latent defect, deterministic expected/transient controls, immutable full-application controller validation, and the local baseline checkpoint remain outside this unit.
+This finishes the approved profile-name reconciliation step, not M2. This historical run uses the Vite development server and separate builds. The later [built-bundle verification](../built-bundle/verification.md) closes the build-to-browser gap without relabeling these earlier observations. The second planned latent defect, deterministic expected/transient controls, immutable full-application controller validation, and the local baseline checkpoint remain outside this unit.
 
 Production main, controller intake, worker assets, containment, schemas, dependencies, and Rust remain unchanged. No application model inference, credential reads, live Sentry calls, publication, branch rename, deployment, or remote writes occur. Later human-presence gates remain open. No remote is configured, so opening a PR is skipped.
