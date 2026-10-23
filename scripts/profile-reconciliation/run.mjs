@@ -13,7 +13,7 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { connect } from 'node:net';
-import { stripVTControlCharacters } from 'node:util';
+import { admitVariantResults, variantExpectation } from './scenarios.mjs';
 
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
@@ -119,38 +119,8 @@ async function assertPreviewStopped() {
   });
 }
 
-const normalUnitTitles = [
-  'getUserDisplayName formats profile name "ada" as ada',
-  'getUserDisplayName formats profile name "  Ada Lovelace  " as Ada Lovelace',
-  'getUserDisplayName formats profile name "gRaCe Hopper" as gRaCe Hopper',
-  'getUserDisplayName formats profile name " \\t " as Anonymous',
-  'getUserDisplayName formats profile name undefined as Anonymous',
-  'getUserDisplayName formats profile name null as Anonymous',
-  'getUserDisplayName falls back for a missing name',
-  'parseConfig parses valid JSON',
-  'parseConfig throws a SyntaxError for invalid JSON',
-  'fetchOrder returns the json body on success',
-  'fetchOrder throws on a non-ok response',
-  'App shows navigation to the three error pages',
-  'App render error page initially shows the profile name',
-  'App click error page throws from the handler',
-];
-const helperTitles = ['missing-profile', 'null-profile', 'null-user', 'undefined-user'].map(
-  (id) => `profile fallback regression ${id} returns Anonymous`,
-);
-const callerTitle = 'profile caller regression renders Anonymous after clearing the user';
-const proofTitle = 'built assets serve the rendered application';
-const browserRegressionTitle = 'profile caller renders Anonymous after clearing the user';
-const normalBrowserTitles = [
-  'render error page initially shows the profile name',
-  'click error page raises an uncaught error',
-  'async error page raises an unhandled rejection',
-  proofTitle,
-];
-
 const variant = process.argv[2];
-assert.ok(['baseline', 'baseline-with-regressions', 'scripted-candidate'].includes(variant));
-const red = variant === 'baseline-with-regressions';
+const expected = variantExpectation(variant);
 const report = { variant, commands: [], verdict: 'blocked' };
 try {
   assert.equal(process.getuid(), 1001);
@@ -170,6 +140,7 @@ try {
         HOME: '/tmp',
         CI: '1',
         VITE_SENTRY_DSN: '',
+        VITE_FIXTURE_ENV: 'validation',
         PLAYWRIGHT_JSON_OUTPUT_NAME: '/tmp/browser.json',
         DEBUG: 'pw:browser',
       },
@@ -193,6 +164,7 @@ try {
     '--',
     '--retry=0',
     '--reporter=json',
+    '--reporter=/opt/verify/unit-witness.mjs',
     '--outputFile=/tmp/unit.json',
   ]);
   await rm('/tmp/work/dist', { recursive: true, force: true });
@@ -211,87 +183,27 @@ try {
   ]);
   await assertPreviewStopped();
   report.previewStopped = true;
-  report.unit = JSON.parse(await readFile('/tmp/unit.json', 'utf8'));
-  report.browser = JSON.parse(await readFile('/tmp/browser.json', 'utf8'));
-  const unitAssertions = report.unit.testResults.flatMap((result) => result.assertionResults);
-  assert.deepEqual(
-    unitAssertions.map((result) => result.fullName).sort(),
-    (variant === 'baseline'
-      ? normalUnitTitles
-      : [...normalUnitTitles, ...helperTitles, callerTitle]
-    ).sort(),
-    'Exact unit title set required',
-  );
-  assert.equal(report.unit.numPendingTests, 0);
-  assert.equal(report.unit.numTodoTests, 0);
-  const specs = [];
-  const visit = (suite, parents = []) => {
-    for (const spec of suite.specs ?? [])
-      specs.push({ ...spec, title: [...parents, spec.title].join(' ') });
-    for (const child of suite.suites ?? []) visit(child, [...parents, child.title]);
+  const readReport = async (path) => {
+    const stat = await lstat(path);
+    assert.ok(stat.isFile() && !stat.isSymbolicLink() && stat.nlink === 1);
+    assert.ok(stat.size > 0 && stat.size <= 4 * 1024 ** 2, 'Result report size exceeded');
+    const bytes = await readFile(path);
+    assert.equal(bytes.length, stat.size);
+    return JSON.parse(bytes);
   };
-  for (const suite of report.browser.suites) visit(suite);
-  assert.equal(report.browser.errors.length, 0);
-  assert.deepEqual(
-    specs.map((spec) => spec.title).sort(),
-    (variant === 'baseline'
-      ? normalBrowserTitles
-      : [...normalBrowserTitles, browserRegressionTitle]
-    ).sort(),
-    'Exact browser title set required',
-  );
-  for (const spec of specs) {
-    assert.equal(spec.tests.length, 1);
-    const browserTest = spec.tests[0];
-    assert.equal(browserTest.expectedStatus, 'passed');
-    assert.equal(browserTest.results.length, 1);
-    assert.equal(browserTest.results[0].retry, 0);
-    assert.ok(['passed', 'failed'].includes(browserTest.results[0].status));
-    if (browserTest.results[0].status === 'passed')
-      assert.equal(browserTest.results[0].errors.length, 0);
-  }
-  assert.equal(
-    specs.find((spec) => spec.title === proofTitle).tests[0].results[0].status,
-    'passed',
-  );
+  const unit = await readReport('/tmp/unit.json');
+  const browser = await readReport('/tmp/browser.json');
+  const witness = await readReport('/tmp/unit-witness.json');
+  report.unit = unit;
+  report.browser = browser;
+  report.unitWitness = witness;
+  const observation = admitVariantResults(expected, unit, browser, witness, {
+    unit: unitExit,
+    build: 0,
+    browser: browserExit,
+  });
+  report.expectedRedAssertions = observation.expectedRedAssertions;
   report.builtBundle = await readBuiltBundleEvidence(manifest);
-  const browserFailures = specs.filter((spec) => spec.tests[0].results[0].status === 'failed');
-  const unitFailures = unitAssertions.filter((result) => result.status === 'failed');
-  assert.ok(unitAssertions.every((result) => ['passed', 'failed'].includes(result.status)));
-  for (const result of unitAssertions)
-    if (result.status === 'passed') assert.equal(result.failureMessages.length, 0);
-  if (red) {
-    assert.equal(unitExit, 1);
-    assert.equal(browserExit, 1);
-    assert.deepEqual(
-      unitFailures.map((result) => result.fullName).sort(),
-      [...helperTitles, callerTitle].sort(),
-    );
-    for (const failure of unitFailures) {
-      const text = failure.failureMessages.join('\n');
-      assert.match(
-        text,
-        failure.fullName === callerTitle ? /Hello, Anonymous/ : /TypeError.*Cannot read properties/,
-      );
-    }
-    assert.deepEqual(
-      browserFailures.map((spec) => spec.title),
-      ['profile caller renders Anonymous after clearing the user'],
-    );
-    const errors = browserFailures[0].tests[0].results[0].errors;
-    assert.equal(errors.length, 1);
-    const message = stripVTControlCharacters(errors[0].message);
-    assert.match(message, /expect\(locator\)\.toHaveText\(expected\)/);
-    assert.match(message, /getByTestId\('badge'\)/);
-    assert.match(message, /Expected(?: string)?:\s*"Hello, Anonymous"/);
-    report.expectedRedAssertions = [...helperTitles, callerTitle, browserFailures[0].title];
-  } else {
-    assert.equal(unitExit, 0);
-    assert.equal(browserExit, 0);
-    assert.equal(unitFailures.length, 0);
-    assert.equal(browserFailures.length, 0);
-  }
-  assert.equal(unitAssertions.length, variant === 'baseline' ? 14 : 19);
   assert.doesNotMatch(report.commands[2].stderr, /--no-sandbox/);
   assert.match(report.commands[2].stderr, /<launching>/);
   report.verdict = 'passed';

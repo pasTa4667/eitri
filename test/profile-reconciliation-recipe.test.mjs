@@ -67,6 +67,8 @@ test('profile reconciliation packages and hashes every runtime verification asse
     descriptors.map(([, path, destination]) => [path, destination]),
     [
       ['run.mjs', 'verify/run.mjs'],
+      ['scenarios.mjs', 'verify/scenarios.mjs'],
+      ['unit-witness.mjs', 'verify/unit-witness.mjs'],
       ['playwright.config.mjs', 'verify/playwright.config.mjs'],
       ['built-assets.spec.js', 'verify/built-assets.spec.js'],
     ],

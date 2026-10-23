@@ -1,0 +1,75 @@
+--- a/src/App.jsx
++++ b/src/App.jsx
+@@ -1,19 +1,27 @@
+ import * as Sentry from '@sentry/react'
+-import { Link, Route, Routes } from 'react-router-dom'
++import { Link, Route, Routes, useLocation } from 'react-router-dom'
+ import RenderErrorPage from './pages/RenderErrorPage.jsx'
+ import ClickErrorPage from './pages/ClickErrorPage.jsx'
+ import AsyncErrorPage from './pages/AsyncErrorPage.jsx'
+ 
+-function Fallback({ error, resetError }) {
++import CartPage from './pages/CartPage.jsx'
++import ValidationPage from './pages/ValidationPage.jsx'
++import TransientPage from './pages/TransientPage.jsx'
++import { attributeScenario } from './scenario-reporting.js'
++import metadata from './scenario-metadata.js'
++
++function Fallback({ error, resetError, cart }) {
+   return (
+     <div role="alert">
+-      <p>Something went wrong: {error.message}</p>
++      <p data-testid={cart ? 'cart-total' : undefined}>Something went wrong: {error.message}</p>
+       <button onClick={resetError}>Reset</button>
+     </div>
+   )
+ }
+ 
+ export default function App() {
++  const { pathname } = useLocation()
++  const scenario = metadata.scenarios.find(scenario => scenario.route === pathname)
+   return (
+     <div>
+       <h1>Eitri Test Web App</h1>
+@@ -21,13 +29,23 @@
+         <Link to="/render-error">Render error</Link>
+         <Link to="/click-error">Click error</Link>
+         <Link to="/async-error">Async error</Link>
++        <Link to="/cart-total">Cart total</Link>
++        <Link to="/expected-validation">Expected validation</Link>
++        <Link to="/transient-upstream">Transient upstream</Link>
+       </nav>
+-      <Sentry.ErrorBoundary fallback={Fallback}>
++      <Sentry.ErrorBoundary
++        key={pathname}
++        beforeCapture={scope => { if (scenario) attributeScenario(scope, scenario.id) }}
++        fallback={props => <Fallback {...props} cart={scenario?.id === 'cart-total'} />}
++      >
+         <Routes>
+           <Route path="/" element={<p>Pick a page to trigger an error.</p>} />
+           <Route path="/render-error" element={<RenderErrorPage />} />
+           <Route path="/click-error" element={<ClickErrorPage />} />
+           <Route path="/async-error" element={<AsyncErrorPage />} />
++          <Route path="/cart-total" element={<CartPage />} />
++          <Route path="/expected-validation" element={<ValidationPage />} />
++          <Route path="/transient-upstream" element={<TransientPage />} />
+         </Routes>
+       </Sentry.ErrorBoundary>
+     </div>
+--- a/src/instrument.js
++++ b/src/instrument.js
+@@ -1,12 +1,3 @@
+-import * as Sentry from '@sentry/react'
++import { initializeReporting } from './scenario-reporting.js'
+ 
+-if (import.meta.env.MODE !== 'test') {
+-  Sentry.init({
+-    dsn: import.meta.env.VITE_SENTRY_DSN,
+-    sendDefaultPii: true,
+-    environment: import.meta.env.MODE,
+-    integrations: [Sentry.browserTracingIntegration()],
+-    tracesSampleRate: 1.0,
+-    tracePropagationTargets: ['localhost'],
+-  })
+-}
++initializeReporting(import.meta.env.VITE_FIXTURE_ENV, import.meta.env.VITE_SENTRY_DSN)

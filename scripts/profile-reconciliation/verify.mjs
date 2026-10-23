@@ -4,12 +4,9 @@ import { randomUUID } from 'node:crypto';
 import { lstat, mkdir, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, join, parse, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import {
-  baselineSha256,
-  engineCommit,
-  namespaceChrootPolicy,
-  sha256,
-} from '../../prototypes/chromium/policy.mjs';
+import { reportingMetadata, variants, variantExpectation } from './scenarios.mjs';
+import { sha256 } from '../../prototypes/chromium/policy.mjs';
+import { readFixturePolicy } from './engine.mjs';
 
 assert.equal(
   process.argv.length,
@@ -22,9 +19,36 @@ assert.equal(await realpath(source), source, 'Use a canonical, quiescent operato
 const here = dirname(fileURLToPath(import.meta.url));
 const runtimeAssets = [
   { path: 'run.mjs', destination: 'verify/run.mjs' },
+  { path: 'scenarios.mjs', destination: 'verify/scenarios.mjs' },
+  { path: 'unit-witness.mjs', destination: 'verify/unit-witness.mjs' },
   { path: 'playwright.config.mjs', destination: 'verify/playwright.config.mjs' },
   { path: 'built-assets.spec.js', destination: 'verify/built-assets.spec.js' },
 ];
+const overlayPaths = [
+  'src/lib/cart.js',
+  'src/lib/cart.test.js',
+  'src/lib/transient-upstream.js',
+  'src/lib/transient-upstream.test.js',
+  'src/pages/CartPage.jsx',
+  'src/pages/ValidationPage.jsx',
+  'src/pages/TransientPage.jsx',
+  'src/scenario-reporting.js',
+  'src/scenario-reporting.test.js',
+  'src/scenarios.test.jsx',
+  'e2e/scenarios.spec.js',
+];
+const regressionAssets = {
+  'profile-name': [
+    ['profile-name.test.js', 'src/regression/profile-name.test.js'],
+    ['profile-name.test.jsx', 'src/regression/profile-name.test.jsx'],
+    ['profile-name.spec.js', 'e2e/profile-name.spec.js'],
+  ],
+  'cart-total': [
+    ['cart-total.test.js', 'src/regression/cart-total.test.js'],
+    ['cart-total.test.jsx', 'src/regression/cart-total.test.jsx'],
+    ['cart-total.spec.js', 'e2e/cart-total.spec.js'],
+  ],
+};
 const inventory = JSON.parse(await readFile(join(here, 'inputs.json'), 'utf8'));
 assert.equal(inventory.length, 16);
 assert.equal(new Set(inventory.map((item) => item.path)).size, 16);
@@ -113,7 +137,7 @@ const put = async (root, path, bytes) => {
 };
 try {
   const context = join(scratch, 'runtime');
-  const baseline = join(context, 'inputs/baseline');
+  const baseline = join(scratch, 'reconciled');
   for (const [path, bytes] of original) await put(baseline, path, bytes);
   const patch = await readFile(join(here, 'fixture.patch'));
   report.patchSha256 = sha256(patch);
@@ -121,7 +145,12 @@ try {
   for (const path of [
     'inputs.json',
     'fixture.patch',
+    'scenarios.patch',
     'verify.mjs',
+    'engine.mjs',
+    'seccomp/docker-29.8.2.json',
+    ...overlayPaths.map((path) => `overlay/${path}`),
+    ...regressionAssets['cart-total'].map(([asset]) => `regressions/${asset}`),
     ...runtimeAssets.map((asset) => asset.path),
     'regressions/profile-name.test.js',
     'regressions/profile-name.test.jsx',
@@ -145,37 +174,107 @@ try {
     });
     assert.equal(result.status, 0, result.stderr);
   }
-  const regressions = [
-    ['profile-name.test.js', 'src/regression/profile-name.test.js'],
-    ['profile-name.test.jsx', 'src/regression/profile-name.test.jsx'],
-    ['profile-name.spec.js', 'e2e/profile-name.spec.js'],
-  ];
-  for (const variant of ['baseline', 'baseline-with-regressions', 'scripted-candidate']) {
-    const root = join(context, 'inputs', variant);
+  const extended = new Map();
+  report.reconciledFiles = [];
+  for (const item of inventory) {
+    const bytes = await readFile(join(baseline, item.path));
+    assert.equal(bytes.length, item.baseline.size);
+    assert.equal(sha256(bytes), item.baseline.sha256);
+    report.reconciledFiles.push({ path: item.path, ...item.baseline });
+  }
+  for (const args of [
+    ['apply', '--check', join(here, 'scenarios.patch')],
+    ['apply', join(here, 'scenarios.patch')],
+  ]) {
+    const result = command('git', args, {
+      cwd: baseline,
+      env: {
+        PATH: process.env.PATH,
+        HOME: scratch,
+        GIT_CONFIG_NOSYSTEM: '1',
+        GIT_CEILING_DIRECTORIES: dirname(baseline),
+      },
+    });
+    assert.equal(result.status, 0, result.stderr);
+  }
+  for (const item of inventory) extended.set(item.path, await readFile(join(baseline, item.path)));
+  for (const path of overlayPaths) {
+    assert.ok(!extended.has(path), `Duplicate overlay destination: ${path}`);
+    extended.set(path, await readFile(join(here, 'overlay', path)));
+  }
+  assert.ok(!extended.has('src/scenario-metadata.js'));
+  extended.set(
+    'src/scenario-metadata.js',
+    Buffer.from(`export default ${JSON.stringify(reportingMetadata())}\n`),
+  );
+  const candidates = {
+    'profile-name': {
+      path: 'src/lib/errors.js',
+      before: "return user.profile.name?.trim() || 'Anonymous'",
+      after: "return user?.profile?.name?.trim() || 'Anonymous'",
+    },
+    'cart-total': {
+      path: 'src/lib/cart.js',
+      before: 'return amounts.reduce((total, amount) => total + amount)',
+      after: 'return amounts.reduce((total, amount) => total + amount, 0)',
+    },
+  };
+  for (const { id } of variants) {
+    const expected = variantExpectation(id);
+    const root = join(context, 'inputs', id);
+    const sourceFiles = new Map(extended);
+    if (expected.target) {
+      for (const [asset, path] of regressionAssets[expected.target]) {
+        assert.ok(!sourceFiles.has(path), `Duplicate regression destination: ${path}`);
+        sourceFiles.set(path, await readFile(join(here, 'regressions', asset)));
+      }
+    }
+    let candidateChange;
+    if (expected.revision === 'candidate') {
+      const { path, before, after } = candidates[expected.target];
+      const bytes = sourceFiles.get(path);
+      const text = bytes.toString('utf8');
+      assert.equal(text.split(before).length, 2, 'Exact candidate preimage required');
+      const changed = Buffer.from(text.replace(before, after));
+      sourceFiles.set(path, changed);
+      candidateChange = {
+        path,
+        before: { size: bytes.length, sha256: sha256(bytes) },
+        after: { size: changed.length, sha256: sha256(changed) },
+      };
+    }
     const files = [];
-    for (const item of inventory) {
-      let bytes = await readFile(join(baseline, item.path));
-      assert.equal(bytes.length, item.baseline.size);
-      assert.equal(sha256(bytes), item.baseline.sha256);
-      if (variant === 'scripted-candidate' && item.path === 'src/lib/errors.js') {
-        const text = bytes.toString('utf8');
-        const before = "return user.profile.name?.trim() || 'Anonymous'";
-        assert.equal(text.split(before).length, 2, 'Exact candidate preimage required');
-        bytes = Buffer.from(
-          text.replace(before, "return user?.profile?.name?.trim() || 'Anonymous'"),
-        );
+    for (const [path, bytes] of [...sourceFiles].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
+      if (path !== candidates[expected.target]?.path || expected.revision !== 'candidate') {
+        if (extended.has(path))
+          assert.deepEqual(bytes, extended.get(path), `Unaffected file changed: ${path}`);
       }
-      if (variant !== 'baseline') await put(root, item.path, bytes);
-      files.push({ path: item.path, size: bytes.length, sha256: sha256(bytes) });
+      await put(root, path, bytes);
+      files.push({ path, size: bytes.length, sha256: sha256(bytes) });
     }
-    if (variant !== 'baseline') {
-      for (const [asset, path] of regressions) {
-        const bytes = await readFile(join(here, 'regressions', asset));
-        await put(root, path, bytes);
-        files.push({ path, size: bytes.length, sha256: sha256(bytes) });
-      }
+    const helper = files.find((file) => file.path === 'src/lib/errors.js');
+    if (expected.target !== 'profile-name' || expected.revision !== 'candidate') {
+      assert.equal(
+        helper.sha256,
+        inventory.find((item) => item.path === helper.path).baseline.sha256,
+      );
     }
-    report.variants[variant] = { files, sha256: sha256(JSON.stringify(files)) };
+    report.variants[id] = {
+      files,
+      sha256: sha256(JSON.stringify(files)),
+      ...(candidateChange ? { candidateChange } : {}),
+    };
+  }
+  for (const [red, candidate, target] of [
+    ['baseline-with-regressions', 'scripted-candidate', 'profile-name'],
+    ['cart-baseline-with-regressions', 'cart-scripted-candidate', 'cart-total'],
+  ]) {
+    for (const [, path] of regressionAssets[target])
+      assert.deepEqual(
+        report.variants[red].files.find((file) => file.path === path),
+        report.variants[candidate].files.find((file) => file.path === path),
+        'Identical paired regressions required',
+      );
   }
   report.inputs = inventory;
   const preparation = join(scratch, 'dependencies');
@@ -203,19 +302,11 @@ try {
   assert.ok(!base.Config.OnBuild?.length);
   report.base = base;
   const server = JSON.parse(checked(['version', '--format', '{{json .Server}}']));
-  assert.equal(server.Version, '29.4.0');
-  assert.equal(server.Arch, 'arm64');
-  assert.match(server.GitCommit, /^[0-9a-f]{8,40}$/);
-  assert.ok(engineCommit.startsWith(server.GitCommit));
+  const { policy, reviewed } = await readFixturePolicy(server);
   report.server = server;
+  report.reviewedEngine = reviewed;
   const security = JSON.parse(checked(['info', '--format', '{{json .SecurityOptions}}']));
   assert.ok(security.includes('name=seccomp,profile=builtin'));
-  const seccomp = await readFile(
-    new URL('../../prototypes/chromium/seccomp/docker-29.4.0.json', import.meta.url),
-  );
-  assert.equal(sha256(seccomp), baselineSha256);
-  const policy = namespaceChrootPolicy(seccomp);
-  assert.equal(sha256(policy), 'c85c2b40abc8ca15cace108b94f91e337b73313c8288b03c41d1ca51fe239bd7');
   const policyPath = join(scratch, 'seccomp.json');
   await writeFile(policyPath, policy);
   report.policySha256 = sha256(policy);

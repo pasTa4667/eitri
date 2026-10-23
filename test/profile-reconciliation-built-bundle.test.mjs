@@ -8,31 +8,12 @@ import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import * as vm from 'node:vm';
+import { variantExpectation, variants } from '../scripts/profile-reconciliation/scenarios.mjs';
 
 const recipe = fileURLToPath(new URL('../scripts/profile-reconciliation/', import.meta.url));
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const origin = 'http://127.0.0.1:4173';
 const proofTitle = 'built assets serve the rendered application';
-const regressionTitle = 'profile caller renders Anonymous after clearing the user';
-const unitTitles = [
-  'getUserDisplayName formats profile name "ada" as ada',
-  'getUserDisplayName formats profile name "  Ada Lovelace  " as Ada Lovelace',
-  'getUserDisplayName formats profile name "gRaCe Hopper" as gRaCe Hopper',
-  'getUserDisplayName formats profile name " \\t " as Anonymous',
-  'getUserDisplayName formats profile name undefined as Anonymous',
-  'getUserDisplayName formats profile name null as Anonymous',
-  'getUserDisplayName falls back for a missing name',
-  'parseConfig parses valid JSON',
-  'parseConfig throws a SyntaxError for invalid JSON',
-  'fetchOrder returns the json body on success',
-  'fetchOrder throws on a non-ok response',
-  'App shows navigation to the three error pages',
-  'App render error page initially shows the profile name',
-  'App click error page throws from the handler',
-];
-const helperTitles = ['missing-profile', 'null-profile', 'null-user', 'undefined-user'].map(
-  (id) => `profile fallback regression ${id} returns Anonymous`,
-);
 const callerTitle = 'profile caller regression renders Anonymous after clearing the user';
 const html = '<html><script type="module" src="/assets/app.js"></script></html>';
 const js = 'document.body.textContent = "Hello, ada";';
@@ -44,60 +25,87 @@ const builtFiles = [
 ];
 
 function scenario(variant = 'baseline') {
-  const red = variant === 'baseline-with-regressions';
-  const titles =
-    variant === 'baseline' ? unitTitles : [...unitTitles, ...helperTitles, callerTitle];
-  const browserTitles = [
-    'render error page initially shows the profile name',
-    'click error page raises an uncaught error',
-    'async error page raises an unhandled rejection',
-    proofTitle,
-    ...(variant === 'baseline' ? [] : [regressionTitle]),
-  ];
+  const expected = variantExpectation(variant);
+  const red = expected.red;
+  const unitFiles = [...new Set(expected.unit.map((entry) => entry.file))];
+  const diagnostic = (record) => {
+    if (record.failure === 'cart-reduce-typeerror')
+      return 'TypeError: Reduce of empty array with no initial value';
+    if (record.failure === 'cart-react-zero')
+      return 'AssertionError: expected Total: 0 cents, received Something went wrong: Reduce of empty array with no initial value';
+    return record.fullName === callerTitle
+      ? 'AssertionError: expected undefined to be Hello, Anonymous'
+      : 'TypeError: Cannot read properties';
+  };
   return {
     variant,
     files: builtFiles,
     unitExit: red ? 1 : 0,
     browserExit: red ? 1 : 0,
     unit: {
+      success: !red,
+      numPendingTestSuites: 0,
       numPendingTests: 0,
       numTodoTests: 0,
-      testResults: [
-        {
-          assertionResults: titles.map((fullName) => ({
-            fullName,
-            status: red && [...helperTitles, callerTitle].includes(fullName) ? 'failed' : 'passed',
-            failureMessages:
-              red && [...helperTitles, callerTitle].includes(fullName)
-                ? [
-                    fullName === callerTitle
-                      ? 'Hello, Anonymous'
-                      : 'TypeError: Cannot read properties',
-                  ]
-                : [],
+      numTotalTests: expected.unit.length,
+      numFailedTests: red ? expected.unit.filter((entry) => entry.failure).length : 0,
+      numPassedTests: expected.unit.filter((entry) => !red || !entry.failure).length,
+      testResults: unitFiles.map((file) => ({
+        name: `/tmp/work/${file}`,
+        message: '',
+        status:
+          red && expected.unit.some((entry) => entry.file === file && entry.failure)
+            ? 'failed'
+            : 'passed',
+        assertionResults: expected.unit
+          .filter((entry) => entry.file === file)
+          .map((record) => ({
+            fullName: record.fullName,
+            status: red && record.failure ? 'failed' : 'passed',
+            failureMessages: red && record.failure ? [diagnostic(record)] : [],
           })),
-        },
-      ],
+      })),
+    },
+    witness: {
+      version: 1,
+      reason: red ? 'failed' : 'passed',
+      unhandledErrors: [],
+      moduleErrors: [],
+      tests: expected.unit.map((record) => ({
+        file: record.file,
+        fullName: record.fullName,
+        state: red && record.failure ? 'failed' : 'passed',
+        retryCount: 0,
+        repeatCount: 0,
+        retry: 0,
+        repeats: 0,
+        fails: false,
+        mode: 'run',
+      })),
     },
     browser: {
       errors: [],
       suites: [
         {
           title: 'spec.js',
-          specs: browserTitles.map((title) => ({
-            title,
+          specs: expected.browser.map((record) => ({
+            title: record.fullName,
+            file: record.file.replace(/^e2e\//, ''),
             tests: [
               {
                 expectedStatus: 'passed',
                 results: [
                   {
                     retry: 0,
-                    status: red && title === regressionTitle ? 'failed' : 'passed',
+                    status: red && record.failure ? 'failed' : 'passed',
                     errors:
-                      red && title === regressionTitle
+                      red && record.failure
                         ? [
                             {
-                              message: `Error: expect(locator).toHaveText(expected) failed\nLocator: getByTestId('badge')\nExpected string: "Hello, Anonymous"\nReceived: <element(s) not found>`,
+                              message:
+                                record.failure === 'cart-browser-zero'
+                                  ? `Error: expect(locator).toHaveText(expected) failed\nLocator: getByTestId('cart-total')\nExpected string: "Total: 0 cents"\nReceived string: "Something went wrong: Reduce of empty array with no initial value"`
+                                  : `Error: expect(locator).toHaveText(expected) failed\nLocator: getByTestId('badge')\nExpected string: "Hello, Anonymous"\nReceived: <element(s) not found>`,
                             },
                           ]
                         : [],
@@ -212,7 +220,15 @@ async function harness(root, mode) {
     ),
     { context },
   );
-  await subject.link(async (specifier) => {
+  const link = async (specifier) => {
+    if (specifier === './scenarios.mjs') {
+      const module = new vm.SourceTextModule(
+        await fs.readFile(join(recipe, 'scenarios.mjs'), 'utf8'),
+        { context },
+      );
+      await module.link(link);
+      return module;
+    }
     const exports =
       specifier === 'node:fs/promises'
         ? filesystem
@@ -259,7 +275,8 @@ async function harness(root, mode) {
       },
       { context },
     );
-  });
+  };
+  await subject.link(link);
   await subject.evaluate();
   if (mode === 'runner') process.exitCode = runtime.exitCode ?? 0;
   else if (mode === 'config') console.log(JSON.stringify(subject.namespace.default));
@@ -286,7 +303,9 @@ const root = process.env.CASE_ROOT;
 const data = JSON.parse(await fs.readFile(join(root, 'case.json'), 'utf8'));
 const args = process.argv.slice(2);
 if (args[0] === 'test') {
-  await fs.writeFile(join(root, 'unit.json'), JSON.stringify(data.unit));
+  if (process.env.VITE_FIXTURE_ENV !== 'validation' || process.env.VITE_SENTRY_DSN !== '') throw new Error('Offline environment required');
+  await fs.writeFile(join(root, 'unit.json'), data.unitText ?? JSON.stringify(data.unit));
+  if (!data.missingWitness) await fs.writeFile(join(root, 'unit-witness.json'), JSON.stringify(data.witness));
   await fs.mkdir('dist', { recursive: true });
   await fs.writeFile('dist/stale.js', 'stale build');
   process.exitCode = data.unitExit;
@@ -369,10 +388,14 @@ if (process.argv[2] === '--harness') {
   });
 
   test('profile reconciliation runner composes unit, fresh build and browser subprocesses for all variants', async () => {
-    for (const variant of ['baseline', 'baseline-with-regressions', 'scripted-candidate']) {
-      const { status, report } = await execute(scenario(variant));
+    for (const { id: variant } of variants) {
+      const data = scenario(variant);
+      const { status, report } = await execute(data);
       assert.equal(status, 0, report.error);
       assert.equal(report.verdict, 'passed');
+      assert.deepEqual(report.unit, data.unit);
+      assert.deepEqual(report.browser, data.browser);
+      assert.deepEqual(report.unitWitness, data.witness);
       assert.deepEqual(
         report.commands.map((command) => command.args.slice(0, 2)),
         [
@@ -496,6 +519,128 @@ if (process.argv[2] === '--harness') {
       assert.equal(status, 1);
       assert.equal(report.verdict, 'blocked');
     }
+  });
+
+  test('fixture scenario runner rejects weakened cart results and incomplete unit witnesses', async () => {
+    const changes = [
+      (data) => {
+        data.unitText = '{';
+      },
+      (data) => {
+        data.unitText = 'x'.repeat(4 * 1024 ** 2 + 1);
+      },
+      (data) => {
+        data.missingWitness = true;
+      },
+      (data) => {
+        data.witness.unhandledErrors.push({ message: 'unexpected rejection' });
+      },
+      (data) => {
+        data.witness.moduleErrors.push({ message: 'startup failed' });
+      },
+      (data) => {
+        data.witness.tests.pop();
+      },
+      (data) => {
+        data.witness.tests.push(data.witness.tests[0]);
+      },
+      (data) => {
+        data.witness.reason = 'interrupted';
+      },
+      ...['retryCount', 'repeatCount', 'retry', 'repeats'].map((field) => (data) => {
+        data.witness.tests[0][field] = 1;
+      }),
+      (data) => {
+        delete data.witness.tests[0].retryCount;
+      },
+      (data) => {
+        data.witness.tests[0].fails = true;
+      },
+      (data) => {
+        data.witness.tests[0].mode = 'skip';
+      },
+      (data) => {
+        data.unit.testResults[0].message = 'hook failure';
+      },
+      (data) => {
+        data.unit.testResults[0].assertionResults.pop();
+      },
+      (data) => {
+        data.unit.testResults[0].assertionResults.push(
+          data.unit.testResults[0].assertionResults[0],
+        );
+      },
+      (data) => {
+        data.unit.numPendingTests = 1;
+      },
+      (data) => {
+        data.unit.testResults[0].status = 'unexpected';
+      },
+      (data) => {
+        data.unit.testResults.push({
+          name: '/tmp/work/src/extra.test.js',
+          assertionResults: [],
+          message: '',
+          status: 'passed',
+        });
+      },
+      (data) => {
+        data.browser.suites[0].specs[0].tests[0].annotations = [{ type: 'fail' }];
+      },
+      (data) => {
+        data.unit.numTodoTests = 1;
+      },
+      (data) => {
+        data.unit.testResults[0].assertionResults[0].failureMessages.push('unexpected error');
+      },
+      (data) => {
+        data.unit.testResults.at(-1).assertionResults[0].failureMessages = ['TypeError: unrelated'];
+      },
+      (data) => {
+        data.unitExit = 0;
+      },
+      (data) => {
+        data.browserExit = 0;
+      },
+      (data) => {
+        data.browser.errors.push({ message: 'startup failure' });
+      },
+      (data) => {
+        data.browser.suites[0].specs.at(-1).tests[0].results[0].errors[0].message =
+          'Test timeout Total: 0 cents';
+      },
+      (data) => {
+        data.browser.suites[0].specs.at(-1).tests[0].results[0].errors[0].message =
+          `expect(locator).toHaveText(expected) getByTestId('cart-total') Expected string: "Total: 0 cents" Received string: "unrelated"`;
+      },
+      (data) => {
+        data.browser.suites[0].specs.at(-1).tests[0].results[0].status = 'passed';
+      },
+      (data) => {
+        data.browser.suites[0].specs[0].tests[0].results[0].status = 'failed';
+      },
+      (data) => {
+        data.browser.suites[0].specs[0].file = 'e2e/substituted.spec.js';
+      },
+      (data) => {
+        data.browser.suites[0].specs.pop();
+      },
+      (data) => {
+        data.browser.suites[0].specs.push(data.browser.suites[0].specs[0]);
+      },
+    ];
+    for (const change of changes) {
+      const data = scenario('cart-baseline-with-regressions');
+      change(data);
+      const { status, report } = await execute(data);
+      assert.equal(status, 1);
+      assert.equal(report.verdict, 'blocked');
+    }
+    const candidate = scenario('cart-scripted-candidate');
+    candidate.unit.testResults[0].assertionResults[0].status = 'failed';
+    const result = await execute(candidate);
+    assert.equal(result.status, 1);
+    assert.equal(result.report.verdict, 'blocked');
   });
 
   test('profile reconciliation provenance observes actual built bodies despite passing DOM text', async () => {
