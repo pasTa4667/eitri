@@ -39,7 +39,7 @@ const baseId = 'sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89
 const derived = 'sha256:' + 'd'.repeat(64), cid = 'c'.repeat(64);
 const base = { Id: baseId, Architecture: 'arm64', Os: 'linux', RootFS: {Type: 'layers', Layers: ['sha256:'+'b'.repeat(64)]}, Config: {Env:['HOME=/tmp','PATH=/usr/local/bin:/usr/bin:/bin'], OnBuild:null} };
 const opt = name => args[args.indexOf(name)+1];
-if (args[0] === 'version') output({Version:'29.4.0', Arch:'arm64', GitCommit:'daa0cb7f'});
+if (args[0] === 'version') output({Version:'29.8.2', Arch:'arm64', GitCommit:'8af9fe3'});
 else if (args[0] === 'info') output(['name=seccomp,profile=builtin']);
 else if (args[0] === 'build') {
  const chunks=[]; let total=0;

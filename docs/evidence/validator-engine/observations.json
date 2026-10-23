@@ -1,0 +1,914 @@
+{
+  "baseRevision": "1f161d9",
+  "sourceState": "uncommitted source on the base revision, identified by hashes below",
+  "sourceHashes": {
+    "src/frozen-browser.ts": "c4c3879f3d0aa84791977d26d92c32d8161f017a98e4535a27b1c9fdf8e2ee9b",
+    "prototypes/chromium/policy.mjs": "f7f5a4c5708d6cb7fb1cb60183cb14f6ef9890b3a0974a1704958b57821d0c89",
+    "test/containment-policy.test.mjs": "774aa71d1b24464bb46ab61c5fad781f4d0511344d3df6a670be0f1fccc71c1c",
+    "test/frozen-browser.test.ts": "39e7857d3d618d319f8af6bf885ed3e707862277e3f6185d9fc0b4110aaaf947",
+    "test/frozen-browser-consumption-fixture.ts": "3281292582cb60f80387e9c543d85adbc8534d283fa60d44b314c34762897054",
+    "scripts/profile-reconciliation/seccomp/docker-29.8.2.json": "536529b665dd0972c37bfb569f5d4ac8a53592e7b00752bc39ff063ca9864c74",
+    "worker/frozen-browser/driver.mjs": "b8afb450dac8eb17f3696f31a50acef97ecbb4c8131447fc7f9f9b4439e4e519",
+    "worker/frozen-browser/watchdog.mjs": "f272ff69098c3d10f3907db67ab181e26979f958aeb70c2bbe917e3e1420baef"
+  },
+  "rawLogs": {
+    "red.txt": "c1e36038fc2f90631e0b9da732a5637751efde777307691d6a2d73800b05a441",
+    "red-corrected.txt": "bd98d58c45ae04f6ce006528fdedc3be24561b8b30a317b40b573a5a66862a26",
+    "green.txt": "8f5fe3518c6ffc6f9323a372d4286e98bab8126f55cc405f87e6d822b8e020e8",
+    "guards.txt": "75eb3cbf0461a581df4240f8e0b2ed6a67dcf3a12d06337ccb9359f4ad1aee86",
+    "focused.txt": "40bacdce70e2bad8c41fcf8834c4fa955c905343d8e9c51d6e3a2fcbeed05534",
+    "verify-all.txt": "14ca74474165ba8f4f560faf1ac742123ad7611ece22515054a85e3eab5da084",
+    "docker-acceptance.txt": "bfe09fa8637bbeb03d8be655a5bab6a558a03b62fe01fbcd5c951022bd839227",
+    "socket-controls.txt": "b11b2927f0bfb3d4db1d148f27f990de09a9e507c2f70306062e3866762049ec"
+  },
+  "verification": {
+    "nodePassed": 1799,
+    "rustPassed": 30,
+    "dockerPassed": 22,
+    "failures": 0,
+    "skips": 0
+  },
+  "journals": [
+    {
+      "directory": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-8b66vl/validator",
+      "owner": "6f9a82a1-fa09-4777-a741-effe8fa14139",
+      "configurationDigest": "a2fcf0b3a4c75e99f26f20c98fdb2a95c8c8950904f282728401461b417a8571",
+      "attempts": 7,
+      "contribution": 293601280,
+      "policySha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+      "runs": [
+        {
+          "runId": "3797abed-a814-4758-8cad-ec183bda8a27",
+          "state": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "baseline-reproduced"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          },
+          "engine": {
+            "version": "29.8.2",
+            "arch": "arm64",
+            "commit": "8af9fe3",
+            "security": [
+              "name=seccomp,profile=builtin",
+              "name=cgroupns"
+            ]
+          },
+          "policy": {
+            "sha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+            "engineCommit": "8af9fe3a36bab3e039862a2ab1cef1880c9b4d03",
+            "baselineSha256": "536529b665dd0972c37bfb569f5d4ac8a53592e7b00752bc39ff063ca9864c74"
+          },
+          "pngSha256": "40de898e90fbfe3fd837dc0328fb4bbc0ef19ad4905b4e22cb77f47b0e283c31"
+        },
+        {
+          "runId": "780bfed4-e439-4c98-833a-832f048353f2",
+          "state": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "candidate-passed"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          },
+          "engine": {
+            "version": "29.8.2",
+            "arch": "arm64",
+            "commit": "8af9fe3",
+            "security": [
+              "name=seccomp,profile=builtin",
+              "name=cgroupns"
+            ]
+          },
+          "policy": {
+            "sha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+            "engineCommit": "8af9fe3a36bab3e039862a2ab1cef1880c9b4d03",
+            "baselineSha256": "536529b665dd0972c37bfb569f5d4ac8a53592e7b00752bc39ff063ca9864c74"
+          },
+          "pngSha256": "0e794b15a9671d9e6e45a45075f451ce868826f55b83ad41f5ddf73c724f1895"
+        },
+        {
+          "runId": "e6235ea5-c6e5-4bbb-a230-e6e3b638cb32",
+          "state": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "baseline-not-reproduced"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          },
+          "engine": {
+            "version": "29.8.2",
+            "arch": "arm64",
+            "commit": "8af9fe3",
+            "security": [
+              "name=seccomp,profile=builtin",
+              "name=cgroupns"
+            ]
+          },
+          "policy": {
+            "sha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+            "engineCommit": "8af9fe3a36bab3e039862a2ab1cef1880c9b4d03",
+            "baselineSha256": "536529b665dd0972c37bfb569f5d4ac8a53592e7b00752bc39ff063ca9864c74"
+          },
+          "pngSha256": "0e794b15a9671d9e6e45a45075f451ce868826f55b83ad41f5ddf73c724f1895"
+        },
+        {
+          "runId": "7c3cf0a0-4598-4682-8973-07ec9ef8db4b",
+          "state": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "unrelated-failure"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          },
+          "engine": {
+            "version": "29.8.2",
+            "arch": "arm64",
+            "commit": "8af9fe3",
+            "security": [
+              "name=seccomp,profile=builtin",
+              "name=cgroupns"
+            ]
+          },
+          "policy": {
+            "sha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+            "engineCommit": "8af9fe3a36bab3e039862a2ab1cef1880c9b4d03",
+            "baselineSha256": "536529b665dd0972c37bfb569f5d4ac8a53592e7b00752bc39ff063ca9864c74"
+          },
+          "pngSha256": "efc889440d8bbd33184a18aaa6e006be7acf8dfe798774d72934dcec3ba7a1ca"
+        },
+        {
+          "runId": "1eb0fdf8-ac60-4600-bc1b-ed21b51c1264",
+          "state": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "unrelated-failure"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          },
+          "engine": {
+            "version": "29.8.2",
+            "arch": "arm64",
+            "commit": "8af9fe3",
+            "security": [
+              "name=seccomp,profile=builtin",
+              "name=cgroupns"
+            ]
+          },
+          "policy": {
+            "sha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+            "engineCommit": "8af9fe3a36bab3e039862a2ab1cef1880c9b4d03",
+            "baselineSha256": "536529b665dd0972c37bfb569f5d4ac8a53592e7b00752bc39ff063ca9864c74"
+          },
+          "pngSha256": "01db5177991631eacf8a68edbdf45c969063e106892681c7cc57bc21418b6e42"
+        },
+        {
+          "runId": "a3c621c8-4642-4116-bf58-42e496dbac9d",
+          "state": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "baseline-reproduced"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          },
+          "engine": {
+            "version": "29.8.2",
+            "arch": "arm64",
+            "commit": "8af9fe3",
+            "security": [
+              "name=seccomp,profile=builtin",
+              "name=cgroupns"
+            ]
+          },
+          "policy": {
+            "sha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+            "engineCommit": "8af9fe3a36bab3e039862a2ab1cef1880c9b4d03",
+            "baselineSha256": "536529b665dd0972c37bfb569f5d4ac8a53592e7b00752bc39ff063ca9864c74"
+          },
+          "pngSha256": "40de898e90fbfe3fd837dc0328fb4bbc0ef19ad4905b4e22cb77f47b0e283c31"
+        },
+        {
+          "runId": "8248aaa6-8e29-4cba-b8e8-676f5aa991ee",
+          "state": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        }
+      ]
+    },
+    {
+      "directory": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-nlcHW6/validator",
+      "owner": "42452650-44a5-4fcb-af3c-40754a53150d",
+      "configurationDigest": "a2fcf0b3a4c75e99f26f20c98fdb2a95c8c8950904f282728401461b417a8571",
+      "attempts": 2,
+      "contribution": 83886080,
+      "policySha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+      "runs": [
+        {
+          "runId": "0bc55e51-3479-400e-ac16-de25b12656ce",
+          "state": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "candidate-passed"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          },
+          "engine": {
+            "version": "29.8.2",
+            "arch": "arm64",
+            "commit": "8af9fe3",
+            "security": [
+              "name=seccomp,profile=builtin",
+              "name=cgroupns"
+            ]
+          },
+          "policy": {
+            "sha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+            "engineCommit": "8af9fe3a36bab3e039862a2ab1cef1880c9b4d03",
+            "baselineSha256": "536529b665dd0972c37bfb569f5d4ac8a53592e7b00752bc39ff063ca9864c74"
+          },
+          "pngSha256": "a7566815eeda3a7b39f8b140f11490df848d917077ec6ea662b11e1e2d962952"
+        },
+        {
+          "runId": "114da267-a4f4-4faa-96c1-55db46990a07",
+          "state": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        }
+      ]
+    },
+    {
+      "directory": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-eXOuzu/validator",
+      "owner": "ed32c0c2-dca4-4c0a-b415-373d7a63be13",
+      "configurationDigest": "a2fcf0b3a4c75e99f26f20c98fdb2a95c8c8950904f282728401461b417a8571",
+      "attempts": 4,
+      "contribution": 167772160,
+      "policySha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+      "runs": [
+        {
+          "runId": "3d33205c-c4b7-4b7c-97a1-3b8bd7ae3d72",
+          "state": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "candidate-passed"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          },
+          "engine": {
+            "version": "29.8.2",
+            "arch": "arm64",
+            "commit": "8af9fe3",
+            "security": [
+              "name=seccomp,profile=builtin",
+              "name=cgroupns"
+            ]
+          },
+          "policy": {
+            "sha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+            "engineCommit": "8af9fe3a36bab3e039862a2ab1cef1880c9b4d03",
+            "baselineSha256": "536529b665dd0972c37bfb569f5d4ac8a53592e7b00752bc39ff063ca9864c74"
+          },
+          "pngSha256": "0e794b15a9671d9e6e45a45075f451ce868826f55b83ad41f5ddf73c724f1895"
+        },
+        {
+          "runId": "7a25857d-2c28-4303-9249-c45098596dd2",
+          "state": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "unrelated-failure"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          },
+          "engine": {
+            "version": "29.8.2",
+            "arch": "arm64",
+            "commit": "8af9fe3",
+            "security": [
+              "name=seccomp,profile=builtin",
+              "name=cgroupns"
+            ]
+          },
+          "policy": {
+            "sha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+            "engineCommit": "8af9fe3a36bab3e039862a2ab1cef1880c9b4d03",
+            "baselineSha256": "536529b665dd0972c37bfb569f5d4ac8a53592e7b00752bc39ff063ca9864c74"
+          },
+          "pngSha256": "0e794b15a9671d9e6e45a45075f451ce868826f55b83ad41f5ddf73c724f1895"
+        },
+        {
+          "runId": "848aa256-3c55-448e-8be8-0689668908d4",
+          "state": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "unrelated-failure"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          },
+          "engine": {
+            "version": "29.8.2",
+            "arch": "arm64",
+            "commit": "8af9fe3",
+            "security": [
+              "name=seccomp,profile=builtin",
+              "name=cgroupns"
+            ]
+          },
+          "policy": {
+            "sha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+            "engineCommit": "8af9fe3a36bab3e039862a2ab1cef1880c9b4d03",
+            "baselineSha256": "536529b665dd0972c37bfb569f5d4ac8a53592e7b00752bc39ff063ca9864c74"
+          },
+          "pngSha256": "0e794b15a9671d9e6e45a45075f451ce868826f55b83ad41f5ddf73c724f1895"
+        },
+        {
+          "runId": "488996a2-ea02-4df0-8db8-79b86b765e36",
+          "state": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        }
+      ]
+    },
+    {
+      "directory": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-PvIoiV/validator",
+      "owner": "eee0d9b1-11bf-48da-961c-cae7cd5fb962",
+      "configurationDigest": "a2fcf0b3a4c75e99f26f20c98fdb2a95c8c8950904f282728401461b417a8571",
+      "attempts": 2,
+      "contribution": 83886080,
+      "policySha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+      "runs": [
+        {
+          "runId": "cf52bac1-30d4-4248-aa23-6f9e52bf8444",
+          "state": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "unrelated-failure"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          },
+          "engine": {
+            "version": "29.8.2",
+            "arch": "arm64",
+            "commit": "8af9fe3",
+            "security": [
+              "name=seccomp,profile=builtin",
+              "name=cgroupns"
+            ]
+          },
+          "policy": {
+            "sha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+            "engineCommit": "8af9fe3a36bab3e039862a2ab1cef1880c9b4d03",
+            "baselineSha256": "536529b665dd0972c37bfb569f5d4ac8a53592e7b00752bc39ff063ca9864c74"
+          },
+          "pngSha256": "0e794b15a9671d9e6e45a45075f451ce868826f55b83ad41f5ddf73c724f1895"
+        },
+        {
+          "runId": "019f5211-32df-41ca-b86f-17e247ecee3a",
+          "state": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "unrelated-failure"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          },
+          "engine": {
+            "version": "29.8.2",
+            "arch": "arm64",
+            "commit": "8af9fe3",
+            "security": [
+              "name=seccomp,profile=builtin",
+              "name=cgroupns"
+            ]
+          },
+          "policy": {
+            "sha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+            "engineCommit": "8af9fe3a36bab3e039862a2ab1cef1880c9b4d03",
+            "baselineSha256": "536529b665dd0972c37bfb569f5d4ac8a53592e7b00752bc39ff063ca9864c74"
+          },
+          "pngSha256": "0e794b15a9671d9e6e45a45075f451ce868826f55b83ad41f5ddf73c724f1895"
+        }
+      ]
+    },
+    {
+      "directory": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-6d5O4Q/validator",
+      "owner": "320f8657-1f60-472b-a0ab-ba69772c8769",
+      "configurationDigest": "a2fcf0b3a4c75e99f26f20c98fdb2a95c8c8950904f282728401461b417a8571",
+      "attempts": 1,
+      "contribution": 41943040,
+      "policySha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+      "runs": [
+        {
+          "runId": "1f2b283b-1532-4fe8-a0fb-8a1439af097d",
+          "state": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "cancelled",
+            "code": "cancelled-or-allowance-exhausted"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        }
+      ]
+    },
+    {
+      "directory": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-1B82G1/validator",
+      "owner": "080b1ec6-1b67-43a8-8b42-ed791e36340a",
+      "configurationDigest": "a2fcf0b3a4c75e99f26f20c98fdb2a95c8c8950904f282728401461b417a8571",
+      "attempts": 1,
+      "contribution": 41943040,
+      "policySha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+      "runs": [
+        {
+          "runId": "dd606e88-b233-4b5c-87a9-0fa44b6e190a",
+          "state": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "uncertain",
+            "code": "interrupted-run-no-replay"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        }
+      ]
+    },
+    {
+      "directory": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-pFHrDG/validator",
+      "owner": "748155c3-44bf-47de-81a3-77739c22741c",
+      "configurationDigest": "a2fcf0b3a4c75e99f26f20c98fdb2a95c8c8950904f282728401461b417a8571",
+      "attempts": 1,
+      "contribution": 41943040,
+      "policySha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+      "runs": [
+        {
+          "runId": "21b8b8d9-36cf-4ddf-8f76-95db08370bd0",
+          "state": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "uncertain",
+            "code": "interrupted-run-no-replay"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        }
+      ]
+    },
+    {
+      "directory": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-3KKS7V/validator",
+      "owner": "b9f2c33f-4917-4f99-b496-98a07ac76238",
+      "configurationDigest": "a2fcf0b3a4c75e99f26f20c98fdb2a95c8c8950904f282728401461b417a8571",
+      "attempts": 1,
+      "contribution": 41943040,
+      "policySha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+      "runs": [
+        {
+          "runId": "81848ab2-abe0-4931-9576-fbdc9e87f01f",
+          "state": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "uncertain",
+            "code": "interrupted-run-no-replay"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        }
+      ]
+    },
+    {
+      "directory": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-r1OCaS/validator",
+      "owner": "7758f3ca-a846-486f-9039-4c4d20c05a4c",
+      "configurationDigest": "a2fcf0b3a4c75e99f26f20c98fdb2a95c8c8950904f282728401461b417a8571",
+      "attempts": 1,
+      "contribution": 41943040,
+      "policySha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+      "runs": [
+        {
+          "runId": "63a0a349-4824-4254-8487-c03abb89cf83",
+          "state": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "baseline-reproduced"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          },
+          "engine": {
+            "version": "29.8.2",
+            "arch": "arm64",
+            "commit": "8af9fe3",
+            "security": [
+              "name=seccomp,profile=builtin",
+              "name=cgroupns"
+            ]
+          },
+          "policy": {
+            "sha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+            "engineCommit": "8af9fe3a36bab3e039862a2ab1cef1880c9b4d03",
+            "baselineSha256": "536529b665dd0972c37bfb569f5d4ac8a53592e7b00752bc39ff063ca9864c74"
+          },
+          "pngSha256": "40de898e90fbfe3fd837dc0328fb4bbc0ef19ad4905b4e22cb77f47b0e283c31"
+        }
+      ]
+    },
+    {
+      "directory": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-GnF3sm/validator",
+      "owner": "fff44e91-7fef-4cc7-971f-8099c93e8107",
+      "configurationDigest": "a2fcf0b3a4c75e99f26f20c98fdb2a95c8c8950904f282728401461b417a8571",
+      "attempts": 1,
+      "contribution": 41943040,
+      "policySha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+      "runs": [
+        {
+          "runId": "a60a2a16-04ae-4698-b48f-47eb827d9634",
+          "state": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "baseline-reproduced"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          },
+          "engine": {
+            "version": "29.8.2",
+            "arch": "arm64",
+            "commit": "8af9fe3",
+            "security": [
+              "name=seccomp,profile=builtin",
+              "name=cgroupns"
+            ]
+          },
+          "policy": {
+            "sha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+            "engineCommit": "8af9fe3a36bab3e039862a2ab1cef1880c9b4d03",
+            "baselineSha256": "536529b665dd0972c37bfb569f5d4ac8a53592e7b00752bc39ff063ca9864c74"
+          },
+          "pngSha256": "40de898e90fbfe3fd837dc0328fb4bbc0ef19ad4905b4e22cb77f47b0e283c31"
+        }
+      ]
+    },
+    {
+      "directory": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-NpqEbY/validator",
+      "owner": "26fcfcff-2430-4863-b732-ff33c36686a7",
+      "configurationDigest": "a2fcf0b3a4c75e99f26f20c98fdb2a95c8c8950904f282728401461b417a8571",
+      "attempts": 16,
+      "contribution": 671088640,
+      "policySha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+      "runs": [
+        {
+          "runId": "d5f699ad-25fb-4434-a9f3-0694c9a49f4b",
+          "state": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "baseline-reproduced"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          },
+          "engine": {
+            "version": "29.8.2",
+            "arch": "arm64",
+            "commit": "8af9fe3",
+            "security": [
+              "name=seccomp,profile=builtin",
+              "name=cgroupns"
+            ]
+          },
+          "policy": {
+            "sha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+            "engineCommit": "8af9fe3a36bab3e039862a2ab1cef1880c9b4d03",
+            "baselineSha256": "536529b665dd0972c37bfb569f5d4ac8a53592e7b00752bc39ff063ca9864c74"
+          },
+          "pngSha256": "40de898e90fbfe3fd837dc0328fb4bbc0ef19ad4905b4e22cb77f47b0e283c31"
+        },
+        {
+          "runId": "b2e1eb6e-b2ba-44b4-b7b5-fb44668940de",
+          "state": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "e5ca44ae-62ba-4c8b-8883-a2dbc9907bc5",
+          "state": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "70fedc8e-56f3-46b0-819c-33101b0b070e",
+          "state": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "85918874-b826-4df9-92f6-89922a32d538",
+          "state": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "7ca8eaaf-2b3a-483d-8b42-6356335b43a7",
+          "state": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "9432193c-effa-4254-948b-bc6c2c16256b",
+          "state": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "c09ae5ec-32d2-4e55-8530-08a3a7862eae",
+          "state": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "d036cbcc-47a4-40bd-8550-f8c4cad049a4",
+          "state": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "a3a4a689-d8cd-4d37-85ff-ed16a9ed407f",
+          "state": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "1151e15a-4711-4812-a00a-6647ba76f957",
+          "state": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "caabe7e5-dc1a-4353-982c-fd04c6ca9ca7",
+          "state": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "e8c58295-6441-4f73-acbf-d7f899c51779",
+          "state": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "73af3eb3-c96e-4ade-9ce1-a01192621a08",
+          "state": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "1589adbd-04b4-4b75-a868-813ffd6fad85",
+          "state": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        },
+        {
+          "runId": "6497918c-1b35-4b2b-acd3-c348391105bc",
+          "state": "settled",
+          "build": "not-started",
+          "outcome": {
+            "kind": "infrastructure-failed",
+            "code": "frozen-browser-check-failed"
+          },
+          "cleanup": {
+            "kind": "not-needed",
+            "cache": "retained"
+          }
+        }
+      ]
+    },
+    {
+      "directory": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-qMPMN7/validator",
+      "owner": "468432f0-4536-4702-a723-f341a2f0f7da",
+      "configurationDigest": "a2fcf0b3a4c75e99f26f20c98fdb2a95c8c8950904f282728401461b417a8571",
+      "attempts": 1,
+      "contribution": 41943040,
+      "policySha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+      "runs": [
+        {
+          "runId": "40a7706d-d899-44fe-91ca-1445dcb6f4b5",
+          "state": "settled",
+          "build": "unknown",
+          "outcome": {
+            "kind": "uncertain",
+            "code": "daemon-build-unresolved"
+          },
+          "cleanup": {
+            "kind": "incomplete",
+            "cache": "retained",
+            "code": "daemon-build-unresolved"
+          }
+        }
+      ]
+    },
+    {
+      "directory": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-4kfelV/validator",
+      "owner": "a533dd36-1cbb-41ec-8467-dc3fd0743d19",
+      "configurationDigest": "a2fcf0b3a4c75e99f26f20c98fdb2a95c8c8950904f282728401461b417a8571",
+      "attempts": 1,
+      "contribution": 41943040,
+      "policySha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+      "runs": [
+        {
+          "runId": "367e2921-2553-4101-b0d0-26d760d41403",
+          "state": "settled",
+          "build": "completed",
+          "outcome": {
+            "kind": "uncertain",
+            "code": "interrupted-run-no-replay"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          }
+        }
+      ]
+    }
+  ],
+  "sockets": {
+    "observations": [
+      {
+        "family": 2,
+        "allowed": true
+      },
+      {
+        "family": 38,
+        "allowed": false,
+        "errno": 1
+      },
+      {
+        "family": 40,
+        "allowed": false,
+        "errno": 1
+      }
+    ],
+    "removed": true
+  },
+  "resourceSnapshot": {
+    "checkedAt": "2026-10-23T18:54:00.272Z",
+    "context": "orbstack",
+    "ownedContainers": [],
+    "ownedImageIds": [],
+    "baseId": "sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff"
+  },
+  "limits": [
+    "No independent review performed.",
+    "Retained roots and build cache are not reclaimed.",
+    "Current empty listings cannot rule out late effects from an unresolved daemon build.",
+    "Controller integration uses the faux provider and synthetic A/B, not a model repair or full application validation.",
+    "Legacy engine behavior is tested with transcripts, not a running 29.4.0 daemon."
+  ]
+}

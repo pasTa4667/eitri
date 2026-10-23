@@ -14,8 +14,8 @@ import { caseId, gitRevision, sha256, virtualPath } from './workspace.ts';
 import type { WorkspaceStore, FrozenRevision, CaseId, Sha256 } from './workspace.ts';
 import {
   namespaceChrootPolicy,
-  engineCommit,
-  baselineSha256,
+  engineCommit as legacyEngineCommit,
+  baselineSha256 as legacyBaselineSha256,
 } from '../prototypes/chromium/policy.mjs';
 import { isSandboxStatusVerified } from '../prototypes/chromium/sandbox-status.mjs';
 
@@ -264,7 +264,42 @@ const limits = Object.freeze({
 });
 const baseTag = 'eitri-chromium-probe:1.64.1-node26.5.0';
 const baseId = 'sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff';
-const policyHash = 'c85c2b40abc8ca15cace108b94f91e337b73313c8288b03c41d1ca51fe239bd7';
+const reviewedPolicies = [
+  {
+    version: '29.4.0',
+    engineCommit: legacyEngineCommit,
+    shortCommit: 'daa0cb7f',
+    baselineSha256: legacyBaselineSha256,
+    sha256: 'c85c2b40abc8ca15cace108b94f91e337b73313c8288b03c41d1ca51fe239bd7',
+    baseline: '../prototypes/chromium/seccomp/docker-29.4.0.json',
+  },
+  {
+    version: '29.8.2',
+    engineCommit: '8af9fe3a36bab3e039862a2ab1cef1880c9b4d03',
+    shortCommit: '8af9fe3',
+    baselineSha256: '536529b665dd0972c37bfb569f5d4ac8a53592e7b00752bc39ff063ca9864c74',
+    sha256: '1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce',
+    baseline: '../scripts/profile-reconciliation/seccomp/docker-29.8.2.json',
+  },
+] as const;
+function reviewedPolicy(bytes: Buffer) {
+  return (
+    reviewedPolicies.find((policy) => policy.sha256 === checksum(bytes)) ??
+    fail('validator-policy-changed')
+  );
+}
+function matchesEngine(
+  version: unknown,
+  arch: unknown,
+  commit: unknown,
+  policy: (typeof reviewedPolicies)[number],
+) {
+  return (
+    version === policy.version &&
+    arch === 'arm64' &&
+    (commit === policy.engineCommit || commit === policy.shortCommit)
+  );
+}
 const entrypoint = ['/usr/local/bin/node', '/opt/eitri/frozen-browser/watchdog.mjs'];
 const labelOwner = 'eitri.frozen-browser.owner';
 const labelRun = 'eitri.frozen-browser.run';
@@ -920,14 +955,13 @@ function validateRecorded(
     sha256(p[field]);
   imageId(p.imageId);
   containerId(p.containerId);
+  const { sha256: policyHash, engineCommit, baselineSha256 } = reviewedPolicy(assets.policy);
   const policy = exact(p.policy, ['sha256', 'engineCommit', 'baselineSha256']);
   if (!same(policy, { sha256: policyHash, engineCommit, baselineSha256 }))
     fail('corrupt-committed-policy');
   const engine = exact(p.engine, ['version', 'arch', 'commit', 'security']);
   if (
-    engine.version !== '29.4.0' ||
-    engine.arch !== 'arm64' ||
-    !engineCommit.startsWith(string(engine.commit, 40)) ||
+    !matchesEngine(engine.version, engine.arch, engine.commit, reviewedPolicy(assets.policy)) ||
     !array(engine.security, 32).includes('name=seccomp,profile=builtin')
   )
     fail('corrupt-committed-engine');
@@ -2114,6 +2148,29 @@ export class FrozenBrowserValidator {
           max,
           false,
         );
+      const names = await readdir(directory),
+        fresh = names.length === 0;
+      const policyPath = join(directory, 'seccomp.json');
+      if (
+        (storage === 'existing-only' || !fresh) &&
+        (!names.includes('owner.json') ||
+          !names.includes('journal.sqlite') ||
+          !names.includes('seccomp.json'))
+      )
+        fail('unowned-validator-directory');
+      if (
+        names.some(
+          (name) =>
+            !['owner.json', 'journal.sqlite', 'journal.sqlite-journal', 'seccomp.json'].includes(
+              name,
+            ),
+        )
+      )
+        fail('unexpected-validator-file');
+      const policy = fresh
+        ? reviewedPolicies[1]
+        : reviewedPolicy(await readRegular(policyPath, limits.control));
+      const { engineCommit, baselineSha256 } = policy;
       const assets: Assets = {
         dockerfile: await load('Dockerfile', 2048),
         driver: await load('driver.mjs', 32768),
@@ -2122,9 +2179,7 @@ export class FrozenBrowserValidator {
         policy: Buffer.from(
           namespaceChrootPolicy(
             await readRegular(
-              fileURLToPath(
-                new URL('../prototypes/chromium/seccomp/docker-29.4.0.json', import.meta.url),
-              ),
+              fileURLToPath(new URL(policy.baseline, import.meta.url)),
               limits.control,
               false,
             ),
@@ -2132,7 +2187,7 @@ export class FrozenBrowserValidator {
         ),
       };
       if (
-        checksum(assets.policy) !== policyHash ||
+        checksum(assets.policy) !== policy.sha256 ||
         !same(parseJson(assets.scenario), {
           id: 'synthetic-click-v1',
           entry: 'src/index.html',
@@ -2160,27 +2215,8 @@ export class FrozenBrowserValidator {
         engineCommit,
         baselineSha256,
       });
-      const names = await readdir(directory),
-        fresh = names.length === 0;
       const journalPath = join(directory, 'journal.sqlite'),
-        markerPath = join(directory, 'owner.json'),
-        policyPath = join(directory, 'seccomp.json');
-      if (
-        (storage === 'existing-only' || !fresh) &&
-        (!names.includes('owner.json') ||
-          !names.includes('journal.sqlite') ||
-          !names.includes('seccomp.json'))
-      )
-        fail('unowned-validator-directory');
-      if (
-        names.some(
-          (name) =>
-            !['owner.json', 'journal.sqlite', 'journal.sqlite-journal', 'seccomp.json'].includes(
-              name,
-            ),
-        )
-      )
-        fail('unexpected-validator-file');
+        markerPath = join(directory, 'owner.json');
       if (fresh) {
         await writePrivate(journalPath, Buffer.alloc(0));
         await writePrivate(policyPath, assets.policy);
@@ -3004,12 +3040,8 @@ export class FrozenBrowserValidator {
           await this.checked(['version', '--format', '{{json .Server}}'], deadline, signal),
         ),
       );
-      if (
-        server.Version !== '29.4.0' ||
-        server.Arch !== 'arm64' ||
-        !/^[a-f0-9]{8,40}$/.test(string(server.GitCommit)) ||
-        !engineCommit.startsWith(string(server.GitCommit))
-      )
+      const policy = reviewedPolicy(this.assets.policy);
+      if (!matchesEngine(server.Version, server.Arch, server.GitCommit, policy))
         fail('unreviewed-docker-engine');
       const security = array(
         parseJson(
@@ -3174,7 +3206,11 @@ export class FrozenBrowserValidator {
           contextBytes: context.length,
           contextSha256: checksum(context),
           assets: Object.fromEntries(Object.entries(this.assets).map(([k, v]) => [k, checksum(v)])),
-          policy: { sha256: policyHash, engineCommit, baselineSha256 },
+          policy: {
+            sha256: policy.sha256,
+            engineCommit: policy.engineCommit,
+            baselineSha256: policy.baselineSha256,
+          },
           engine: {
             version: server.Version,
             arch: server.Arch,

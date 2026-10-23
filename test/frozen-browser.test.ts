@@ -28,6 +28,7 @@ import { FrozenBrowserValidator, frozenBrowserRequest } from '../src/frozen-brow
 import type { FrozenBrowserJournal, RecoveryInventory } from '../src/frozen-browser.ts';
 import { digest } from '../src/domain.ts';
 import { profileNameDefinition } from '../src/profile-name-definition.ts';
+import { namespaceChrootPolicy } from '../prototypes/chromium/policy.mjs';
 import { checksum } from '../src/artifacts.ts';
 import { WorkspaceStore, caseId, repositoryId, requestId, virtualPath } from '../src/workspace.ts';
 
@@ -304,7 +305,7 @@ const derived = 'sha256:' + 'd'.repeat(64), cid = 'c'.repeat(64);
 const base = { Id: baseId, Architecture: 'arm64', Os: 'linux', RootFS: {Type: 'layers', Layers: ['sha256:'+'b'.repeat(64)]}, Config: {Env:['HOME=/tmp','PATH=/usr/local/bin:/usr/bin:/bin'], OnBuild:null} };
 const opt = name => args[args.indexOf(name)+1];
 const commandConfig = kind => state.commandConfig?.[kind] ?? {Cmd:[]};
-if (args[0] === 'version') output({Version:'29.4.0', Arch:'arm64', GitCommit:'daa0cb7f'});
+if (args[0] === 'version') output(state.server ?? {Version:'29.8.2', Arch:'arm64', GitCommit:'8af9fe3'});
 else if (args[0] === 'info') output(['name=seccomp,profile=builtin']);
 else if (args[0] === 'build') {
  const chunks=[]; let total=0;
@@ -471,6 +472,132 @@ async function waitFor(predicate: () => Promise<boolean>) {
     await new Promise((r) => setTimeout(r, 10));
   }
 }
+
+test('frozen engine pins fresh journals to the modern policy and reopens settled provenance', async (t) => {
+  const f = await fixture(t);
+  assert.equal(
+    checksum(await readFile(join(f.directory, 'seccomp.json'))),
+    '1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce',
+  );
+  const report = await f.validator.validate(f.request, signal());
+  assert.equal(report.outcome.kind, 'baseline-reproduced');
+  assert.deepEqual(report.evidence?.provenance.policy, {
+    sha256: '1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce',
+    engineCommit: '8af9fe3a36bab3e039862a2ab1cef1880c9b4d03',
+    baselineSha256: '536529b665dd0972c37bfb569f5d4ac8a53592e7b00752bc39ff063ca9864c74',
+  });
+  assert.equal(report.evidence?.provenance.engine.version, '29.8.2');
+  await f.validator.close();
+  const reopened = await FrozenBrowserValidator.open({
+    workspace: f.store,
+    directory: f.directory,
+  });
+  t.after(() => reopened.close());
+  const calls = (await f.state()).calls;
+  assert.deepEqual(await reopened.validate(f.request, signal()), report);
+  assert.deepEqual((await f.state()).calls, calls);
+});
+
+test('frozen engine rejects every unreviewed identity before build or container effects', async (t) => {
+  for (const invalid of [
+    { Version: '29.4.0', GitCommit: 'daa0cb7f' },
+    { Version: '29.8.3' },
+    { Arch: 'amd64' },
+    ...['', '8', '8af9fe', '8af9fe30', '8af9fe3fffffffffffffffffffffffffffffffff', null].map(
+      (GitCommit) => ({ GitCommit }),
+    ),
+  ]) {
+    await t.test(JSON.stringify(invalid), async (t) => {
+      const f = await fixture(t);
+      await writeFile(
+        f.statePath,
+        JSON.stringify({
+          ...(await f.state()),
+          server: {
+            Version: '29.8.2',
+            Arch: 'arm64',
+            GitCommit: '8af9fe3',
+            ...invalid,
+          },
+        }),
+      );
+      const report = await f.validator.validate(f.request, signal());
+      assert.equal(report.outcome.kind, 'infrastructure-failed');
+      assert.equal(report.evidence, null);
+      assert.deepEqual((await f.state()).calls, [['version', '--format', '{{json .Server}}']]);
+    });
+  }
+});
+
+test('frozen engine accepts the full reviewed modern commit as well as its exact short spelling', async (t) => {
+  const f = await fixture(t);
+  await writeFile(
+    f.statePath,
+    JSON.stringify({
+      ...(await f.state()),
+      server: {
+        Version: '29.8.2',
+        Arch: 'arm64',
+        GitCommit: '8af9fe3a36bab3e039862a2ab1cef1880c9b4d03',
+      },
+    }),
+  );
+  assert.equal(
+    (await f.validator.validate(f.request, signal())).outcome.kind,
+    'baseline-reproduced',
+  );
+});
+
+test('frozen engine preserves legacy configuration, rejects cross-policy execution, and reopens legacy evidence', async (t) => {
+  const f = await fixture(t);
+  await f.validator.close();
+  const legacyPolicy = namespaceChrootPolicy(
+    await readFile(new URL('../prototypes/chromium/seccomp/docker-29.4.0.json', import.meta.url)),
+  );
+  await writeFile(join(f.directory, 'seccomp.json'), legacyPolicy);
+  const db = new DatabaseSync(join(f.directory, 'journal.sqlite'));
+  const meta = JSON.parse(db.prepare('SELECT body FROM meta').get()!.body as string);
+  meta.configurationDigest = '47eeb7cb129217de287f9244d5f539bf24657c57b57f6d41cc2677103963b8f3';
+  db.prepare('UPDATE meta SET body=?, digest=?').run(JSON.stringify(meta), digest(meta));
+  db.close();
+  const legacy = await FrozenBrowserValidator.open({ workspace: f.store, directory: f.directory });
+  t.after(() => legacy.close());
+  assert.equal((await legacy.validate(f.request, signal())).outcome.kind, 'infrastructure-failed');
+  assert.deepEqual((await f.state()).calls, [['version', '--format', '{{json .Server}}']]);
+  await writeFile(
+    f.statePath,
+    JSON.stringify({
+      ...(await f.state()),
+      server: {
+        Version: '29.4.0',
+        Arch: 'arm64',
+        GitCommit: 'daa0cb7f',
+      },
+    }),
+  );
+  const request = frozenBrowserRequest({
+    ...f.request,
+    action: { ...f.request.action, actionId: randomUUID() },
+  });
+  const report = await legacy.validate(request, signal());
+  assert.equal(report.outcome.kind, 'baseline-reproduced');
+  assert.equal(report.evidence?.provenance.configurationDigest, meta.configurationDigest);
+  assert.equal(report.evidence?.provenance.engine.version, '29.4.0');
+  assert.equal(
+    report.evidence?.provenance.policy.sha256,
+    'c85c2b40abc8ca15cace108b94f91e337b73313c8288b03c41d1ca51fe239bd7',
+  );
+  await legacy.close();
+  const reopened = await FrozenBrowserValidator.open({
+    workspace: f.store,
+    directory: f.directory,
+  });
+  t.after(() => reopened.close());
+  const calls = (await f.state()).calls;
+  assert.deepEqual(await reopened.validate(request, signal()), report);
+  assert.deepEqual((await f.state()).calls, calls);
+  assert.equal(await readFile(join(f.directory, 'seccomp.json'), 'utf8'), legacyPolicy);
+});
 
 test('trusted frozen driver retains complete B and shutdown observations without faults', async () => {
   const result = await runTrustedDriver('normal');
