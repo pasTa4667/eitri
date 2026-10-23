@@ -1,6 +1,7 @@
 import { constants } from 'node:fs';
 import type { BigIntStats } from 'node:fs';
 import { lstat, open, realpath } from 'node:fs/promises';
+import type { FileHandle } from 'node:fs/promises';
 import { isAbsolute, join, resolve } from 'node:path';
 import { checksum } from './artifacts.ts';
 import { ControlError, digest, fail } from './domain.ts';
@@ -20,7 +21,36 @@ export type ProfileNameFixtureCaptureV1 = Readonly<{
   captureDigest: Sha256;
 }>;
 
-const sourcePath = virtualPath('src/lib/errors.js');
+const reconciliationPaths = [
+  'src/lib/errors.js',
+  'src/lib/errors.test.js',
+  'src/App.test.jsx',
+] as const;
+type CapturedInput<P extends (typeof reconciliationPaths)[number]> = Readonly<{
+  virtualPath: VirtualPath & P;
+  size: number;
+  sha256: Sha256;
+  bytes: Buffer;
+}>;
+export type ProfileNameReconciliationInputV1 = Readonly<{
+  version: 1;
+  kind: 'profile-name-reconciliation-input';
+  provenance: Readonly<{ kind: 'uncommitted-copy' }>;
+  files: readonly [
+    CapturedInput<(typeof reconciliationPaths)[0]>,
+    CapturedInput<(typeof reconciliationPaths)[1]>,
+    CapturedInput<(typeof reconciliationPaths)[2]>,
+  ];
+  captureDigest: Sha256;
+}>;
+
+function capturedInput<P extends (typeof reconciliationPaths)[number]>(
+  path: P,
+  bytes: Buffer,
+): CapturedInput<P> {
+  const validated = virtualPath(path) as VirtualPath & P;
+  return { virtualPath: validated, size: bytes.length, sha256: sha256(checksum(bytes)), bytes };
+}
 const sameDirectory = (a: BigIntStats, b: BigIntStats) =>
   b.isDirectory() && a.dev === b.dev && a.ino === b.ino && a.mode === b.mode;
 const sameSource = (a: BigIntStats, b: BigIntStats) =>
@@ -40,6 +70,49 @@ const sameSource = (a: BigIntStats, b: BigIntStats) =>
 export async function captureProfileNameFixture(
   demonstrationDirectory: string,
 ): Promise<ProfileNameFixtureCaptureV1> {
+  const [bytes] = await acquireFixedFiles(demonstrationDirectory, 'helper');
+  const { bytes: sourceBytes, ...source } = capturedInput(reconciliationPaths[0], bytes);
+  const descriptor = {
+    version: 1 as const,
+    scenarioId: 'profile-name-v1' as const,
+    provenance: { kind: 'uncommitted-copy' as const },
+    source,
+  };
+  return {
+    ...descriptor,
+    source: { ...source, bytes: sourceBytes },
+    captureDigest: sha256(digest(descriptor)),
+  };
+}
+
+/** Captures three fixed raw inputs for later reconciliation, without executing or interpreting them. */
+export async function captureProfileNameReconciliationInput(
+  demonstrationDirectory: string,
+): Promise<ProfileNameReconciliationInputV1> {
+  const bytes = await acquireFixedFiles(demonstrationDirectory, 'reconciliation');
+  const files = [
+    capturedInput(reconciliationPaths[0], bytes[0]),
+    capturedInput(reconciliationPaths[1], bytes[1]),
+    capturedInput(reconciliationPaths[2], bytes[2]),
+  ] as const;
+  const descriptor = {
+    version: 1 as const,
+    kind: 'profile-name-reconciliation-input' as const,
+    provenance: { kind: 'uncommitted-copy' as const },
+    files: files.map(({ virtualPath, size, sha256 }) => ({ virtualPath, size, sha256 })),
+  };
+  return { ...descriptor, files, captureDigest: sha256(digest(descriptor)) };
+}
+
+function acquireFixedFiles(directory: string, selection: 'helper'): Promise<[Buffer]>;
+function acquireFixedFiles(
+  directory: string,
+  selection: 'reconciliation',
+): Promise<[Buffer, Buffer, Buffer]>;
+async function acquireFixedFiles(
+  demonstrationDirectory: string,
+  selection: 'helper' | 'reconciliation',
+): Promise<[Buffer] | [Buffer, Buffer, Buffer]> {
   if (
     typeof demonstrationDirectory !== 'string' ||
     !demonstrationDirectory.isWellFormed() ||
@@ -68,10 +141,15 @@ export async function captureProfileNameFixture(
     for (const path of parents) {
       if ((await realpath(path)) !== path) fail('unsafe-fixture-directory');
     }
-    const path = join(demonstrationDirectory, sourcePath);
-    const before = await lstat(path, { bigint: true });
-    if (!before.isFile() || before.nlink !== 1n) fail('unsafe-fixture-source');
-    if (before.size > BigInt(workspaceLimits.fileBytes)) fail('fixture-size-limit');
+    const selected = selection === 'helper' ? [reconciliationPaths[0]] : reconciliationPaths;
+    const sources = [];
+    for (const virtualPath of selected) {
+      const path = join(demonstrationDirectory, virtualPath);
+      const before = await lstat(path, { bigint: true });
+      if (!before.isFile() || before.nlink !== 1n) fail('unsafe-fixture-source');
+      if (before.size > BigInt(workspaceLimits.fileBytes)) fail('fixture-size-limit');
+      sources.push({ path, before });
+    }
     acquired = true;
 
     const recheckDirectories = async () => {
@@ -83,39 +161,43 @@ export async function captureProfileNameFixture(
         if ((await realpath(directory)) !== directory) fail('fixture-source-changed');
       }
     };
-    await recheckDirectories();
-    const file = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
-    let bytes: Buffer;
+    const handles: FileHandle[] = [];
+    const buffers: Buffer[] = [];
     try {
-      const opened = await file.stat({ bigint: true });
-      if (!opened.isFile() || opened.nlink !== 1n) fail('unsafe-fixture-source');
-      if (!sameSource(before, opened)) fail('fixture-source-changed');
-      bytes = Buffer.alloc(Number(before.size));
-      let offset = 0;
-      while (offset < bytes.length) {
-        const { bytesRead } = await file.read(bytes, offset, bytes.length - offset, offset);
-        if (!bytesRead) fail('fixture-source-changed');
-        offset += bytesRead;
+      for (const { path, before } of sources) {
+        await recheckDirectories();
+        const file = await open(
+          path,
+          constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
+        );
+        handles.push(file);
+        const opened = await file.stat({ bigint: true });
+        if (!opened.isFile() || opened.nlink !== 1n) fail('unsafe-fixture-source');
+        if (!sameSource(before, opened)) fail('fixture-source-changed');
+        const bytes = Buffer.alloc(Number(before.size));
+        let offset = 0;
+        while (offset < bytes.length) {
+          const { bytesRead } = await file.read(bytes, offset, bytes.length - offset, offset);
+          if (!bytesRead) fail('fixture-source-changed');
+          offset += bytesRead;
+        }
+        const probe = Buffer.alloc(1);
+        if ((await file.read(probe, 0, 1, offset)).bytesRead) fail('fixture-source-changed');
+        buffers.push(bytes);
       }
-      const probe = Buffer.alloc(1);
-      if ((await file.read(probe, 0, 1, offset)).bytesRead) fail('fixture-source-changed');
-      if (!sameSource(before, await file.stat({ bigint: true }))) fail('fixture-source-changed');
-      if (!sameSource(before, await lstat(path, { bigint: true }))) fail('fixture-source-changed');
+      for (const [index, { path, before }] of sources.entries()) {
+        if (!sameSource(before, await handles[index].stat({ bigint: true })))
+          fail('fixture-source-changed');
+        if (!sameSource(before, await lstat(path, { bigint: true })))
+          fail('fixture-source-changed');
+      }
       await recheckDirectories();
     } finally {
-      await file.close();
+      await Promise.allSettled(handles.map(async (file) => file.close())).then((closed) => {
+        for (const result of closed) if (result.status === 'rejected') throw result.reason;
+      });
     }
-    const descriptor = {
-      version: 1 as const,
-      scenarioId: 'profile-name-v1' as const,
-      provenance: { kind: 'uncommitted-copy' as const },
-      source: { virtualPath: sourcePath, size: bytes.length, sha256: sha256(checksum(bytes)) },
-    };
-    return {
-      ...descriptor,
-      source: { ...descriptor.source, bytes },
-      captureDigest: sha256(digest(descriptor)),
-    };
+    return selection === 'helper' ? [buffers[0]] : [buffers[0], buffers[1], buffers[2]];
   } catch (error) {
     if (error instanceof ControlError) throw error;
     const disappeared =
