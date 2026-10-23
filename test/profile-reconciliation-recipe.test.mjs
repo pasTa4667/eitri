@@ -59,6 +59,29 @@ test('profile reconciliation inventory binds exactly the approved env-free input
   }
 });
 
+test('profile reconciliation packages and hashes every runtime verification asset', async () => {
+  const host = await readFile(new URL('verify.mjs', recipe), 'utf8');
+  const runner = await readFile(new URL('run.mjs', recipe), 'utf8');
+  const descriptors = [...host.matchAll(/\{ path: '([^']+)', destination: '([^']+)' \}/g)];
+  assert.deepEqual(
+    descriptors.map(([, path, destination]) => [path, destination]),
+    [
+      ['run.mjs', 'verify/run.mjs'],
+      ['playwright.config.mjs', 'verify/playwright.config.mjs'],
+      ['built-assets.spec.js', 'verify/built-assets.spec.js'],
+    ],
+  );
+  assert.match(host, /runtimeAssets\.map\(\(asset\) => asset\.path\)/);
+  assert.match(
+    host,
+    /for \(const asset of runtimeAssets\)\s+await put\(context, asset\.destination, await readFile\(join\(here, asset\.path\)\)\)/,
+  );
+  assert.match(
+    runner,
+    /cp\('\/opt\/verify\/built-assets\.spec\.js', '\/tmp\/work\/e2e\/built-assets\.spec\.js'\)/,
+  );
+});
+
 test('profile reconciliation baseline identity agrees with the protected capture descriptor', async () => {
   const inventory = JSON.parse(await readFile(new URL('inputs.json', recipe), 'utf8'));
   const helper = inventory.find((item) => item.path === 'src/lib/errors.js').baseline;

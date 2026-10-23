@@ -20,6 +20,11 @@ const source = process.argv[2];
 assert.ok(isAbsolute(source));
 assert.equal(await realpath(source), source, 'Use a canonical, quiescent operator-owned directory');
 const here = dirname(fileURLToPath(import.meta.url));
+const runtimeAssets = [
+  { path: 'run.mjs', destination: 'verify/run.mjs' },
+  { path: 'playwright.config.mjs', destination: 'verify/playwright.config.mjs' },
+  { path: 'built-assets.spec.js', destination: 'verify/built-assets.spec.js' },
+];
 const inventory = JSON.parse(await readFile(join(here, 'inputs.json'), 'utf8'));
 assert.equal(inventory.length, 16);
 assert.equal(new Set(inventory.map((item) => item.path)).size, 16);
@@ -117,8 +122,7 @@ try {
     'inputs.json',
     'fixture.patch',
     'verify.mjs',
-    'run.mjs',
-    'playwright.config.mjs',
+    ...runtimeAssets.map((asset) => asset.path),
     'regressions/profile-name.test.js',
     'regressions/profile-name.test.jsx',
     'regressions/profile-name.spec.js',
@@ -246,8 +250,8 @@ try {
   };
   const dependencyTag = `${owner}-dependencies:local`;
   report.dependencyImage = build(dependencyTag, preparation, 'default');
-  for (const path of ['run.mjs', 'playwright.config.mjs'])
-    await put(context, `verify/${path}`, await readFile(join(here, path)));
+  for (const asset of runtimeAssets)
+    await put(context, asset.destination, await readFile(join(here, asset.path)));
   await put(
     context,
     'Dockerfile',
