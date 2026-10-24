@@ -1,0 +1,235 @@
+{
+  "scope": "fixed-synthetic-review-and-operator-selected-assignment",
+  "controllerBaseline": "f2fa38a",
+  "records": [
+    {
+      "source": ".audit/sentry-review-hosted.json",
+      "record": {
+        "organization": "pasta-re",
+        "projectId": "4512275993002064",
+        "issueId": "155897738",
+        "activated": true,
+        "attemptedWrites": [
+          {
+            "inbox": false
+          },
+          {
+            "assignedTo": "user:5105406"
+          }
+        ],
+        "verdict": "failed",
+        "userId": "5105406",
+        "before": {
+          "status": "unresolved",
+          "priority": "high",
+          "substatus": "new",
+          "hasSeen": false,
+          "inInbox": true,
+          "assignedTo": null
+        },
+        "afterReview": {
+          "status": "unresolved",
+          "priority": "high",
+          "substatus": "ongoing",
+          "hasSeen": false,
+          "inInbox": false,
+          "assignedTo": null
+        },
+        "failedStage": "assignment-write"
+      }
+    },
+    {
+      "source": ".audit/sentry-review-reconcile.json",
+      "record": {
+        "organization": "pasta-re",
+        "projectId": "4512275993002064",
+        "issueId": "155897738",
+        "activated": false,
+        "attemptedWrites": [],
+        "verdict": "inspected",
+        "userId": "5105406",
+        "before": {
+          "status": "unresolved",
+          "priority": "high",
+          "substatus": "ongoing",
+          "hasSeen": false,
+          "inInbox": false,
+          "assignedTo": null
+        }
+      }
+    },
+    {
+      "source": ".audit/sentry-review-assignment-hosted.json",
+      "record": {
+        "organization": "pasta-re",
+        "projectId": "4512275993002064",
+        "issueId": "155897738",
+        "activated": true,
+        "scope": "assignment-after-review",
+        "attemptedWrites": [
+          {
+            "assignedTo": "user:5105406"
+          }
+        ],
+        "responses": [
+          {
+            "stage": "authenticated-user",
+            "status": 200
+          },
+          {
+            "stage": "before",
+            "status": 200
+          },
+          {
+            "stage": "assignment-write",
+            "status": 400
+          }
+        ],
+        "verdict": "failed",
+        "userId": "5105406",
+        "before": {
+          "status": "unresolved",
+          "priority": "high",
+          "substatus": "ongoing",
+          "hasSeen": false,
+          "inInbox": false,
+          "assignedTo": null
+        },
+        "failedStage": "assignment-write",
+        "failure": "request-or-verification"
+      }
+    },
+    {
+      "source": ".audit/sentry-review-assignment-diagnostic.json",
+      "record": {
+        "organization": "pasta-re",
+        "projectId": "4512275993002064",
+        "issueId": "155897738",
+        "activated": true,
+        "scope": "assignment-after-review",
+        "attemptedWrites": [
+          {
+            "assignedTo": "user:5105406"
+          }
+        ],
+        "responses": [
+          {
+            "stage": "authenticated-user",
+            "status": 200
+          },
+          {
+            "stage": "before",
+            "status": 200
+          },
+          {
+            "stage": "assignment-write",
+            "status": 400,
+            "rejection": "non-organization-member"
+          }
+        ],
+        "verdict": "failed",
+        "userId": "5105406",
+        "before": {
+          "status": "unresolved",
+          "priority": "high",
+          "substatus": "ongoing",
+          "hasSeen": false,
+          "inInbox": false,
+          "assignedTo": null
+        },
+        "failedStage": "assignment-write",
+        "failure": "request-or-verification"
+      }
+    },
+    {
+      "source": ".audit/sentry-review-selected-owner-hosted.json",
+      "record": {
+        "organization": "pasta-re",
+        "projectId": "4512275993002064",
+        "issueId": "155897738",
+        "assigneeId": "5090062",
+        "activated": true,
+        "scope": "assignment-after-review",
+        "attemptedWrites": [
+          {
+            "assignedTo": "user:5090062"
+          }
+        ],
+        "responses": [
+          {
+            "stage": "authenticated-user",
+            "status": 200
+          },
+          {
+            "stage": "before",
+            "status": 200
+          },
+          {
+            "stage": "assignment-write",
+            "status": 200
+          },
+          {
+            "stage": "assignment-readback",
+            "status": 200
+          }
+        ],
+        "verdict": "passed",
+        "authenticatedUserId": "5105406",
+        "before": {
+          "status": "unresolved",
+          "priority": "high",
+          "substatus": "ongoing",
+          "hasSeen": false,
+          "inInbox": false,
+          "assignedTo": null
+        },
+        "afterAssignment": {
+          "status": "unresolved",
+          "priority": "high",
+          "substatus": "ongoing",
+          "hasSeen": false,
+          "inInbox": false,
+          "assignedTo": {
+            "type": "user",
+            "id": "5090062"
+          }
+        }
+      }
+    },
+    {
+      "source": ".audit/sentry-review-final-inspection.json",
+      "record": {
+        "organization": "pasta-re",
+        "projectId": "4512275993002064",
+        "issueId": "155897738",
+        "assigneeId": "5090062",
+        "activated": false,
+        "scope": "review-and-assignment",
+        "attemptedWrites": [],
+        "responses": [
+          {
+            "stage": "authenticated-user",
+            "status": 200
+          },
+          {
+            "stage": "before",
+            "status": 200
+          }
+        ],
+        "verdict": "inspected",
+        "authenticatedUserId": "5105406",
+        "before": {
+          "status": "unresolved",
+          "priority": "high",
+          "substatus": "ongoing",
+          "hasSeen": false,
+          "inInbox": false,
+          "assignedTo": {
+            "type": "user",
+            "id": "5090062"
+          }
+        }
+      }
+    }
+  ]
+}
