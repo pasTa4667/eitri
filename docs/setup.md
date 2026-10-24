@@ -30,7 +30,7 @@ The first push remains gated on verified repository privacy, default branch, and
 
 ## Check the existing hosted Sentry connection
 
-The operator confirmed CLI integration and vault-access review, and supplied an existing hosted Sentry project: organization `pasta-re`, project ID `4512275993002064`. This replaces the local-installation prerequisite for this connection check only; it does not establish M3 completion or change the live-remediation gates.
+The operator confirmed CLI integration and vault-access review, and supplied an existing hosted Sentry project: organization `pasta-re`, project ID `4512275993002064`. The operator has now selected this hosted project for M3 as well. It supersedes the local Sentry installation and installer-Bash prerequisite; do not install either for M3. This does not establish M3 completion or change the live-remediation gates. Use existing account features without added spending. Synthetic hosted event delivery and review/assignment mutations still require deliberate operator action.
 
 The API token is stored as the **password** field of `Eitri/Sentry`: `op://Eitri/Sentry/password`. No field rename is required. This must be a Sentry API token, not a browser SDK DSN. The item website may remain the supplied issues-page URL; it is not used as a credential destination.
 
@@ -45,7 +45,7 @@ The probe sends one GET to `https://sentry.io/api/0/organizations/pasta-re/issue
 
 Issue-list access requires `event:read` (or a broader existing scope). No write scope is needed for this check. A 401/403 requires checking token validity and access; a redirect/network failure requires reviewing the regional API origin before changing the fixed endpoint. Do not paste raw API or CLI output containing credentials into chat.
 
-The live connection check succeeded with zero sampled issues. This does not verify hosted event-detail access.
+The earlier live connection check succeeded with zero sampled issues. This does not verify hosted event-detail access. The next M3 slice is populated discovery/observation verification using an explicitly selected reviewed account. If discovery is empty, coordinate synthetic reporting from a known-revision monitored build; do not count an empty page or latest-event 404 as successful event verification.
 
 To read one selected issue and its latest event, invoke the separate opt-in command:
 

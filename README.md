@@ -1,6 +1,6 @@
 # eitri
 
-Local Sentry investigation and fix-PR pilot. The durable controller and scripted native operator are verified within their recorded scope. Sandboxed execution and live integrations remain gated by the [build plan](docs/build-plan.md). The [work log](docs/work-log.md) owns current acceptance status.
+Local investigation and fix-PR pilot using the existing hosted Sentry project. The durable controller and scripted native operator are verified within their recorded scope. Sandboxed execution and live integrations remain gated by the [build plan](docs/build-plan.md). The [work log](docs/work-log.md) owns current acceptance status.
 
 ## Check this checkout
 
@@ -43,7 +43,7 @@ The controller binds `127.0.0.1:43127`. Data defaults to `~/Library/Application 
 npm run check:sentry -- --account <1Password-account-UUID-or-hostname>
 ```
 
-This opt-in probe reads only `op://Eitri/Sentry/password` with desktop approval and tests read-only issue access to the configured hosted project. It prints no credentials or issue contents and does not change `npm start` or enable live remediation. See [setup and limitations](docs/setup.md#check-the-existing-hosted-sentry-connection).
+This opt-in probe reads only `op://Eitri/Sentry/password` with desktop approval and tests read-only issue access to the configured hosted project. It prints no credentials or issue contents and does not change `npm start` or enable live remediation. Hosted Sentry is also the selected M3 target; no local Sentry or installer-Bash setup is required. `npm run doctor` checks local tools only and does not certify hosted access. See [setup and limitations](docs/setup.md#check-the-existing-hosted-sentry-connection).
 
 To find issue IDs first, use the opt-in [single-page discovery command](docs/sentry-discovery.md).
 

@@ -20,12 +20,6 @@ const probes = [
     ],
     expected: '"aarch64"',
   },
-  {
-    name: 'sentry-installer-bash',
-    program: '/opt/homebrew/bin/bash',
-    args: ['--version'],
-    expected: 'GNU bash, version ',
-  },
 ];
 const checks = [];
 for (const probe of probes) {
@@ -35,16 +29,10 @@ for (const probe of probes) {
     timeout: 10_000,
     maxBuffer: 16_384,
   });
-  const bashVersion = result.stdout?.match(/GNU bash, version (\d+)\.(\d+)/);
-  const minimumVersion =
-    probe.name !== 'sentry-installer-bash' ||
-    (bashVersion &&
-      (Number(bashVersion[1]) > 4 ||
-        (Number(bashVersion[1]) === 4 && Number(bashVersion[2]) >= 4)));
   checks.push({
     name: probe.name,
     status:
-      result.status === 0 && result.stdout.startsWith(probe.expected) && minimumVersion
+      result.status === 0 && result.stdout.startsWith(probe.expected)
         ? 'observed'
         : 'needs-attention',
     output: result.stdout?.trim() ?? '',
@@ -91,7 +79,8 @@ for (const name of ['pi-durable', 'pi-ai', 'chord']) {
 }
 const manualGates = [
   'Explicit company-account selection and vault permissions approval before vault or item creation.',
-  'GitHub repository-restricted token and local Sentry API token stored directly in 1Password.',
+  'GitHub repository-restricted token and hosted Sentry API token stored directly in 1Password.',
+  'Verify hosted Sentry project/event access, synthetic grouping and review/assignment behavior before enabling intake or updates.',
   'GitHub privacy and baseline branch confirmation before the first push.',
   'Supported OpenAI sign-in and approval of the first real tool-using inference.',
   'Explicit live-remediation enablement after readiness checks.',
@@ -100,11 +89,13 @@ const report = {
   checkedAt: new Date().toISOString(),
   scope: 'Read-only prerequisites. Does not read secrets or authenticate provider accounts.',
   checks,
+  sentry: { hosting: 'hosted', verification: 'not-checked' },
   manualGates,
 };
 const destination = new URL('docs/evidence/prerequisites.json', root);
 await mkdir(new URL('./', destination), { recursive: true });
 await writeFile(destination, `${JSON.stringify(report, null, 2)}\n`, { mode: 0o600 });
 for (const check of checks) console.log(`${check.name}: ${check.status}`);
+console.log('hosted-sentry: not-checked (manual verification required).');
 console.log(`Evidence saved to ${fileURLToPath(destination)}.`);
 if (checks.some((check) => check.status === 'needs-attention')) process.exitCode = 1;
