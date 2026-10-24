@@ -4,22 +4,27 @@ import { constants } from 'node:fs';
 import { syncBuiltinESMExports } from 'node:module';
 import { dirname, join } from 'node:path';
 import { ControlError } from '../src/domain.ts';
+import installedInputs from '../scripts/profile-reconciliation/installed-inputs.json' with { type: 'json' };
 
 const [mode, root, api = 'reconciliation'] = process.argv.slice(2);
-const paths = ['src/lib/errors.js', 'src/lib/errors.test.js', 'src/App.test.jsx'].map((p) =>
-  join(root, p),
-);
+const paths = (
+  api === 'application'
+    ? installedInputs.map(({ path }) => path)
+    : ['src/lib/errors.js', 'src/lib/errors.test.js', 'src/App.test.jsx']
+).map((p) => join(root, p));
 const original = { ...fs };
 const trace = {
   opens: [] as string[],
   closes: [] as number[],
-  stats: [0, 0, 0],
+  stats: paths.map(() => 0),
   reads: [] as { file: number; position: number; requested: number; returned: number }[],
   hooks: 0,
   largestBuffer: 0,
 };
 const allowed = new Set([...paths, root, join(root, 'src'), join(root, 'src/lib')]);
-for (let p = dirname(root); !allowed.has(p); p = dirname(p)) allowed.add(p);
+for (const path of paths)
+  for (let p = dirname(path); p !== dirname(p); p = dirname(p)) allowed.add(p);
+allowed.add('/');
 const ioError = () => Object.assign(new Error(`private ${root}`), { code: 'EIO' });
 fs.readdir = async () => {
   throw new Error('unexpected enumeration');
@@ -79,7 +84,7 @@ fs.open = async (...args: Parameters<typeof fs.open>) => {
       }
       if (trace.stats[index] === 2) {
         assert.deepEqual(trace.closes, []);
-        assert.equal(trace.opens.length, api === 'helper' ? 1 : 3);
+        assert.equal(trace.opens.length, api === 'helper' ? 1 : paths.length);
       }
       return Reflect.apply(target, receiver, args);
     },
@@ -93,7 +98,7 @@ fs.open = async (...args: Parameters<typeof fs.open>) => {
       assert.equal(typeof position, 'number');
       assert.deepEqual(trace.closes, []);
       trace.largestBuffer = Math.max(trace.largestBuffer, buffer.length);
-      const trigger = mode.endsWith('-second') ? 1 : api === 'helper' ? 0 : 2;
+      const trigger = mode.endsWith('-second') ? 1 : api === 'helper' ? 0 : paths.length - 1;
       if (
         index === trigger &&
         trace.hooks === 0 &&
@@ -128,13 +133,18 @@ fs.open = async (...args: Parameters<typeof fs.open>) => {
   return file;
 };
 syncBuiltinESMExports();
-const { captureProfileNameFixture, captureProfileNameReconciliationInput } =
-  await import('../src/fixture-profile-name.ts');
+const {
+  captureProfileNameFixture,
+  captureProfileNameReconciliationInput,
+  captureFixtureApplicationInput,
+} = await import('../src/fixture-profile-name.ts');
 try {
   const files =
     api === 'helper'
       ? [(await captureProfileNameFixture(root)).source]
-      : (await captureProfileNameReconciliationInput(root)).files;
+      : api === 'application'
+        ? (await captureFixtureApplicationInput(root)).files
+        : (await captureProfileNameReconciliationInput(root)).files;
   process.stdout.write(
     JSON.stringify({ trace, bytes: files.map((file) => file.bytes.toString('hex')) }),
   );

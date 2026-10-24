@@ -2,7 +2,8 @@ import { constants } from 'node:fs';
 import type { BigIntStats } from 'node:fs';
 import { lstat, open, realpath } from 'node:fs/promises';
 import type { FileHandle } from 'node:fs/promises';
-import { isAbsolute, join, resolve } from 'node:path';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
+import installedInputs from '../scripts/profile-reconciliation/installed-inputs.json' with { type: 'json' };
 import { checksum } from './artifacts.ts';
 import { ControlError, digest, fail } from './domain.ts';
 import { sha256, virtualPath, workspaceLimits } from './workspace.ts';
@@ -21,12 +22,13 @@ export type ProfileNameFixtureCaptureV1 = Readonly<{
   captureDigest: Sha256;
 }>;
 
+const applicationPaths = Object.freeze(installedInputs.map(({ path }) => virtualPath(path)));
 const reconciliationPaths = [
   'src/lib/errors.js',
   'src/lib/errors.test.js',
   'src/App.test.jsx',
 ] as const;
-type CapturedInput<P extends (typeof reconciliationPaths)[number]> = Readonly<{
+type CapturedInput<P extends string> = Readonly<{
   virtualPath: VirtualPath & P;
   size: number;
   sha256: Sha256;
@@ -44,10 +46,15 @@ export type ProfileNameReconciliationInputV1 = Readonly<{
   captureDigest: Sha256;
 }>;
 
-function capturedInput<P extends (typeof reconciliationPaths)[number]>(
-  path: P,
-  bytes: Buffer,
-): CapturedInput<P> {
+export type FixtureApplicationInputV1 = Readonly<{
+  version: 1;
+  kind: 'fixture-application-input';
+  provenance: Readonly<{ kind: 'uncommitted-copy' }>;
+  files: readonly CapturedInput<string>[];
+  captureDigest: Sha256;
+}>;
+
+function capturedInput<P extends string>(path: P, bytes: Buffer): CapturedInput<P> {
   const validated = virtualPath(path) as VirtualPath & P;
   return { virtualPath: validated, size: bytes.length, sha256: sha256(checksum(bytes)), bytes };
 }
@@ -70,7 +77,7 @@ const sameSource = (a: BigIntStats, b: BigIntStats) =>
 export async function captureProfileNameFixture(
   demonstrationDirectory: string,
 ): Promise<ProfileNameFixtureCaptureV1> {
-  const [bytes] = await acquireFixedFiles(demonstrationDirectory, 'helper');
+  const [bytes] = await acquireFixedFiles(demonstrationDirectory, [reconciliationPaths[0]]);
   const { bytes: sourceBytes, ...source } = capturedInput(reconciliationPaths[0], bytes);
   const descriptor = {
     version: 1 as const,
@@ -89,7 +96,7 @@ export async function captureProfileNameFixture(
 export async function captureProfileNameReconciliationInput(
   demonstrationDirectory: string,
 ): Promise<ProfileNameReconciliationInputV1> {
-  const bytes = await acquireFixedFiles(demonstrationDirectory, 'reconciliation');
+  const bytes = await acquireFixedFiles(demonstrationDirectory, reconciliationPaths);
   const files = [
     capturedInput(reconciliationPaths[0], bytes[0]),
     capturedInput(reconciliationPaths[1], bytes[1]),
@@ -104,15 +111,25 @@ export async function captureProfileNameReconciliationInput(
   return { ...descriptor, files, captureDigest: sha256(digest(descriptor)) };
 }
 
-function acquireFixedFiles(directory: string, selection: 'helper'): Promise<[Buffer]>;
-function acquireFixedFiles(
-  directory: string,
-  selection: 'reconciliation',
-): Promise<[Buffer, Buffer, Buffer]>;
+/** Captures fixed application inputs as data, not a reviewed-baseline or validation verdict. */
+export async function captureFixtureApplicationInput(
+  demonstrationDirectory: string,
+): Promise<FixtureApplicationInputV1> {
+  const bytes = await acquireFixedFiles(demonstrationDirectory, applicationPaths);
+  const files = applicationPaths.map((path, index) => capturedInput(path, bytes[index]));
+  const descriptor = {
+    version: 1 as const,
+    kind: 'fixture-application-input' as const,
+    provenance: { kind: 'uncommitted-copy' as const },
+    files: files.map(({ virtualPath, size, sha256 }) => ({ virtualPath, size, sha256 })),
+  };
+  return { ...descriptor, files, captureDigest: sha256(digest(descriptor)) };
+}
+
 async function acquireFixedFiles(
   demonstrationDirectory: string,
-  selection: 'helper' | 'reconciliation',
-): Promise<[Buffer] | [Buffer, Buffer, Buffer]> {
+  selected: readonly string[],
+): Promise<Buffer[]> {
   if (
     typeof demonstrationDirectory !== 'string' ||
     !demonstrationDirectory.isWellFormed() ||
@@ -126,22 +143,20 @@ async function acquireFixedFiles(
   let acquired = false;
   try {
     const parents = [
-      demonstrationDirectory,
-      join(demonstrationDirectory, 'src'),
-      join(demonstrationDirectory, 'src/lib'),
+      ...new Set(selected.map((path) => dirname(join(demonstrationDirectory, path)))),
     ];
     const directories = new Map<string, BigIntStats>();
-    let directory = '/';
-    for (const part of ['/', ...parents[2].split('/').filter(Boolean)]) {
-      directory = join(directory, part);
-      const stat = await lstat(directory, { bigint: true });
-      if (!stat.isDirectory()) fail('unsafe-fixture-directory');
-      directories.set(directory, stat);
+    for (const parent of parents) {
+      let directory = '/';
+      for (const part of ['/', ...parent.split('/').filter(Boolean)]) {
+        directory = join(directory, part);
+        if (directories.has(directory)) continue;
+        const stat = await lstat(directory, { bigint: true });
+        if (!stat.isDirectory()) fail('unsafe-fixture-directory');
+        directories.set(directory, stat);
+      }
+      if ((await realpath(parent)) !== parent) fail('unsafe-fixture-directory');
     }
-    for (const path of parents) {
-      if ((await realpath(path)) !== path) fail('unsafe-fixture-directory');
-    }
-    const selected = selection === 'helper' ? [reconciliationPaths[0]] : reconciliationPaths;
     const sources = [];
     for (const virtualPath of selected) {
       const path = join(demonstrationDirectory, virtualPath);
@@ -197,7 +212,7 @@ async function acquireFixedFiles(
         for (const result of closed) if (result.status === 'rejected') throw result.reason;
       });
     }
-    return selection === 'helper' ? [buffers[0]] : [buffers[0], buffers[1], buffers[2]];
+    return buffers;
   } catch (error) {
     if (error instanceof ControlError) throw error;
     const disappeared =

@@ -218,6 +218,14 @@ Each stage must pass before enabling the next riskier integration. Simulated run
 | **M6 — Controlled live demonstration** | Enable live work deliberately. Attempt one actual eligible issue through investigation, code change, same-commit unit/build/browser proof and private draft/WIP PR. Expected/transient controls must not receive speculative fixes. Exercise Pause/Continue and one forced repair/budget-stop path. Model failure must honestly reach Needs attention; any human-assisted fix is labeled, never replaced with a hidden scripted “AI” success. |
 | **M7 — Optional operator-led merge/recurrence exercise** | Operator merges and activates a known build manually; old/unknown-version reports do not start another agent. To test a true recurrence, the operator may deliberately introduce a later fixture regression. A fresh linked session gets prior-attempt history. No automatic merge, checkout update, deployment, or fake regression success. |
 
+### Current M2 application-validation slices
+
+After the installed local fixture baseline, continue in these bounded increments:
+
+- [x] Acquire the fixed full-application inputs safely and demonstrate complete managed baseline/candidate frozen reads. See [input capture](fixture-application-input.md) and the work log for verification and limits.
+- [ ] Run protected application unit/build/browser checks from those exact managed revisions through the controller; preserve normal tests, target red/green proof, deterministic controls and truthful artifacts.
+- [ ] Evaluate full M2 acceptance against the containment, cancellation, immutable-revision and evidence requirements above. Do not enable production dispatch or later presence-gated integrations merely because these individual slices pass.
+
 Minimum durable/race checks, exercised through the same controller interface:
 
 - Poll/manual/restart intake of one issue creates one owner, including while paused, awaiting merge, or provisioning.
