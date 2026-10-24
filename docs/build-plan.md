@@ -224,7 +224,7 @@ After the installed local fixture baseline, continue in these bounded increments
 
 - [x] Acquire the fixed full-application inputs safely and demonstrate complete managed baseline/candidate frozen reads. See [input capture](fixture-application-input.md) and the work log for verification and limits.
 - [x] Run protected application unit/build/browser checks from those exact managed revisions through the controller; preserve normal tests, target red/green proof, deterministic controls and truthful artifacts. See the [protected application-check contract](fixture-application-check.md) and [verification](evidence/fixture-application-check/verification.md) for the reviewed-byte policy and remaining limits.
-- [ ] Evaluate full M2 acceptance against the containment, cancellation, immutable-revision and evidence requirements above. Do not enable production dispatch or later presence-gated integrations merely because these individual slices pass.
+- [x] Evaluate full M2 acceptance against the containment, cancellation, immutable-revision and evidence requirements above. [M2 is accepted for the fixed-probe/scripted-patch contract](m2-acceptance.md), with retained verification and explicit limits. Production dispatch, arbitrary generated execution and later presence-gated integrations remain disabled.
 
 Minimum durable/race checks, exercised through the same controller interface:
 

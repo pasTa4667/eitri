@@ -1,0 +1,260 @@
+{
+  "version": 1,
+  "testedSource": "fe745213444a62a6f695d84217d19a0356b58b8a",
+  "changeScope": "documentation-only M2 evaluation",
+  "preflight": {
+    "source": "fe745213444a62a6f695d84217d19a0356b58b8a",
+    "sourceManifestSha256": "d31e1d94134b127ae2782214d58a9202414429cee44dc45ccbce6486ed139bd0",
+    "sourceFilesVerified": 17,
+    "node": "v26.5.0",
+    "engine": {
+      "version": "29.8.2",
+      "architecture": "arm64",
+      "commit": "8af9fe3"
+    },
+    "fixture": {
+      "revision": "103db4755657e9a1595120164242a7b9323defcd",
+      "branch": "master",
+      "clean": true,
+      "captureDigest": "d4248bff339806048ec9958ad0a43a4a55719f0a4e357d9ec4d496f14cf02718",
+      "files": 28
+    },
+    "imagesVerified": true
+  },
+  "verification": [
+    {
+      "command": "npm run verify:all",
+      "exit": 0,
+      "nodeTests": 1837,
+      "nodePass": 1837,
+      "nodeFail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "rustTests": 30,
+      "rustResultVerified": true,
+      "localLog": ".audit/m2-evaluation/verify-all.txt",
+      "sha256": "13ed42ddd6083b88cd51822bcc939e54c9bc89586a75261124bd62f0764d204c",
+      "size": 159243
+    },
+    {
+      "command": "EITRI_FROZEN_DOCKER_ACCEPTANCE=1 EITRI_APPLICATION_FIXTURE_DIRECTORY=/Users/felix.langbein/projects/eitri-test-web-app node --test --test-concurrency=1 test/integration/frozen-browser.test.ts test/integration/controller-application-check.test.ts",
+      "exit": 0,
+      "nodeTests": 22,
+      "nodePass": 22,
+      "nodeFail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "localLog": ".audit/m2-evaluation/docker.txt",
+      "sha256": "1dc02486b4c8649920d62893aa0b0868fc754e31fe4a50444c2713ded07c6013",
+      "size": 5495
+    }
+  ],
+  "applicationCases": [
+    {
+      "scenario": "fixture-profile-v1",
+      "retainedRoot": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-controller-application-Nl7pw3",
+      "caseId": "91f4de7e-14b5-41dd-ac7b-064b6bd7f77b",
+      "simulated": true,
+      "status": "needs-attention",
+      "reason": "assessment-required",
+      "base": "c6784ff271c5d25d1e290446dd4cd842d7c11bb5",
+      "candidate": "e20d7286a42bea8965836241bd30ed784856e03f",
+      "realReceipts": 2,
+      "simulatedCheckpoints": 1,
+      "runs": [
+        {
+          "runId": "865fb8d2-13c2-4b0d-bc53-6459f549fe5a",
+          "role": "baseline",
+          "revision": "c6784ff271c5d25d1e290446dd4cd842d7c11bb5",
+          "outcome": {
+            "kind": "baseline-reproduced"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          },
+          "unit": {
+            "passed": 30,
+            "failed": 5,
+            "total": 35
+          },
+          "browser": {
+            "startTime": "2026-10-24T12:13:21.838Z",
+            "duration": 8507.230000000001,
+            "expected": 8,
+            "skipped": 0,
+            "unexpected": 1,
+            "flaky": 0
+          },
+          "commandExits": [
+            1,
+            0,
+            1
+          ],
+          "builtProofPassed": true,
+          "previewStopped": true,
+          "png": {
+            "size": 19831,
+            "sha256": "d8e93db314872512be0bba6a7f064fbc4e7082de8310bb72d714b5e070f074eb"
+          }
+        },
+        {
+          "runId": "7fd36a6e-dfbd-4fc1-b70a-124b6e3a198e",
+          "role": "candidate",
+          "revision": "e20d7286a42bea8965836241bd30ed784856e03f",
+          "outcome": {
+            "kind": "candidate-passed"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          },
+          "unit": {
+            "passed": 35,
+            "failed": 0,
+            "total": 35
+          },
+          "browser": {
+            "startTime": "2026-10-24T12:13:49.753Z",
+            "duration": 3213.121,
+            "expected": 9,
+            "skipped": 0,
+            "unexpected": 0,
+            "flaky": 0
+          },
+          "commandExits": [
+            0,
+            0,
+            0
+          ],
+          "builtProofPassed": true,
+          "previewStopped": true,
+          "png": {
+            "size": 19831,
+            "sha256": "d8e93db314872512be0bba6a7f064fbc4e7082de8310bb72d714b5e070f074eb"
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "fixture-cart-v1",
+      "retainedRoot": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-controller-application-uKOdPl",
+      "caseId": "286cfe58-0089-422e-8b27-ec69a9a45553",
+      "simulated": true,
+      "status": "needs-attention",
+      "reason": "assessment-required",
+      "base": "c6784ff271c5d25d1e290446dd4cd842d7c11bb5",
+      "candidate": "3b1cac567c77a0a12016a475aee7dd4e16c804de",
+      "realReceipts": 2,
+      "simulatedCheckpoints": 1,
+      "runs": [
+        {
+          "runId": "93b89a86-7c2e-4097-960b-7cadd5fa056b",
+          "role": "baseline",
+          "revision": "c6784ff271c5d25d1e290446dd4cd842d7c11bb5",
+          "outcome": {
+            "kind": "baseline-reproduced"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          },
+          "unit": {
+            "passed": 30,
+            "failed": 2,
+            "total": 32
+          },
+          "browser": {
+            "startTime": "2026-10-24T12:14:15.235Z",
+            "duration": 8513.314,
+            "expected": 8,
+            "skipped": 0,
+            "unexpected": 1,
+            "flaky": 0
+          },
+          "commandExits": [
+            1,
+            0,
+            1
+          ],
+          "builtProofPassed": true,
+          "previewStopped": true,
+          "png": {
+            "size": 19831,
+            "sha256": "d8e93db314872512be0bba6a7f064fbc4e7082de8310bb72d714b5e070f074eb"
+          }
+        },
+        {
+          "runId": "df60209c-2531-463c-8cd8-68c761aed5be",
+          "role": "candidate",
+          "revision": "3b1cac567c77a0a12016a475aee7dd4e16c804de",
+          "outcome": {
+            "kind": "candidate-passed"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          },
+          "unit": {
+            "passed": 32,
+            "failed": 0,
+            "total": 32
+          },
+          "browser": {
+            "startTime": "2026-10-24T12:14:42.976Z",
+            "duration": 3301.962,
+            "expected": 9,
+            "skipped": 0,
+            "unexpected": 0,
+            "flaky": 0
+          },
+          "commandExits": [
+            0,
+            0,
+            0
+          ],
+          "builtProofPassed": true,
+          "previewStopped": true,
+          "png": {
+            "size": 19831,
+            "sha256": "d8e93db314872512be0bba6a7f064fbc4e7082de8310bb72d714b5e070f074eb"
+          }
+        }
+      ]
+    }
+  ],
+  "syntheticValidators": {
+    "directories": 13,
+    "runs": 39,
+    "unresolved": [
+      {
+        "directory": "/private/var/folders/z1/tm20lnbn4jzdmjj_5_zpp2cc0000gn/T/eitri-frozen-docker-OpNepo/validator",
+        "runId": "f033c60f-bffc-40d6-9687-17588feb8f98",
+        "build": "unknown",
+        "outcome": {
+          "kind": "uncertain",
+          "code": "daemon-build-unresolved"
+        },
+        "cleanup": {
+          "kind": "incomplete",
+          "cache": "retained",
+          "code": "daemon-build-unresolved"
+        }
+      }
+    ]
+  },
+  "resources": {
+    "inspectedAt": "2026-10-24T12:18:25.659Z",
+    "ownersChecked": 15,
+    "containerIds": [],
+    "imageIds": [],
+    "method": "Successful docker --context orbstack {container,image} ls -aq --filter label=eitri.frozen-browser.owner=<each recorded owner>",
+    "qualification": "Current absence does not resolve the deliberately lost daemon-build response or bound physical cache."
+  },
+  "preserved": {
+    "fixtureCaptureDigest": "d4248bff339806048ec9958ad0a43a4a55719f0a4e357d9ec4d496f14cf02718",
+    "fixtureClean": true,
+    "executableAndTestDiffEmpty": true,
+    "retainedPreparationImageAndBuildCache": true
+  }
+}

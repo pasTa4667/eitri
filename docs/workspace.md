@@ -1,6 +1,6 @@
 # Offline workspace preparation
 
-The library in `src/workspace.ts` provides the managed-Git and file-broker seam for M2 integration. The optional [controller-owned offline workspace](controller-workspace.md) configuration binds synthetic source and frozen selections to admitted actions. Production main remains unconfigured. No operator controls, agent file tools or generated execution are enabled. The real demonstration fixture remains untouched.
+The library in `src/workspace.ts` provides managed Git and the file broker. The optional [controller-owned offline workspace](controller-workspace.md) configuration binds source and frozen selections to admitted actions, including the [reviewed application checks](fixture-application-check.md). Production main remains unconfigured. No operator file controls, agent file tools or arbitrary generated execution are enabled. The installed demonstration baseline is copied as data, never edited by the workspace library.
 
 ## Ownership and source
 
@@ -38,4 +38,4 @@ Lifetime caps are eight cases, four repositories, 64 freezes, and 16 exports. Ea
 
 Parent `npm run verify:all` passed 88 Node tests and 30 Rust tests on integrated commit `7f28bf3`. The [captured output](evidence/workspace/tests.txt) includes real temporary Git repositories, immutable export checks, hostile Git canaries, identity mismatch preservation, and actual SIGKILL boundaries, including a hot SQLite journal. Fresh security and comment reviews found no actionable issues. They used the same configured model family, not cross-family assurance.
 
-M2 is not accepted. The optional controller configuration now supplies offline workspace ownership and action/epoch source association. Production ingestion, real receipt integration, trusted immutable validation/scenario drivers, real fixture integration, and managed-worker containment remain outstanding. The trusted fixed-browser feasibility probe now passes with the separately approved `chroot` and task-limit changes; see [its scope](containment-review.md). Credential, sign-in, publication, and live-remediation gates remain pending.
+The [M2 evaluation](m2-acceptance.md) records combined acceptance against workspace, containment, immutable application validation and real-receipt evidence. Production ingestion/dispatch and agent file tools remain disabled. Credential, sign-in, publication and live-remediation gates remain pending. Workspace retention, quota reclamation and the other pilot limits above are not added by milestone evaluation.

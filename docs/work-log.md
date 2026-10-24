@@ -27,7 +27,7 @@ The user's implementation request authorizes local implementation under the exis
 - [x] Prerequisite audit and manual setup guide. Never read or log token values.
 - [x] M0. Durable catalogue, per-session Pi stores, controller commands, guarded runner, recovery, retention, and HTTP tests.
 - [x] M1. Native GPUI build, authenticated connection, controls, native input, and scripted visual/artifact verification.
-- [ ] M2. Existing fixture integration, scoped file broker, immutable validation, and restricted ARM64 worker checks.
+- [x] M2. Existing fixture integration, scoped file broker, immutable validation, and restricted ARM64 worker checks. Accepted for the fixed-probe/scripted-patch contract; see [M2 evaluation](m2-acceptance.md).
 - [ ] M3. Local Sentry and operator-reviewed credentials. Stop at named human gates.
 - [ ] M4. Supported OpenAI login and approved first inference. No ambient API-key fallback.
 - [ ] M5. Publication ambiguity, ownership, merge lineage, cleanup, and recurrence tests.
@@ -46,6 +46,12 @@ The user's implementation request authorizes local implementation under the exis
 - The npm registry exposes the planned Pi Durable and Pi AI 1.3.0 packages. Exact runtime compatibility remains to test.
 
 ## Current checkpoint
+
+The [M2 acceptance evaluation](m2-acceptance.md) is complete. M0, scoped scripted M1 and fixed-probe/scripted-patch M2 are accepted. Fresh verification on source `fe74521` passes 1,837 Node tests, 30 Rust tests and 22 actual-Docker integration tests. The requirement matrix, [observations](evidence/m2-acceptance/observations.json) and [five-axis review](evidence/m2-acceptance/review.md) record the verdict, revision-bound application evidence, cancellation/containment checks and limitations.
+
+Four mandatory milestones remain, M3 through M6. Production dispatch, arbitrary generated execution and later human-presence gates remain disabled. M3 is next but requires its existing setup decisions and operator-presence gates; no installation or credential access follows automatically from M2 acceptance. The deliberate lost-build fault case retains uncertainty/incomplete cleanup despite current owner-filtered resource absence. The sibling remains clean at its local `103db475` checkpoint on unchanged `master`; no monitored build is activated.
+
+## Historical checkpoints before M2 evaluation
 
 The later [guarded fixture scenarios](evidence/fixture-scenarios/verification.md) implement the next bounded step after built-bundle validation. Source `25c8a60` passes 1,785 Node tests and 30 Rust tests. One shipped-recipe run and one instrumented-copy run prove independent profile and cart red/green checks plus deterministic expected-validation and transient-upstream controls against freshly built output. The overlay exists only in disposable copies. The original fixture retains exactly its four earlier approved edits and deliberate null-input defect. The separate live frozen validator still requires Docker 29.4.0 and rejects this host's 29.8.2 engine. Its compatibility migration and full M2 remain open.
 
@@ -659,3 +665,15 @@ Final `npm run verify:all` exits 0 with **1,837 Node tests and 30 Rust tests** p
 - [x] Review changes, apply feedback and verify final source with the full suite and actual Docker runs.
 
 This requested step is implemented, reviewed and verified. The execution policy deliberately admits only exact reviewed baseline/one-target scripted patch bytes, not arbitrary generated Node code. Full M2 evaluation is the next task. Production dispatch and later human-presence gates remain closed. No credentials, live service calls, application inference, publication, deployment, branch rename, toolchain upgrade, Rust-source change or demonstration-checkout edit occurs.
+
+## M2 acceptance evaluation
+
+This continuation starts at `fe74521` and completes the final unchecked M2 evaluation task without changing executable code, tests, dependencies or security policy. The [evaluation](m2-acceptance.md) maps every M2 requirement to evidence and accepts the milestone for its fixed-script/no-real-model contract. No arbitrary generated Node code, combined-patch policy or production dispatch is enabled.
+
+Fresh `npm run verify:all` passes 1,837 Node and 30 Rust tests, including compilation/lint/format gates. The complete synthetic validator suite plus profile/cart managed-application checks pass all 22 actual-Docker tests. All four application builds and compiled-response proofs pass; only designated target assertions fail on baselines, and both scripted candidates pass. Real receipts/PNGs survive reopen without replay; cases and checkpoints remain explicitly simulated and park at `assessment-required`. The sibling's branch, clean status, local commit and capture digest remain unchanged.
+
+Read-only post-run extraction records 13 synthetic journals and 39 runs, with one deliberately unresolved build and incomplete cleanup preserved. Successful current container/image listings are empty for all 15 recorded owners; they do not prove daemon-build completion or physical cache reclamation. Diagnostic roots, dependency image and build cache remain retained. The [observations](evidence/m2-acceptance/observations.json) bind log hashes, source/engine/fixture identities and run results. A failed attempt to parse a truncated tool preview is corrected by local-file extraction; no runtime test fails or retries in this evaluation.
+
+The requested five-axis review finds no Critical or Important acceptance gaps. Independent fresh-context review flags one imprecise host-access citation, now corrected to the actual raw observations. Author review corrects obsolete current status statements and explicitly labels the old work-log checkpoint historical. [Review and disposition](evidence/m2-acceptance/review.md) preserve the review boundary; cross-model-family assurance is not claimed.
+
+M2 and its next-step evaluation are complete. M3–M6 and optional M7 remain open, with all original human-presence gates intact. No credentials, live service calls, application inference, publication, deployment, branch rename, toolchain upgrade or original demonstration-checkout edit occurs. This unit is committed locally and stops before M3.

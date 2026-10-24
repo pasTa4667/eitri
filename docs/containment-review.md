@@ -2,7 +2,7 @@
 
 ## Status
 
-The standalone trusted Chromium feasibility probe now passes with the explicitly approved seven-rule policy and 256-task ceiling. The browser reports namespace, PID, network, and seccomp-BPF protection and completes an actual page click/result assertion. This is not full M2 acceptance or authorization to run arbitrary generated commands. Managed worker, validation-driver, scenario, and controller integration remain unimplemented. Generated execution, fixture editing, Sentry installation, subscription inference, and publication have not been enabled.
+The standalone trusted Chromium feasibility probe passes with the explicitly approved seven-rule policy and 256-task ceiling. The browser reports namespace, PID, network, and seccomp-BPF protection and completes an actual page click/result assertion. The later managed worker, frozen application scenarios and offline controller integration are implemented; the [M2 evaluation](m2-acceptance.md) records their combined acceptance status. The experiments below retain their historical engine/image identities. Arbitrary generated commands, production dispatch and later human-presence gates remain disabled.
 
 M0 is implemented and verified. The native GPUI build, input handlers, and real controller connection pass their tests. M1's scripted native input, transport, visual, and artifact checks are accepted with evidence in `docs/native-rendering.md`. This does not establish browser containment or live remediation readiness. The probe below uses only a trusted fixed script, not an agent-generated command or a repository mount.
 
@@ -120,4 +120,4 @@ Parent paired runs use image `sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815
 
 ## Remaining work
 
-M1's scripted visual and artifact acceptance is complete. The unwired workspace/file-broker preparation is verified as recorded in `docs/workspace.md`. Next design and verify a managed snapshot worker and immutable revision-bound validation/scenario driver before connecting production controller/native tool paths. Read-only fixture inspection may ground that work. Preserve the fixture README, branch, uncommitted work, and environment file. Do not execute project code on the host or expose unreviewed editing/execution tools. M2 remains unaccepted; M3–M6 retain all existing human setup and live-operation gates.
+The [M2 evaluation](m2-acceptance.md) supersedes this probe's earlier integration to-do list. Managed frozen validation and the installed fixture checkpoint have separate evidence; they do not enable production controller dispatch. Preserve the fixture README, branch, operator work and environment file. Do not execute project code on the host or expose unreviewed editing/execution tools. M3–M6 retain their human setup and live-operation gates.
