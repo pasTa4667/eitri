@@ -45,7 +45,7 @@ The probe sends one GET to `https://sentry.io/api/0/organizations/pasta-re/issue
 
 Issue-list access requires `event:read` (or a broader existing scope). No write scope is needed for this check. A 401/403 requires checking token validity and access; a redirect/network failure requires reviewing the regional API origin before changing the fixed endpoint. Do not paste raw API or CLI output containing credentials into chat.
 
-The earlier live connection check succeeded with zero sampled issues. This does not verify hosted event-detail access. The next M3 slice is populated discovery/observation verification using an explicitly selected reviewed account. If discovery is empty, coordinate synthetic reporting from a known-revision monitored build; do not count an empty page or latest-event 404 as successful event verification.
+The earlier live connection check succeeded with zero sampled issues. The separately approved [monitored-build checkpoint](evidence/hosted-monitored/verification.md) now verifies four populated issues and their latest events, exact reported revision/environment and two-event grouping. Its validation build makes zero external requests even with a valid DSN. The temporary monitored build is stopped; do not send more events without another deliberate activation decision. M3 still requires review/assignment and GitHub setup gates.
 
 To read one selected issue and its latest event, invoke the separate opt-in command:
 
@@ -53,7 +53,7 @@ To read one selected issue and its latest event, invoke the separate opt-in comm
 npm run --silent observe:sentry -- --account <account-UUID-or-sign-in-hostname> --issue <positive-decimal-id>
 ```
 
-The command reads the same fixed 1Password field once, then uses the [read-only observation interface](sentry-observation.md). It prints one JSON line. Use `--silent` to suppress npm's banner for machine consumption. The returned operational metadata is not anonymous. Live observation access remains unverified. The command does not poll, write files, admit controller intake, or enable remediation.
+The command reads the same fixed 1Password field once, then uses the [read-only observation interface](sentry-observation.md). It prints one JSON line. Use `--silent` to suppress npm's banner for machine consumption. The returned operational metadata is not anonymous. Live observation access is verified for the four synthetic hosted issues in the checkpoint, not every possible event shape. The command does not poll, write files, admit controller intake, or enable remediation.
 
 Polling, diagnostic-text ingestion, review/assignment mutations, and production controller wiring remain unimplemented. The controller must verify API permissions and behavior before enabling updates. `npm start` is unchanged and still runs only synthetic cases.
 

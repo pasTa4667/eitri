@@ -1,0 +1,115 @@
+{
+  "revision": "ee9e4ce173ca7eb1f9a0237af36cdc77c0e07a7b",
+  "activated": false,
+  "validation": {
+    "externalRequests": 0,
+    "transport": "offline",
+    "receipts": [],
+    "violations": [],
+    "manifest": [
+      {
+        "path": "index.html",
+        "size": 329,
+        "sha256": "de7d422277b7c594897ec2013620924069297d68a77cad48b849dc9b33c0df6e"
+      },
+      {
+        "path": "assets/index-BXcDYe3e.js",
+        "size": 357591,
+        "sha256": "2e349fbe63d842188d51f21e673f3ca65c8750a654b0e5bca8557ca1f5f5f0ee"
+      }
+    ],
+    "observedAssets": [
+      {
+        "path": "index.html",
+        "size": 329,
+        "sha256": "de7d422277b7c594897ec2013620924069297d68a77cad48b849dc9b33c0df6e"
+      },
+      {
+        "path": "assets/index-BXcDYe3e.js",
+        "size": 357591,
+        "sha256": "2e349fbe63d842188d51f21e673f3ca65c8750a654b0e5bca8557ca1f5f5f0ee"
+      }
+    ]
+  },
+  "demo": {
+    "externalRequests": 8,
+    "transport": "offline",
+    "receipts": [
+      {
+        "eventId": "ddd9df09c06545499916a4993b808cf9",
+        "scenario": "profile-name",
+        "repeat": 0,
+        "status": 200
+      },
+      {
+        "eventId": "2fbd865a51d548a5ac188325f210ce04",
+        "scenario": "cart-total",
+        "repeat": 0,
+        "status": 200
+      },
+      {
+        "eventId": "29a652c9d250424ba8dbacdccaa8cd8b",
+        "scenario": "expected-validation",
+        "repeat": 0,
+        "status": 200
+      },
+      {
+        "eventId": "7efae7a06a224ccf93d107dc7fa34fad",
+        "scenario": "transient-upstream",
+        "repeat": 0,
+        "status": 200
+      },
+      {
+        "eventId": "ba192c48be4f4115b8468f128b20ae7d",
+        "scenario": "profile-name",
+        "repeat": 1,
+        "status": 200
+      },
+      {
+        "eventId": "88b06dbafaac4c2ea13df1511f5da2dc",
+        "scenario": "cart-total",
+        "repeat": 1,
+        "status": 200
+      },
+      {
+        "eventId": "e8353d0c483f4fd0a7fd76fc8517e61d",
+        "scenario": "expected-validation",
+        "repeat": 1,
+        "status": 200
+      },
+      {
+        "eventId": "3c31592d02334a6c84105493c8757dca",
+        "scenario": "transient-upstream",
+        "repeat": 1,
+        "status": 200
+      }
+    ],
+    "violations": [],
+    "manifest": [
+      {
+        "path": "index.html",
+        "size": 329,
+        "sha256": "4065a4278a87f59da36a7df9bc1c1f82b36fe8d21cfa2cf75ca2fa2f29fab62a"
+      },
+      {
+        "path": "assets/index-C8yWdW45.js",
+        "size": 357585,
+        "sha256": "47628075b97bf256c7b33a7c2bde839ee0ac85e05181d88a1da92adbc6a6d0ba"
+      }
+    ],
+    "observedAssets": [
+      {
+        "path": "index.html",
+        "size": 329,
+        "sha256": "4065a4278a87f59da36a7df9bc1c1f82b36fe8d21cfa2cf75ca2fa2f29fab62a"
+      },
+      {
+        "path": "assets/index-C8yWdW45.js",
+        "size": 357585,
+        "sha256": "47628075b97bf256c7b33a7c2bde839ee0ac85e05181d88a1da92adbc6a6d0ba"
+      }
+    ]
+  },
+  "observations": [],
+  "verdict": "passed"
+}

@@ -24,7 +24,7 @@ Success exits with code 0, writes one JSON observation line to stdout, and leave
 Usage: npm run observe:sentry -- --account <explicit-account> --issue <positive-decimal-id>
 ```
 
-Operational failures exit with code 1 and write only `Sentry observation failed.` to stderr. Both failure paths leave stdout empty. The JSON remains operational metadata, not anonymous data. Live observation access remains unverified.
+Operational failures exit with code 1 and write only `Sentry observation failed.` to stderr. Both failure paths leave stdout empty. The JSON remains operational metadata, not anonymous data. The separate [hosted checkpoint](evidence/hosted-monitored/verification.md) verifies live access to four synthetic issues and their latest events; it does not establish compatibility with every event shape.
 
 ## Library interface
 
@@ -93,4 +93,4 @@ Prior library verification recorded 196 focused tests and `npm run verify:all` w
 
 Fresh `openai-codex/gpt-6.1-sol` standards and specification/security reviews report no findings on the command integration. Reviewers inspect source only. They do not independently execute tests. Both reviews use the same model family.
 
-They do not establish hosted event-detail permission, populated-response compatibility, or real socket cleanup. A later explicit hosted check remains separate. Reported environment and release are bounded metadata from the returned event. They do not prove a deployed revision, repository association, fix eligibility, or admission to remediation. The observation also infers no regression or escalation status. There is no controller intake, UI, or event persistence in this unit.
+Those automated tests do not establish hosted event-detail permission, populated-response compatibility, or real socket cleanup. The separately approved [hosted checkpoint](evidence/hosted-monitored/verification.md) now establishes the first two for its four synthetic issues only, without a general socket-cleanup guarantee. Reported environment and release are bounded metadata from the returned event. They do not prove a deployed revision, repository association, fix eligibility, or admission to remediation. The observation also infers no regression or escalation status. There is no controller intake, UI, or event persistence in this unit.

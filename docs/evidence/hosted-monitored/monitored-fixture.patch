@@ -1,0 +1,180 @@
+From ee9e4ce173ca7eb1f9a0237af36cdc77c0e07a7b Mon Sep 17 00:00:00 2001
+From: Felix Langbein <felix.langbein@check24.de>
+Date: Sat, 24 Oct 2026 14:56:59 +0200
+Subject: [PATCH] feat: bind monitored synthetic reporting to a source revision
+
+---
+ src/instrument.js               |  8 +++-
+ src/monitored-reporting.test.js | 78 +++++++++++++++++++++++++++++++++
+ src/scenario-reporting.js       | 40 +++++++++++++++--
+ src/scenario-reporting.test.js  | 14 ++++--
+ 4 files changed, 131 insertions(+), 9 deletions(-)
+ create mode 100644 src/monitored-reporting.test.js
+
+diff --git a/src/instrument.js b/src/instrument.js
+index f77731a..5d2cbd6 100644
+--- a/src/instrument.js
++++ b/src/instrument.js
+@@ -1 +1 @@
+-import { initializeReporting } from './scenario-reporting.js'
++import { initializeReporting } from './scenario-reporting.js';
+@@ -3 +3,5 @@ import { initializeReporting } from './scenario-reporting.js'
+-initializeReporting(import.meta.env.VITE_FIXTURE_ENV, import.meta.env.VITE_SENTRY_DSN)
++initializeReporting(
++  import.meta.env.VITE_FIXTURE_ENV,
++  import.meta.env.VITE_SENTRY_DSN,
++  import.meta.env.VITE_FIXTURE_RELEASE,
++);
+diff --git a/src/monitored-reporting.test.js b/src/monitored-reporting.test.js
+new file mode 100644
+index 0000000..fdf8617
+--- /dev/null
++++ b/src/monitored-reporting.test.js
+@@ -0,0 +1,78 @@
++import { afterEach, expect, test, vi } from 'vitest';
++import * as Sentry from '@sentry/react';
++import { initializeReporting } from './scenario-reporting.js';
++
++vi.mock('@sentry/react', () => ({ init: vi.fn(), captureException: vi.fn() }));
++const revision = 'a'.repeat(40);
++afterEach(() => {
++  initializeReporting('validation', '');
++  vi.clearAllMocks();
++});
++
++test('monitored reporting uses the complete source revision and no automatic telemetry', () => {
++  expect(initializeReporting('demo', 'https://synthetic.invalid', revision)).toBe(true);
++  expect(Sentry.init).toHaveBeenCalledWith(
++    expect.objectContaining({
++      release: revision,
++      environment: 'demo',
++      sendDefaultPii: false,
++      defaultIntegrations: false,
++      autoSessionTracking: false,
++      sendClientReports: false,
++      enableLogs: false,
++    }),
++  );
++});
++
++for (const release of [undefined, '', 'short', 'A'.repeat(40), 'a'.repeat(41), `${revision}\n`]) {
++  test(`demo rejects missing or malformed revision ${JSON.stringify(release)}`, () => {
++    expect(initializeReporting('demo', 'https://synthetic.invalid', release)).toBe(false);
++    expect(Sentry.init).not.toHaveBeenCalled();
++  });
++}
++
++test('validation cannot initialize reporting even with a DSN and valid revision', () => {
++  expect(initializeReporting('validation', 'https://synthetic.invalid', revision)).toBe(false);
++  expect(Sentry.init).not.toHaveBeenCalled();
++});
++
++test('only fixed synthetic scenario metadata survives beforeSend', () => {
++  initializeReporting('demo', 'https://synthetic.invalid', revision);
++  const beforeSend = Sentry.init.mock.calls[0][0].beforeSend;
++  const event = {
++    event_id: 'b'.repeat(32),
++    timestamp: 123,
++    tags: { 'fixture.scenario': 'profile-name', secret: 'PRIVATE' },
++    exception: {
++      values: [
++        {
++          type: 'TypeError',
++          value: 'PRIVATE',
++          stacktrace: { frames: [{ context_line: 'PRIVATE' }] },
++        },
++      ],
++    },
++    user: { email: 'PRIVATE' },
++    request: { url: 'PRIVATE' },
++    breadcrumbs: [{ message: 'PRIVATE' }],
++    extra: { secret: 'PRIVATE' },
++    contexts: { private: 'PRIVATE' },
++    release: 'wrong',
++    environment: 'wrong',
++  };
++  expect(beforeSend(event)).toEqual({
++    event_id: 'b'.repeat(32),
++    timestamp: 123,
++    platform: 'javascript',
++    level: 'error',
++    release: revision,
++    environment: 'demo',
++    tags: { 'fixture.scenario': 'profile-name' },
++    fingerprint: ['eitri-fixture-v1', 'profile-name'],
++    exception: { values: [{ type: 'Error', value: 'Synthetic fixture scenario: profile-name' }] },
++  });
++  expect(beforeSend({ ...event, tags: {} })).toBe(null);
++  expect(beforeSend({ ...event, tags: { 'fixture.scenario': 'unknown' } })).toBe(null);
++  expect(beforeSend({ ...event, tags: { 'fixture.scenario': 'toString' } })).toBe(null);
++  expect(event.user.email).toBe('PRIVATE');
++});
+diff --git a/src/scenario-reporting.js b/src/scenario-reporting.js
+index 8fc565a..8f41bd6 100644
+--- a/src/scenario-reporting.js
++++ b/src/scenario-reporting.js
+@@ -6,2 +6,7 @@ let enabled = false;
+-export function initializeReporting(environment, dsn) {
+-  enabled = environment === 'demo' && typeof dsn === 'string' && dsn.length > 0;
++export function initializeReporting(environment, dsn, release) {
++  enabled =
++    environment === 'demo' &&
++    typeof dsn === 'string' &&
++    dsn.length > 0 &&
++    typeof release === 'string' &&
++    /^[a-f0-9]{40}$/.test(release);
+@@ -9 +14,30 @@ export function initializeReporting(environment, dsn) {
+-  Sentry.init({ dsn, environment: 'demo', release: metadata.release, sendDefaultPii: false });
++  Sentry.init({
++    dsn,
++    environment: 'demo',
++    release,
++    sendDefaultPii: false,
++    defaultIntegrations: false,
++    autoSessionTracking: false,
++    sendClientReports: false,
++    enableLogs: false,
++    // Only the four synthetic scenarios may leave this deliberately monitored build.
++    beforeSend(event) {
++      const scenario = metadata.scenarios.find(
++        (item) => item.id === event.tags?.['fixture.scenario'],
++      );
++      if (!scenario) return null;
++      return {
++        event_id: event.event_id,
++        timestamp: event.timestamp,
++        platform: 'javascript',
++        level: 'error',
++        environment: 'demo',
++        release,
++        tags: scenario.tags,
++        fingerprint: scenario.fingerprint,
++        exception: {
++          values: [{ type: 'Error', value: `Synthetic fixture scenario: ${scenario.id}` }],
++        },
++      };
++    },
++  });
+diff --git a/src/scenario-reporting.test.js b/src/scenario-reporting.test.js
+index 2725d33..fbd403f 100644
+--- a/src/scenario-reporting.test.js
++++ b/src/scenario-reporting.test.js
+@@ -10,0 +11 @@ const ids = ['profile-name', 'cart-total', 'expected-validation', 'transient-ups
++const revision = 'a'.repeat(40);
+@@ -25,2 +26,2 @@ test('scenario reporting is disabled without a DSN', () => {
+-test('scenario reporting initializes demo with the fixed release', () => {
+-  expect(initializeReporting('demo', 'https://synthetic.invalid')).toBe(true);
++test('scenario reporting initializes demo with an explicit source revision', () => {
++  expect(initializeReporting('demo', 'https://synthetic.invalid', revision)).toBe(true);
+@@ -30 +31 @@ test('scenario reporting initializes demo with the fixed release', () => {
+-    release: 'eitri-fixture-scenarios-v1',
++    release: revision,
+@@ -31,0 +33,5 @@ test('scenario reporting initializes demo with the fixed release', () => {
++    defaultIntegrations: false,
++    autoSessionTracking: false,
++    sendClientReports: false,
++    enableLogs: false,
++    beforeSend: expect.any(Function),
+@@ -35 +41 @@ test('scenario reports carry stable tags and fingerprints', () => {
+-  initializeReporting('demo', 'https://synthetic.invalid');
++  initializeReporting('demo', 'https://synthetic.invalid', revision);

@@ -14,7 +14,7 @@ npm run check:sdk
 npm run probe:sdk
 ```
 
-`verify` lints and checks formatting for TypeScript/JavaScript, type-checks, and runs the native-SQLite, control, recovery, HTTP, and temporary-Git workspace tests. `verify:all` also checks Rust linting/formatting and runs the operator tests. `doctor` reports local prerequisites without reading secrets; installer Bash remains missing until M3. `check:sdk` accepts only the operator-reviewed package/source hashes and fails on unreviewed differences.
+`verify` lints and checks formatting for TypeScript/JavaScript, type-checks, and runs the native-SQLite, control, recovery, HTTP, and temporary-Git workspace tests. `verify:all` also checks Rust linting/formatting and runs the operator tests. `doctor` reports local prerequisites without reading secrets; hosted Sentry needs no installer Bash and remains a separate live check. `check:sdk` accepts only the operator-reviewed package/source hashes and fails on unreviewed differences.
 
 `probe:sdk` runs a throwaway faux-model experiment against a temporary real Pi SQLite store. It is not a live inference or the M0 controller.
 
@@ -53,7 +53,7 @@ To observe one explicitly selected issue, run the opt-in command:
 npm run --silent observe:sentry -- --account <explicit-account> --issue <positive-decimal-id>
 ```
 
-The command prints one JSON observation with validated identity, native classification, event time, and structural counts. Add `--reported-context` to include a validated event environment and release when Sentry reports them. This operational metadata is not anonymous. Use `--silent` for machine consumption without npm's banner. See the [read-only observation interface and limits](docs/sentry-observation.md). Live event-detail access remains unverified. Sentry controller intake remains disabled, and `npm start` is unchanged.
+The command prints one JSON observation with validated identity, native classification, event time, and structural counts. Add `--reported-context` to include a validated event environment and release when Sentry reports them. This operational metadata is not anonymous. Use `--silent` for machine consumption without npm's banner. See the [read-only observation interface and limits](docs/sentry-observation.md). The [hosted checkpoint](docs/evidence/hosted-monitored/verification.md) verifies four populated synthetic issues, latest-event access, revision-bound grouping and validation exclusion. Its temporary monitored build is stopped. Sentry controller intake remains disabled, and `npm start` is unchanged.
 
 ## Run the native operator
 
@@ -75,7 +75,7 @@ The [M2 acceptance evaluation](docs/m2-acceptance.md) maps the milestone require
 
 The [frozen browser validator](docs/frozen-browser.md), [controller-owned workspace](docs/controller-workspace.md) and [accepted-request handoff](docs/worker-consumption.md) bind execution to an admitted action and immutable revision. The [consumed-browser handoff](docs/native-browser-check.md#offline-tool-handoff) retains real receipts and PNGs across reopen without replay. Cancellation, deadlines, cleanup ownership and uncertainty remain separate from behavioral outcomes.
 
-The [installed scenario baseline](docs/fixture-profile-name.md#installed-scenario-baseline) contains both latent defects and both deterministic controls, with its README preserved and a local checkpoint on unchanged `master`. The opt-in [full-application controller checks](docs/fixture-application-check.md) run protected unit/build/browser observations against exact reviewed baseline or one-target scripted patch bytes. These are scripted checks, not AI-generated repairs. Arbitrary generated Node code, combined fixes and runtime dependency installation remain excluded. No monitored build is activated.
+The [installed scenario baseline](docs/fixture-profile-name.md#installed-scenario-baseline) contains both latent defects and both deterministic controls, with its README preserved and a local checkpoint on unchanged `master`. The opt-in [full-application controller checks](docs/fixture-application-check.md) run protected unit/build/browser observations against exact reviewed baseline or one-target scripted patch bytes. These are scripted checks, not AI-generated repairs. Arbitrary generated Node code, combined fixes and runtime dependency installation remain excluded. A separately approved [temporary monitored build](docs/evidence/hosted-monitored/verification.md) has sent synthetic hosted events and is now stopped; the original sibling checkout remains unchanged.
 
 ## Containment gate
 

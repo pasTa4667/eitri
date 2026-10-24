@@ -1,0 +1,153 @@
+{
+  "sourceRecord": ".audit/hosted-monitored/run-F26kz5/verification.json",
+  "sourceSha256": "cefa5f539d5823977731516b4bd5c0cc24b2a1b3d01288c9480dc0353552a2b6",
+  "revision": "ee9e4ce173ca7eb1f9a0237af36cdc77c0e07a7b",
+  "verdict": "passed",
+  "scope": "read-only-hosted-confirmation-not-a-browser-rerun",
+  "observations": [
+    {
+      "scenario": "transient-upstream",
+      "earlierEventId": "0c18888d043b46d893b6f6d26f16b1b3",
+      "observation": {
+        "source": {
+          "provider": "sentry",
+          "organization": "pasta-re",
+          "projectId": "4512275993002064",
+          "issueId": "155897735"
+        },
+        "classification": {
+          "origin": "sentry",
+          "priority": "high",
+          "status": "unresolved"
+        },
+        "event": {
+          "kind": "available",
+          "eventId": "b25735bd8a564d4bbe6af4b4360ae770",
+          "occurredAt": "2026-10-24T13:00:30.705Z",
+          "evidence": {
+            "reportedExceptionCount": 1,
+            "reportedStackFrameCount": 0
+          },
+          "context": {
+            "environment": {
+              "kind": "reported",
+              "value": "demo"
+            },
+            "release": {
+              "kind": "reported",
+              "value": "ee9e4ce173ca7eb1f9a0237af36cdc77c0e07a7b"
+            }
+          }
+        }
+      }
+    },
+    {
+      "scenario": "expected-validation",
+      "earlierEventId": "bf7c0624f52b4f61a7af217a23577844",
+      "observation": {
+        "source": {
+          "provider": "sentry",
+          "organization": "pasta-re",
+          "projectId": "4512275993002064",
+          "issueId": "155897732"
+        },
+        "classification": {
+          "origin": "sentry",
+          "priority": "high",
+          "status": "unresolved"
+        },
+        "event": {
+          "kind": "available",
+          "eventId": "e8f66dd93c674616bf67a6bb8781d8d5",
+          "occurredAt": "2026-10-24T13:00:30.466Z",
+          "evidence": {
+            "reportedExceptionCount": 1,
+            "reportedStackFrameCount": 0
+          },
+          "context": {
+            "environment": {
+              "kind": "reported",
+              "value": "demo"
+            },
+            "release": {
+              "kind": "reported",
+              "value": "ee9e4ce173ca7eb1f9a0237af36cdc77c0e07a7b"
+            }
+          }
+        }
+      }
+    },
+    {
+      "scenario": "cart-total",
+      "earlierEventId": "62016e6b4be34cba8ec61a74984b3b62",
+      "observation": {
+        "source": {
+          "provider": "sentry",
+          "organization": "pasta-re",
+          "projectId": "4512275993002064",
+          "issueId": "155897731"
+        },
+        "classification": {
+          "origin": "sentry",
+          "priority": "high",
+          "status": "unresolved"
+        },
+        "event": {
+          "kind": "available",
+          "eventId": "b067dc2b74974b1fbfc5bf4cb5b7c906",
+          "occurredAt": "2026-10-24T13:00:30.226Z",
+          "evidence": {
+            "reportedExceptionCount": 1,
+            "reportedStackFrameCount": 0
+          },
+          "context": {
+            "environment": {
+              "kind": "reported",
+              "value": "demo"
+            },
+            "release": {
+              "kind": "reported",
+              "value": "ee9e4ce173ca7eb1f9a0237af36cdc77c0e07a7b"
+            }
+          }
+        }
+      }
+    },
+    {
+      "scenario": "profile-name",
+      "earlierEventId": "f3451944b34e451a94579527b97fb022",
+      "observation": {
+        "source": {
+          "provider": "sentry",
+          "organization": "pasta-re",
+          "projectId": "4512275993002064",
+          "issueId": "155897738"
+        },
+        "classification": {
+          "origin": "sentry",
+          "priority": "high",
+          "status": "unresolved"
+        },
+        "event": {
+          "kind": "available",
+          "eventId": "5520d52f536941658325efeaf4d6d234",
+          "occurredAt": "2026-10-24T13:00:29.994Z",
+          "evidence": {
+            "reportedExceptionCount": 1,
+            "reportedStackFrameCount": 0
+          },
+          "context": {
+            "environment": {
+              "kind": "reported",
+              "value": "demo"
+            },
+            "release": {
+              "kind": "reported",
+              "value": "ee9e4ce173ca7eb1f9a0237af36cdc77c0e07a7b"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

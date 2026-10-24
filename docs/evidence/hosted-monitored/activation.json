@@ -1,0 +1,116 @@
+{
+  "revision": "ee9e4ce173ca7eb1f9a0237af36cdc77c0e07a7b",
+  "activated": true,
+  "validation": {
+    "externalRequests": 0,
+    "receipts": [],
+    "violations": [],
+    "manifest": [
+      {
+        "path": "index.html",
+        "size": 329,
+        "sha256": "de7d422277b7c594897ec2013620924069297d68a77cad48b849dc9b33c0df6e"
+      },
+      {
+        "path": "assets/index-BXcDYe3e.js",
+        "size": 357591,
+        "sha256": "2e349fbe63d842188d51f21e673f3ca65c8750a654b0e5bca8557ca1f5f5f0ee"
+      }
+    ],
+    "observedAssets": [
+      {
+        "path": "index.html",
+        "size": 329,
+        "sha256": "de7d422277b7c594897ec2013620924069297d68a77cad48b849dc9b33c0df6e"
+      },
+      {
+        "path": "assets/index-BXcDYe3e.js",
+        "size": 357591,
+        "sha256": "2e349fbe63d842188d51f21e673f3ca65c8750a654b0e5bca8557ca1f5f5f0ee"
+      }
+    ]
+  },
+  "demo": {
+    "externalRequests": 8,
+    "receipts": [
+      {
+        "eventId": "f3451944b34e451a94579527b97fb022",
+        "scenario": "profile-name",
+        "repeat": 0,
+        "status": 200
+      },
+      {
+        "eventId": "62016e6b4be34cba8ec61a74984b3b62",
+        "scenario": "cart-total",
+        "repeat": 0,
+        "status": 200
+      },
+      {
+        "eventId": "bf7c0624f52b4f61a7af217a23577844",
+        "scenario": "expected-validation",
+        "repeat": 0,
+        "status": 200
+      },
+      {
+        "eventId": "0c18888d043b46d893b6f6d26f16b1b3",
+        "scenario": "transient-upstream",
+        "repeat": 0,
+        "status": 200
+      },
+      {
+        "eventId": "5520d52f536941658325efeaf4d6d234",
+        "scenario": "profile-name",
+        "repeat": 1,
+        "status": 200
+      },
+      {
+        "eventId": "b067dc2b74974b1fbfc5bf4cb5b7c906",
+        "scenario": "cart-total",
+        "repeat": 1,
+        "status": 200
+      },
+      {
+        "eventId": "e8f66dd93c674616bf67a6bb8781d8d5",
+        "scenario": "expected-validation",
+        "repeat": 1,
+        "status": 200
+      },
+      {
+        "eventId": "b25735bd8a564d4bbe6af4b4360ae770",
+        "scenario": "transient-upstream",
+        "repeat": 1,
+        "status": 200
+      }
+    ],
+    "violations": [
+      "request-refused-delivery"
+    ],
+    "manifest": [
+      {
+        "path": "index.html",
+        "size": 329,
+        "sha256": "4065a4278a87f59da36a7df9bc1c1f82b36fe8d21cfa2cf75ca2fa2f29fab62a"
+      },
+      {
+        "path": "assets/index-C8yWdW45.js",
+        "size": 357585,
+        "sha256": "47628075b97bf256c7b33a7c2bde839ee0ac85e05181d88a1da92adbc6a6d0ba"
+      }
+    ],
+    "observedAssets": [
+      {
+        "path": "index.html",
+        "size": 329,
+        "sha256": "4065a4278a87f59da36a7df9bc1c1f82b36fe8d21cfa2cf75ca2fa2f29fab62a"
+      },
+      {
+        "path": "assets/index-C8yWdW45.js",
+        "size": 357585,
+        "sha256": "47628075b97bf256c7b33a7c2bde839ee0ac85e05181d88a1da92adbc6a6d0ba"
+      }
+    ]
+  },
+  "observations": [],
+  "verdict": "failed",
+  "failedStage": "demo-browser"
+}

@@ -229,8 +229,8 @@ After the installed local fixture baseline, continue in these bounded increments
 ### Current M3 hosted-integration slices
 
 - [x] Record the hosted Sentry decision and remove the local installer/Bash gate from `npm run doctor`, without claiming live service verification.
-- [ ] Verify populated hosted issue/latest-event responses using the existing opt-in discovery/observation commands and an explicitly selected reviewed 1Password account. If the project is empty, coordinate synthetic reporting rather than inventing a successful event check.
-- [ ] Prepare and explicitly activate a known-revision synthetic monitored build; demonstrate grouping, native classifications and exclusion of offline validation traffic. DSN setup and hosted event transmission remain deliberate operator actions.
+- [x] Verify populated hosted issue/latest-event responses using the existing opt-in discovery/observation commands and an explicitly selected reviewed 1Password account. The initially empty page led to separately approved synthetic reporting; four populated issues and their latest events are verified. See the [hosted checkpoint](evidence/hosted-monitored/verification.md).
+- [x] Prepare and explicitly activate a known-revision synthetic monitored build; demonstrate grouping, native classifications and exclusion of offline validation traffic. Eight approved hosted events form four verified groups at the exact revision; the validation build makes zero external requests. The temporary build is stopped. The [checkpoint](evidence/hosted-monitored/verification.md) preserves the original failed browser-settlement verdict separately from corrected offline checks and passing actual hosted reads. Further hosted transmission remains a deliberate operator action.
 - [ ] Verify permitted review/assignment behavior with explicit approval for remote mutations; do not resolve or reprioritize issues automatically.
 - [ ] Complete GitHub credential/privacy/default-branch checks and obtain first-push approval. No branch rename or publication follows from hosted Sentry selection.
 
