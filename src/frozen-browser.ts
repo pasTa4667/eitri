@@ -9,6 +9,10 @@ import { types } from 'node:util';
 import { checksum, validateOutput } from './artifacts.ts';
 import { profileNameDefinition } from './profile-name-definition.ts';
 import type { ProfileNameActual } from './profile-name-definition.ts';
+import {
+  applicationVariant,
+  admitApplicationResult,
+} from '../scripts/profile-reconciliation/application.mjs';
 import { digest, fail, uuid } from './domain.ts';
 import { caseId, gitRevision, sha256, virtualPath } from './workspace.ts';
 import type { WorkspaceStore, FrozenRevision, CaseId, Sha256 } from './workspace.ts';
@@ -24,7 +28,7 @@ type ControlEpoch = number & { readonly __brand: 'FrozenBrowserControlEpoch' };
 export type FrozenBrowserRequest = Readonly<{
   frozen: FrozenRevision;
   action: Readonly<{ caseId: CaseId; actionId: ActionId; epoch: ControlEpoch }>;
-  scenarioId: 'synthetic-click-v1' | 'profile-name-v1';
+  scenarioId: 'synthetic-click-v1' | 'profile-name-v1' | 'fixture-profile-v1' | 'fixture-cart-v1';
   role: 'baseline' | 'candidate';
   allowanceMs: number;
 }>;
@@ -300,6 +304,12 @@ function matchesEngine(
     (commit === policy.engineCommit || commit === policy.shortCommit)
   );
 }
+const applicationDependencies = Object.freeze({
+  tag: 'eitri-application-dependencies:v1',
+  id: 'sha256:cde9827f782cbcd81a74ccefa4c5fef521546724c83ca7da2da8dcdc5c408a5f',
+});
+const isApplication = (request: FrozenBrowserRequest) =>
+  request.scenarioId === 'fixture-profile-v1' || request.scenarioId === 'fixture-cart-v1';
 const entrypoint = ['/usr/local/bin/node', '/opt/eitri/frozen-browser/watchdog.mjs'];
 const labelOwner = 'eitri.frozen-browser.owner';
 const labelRun = 'eitri.frozen-browser.run';
@@ -366,6 +376,7 @@ type Assets = {
   watchdog: Buffer;
   scenario: Buffer;
   policy: Buffer;
+  application: Buffer;
 };
 type ClientResult =
   | { kind: 'exited'; status: number; stdout: Buffer; stderr: Buffer }
@@ -469,7 +480,9 @@ export function frozenBrowserRequest(value: unknown): FrozenBrowserRequest {
   };
   if (
     action.caseId !== frozen.caseId ||
-    !['synthetic-click-v1', 'profile-name-v1'].includes(string(r.scenarioId)) ||
+    !['synthetic-click-v1', 'profile-name-v1', 'fixture-profile-v1', 'fixture-cart-v1'].includes(
+      string(r.scenarioId),
+    ) ||
     (r.role !== 'baseline' && r.role !== 'candidate')
   )
     return fail('invalid-frozen-browser-request');
@@ -1561,7 +1574,11 @@ function observations(
     'restrictions',
     'manifest',
     'stage',
-    ...(request.scenarioId === 'profile-name-v1' ? ['scenarioId', 'profile'] : ['literal']),
+    ...(isApplication(request)
+      ? ['scenarioId', 'application']
+      : request.scenarioId === 'profile-name-v1'
+        ? ['scenarioId', 'profile']
+        : ['literal']),
     'events',
     'canaryAfter',
   ]);
@@ -1639,7 +1656,16 @@ function reviewedProfileHelper(manifest: Json): boolean {
 function scenarioObservations(r: ObjectValue, request: FrozenBrowserRequest, manifest: Manifest) {
   if (!['startup-failed', 'action-failed', 'complete'].includes(string(r.stage)))
     fail('scenario-stage');
-  if (request.scenarioId === 'profile-name-v1') {
+  if (isApplication(request)) {
+    if (
+      r.stage !== 'complete' ||
+      r.scenarioId !== request.scenarioId ||
+      Object.hasOwn(r, 'literal') ||
+      Object.hasOwn(r, 'profile')
+    )
+      fail('application-scenario');
+    admitApplicationResult(request.scenarioId, manifest, r.application);
+  } else if (request.scenarioId === 'profile-name-v1') {
     if (Object.hasOwn(r, 'literal') || r.scenarioId !== request.scenarioId)
       fail('profile-scenario');
     const p = exact(r.profile, ['definitionSha256', 'actuals', 'diagnostic']);
@@ -1727,6 +1753,23 @@ function classify(request: FrozenBrowserRequest, observed: ObjectValue): FrozenB
     array(observed.events, 32).some((e) => object(e).kind !== 'console')
   )
     return { kind: 'unrelated-failure' };
+  if (isApplication(request)) {
+    const { red } = admitApplicationResult(
+      request.scenarioId,
+      observed.manifest,
+      observed.application,
+    );
+    return {
+      kind:
+        request.role === 'baseline'
+          ? red
+            ? 'baseline-reproduced'
+            : 'baseline-not-reproduced'
+          : red
+            ? 'candidate-failed'
+            : 'candidate-passed',
+    };
+  }
   if (request.scenarioId === 'profile-name-v1') {
     const p = object(observed.profile);
     const actuals = profileActuals(p.actuals);
@@ -2171,11 +2214,39 @@ export class FrozenBrowserValidator {
         ? reviewedPolicies[1]
         : reviewedPolicy(await readRegular(policyPath, limits.control));
       const { engineCommit, baselineSha256 } = policy;
+      const applicationFiles = await Promise.all(
+        [
+          'run.mjs',
+          'scenarios.mjs',
+          'application.mjs',
+          'installed-inputs.json',
+          'unit-witness.mjs',
+          'playwright.config.mjs',
+          'built-assets.spec.js',
+          ...['profile-name', 'cart-total'].flatMap((target) =>
+            ['test.js', 'test.jsx', 'spec.js'].map(
+              (extension) => `regressions/${target}.${extension}`,
+            ),
+          ),
+        ].map(async (path) => ({
+          path,
+          base64: (
+            await readRegular(
+              fileURLToPath(new URL(`../scripts/profile-reconciliation/${path}`, import.meta.url)),
+              32768,
+              false,
+            )
+          ).toString('base64'),
+        })),
+      );
+      for (const path of ['application-driver.mjs', 'application-supervisor.py'])
+        applicationFiles.push({ path, base64: (await load(path, 8192)).toString('base64') });
       const assets: Assets = {
         dockerfile: await load('Dockerfile', 2048),
         driver: await load('driver.mjs', 32768),
         watchdog: await load('watchdog.mjs', 8192),
         scenario: await load('scenario.json', 1024),
+        application: Buffer.from(JSON.stringify(applicationFiles)),
         policy: Buffer.from(
           namespaceChrootPolicy(
             await readRegular(
@@ -2211,6 +2282,7 @@ export class FrozenBrowserValidator {
         limits,
         baseId,
         baseTag,
+        applicationDependencies,
         entrypoint,
         engineCommit,
         baselineSha256,
@@ -3013,7 +3085,36 @@ export class FrozenBrowserValidator {
       const manifest: Manifest = files
         .map((f) => ({ path: f.virtualPath, size: f.bytes.length, sha256: checksum(f.bytes) }))
         .sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
-      const directories = new Set(['rootfs', 'rootfs/snapshot']);
+      const application = isApplication(request);
+      if (application) {
+        applicationVariant(request.scenarioId, manifest);
+        const dependencies = verifyImage(
+          await this.inspect('image', applicationDependencies.tag, deadline, signal),
+        );
+        if (dependencies.Id !== applicationDependencies.id)
+          fail('application-dependencies-changed');
+      }
+      const applicationFiles = application
+        ? (JSON.parse(this.assets.application.toString('utf8')) as {
+            path: string;
+            base64: string;
+          }[])
+        : [];
+      const dockerfile = application
+        ? Buffer.from(
+            this.assets.dockerfile
+              .toString('utf8')
+              .replace(
+                'COPY --chown=1001:1001 rootfs/ /',
+                `COPY --from=${applicationDependencies.tag} --chown=0:0 /home/pwuser/node_modules /home/pwuser/node_modules\nCOPY --chown=0:0 --chmod=0555 application/ /opt/verify/\nCOPY --chown=1001:1001 rootfs/ /`,
+              ),
+          )
+        : this.assets.dockerfile;
+      const directories = new Set([
+        'rootfs',
+        'rootfs/snapshot',
+        ...(application ? ['application', 'application/regressions'] : []),
+      ]);
       for (const f of files) {
         const components = f.virtualPath.split('/');
         components.pop();
@@ -3026,7 +3127,11 @@ export class FrozenBrowserValidator {
         ...[...directories]
           .sort()
           .map((path) => ({ path, bytes: Buffer.alloc(0), directory: true })),
-        { path: 'Dockerfile', bytes: this.assets.dockerfile },
+        { path: 'Dockerfile', bytes: dockerfile },
+        ...applicationFiles.map((file) => ({
+          path: `application/${file.path}`,
+          bytes: Buffer.from(file.base64, 'base64'),
+        })),
         { path: 'driver.mjs', bytes: this.assets.driver },
         { path: 'watchdog.mjs', bytes: this.assets.watchdog },
         { path: 'scenario.json', bytes: this.assets.scenario },
@@ -3085,6 +3190,12 @@ export class FrozenBrowserValidator {
         )
       )
         fail('copy-build-failed-or-network-observed');
+      if (
+        application &&
+        (await this.inspect('image', applicationDependencies.tag, deadline, signal)).Id !==
+          applicationDependencies.id
+      )
+        fail('application-dependencies-changed');
       const after = await this.base(deadline, signal);
       if (!same(before, after)) fail('base-image-changed');
       const image = verifyImage(await this.inspect('image', run.intent.imageTag, deadline, signal));

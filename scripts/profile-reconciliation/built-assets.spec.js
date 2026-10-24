@@ -159,6 +159,8 @@ test('built assets serve the rendered application', async ({ page, baseURL }) =>
     page.off('response', onResponse);
     page.off('pageerror', onPageError);
   }
+  if (process.env.EITRI_APPLICATION_SCREENSHOT === '1')
+    await page.screenshot({ path: '/tmp/application.png', type: 'png', timeout: 5000 });
   const proof = JSON.stringify({
     version: 1,
     server: 'vite-preview',

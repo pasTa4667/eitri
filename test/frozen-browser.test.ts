@@ -548,7 +548,7 @@ test('frozen engine accepts the full reviewed modern commit as well as its exact
   );
 });
 
-test('frozen engine preserves legacy configuration, rejects cross-policy execution, and reopens legacy evidence', async (t) => {
+test('frozen engine preserves the legacy engine policy, rejects cross-policy execution, and reopens evidence', async (t) => {
   const f = await fixture(t);
   await f.validator.close();
   const legacyPolicy = namespaceChrootPolicy(
@@ -557,7 +557,7 @@ test('frozen engine preserves legacy configuration, rejects cross-policy executi
   await writeFile(join(f.directory, 'seccomp.json'), legacyPolicy);
   const db = new DatabaseSync(join(f.directory, 'journal.sqlite'));
   const meta = JSON.parse(db.prepare('SELECT body FROM meta').get()!.body as string);
-  meta.configurationDigest = '47eeb7cb129217de287f9244d5f539bf24657c57b57f6d41cc2677103963b8f3';
+  meta.configurationDigest = '558dc7d7d63718a247f90ad75d6148061dfe9148a90ca9e73b13b6a6de40397c';
   db.prepare('UPDATE meta SET body=?, digest=?').run(JSON.stringify(meta), digest(meta));
   db.close();
   const legacy = await FrozenBrowserValidator.open({ workspace: f.store, directory: f.directory });
@@ -2352,6 +2352,17 @@ test('trusted profile invocation rejects a trailing high surrogate without readi
     '😀',
   );
 });
+
+for (const scenarioId of ['fixture-profile-v1', 'fixture-cart-v1'] as const)
+  test(`${scenarioId} rejects unreviewed frozen inputs before any Docker call`, async (t) => {
+    const f = await fixture(t);
+    const request = frozenBrowserRequest({ ...f.request, scenarioId });
+    const report = await f.validator.validate(request, signal());
+    assert.equal(report.outcome.kind, 'infrastructure-failed');
+    assert.equal(report.evidence, null);
+    assert.deepEqual(report.cleanup, { kind: 'not-needed', cache: 'retained' });
+    assert.deepEqual((await f.state()).calls, []);
+  });
 
 for (const [mode, kind] of [
   ['profile-normal', 'returned'],

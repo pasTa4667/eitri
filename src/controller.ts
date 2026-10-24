@@ -302,7 +302,9 @@ export class Controller {
       if (
         workerScenarioId !== undefined &&
         workerScenarioId !== 'synthetic-click-v1' &&
-        workerScenarioId !== 'profile-name-v1'
+        workerScenarioId !== 'profile-name-v1' &&
+        workerScenarioId !== 'fixture-profile-v1' &&
+        workerScenarioId !== 'fixture-cart-v1'
       )
         fail('invalid-offline-worker-scenario');
       if (workerScenarioId !== undefined && !options.offlineWorkerJournal)
@@ -2544,7 +2546,7 @@ function workerIdentifier(value: unknown): value is string {
 function offlineSourceDigest(offline: OfflineWorkspaceOptions): string {
   return digest({
     version: 1,
-    ...(offline.workerScenarioId === 'profile-name-v1'
+    ...(offline.workerScenarioId !== undefined && offline.workerScenarioId !== 'synthetic-click-v1'
       ? { workerScenarioId: offline.workerScenarioId }
       : {}),
     repositoryId: offline.repositoryId,

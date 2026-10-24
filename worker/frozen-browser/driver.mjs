@@ -9,7 +9,8 @@ const scenario = JSON.parse(await readFile(new URL('scenario.json', import.meta.
 const scenarioId = process.env.EITRI_SCENARIO;
 const profile = scenario.profile;
 const isProfile = scenarioId === profile?.id;
-if (!isProfile && scenarioId !== scenario.id) process.exit(126);
+const isApplication = ['fixture-profile-v1', 'fixture-cart-v1'].includes(scenarioId);
+if (!isProfile && !isApplication && scenarioId !== scenario.id) process.exit(126);
 const nonce = process.env.EITRI_NONCE;
 const requestDigest = process.env.EITRI_REQUEST;
 if (!/^[a-f0-9]{64}$/.test(nonce) || !/^[a-f0-9]{64}$/.test(requestDigest)) process.exit(126);
@@ -400,6 +401,11 @@ try {
     server.listen(0, '127.0.0.1', resolve);
   });
   const origin = `http://127.0.0.1:${server.address().port}`;
+  const applicationResult = isApplication
+    ? await (
+        await import('/opt/verify/application-driver.mjs')
+      ).runApplication(scenarioId, manifest)
+    : undefined;
   browser = await chromium.launch({
     channel: 'chromium',
     headless: true,
@@ -431,7 +437,10 @@ try {
   const page = await context.newPage();
   let measured;
   let screenshotPage = page;
-  if (isProfile) {
+  if (isApplication) {
+    measured = { stage: 'complete', scenarioId, application: applicationResult.application };
+    await page.setContent('<!doctype html><title>Application containment witness</title>');
+  } else if (isProfile) {
     measured = await probeProfile(page, origin);
     screenshotPage = await context.newPage();
     await screenshotPage.setContent(
@@ -466,7 +475,8 @@ try {
     measured = { stage, literal };
   }
   if (eventFailure) throw new Error(eventFailure);
-  const png = await screenshotPage.screenshot({ type: 'png', timeout: 5000 });
+  const png =
+    applicationResult?.png ?? (await screenshotPage.screenshot({ type: 'png', timeout: 5000 }));
   if (png.length > 4 * 1024 * 1024) throw new Error('png-limit');
   const session = await browser.newBrowserCDPSession();
   const discovery = await census(session);
@@ -498,7 +508,14 @@ try {
   const output = `${control}\n${screenshot}\n${end}\n`;
   if (Buffer.byteLength(output) > 6 * 1024 * 1024) throw new Error('wire-limit');
   process.stdout.write(output);
-} catch {
+} catch (error) {
+  if (isApplication)
+    process.stderr.write(
+      JSON.stringify({
+        kind: 'application-diagnostic',
+        error: String(error.stack).slice(0, 8192),
+      }) + '\n',
+    );
   process.stderr.write('frozen-driver-failed\n');
   process.exitCode = 1;
 } finally {

@@ -1,0 +1,465 @@
+{
+  "version": 1,
+  "parent": "0d923fb",
+  "source": [
+    {
+      "path": "src/controller.ts",
+      "size": 101102,
+      "sha256": "505370950fbc183264ce17188e98c871060f9bd85f266b0a76179e87bcb9734a"
+    },
+    {
+      "path": "src/frozen-browser.ts",
+      "size": 131663,
+      "sha256": "8d5ad6a4a7e8dcab7aee590b50a432723f7f4d79f0cebd59e47af16c0ba60b06"
+    },
+    {
+      "path": "scripts/profile-reconciliation/application.mjs",
+      "size": 4807,
+      "sha256": "6f275f9f356807a422a3d16180a1b68352861ef64e1e80472f1a6ffc5a75b820"
+    },
+    {
+      "path": "scripts/profile-reconciliation/application.d.mts",
+      "size": 230,
+      "sha256": "ae70bb8eb174ab1509416dae5138e9e03d3805762d93997b86cdf95adfce2e92"
+    },
+    {
+      "path": "scripts/profile-reconciliation/prepare-application.mjs",
+      "size": 3367,
+      "sha256": "f6998013eebe67458856f514ade2fcbf7d2f0e4be0734cbfdcac4dcfc6a643f9"
+    },
+    {
+      "path": "scripts/profile-reconciliation/run.mjs",
+      "size": 8897,
+      "sha256": "ccfd21b4ed24103274f6a08b43c5f5e1fc0d64156bc691e1f1792e60755fb3e9"
+    },
+    {
+      "path": "scripts/profile-reconciliation/built-assets.spec.js",
+      "size": 6597,
+      "sha256": "b4c222b26fb587672f76d141051ef4280a38d486b39fbd65bc3c88dfb3842399"
+    },
+    {
+      "path": "worker/frozen-browser/driver.mjs",
+      "size": 20319,
+      "sha256": "ca6c346aa24eb81674ad5dc81be67e5f282ba835b194473c207569696e27d10a"
+    },
+    {
+      "path": "worker/frozen-browser/application-driver.mjs",
+      "size": 1351,
+      "sha256": "9154a0fe129a0f6f0518d89fe72d303b17017271922bfe2353ff4ba305558981"
+    },
+    {
+      "path": "worker/frozen-browser/application-supervisor.py",
+      "size": 792,
+      "sha256": "78825e9021a5697556d31afdcd7de605b473055833149057b80545ec038b87da"
+    },
+    {
+      "path": "test/application-supervisor.test.mjs",
+      "size": 2366,
+      "sha256": "c1c6feb75d793fac665ad9755acdfbe1417c8c433f2410b4caef24d1d98fcf95"
+    },
+    {
+      "path": "test/fixture-application-driver.test.mjs",
+      "size": 2984,
+      "sha256": "2041f721d23357bc0537a139d59b8f19d431eb2b2273934f8e97dc1072a8b749"
+    },
+    {
+      "path": "test/fixture-application-check.test.mjs",
+      "size": 5603,
+      "sha256": "4ac6874c4c5f80cdb8d01c29f08ce016c072a0f9101a2ff173a71307fef420ac"
+    },
+    {
+      "path": "test/fixture-application-check-fixture.mjs",
+      "size": 4512,
+      "sha256": "e2602b4ba7238b964d7796513fe9087085652a91c72613fb19d4eefc6a99a7f6"
+    },
+    {
+      "path": "test/integration/controller-application-check.test.ts",
+      "size": 14023,
+      "sha256": "78742e4d5a71b3b7b16a3e07323f6e54cdc8884ede7ce73bc4350082f55adbbc"
+    },
+    {
+      "path": "test/controller-worker-scenario.test.ts",
+      "size": 10583,
+      "sha256": "607485921482412809013016faaaa6f1f25f7d731023023f03e51a72e9badf9f"
+    },
+    {
+      "path": "test/frozen-browser.test.ts",
+      "size": 103342,
+      "sha256": "64ebec627f2f27f50092e82182e103769af6b5cd91d7d39d8fe347df011c694f"
+    }
+  ],
+  "sourceManifestSha256": "d31e1d94134b127ae2782214d58a9202414429cee44dc45ccbce6486ed139bd0",
+  "verification": {
+    "command": "npm run verify:all",
+    "exit": 0,
+    "nodeTests": 1837,
+    "rustTests": 30
+  },
+  "runtime": {
+    "command": "node --import ./.audit/application-client-preload.mjs --test test/integration/controller-application-check.test.ts",
+    "environment": [
+      "EITRI_FROZEN_DOCKER_ACCEPTANCE=1",
+      "EITRI_APPLICATION_FIXTURE_DIRECTORY=<explicit canonical sibling>"
+    ],
+    "exit": 0,
+    "tests": 2,
+    "failures": 0,
+    "skips": 0,
+    "retries": 0,
+    "observer": "Local preload records real client outputs without substituting outcomes."
+  },
+  "dependencies": {
+    "tag": "eitri-application-dependencies:v1",
+    "id": "sha256:cde9827f782cbcd81a74ccefa4c5fef521546724c83ca7da2da8dcdc5c408a5f",
+    "retained": true
+  },
+  "cases": [
+    {
+      "scenario": "fixture-profile-v1",
+      "captureDigest": "d4248bff339806048ec9958ad0a43a4a55719f0a4e357d9ec4d496f14cf02718",
+      "caseId": "8bf00b05-0c19-4f37-8db1-120fd9705771",
+      "caseStatus": "needs-attention",
+      "phase": "implementation",
+      "reason": "assessment-required",
+      "caseSimulated": true,
+      "base": "c6784ff271c5d25d1e290446dd4cd842d7c11bb5",
+      "candidate": "e20d7286a42bea8965836241bd30ed784856e03f",
+      "realReceipts": 2,
+      "simulatedCheckpoints": 1,
+      "artifacts": [
+        {
+          "revision": "c6784ff271c5d25d1e290446dd4cd842d7c11bb5",
+          "mime": "image/png",
+          "size": 19831,
+          "sha256": "d8e93db314872512be0bba6a7f064fbc4e7082de8310bb72d714b5e070f074eb",
+          "simulated": false
+        },
+        {
+          "revision": "e20d7286a42bea8965836241bd30ed784856e03f",
+          "mime": "image/png",
+          "size": 19831,
+          "sha256": "d8e93db314872512be0bba6a7f064fbc4e7082de8310bb72d714b5e070f074eb",
+          "simulated": false
+        }
+      ],
+      "resourcesAbsent": true,
+      "runs": [
+        {
+          "runId": "e46f2cbe-3f74-40ff-9c90-cc3e1c91cea7",
+          "role": "baseline",
+          "frozen": {
+            "caseId": "8bf00b05-0c19-4f37-8db1-120fd9705771",
+            "revision": "c6784ff271c5d25d1e290446dd4cd842d7c11bb5",
+            "manifestDigest": "88c81309d11b67ef83fe87538060810cea481b9752c7bf40ed2743ac02ca338a"
+          },
+          "configurationDigest": "c861217a2803a72d94ae27c189ca8b9df3beba002de46e2a1ff5a5b113f04777",
+          "outcome": {
+            "kind": "baseline-reproduced"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          },
+          "variant": "baseline-with-regressions",
+          "units": {
+            "total": 35,
+            "passed": 30,
+            "failed": 5
+          },
+          "browsers": 9,
+          "expectedRedAssertions": [
+            "profile fallback regression missing-profile returns Anonymous",
+            "profile fallback regression null-profile returns Anonymous",
+            "profile fallback regression null-user returns Anonymous",
+            "profile fallback regression undefined-user returns Anonymous",
+            "profile caller regression renders Anonymous after clearing the user",
+            "profile caller renders Anonymous after clearing the user"
+          ],
+          "commandExits": [
+            1,
+            0,
+            1
+          ],
+          "previewStopped": true,
+          "bundle": {
+            "digest": "225918a7ec91ec5fcecd94a2e04e59d9b5576d5c2c7e7aa2924414a3ee12697e",
+            "observed": [
+              {
+                "path": "index.html",
+                "status": 200,
+                "size": 329,
+                "sha256": "cc7a307d9d4112f9271217a4c2df7e889c3e4f8e32569289de200bf6c3c72f7a",
+                "kind": "document"
+              },
+              {
+                "path": "assets/index-Drx64QFX.js",
+                "status": 200,
+                "size": 357013,
+                "sha256": "66ef1fedfcbde6ebdb339ae951f38eceee40ef0d7d483069aec48e827e2911e4",
+                "kind": "javascript"
+              }
+            ]
+          },
+          "transferFiles": 28,
+          "transferManifestSha256": "9a468b53389757f522217e849bb516ae57f276a2ac7ab7f6d507373b8f3ea03c",
+          "engine": {
+            "version": "29.8.2",
+            "arch": "arm64",
+            "commit": "8af9fe3",
+            "security": [
+              "name=seccomp,profile=builtin",
+              "name=cgroupns"
+            ]
+          },
+          "outerProcesses": 15,
+          "outerZombies": 1,
+          "png": {
+            "mime": "image/png",
+            "size": 19831,
+            "sha256": "d8e93db314872512be0bba6a7f064fbc4e7082de8310bb72d714b5e070f074eb"
+          }
+        },
+        {
+          "runId": "eb0007cf-600d-45ff-9e9f-13b9ba1dbaf6",
+          "role": "candidate",
+          "frozen": {
+            "caseId": "8bf00b05-0c19-4f37-8db1-120fd9705771",
+            "revision": "e20d7286a42bea8965836241bd30ed784856e03f",
+            "manifestDigest": "54270a8d88874ab71fdf9e3f6f1927fc1ccbf26dc5d70375b9290d0b444e67d5"
+          },
+          "configurationDigest": "c861217a2803a72d94ae27c189ca8b9df3beba002de46e2a1ff5a5b113f04777",
+          "outcome": {
+            "kind": "candidate-passed"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          },
+          "variant": "scripted-candidate",
+          "units": {
+            "total": 35,
+            "passed": 35,
+            "failed": 0
+          },
+          "browsers": 9,
+          "expectedRedAssertions": [],
+          "commandExits": [
+            0,
+            0,
+            0
+          ],
+          "previewStopped": true,
+          "bundle": {
+            "digest": "20d15012cd2693b0ed895f2b2e453ddb4190cee70cfb686defcbcb347a25da62",
+            "observed": [
+              {
+                "path": "index.html",
+                "status": 200,
+                "size": 329,
+                "sha256": "5dddfb65cd6a471e02997a58d3bcbdc04d135f38c8426301b7dc13c6c7017586",
+                "kind": "document"
+              },
+              {
+                "path": "assets/index-ChvNd6yy.js",
+                "status": 200,
+                "size": 357015,
+                "sha256": "467348b15e06b4df06d308a79c7a57109589ab035caf53d29594e0119293b265",
+                "kind": "javascript"
+              }
+            ]
+          },
+          "transferFiles": 28,
+          "transferManifestSha256": "ae15293c45b6eafa89386041100d1ea83424f5556af805fbe52e4bbc06c902a4",
+          "engine": {
+            "version": "29.8.2",
+            "arch": "arm64",
+            "commit": "8af9fe3",
+            "security": [
+              "name=seccomp,profile=builtin",
+              "name=cgroupns"
+            ]
+          },
+          "outerProcesses": 15,
+          "outerZombies": 1,
+          "png": {
+            "mime": "image/png",
+            "size": 19831,
+            "sha256": "d8e93db314872512be0bba6a7f064fbc4e7082de8310bb72d714b5e070f074eb"
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "fixture-cart-v1",
+      "captureDigest": "d4248bff339806048ec9958ad0a43a4a55719f0a4e357d9ec4d496f14cf02718",
+      "caseId": "3ba19f7b-29a5-4075-95d9-85d4f0f5d661",
+      "caseStatus": "needs-attention",
+      "phase": "implementation",
+      "reason": "assessment-required",
+      "caseSimulated": true,
+      "base": "c6784ff271c5d25d1e290446dd4cd842d7c11bb5",
+      "candidate": "3b1cac567c77a0a12016a475aee7dd4e16c804de",
+      "realReceipts": 2,
+      "simulatedCheckpoints": 1,
+      "artifacts": [
+        {
+          "revision": "c6784ff271c5d25d1e290446dd4cd842d7c11bb5",
+          "mime": "image/png",
+          "size": 19831,
+          "sha256": "d8e93db314872512be0bba6a7f064fbc4e7082de8310bb72d714b5e070f074eb",
+          "simulated": false
+        },
+        {
+          "revision": "3b1cac567c77a0a12016a475aee7dd4e16c804de",
+          "mime": "image/png",
+          "size": 19831,
+          "sha256": "d8e93db314872512be0bba6a7f064fbc4e7082de8310bb72d714b5e070f074eb",
+          "simulated": false
+        }
+      ],
+      "resourcesAbsent": true,
+      "runs": [
+        {
+          "runId": "c1745fe8-9dcf-439b-b95c-fa2cd3502347",
+          "role": "baseline",
+          "frozen": {
+            "caseId": "3ba19f7b-29a5-4075-95d9-85d4f0f5d661",
+            "revision": "c6784ff271c5d25d1e290446dd4cd842d7c11bb5",
+            "manifestDigest": "88c81309d11b67ef83fe87538060810cea481b9752c7bf40ed2743ac02ca338a"
+          },
+          "configurationDigest": "c861217a2803a72d94ae27c189ca8b9df3beba002de46e2a1ff5a5b113f04777",
+          "outcome": {
+            "kind": "baseline-reproduced"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          },
+          "variant": "cart-baseline-with-regressions",
+          "units": {
+            "total": 32,
+            "passed": 30,
+            "failed": 2
+          },
+          "browsers": 9,
+          "expectedRedAssertions": [
+            "cart total regression returns 0 for an empty cart",
+            "cart caller regression renders Total: 0 cents after emptying",
+            "cart caller renders Total: 0 cents after emptying"
+          ],
+          "commandExits": [
+            1,
+            0,
+            1
+          ],
+          "previewStopped": true,
+          "bundle": {
+            "digest": "225918a7ec91ec5fcecd94a2e04e59d9b5576d5c2c7e7aa2924414a3ee12697e",
+            "observed": [
+              {
+                "path": "index.html",
+                "status": 200,
+                "size": 329,
+                "sha256": "cc7a307d9d4112f9271217a4c2df7e889c3e4f8e32569289de200bf6c3c72f7a",
+                "kind": "document"
+              },
+              {
+                "path": "assets/index-Drx64QFX.js",
+                "status": 200,
+                "size": 357013,
+                "sha256": "66ef1fedfcbde6ebdb339ae951f38eceee40ef0d7d483069aec48e827e2911e4",
+                "kind": "javascript"
+              }
+            ]
+          },
+          "transferFiles": 28,
+          "transferManifestSha256": "9a468b53389757f522217e849bb516ae57f276a2ac7ab7f6d507373b8f3ea03c",
+          "engine": {
+            "version": "29.8.2",
+            "arch": "arm64",
+            "commit": "8af9fe3",
+            "security": [
+              "name=seccomp,profile=builtin",
+              "name=cgroupns"
+            ]
+          },
+          "outerProcesses": 15,
+          "outerZombies": 1,
+          "png": {
+            "mime": "image/png",
+            "size": 19831,
+            "sha256": "d8e93db314872512be0bba6a7f064fbc4e7082de8310bb72d714b5e070f074eb"
+          }
+        },
+        {
+          "runId": "10e18692-6959-4e31-9457-da79ae5742ad",
+          "role": "candidate",
+          "frozen": {
+            "caseId": "3ba19f7b-29a5-4075-95d9-85d4f0f5d661",
+            "revision": "3b1cac567c77a0a12016a475aee7dd4e16c804de",
+            "manifestDigest": "53f3160e07330b94e05ecec980669c25845aea9178be89c3f1779dfad4904fa6"
+          },
+          "configurationDigest": "c861217a2803a72d94ae27c189ca8b9df3beba002de46e2a1ff5a5b113f04777",
+          "outcome": {
+            "kind": "candidate-passed"
+          },
+          "cleanup": {
+            "kind": "owned-removed",
+            "cache": "retained"
+          },
+          "variant": "cart-scripted-candidate",
+          "units": {
+            "total": 32,
+            "passed": 32,
+            "failed": 0
+          },
+          "browsers": 9,
+          "expectedRedAssertions": [],
+          "commandExits": [
+            0,
+            0,
+            0
+          ],
+          "previewStopped": true,
+          "bundle": {
+            "digest": "47fa1cdaef57cf064f73b2386685f11da7343c7ea6218be7276489c885d192b8",
+            "observed": [
+              {
+                "path": "index.html",
+                "status": 200,
+                "size": 329,
+                "sha256": "a9dd864fa3f7f7abb2452c0f5dc76612ecd76545bf30249cc95f72d881bceddd",
+                "kind": "document"
+              },
+              {
+                "path": "assets/index-j0XLRcWI.js",
+                "status": 200,
+                "size": 357015,
+                "sha256": "f4e1c247449242f4adbb40ce40cfe863fb715b74d998d4f22f3d5f6f88a09e9b",
+                "kind": "javascript"
+              }
+            ]
+          },
+          "transferFiles": 28,
+          "transferManifestSha256": "640dfb78e9293ae270619d94ccda3932aa1800d4afd2f5c8363fd8eadadef50e",
+          "engine": {
+            "version": "29.8.2",
+            "arch": "arm64",
+            "commit": "8af9fe3",
+            "security": [
+              "name=seccomp,profile=builtin",
+              "name=cgroupns"
+            ]
+          },
+          "outerProcesses": 15,
+          "outerZombies": 1,
+          "png": {
+            "mime": "image/png",
+            "size": 19831,
+            "sha256": "d8e93db314872512be0bba6a7f064fbc4e7082de8310bb72d714b5e070f074eb"
+          }
+        }
+      ]
+    }
+  ]
+}

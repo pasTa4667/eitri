@@ -1,6 +1,6 @@
 # Full-application fixture inputs
 
-`captureFixtureApplicationInput` is the acquisition boundary for later immutable application validation. It does not run application code, select a controller scenario, or produce validation evidence.
+`captureFixtureApplicationInput` is the acquisition boundary for immutable application validation. It does not run application code, select a controller scenario, or produce validation evidence. The separate opt-in [protected application checker](fixture-application-check.md) enforces execution policy and records real controller receipts.
 
 ```ts
 import { captureFixtureApplicationInput } from '../src/fixture-profile-name.ts';
@@ -42,4 +42,4 @@ The fixed 28-file set and 1 MiB per-file limit bound payload allocation to 28 Mi
 
 A local smoke check captures the installed sibling's actual 28 reviewed inputs and verifies byte-exact managed Git freezing. Its capture digest is `d4248bff339806048ec9958ad0a43a4a55719f0a4e357d9ec4d496f14cf02718`. The original inputs have the same digest after the check. This is acquisition and Git persistence verification, **not application execution** or a browser result.
 
-The [five-axis review](evidence/fixture-application-input/review.md) records the addressed finding. Same-commit application unit/build/browser execution through the controller remains the next boundary. Production activation and full M2 acceptance remain open.
+The [five-axis review](evidence/fixture-application-input/review.md) records the acquisition finding. The separate [application-check boundary](fixture-application-check.md) executes protected unit/build/browser checks against exact managed revisions. Production activation and full M2 acceptance remain open.

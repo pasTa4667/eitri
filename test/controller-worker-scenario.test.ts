@@ -29,7 +29,13 @@ function workspaceMetadata(directory: string) {
   }
 }
 
-for (const workerScenarioId of [undefined, 'synthetic-click-v1', 'profile-name-v1'] as const)
+for (const workerScenarioId of [
+  undefined,
+  'synthetic-click-v1',
+  'profile-name-v1',
+  'fixture-profile-v1',
+  'fixture-cart-v1',
+] as const)
   for (const kind of ['baseline', 'browser'] as const)
     test(`${workerScenarioId ?? 'omitted'} routes ${kind} and preserves detached historical requests`, async (t) => {
       let admitted!: AdmittedCheckRequest;
@@ -75,7 +81,7 @@ for (const workerScenarioId of [undefined, 'synthetic-click-v1', 'profile-name-v
       };
       assert.deepEqual(observed.intent, { request: expected, requestDigest: digest(expected) });
       assert.deepEqual(journalRows(f.journalDirectory), beforeJournal);
-      if (workerScenarioId !== 'profile-name-v1')
+      if (workerScenarioId === undefined || workerScenarioId === 'synthetic-click-v1')
         assert.deepEqual(workspaceMetadata(f.directory), {
           version: 1,
           sourceDigest: 'bb068ea61113578ffd05d60a573ef9acbf07bab9eec3728dba7f568e493ebede',
@@ -122,7 +128,7 @@ test('one selector read and baseline copy before the first await resist immediat
     directory: join(f.root, 'captured-controller'),
     offlineWorkspace: {
       ...config,
-      get workerScenarioId(): 'profile-name-v1' | 'synthetic-click-v1' {
+      get workerScenarioId(): NonNullable<OfflineWorkspaceOptions['workerScenarioId']> {
         reads++;
         return selected;
       },
@@ -166,7 +172,12 @@ for (const value of [null, '', 'other', 1, true, {}, [], new String('profile-nam
     );
   });
 
-for (const workerScenarioId of ['synthetic-click-v1', 'profile-name-v1'] as const)
+for (const workerScenarioId of [
+  'synthetic-click-v1',
+  'profile-name-v1',
+  'fixture-profile-v1',
+  'fixture-cart-v1',
+] as const)
   test(`explicit ${workerScenarioId} requires a journal even on an empty catalogue`, async (t) => {
     const f = await fixture(t);
     await f.close();

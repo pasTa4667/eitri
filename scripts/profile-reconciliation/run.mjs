@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
   cp,
+  chmod,
   lstat,
   mkdir,
   opendir,
@@ -125,7 +126,28 @@ const report = { variant, commands: [], verdict: 'blocked' };
 try {
   assert.equal(process.getuid(), 1001);
   assert.equal(process.getgid(), 1001);
-  await cp(`/opt/inputs/${variant}`, '/tmp/work', { recursive: true });
+  const frozenApplication = process.env.EITRI_FROZEN_APPLICATION === '1';
+  await cp(frozenApplication ? '/snapshot' : `/opt/inputs/${variant}`, '/tmp/work', {
+    recursive: true,
+  });
+  if (frozenApplication) {
+    const writable = async (path) => {
+      const stat = await lstat(path);
+      assert.ok(!stat.isSymbolicLink());
+      await chmod(path, stat.isDirectory() ? 0o755 : 0o644);
+      if (stat.isDirectory())
+        for (const name of await readdir(path)) await writable(`${path}/${name}`);
+    };
+    await writable('/tmp/work');
+    await mkdir('/tmp/work/src/regression');
+    for (const extension of ['test.js', 'test.jsx', 'spec.js']) {
+      const name = `${expected.target}.${extension}`;
+      await cp(
+        `/opt/verify/regressions/${name}`,
+        extension === 'spec.js' ? `/tmp/work/e2e/${name}` : `/tmp/work/src/regression/${name}`,
+      );
+    }
+  }
   await mkdir('/tmp/work/node_modules');
   for (const entry of await readdir('/home/pwuser/node_modules')) {
     await symlink(`/home/pwuser/node_modules/${entry}`, `/tmp/work/node_modules/${entry}`);
@@ -143,6 +165,7 @@ try {
         VITE_FIXTURE_ENV: 'validation',
         PLAYWRIGHT_JSON_OUTPUT_NAME: '/tmp/browser.json',
         DEBUG: 'pw:browser',
+        ...(frozenApplication ? { EITRI_APPLICATION_SCREENSHOT: '1' } : {}),
       },
       encoding: 'utf8',
       timeout: 180000,
