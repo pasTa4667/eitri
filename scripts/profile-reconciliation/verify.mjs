@@ -8,10 +8,10 @@ import { reportingMetadata, variants, variantExpectation } from './scenarios.mjs
 import { sha256 } from '../../prototypes/chromium/policy.mjs';
 import { readFixturePolicy } from './engine.mjs';
 
-assert.equal(
-  process.argv.length,
-  4,
-  'Usage: node scripts/profile-reconciliation/verify.mjs ABSOLUTE_ORIGINAL_FIXTURE NEW_EVIDENCE_DIRECTORY',
+const installed = process.argv.length === 5 && process.argv[4] === '--installed';
+assert.ok(
+  process.argv.length === 4 || installed,
+  'Usage: node scripts/profile-reconciliation/verify.mjs ABSOLUTE_FIXTURE NEW_EVIDENCE_DIRECTORY [--installed]',
 );
 const source = process.argv[2];
 assert.ok(isAbsolute(source));
@@ -49,9 +49,13 @@ const regressionAssets = {
     ['cart-total.spec.js', 'e2e/cart-total.spec.js'],
   ],
 };
-const inventory = JSON.parse(await readFile(join(here, 'inputs.json'), 'utf8'));
-assert.equal(inventory.length, 16);
-assert.equal(new Set(inventory.map((item) => item.path)).size, 16);
+const inventory = installed
+  ? JSON.parse(await readFile(join(here, 'installed-inputs.json'), 'utf8')).map(
+      ({ path, size, sha256 }) => ({ path, before: { size, sha256 }, baseline: { size, sha256 } }),
+    )
+  : JSON.parse(await readFile(join(here, 'inputs.json'), 'utf8'));
+assert.equal(inventory.length, installed ? 28 : 16);
+assert.equal(new Set(inventory.map((item) => item.path)).size, inventory.length);
 const original = new Map();
 for (const item of inventory) {
   const path = join(source, item.path);
@@ -92,6 +96,7 @@ const containers = [];
 const report = {
   owner,
   sourceKind: 'operator-approved-uncommitted-copy',
+  sourceLayout: installed ? 'installed-scenarios-v1' : 'pre-reconciliation-v1',
   verdict: 'blocked',
   commands: [],
   variants: {},
@@ -144,6 +149,7 @@ try {
   report.assets = [];
   for (const path of [
     'inputs.json',
+    'installed-inputs.json',
     'fixture.patch',
     'scenarios.patch',
     'verify.mjs',
@@ -159,10 +165,12 @@ try {
     const bytes = await readFile(join(here, path));
     report.assets.push({ path, size: bytes.length, sha256: sha256(bytes) });
   }
-  for (const args of [
-    ['apply', '--check', join(here, 'fixture.patch')],
-    ['apply', join(here, 'fixture.patch')],
-  ]) {
+  for (const args of installed
+    ? []
+    : [
+        ['apply', '--check', join(here, 'fixture.patch')],
+        ['apply', join(here, 'fixture.patch')],
+      ]) {
     const result = command('git', args, {
       cwd: baseline,
       env: {
@@ -182,10 +190,12 @@ try {
     assert.equal(sha256(bytes), item.baseline.sha256);
     report.reconciledFiles.push({ path: item.path, ...item.baseline });
   }
-  for (const args of [
-    ['apply', '--check', join(here, 'scenarios.patch')],
-    ['apply', join(here, 'scenarios.patch')],
-  ]) {
+  for (const args of installed
+    ? []
+    : [
+        ['apply', '--check', join(here, 'scenarios.patch')],
+        ['apply', join(here, 'scenarios.patch')],
+      ]) {
     const result = command('git', args, {
       cwd: baseline,
       env: {
@@ -198,15 +208,17 @@ try {
     assert.equal(result.status, 0, result.stderr);
   }
   for (const item of inventory) extended.set(item.path, await readFile(join(baseline, item.path)));
-  for (const path of overlayPaths) {
-    assert.ok(!extended.has(path), `Duplicate overlay destination: ${path}`);
-    extended.set(path, await readFile(join(here, 'overlay', path)));
+  if (!installed) {
+    for (const path of overlayPaths) {
+      assert.ok(!extended.has(path), `Duplicate overlay destination: ${path}`);
+      extended.set(path, await readFile(join(here, 'overlay', path)));
+    }
+    assert.ok(!extended.has('src/scenario-metadata.js'));
+    extended.set(
+      'src/scenario-metadata.js',
+      Buffer.from(`export default ${JSON.stringify(reportingMetadata())}\n`),
+    );
   }
-  assert.ok(!extended.has('src/scenario-metadata.js'));
-  extended.set(
-    'src/scenario-metadata.js',
-    Buffer.from(`export default ${JSON.stringify(reportingMetadata())}\n`),
-  );
   const candidates = {
     'profile-name': {
       path: 'src/lib/errors.js',

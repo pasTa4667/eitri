@@ -7,6 +7,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import * as vm from 'node:vm';
+import { reportingMetadata } from '../scripts/profile-reconciliation/scenarios.mjs';
 
 const recipe = new URL('../scripts/profile-reconciliation/', import.meta.url);
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
@@ -67,8 +68,60 @@ async function materialize(root, control) {
   assert.equal(applied.status, 0, applied.stderr);
   for (const item of inventory)
     item.baseline = identity(await fs.readFile(join(reconciled, item.path)));
+  let installedInventory;
+  const installed = control?.startsWith('installed');
+  if (installed) {
+    const appliedScenarios = spawnSync(
+      'git',
+      ['apply', fileURLToPath(new URL('scenarios.patch', recipe))],
+      {
+        cwd: reconciled,
+        encoding: 'utf8',
+        env: {
+          PATH: process.env.PATH,
+          HOME: root,
+          GIT_CONFIG_NOSYSTEM: '1',
+          GIT_CEILING_DIRECTORIES: root,
+        },
+      },
+    );
+    assert.equal(appliedScenarios.status, 0, appliedScenarios.stderr);
+    await fs.cp(new URL('overlay/', recipe), reconciled, { recursive: true });
+    await fs.writeFile(
+      join(reconciled, 'src/scenario-metadata.js'),
+      `export default ${JSON.stringify(reportingMetadata())}\n`,
+    );
+    const paths = (await fs.readdir(reconciled, { recursive: true, withFileTypes: true }))
+      .filter((entry) => entry.isFile())
+      .map((entry) => join(entry.parentPath, entry.name).slice(reconciled.length + 1))
+      .sort();
+    installedInventory = await Promise.all(
+      paths.map(async (path) => ({ path, ...identity(await fs.readFile(join(reconciled, path))) })),
+    );
+    assert.equal(installedInventory.length, 28);
+    if (control === 'installed-tampered')
+      await fs.appendFile(join(reconciled, 'src/lib/cart.js'), '// changed\n');
+    if (control === 'installed-same-size') {
+      const path = join(reconciled, 'src/lib/cart.js');
+      await fs.writeFile(path, (await fs.readFile(path, 'utf8')).replace('total', 'TOTAL'));
+    }
+    if (control === 'installed-hardlink')
+      await fs.link(join(reconciled, 'src/lib/cart.js'), join(root, 'cart.js'));
+    if (control === 'installed-missing') await fs.unlink(join(reconciled, 'src/lib/cart.js'));
+    if (control === 'installed-symlink') {
+      await fs.rename(join(reconciled, 'src/lib/cart.js'), join(root, 'cart.js'));
+      await fs.symlink(join(root, 'cart.js'), join(reconciled, 'src/lib/cart.js'));
+    }
+    await fs.writeFile(join(reconciled, '.env'), 'DO NOT ACQUIRE\n');
+  }
   const runtime = {
-    argv: ['node', 'verify.mjs', original, output],
+    argv: [
+      'node',
+      'verify.mjs',
+      installed ? reconciled : original,
+      output,
+      ...(installed ? ['--installed'] : []),
+    ],
     env: { PATH: process.env.PATH },
   };
   const context = vm.createContext({ process: runtime, console: { log() {} }, Buffer });
@@ -98,6 +151,16 @@ async function materialize(root, control) {
             readFile: async (path, ...args) => {
               if (String(path) === fileURLToPath(new URL('inputs.json', recipe)))
                 return JSON.stringify(inventory);
+              if (
+                installed &&
+                String(path) === fileURLToPath(new URL('installed-inputs.json', recipe))
+              )
+                return JSON.stringify(installedInventory);
+              if (installed && String(path).startsWith(`${reconciled}/`))
+                assert.ok(
+                  installedInventory.some((item) => join(reconciled, item.path) === String(path)),
+                  'Only allowlisted installed inputs may be acquired',
+                );
               if (String(path) === fileURLToPath(new URL('overlay/src/lib/cart.js', recipe))) {
                 if (control === 'missing-overlay') throw new Error('Missing overlay control');
                 if (control === 'candidate-preimage')
@@ -134,8 +197,14 @@ async function materialize(root, control) {
     );
   };
   await subject.link(linker);
-  await subject.evaluate();
-  assert.equal(dockerCalls, control ? 1 : 2);
+  try {
+    await subject.evaluate();
+  } catch (error) {
+    assert.ok(installed);
+    assert.equal(dockerCalls, 0);
+    return { preflightError: error.message };
+  }
+  assert.equal(dockerCalls, control && !installed ? 1 : 2);
   assert.equal(runtime.exitCode, 1);
   return JSON.parse(await fs.readFile(join(output, 'report.json'), 'utf8'));
 }
@@ -143,6 +212,90 @@ async function materialize(root, control) {
 if (process.argv[2] === '--materialize') {
   console.log(JSON.stringify(await materialize(process.argv[3], process.argv[4])));
 } else {
+  test('installed inventory pins the exact previously reviewed 28-file scenario baseline', async () => {
+    const installed = JSON.parse(
+      await fs.readFile(new URL('installed-inputs.json', recipe), 'utf8'),
+    );
+    const reviewed = JSON.parse(
+      await fs.readFile(
+        new URL('../docs/evidence/fixture-scenarios/observations.json', import.meta.url),
+        'utf8',
+      ),
+    );
+    assert.deepEqual(installed, reviewed.variants.baseline.files);
+    assert.equal(installed.length, 28);
+    assert.equal(new Set(installed.map((item) => item.path)).size, 28);
+    for (const item of installed) {
+      assert.deepEqual(Object.keys(item).sort(), ['path', 'sha256', 'size']);
+      if (item.path === 'src/scenario-metadata.js')
+        assert.deepEqual(
+          identityRecord(item),
+          identity(Buffer.from(`export default ${JSON.stringify(reportingMetadata())}\n`)),
+        );
+      else if (reviewed.assets.some((asset) => asset.path === `overlay/${item.path}`))
+        assert.deepEqual(
+          identityRecord(item),
+          identity(await fs.readFile(new URL(`overlay/${item.path}`, recipe))),
+        );
+    }
+  });
+  test('installed recipe rejects unknown modes before acquiring any source', () => {
+    const result = spawnSync(
+      process.execPath,
+      [
+        fileURLToPath(new URL('verify.mjs', recipe)),
+        '/nonexistent-fixture',
+        '/nonexistent-evidence',
+        '--instaled',
+      ],
+      { encoding: 'utf8', timeout: 10000 },
+    );
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /Usage:/);
+    assert.doesNotMatch(result.stderr, /ENOENT/);
+  });
+  test('installed recipe verifies exact scenario bytes without reapplying patches or acquiring ambient files', async () => {
+    for (const control of [
+      'installed',
+      'installed-tampered',
+      'installed-same-size',
+      'installed-hardlink',
+      'installed-missing',
+      'installed-symlink',
+    ]) {
+      const root = await fs.realpath(await fs.mkdtemp(join(tmpdir(), 'fixture-installed-')));
+      try {
+        const result = spawnSync(
+          process.execPath,
+          [
+            '--experimental-vm-modules',
+            fileURLToPath(import.meta.url),
+            '--materialize',
+            root,
+            control,
+          ],
+          { encoding: 'utf8', timeout: 30000 },
+        );
+        assert.equal(result.status, 0, result.stderr);
+        const report = JSON.parse(result.stdout);
+        if (control !== 'installed') {
+          assert.match(report.preflightError, /preimage|Symlink route rejected|ENOENT/i);
+        } else {
+          assert.equal(report.preflightError, undefined);
+          assert.equal(report.sourceLayout, 'installed-scenarios-v1');
+          assert.equal(report.commands.filter((command) => command.program === 'git').length, 0);
+          assert.equal(report.inputs.length, 28);
+          assert.match(report.error, /No such image/);
+          assert.equal(report.variants.baseline.files.length, 28);
+          assert.equal(report.variants['scripted-candidate'].files.length, 31);
+          assert.equal(report.variants['cart-scripted-candidate'].files.length, 31);
+          assert.deepEqual(report.cleanup.at(-1), { scratchRemoved: true });
+        }
+      } finally {
+        await fs.rm(root, { recursive: true, force: true });
+      }
+    }
+  });
   test('guarded recipe materializes independent candidates, paired regressions and complete asset identities without running fixture programs', async () => {
     const root = await fs.realpath(await fs.mkdtemp(join(tmpdir(), 'fixture-materialization-')));
     try {

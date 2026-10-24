@@ -142,7 +142,7 @@ Five variants run actual Vitest, Vite build, and Playwright suites in separate n
 
 `report.json` records input, asset and variant hashes, image identities, applied containment, command exits/logs, unit/browser assertions and owned-resource cleanup. Each variant's `builtBundle` record binds actual navigation HTML and compiled JavaScript/style response sizes and SHA-256 hashes to fresh output. The provenance spec must pass in every variant. Output limits are 128 files, 8 MiB per file and 32 MiB total. Browser observation allows 128 responses, 8 MiB per body and 32 MiB total within 20 seconds. The proof file is limited to 64 KiB. Baseline requires 30 unit and 8 browser passes. The profile candidate requires 35 unit and 9 browser passes. The cart candidate requires 32 unit and 9 browser passes. Exact complete titles, unskipped results and zero retries are required. Profile red proof requires exactly four helper fallback failures, one React greeting failure, and one browser greeting failure. Cart red proof requires exactly one helper failure, one React total failure, and one browser total failure. All normal tests and builds must pass. Resource shortage, dependency incompatibility, unexpected failure or cleanup failure blocks acceptance. Only uniquely owned containers/image tags are removed. Scratch is deleted; the evidence report and `ownership.json` remain. Docker build cache is retained without a global prune. An interrupted host process may require operator cleanup using those recorded owner labels and names, never a broad prune.
 
-The separate managed helper probe still requires Docker 29.4.0 through `src/frozen-browser.ts`. It rejects this host's installed 29.8.2 engine. A separately verified validator compatibility migration is required before the following commands can run here. Do not bypass that gate. These commands execute root integration tests and launch their managed Docker validator, so they are also runtime gates, not implementation-session checks.
+The [validator engine compatibility checkpoint](evidence/validator-engine/verification.md) closes the earlier engine conflict. Fresh managed validator journals now require the same exact reviewed Docker 29.8.2 ARM64 engine and commit as the recipe. Existing legacy journals keep their original policy/configuration identity; they are not silently migrated. These commands execute root integration tests and launch their managed Docker validator, so they remain explicit runtime gates:
 
 ```sh
 EITRI_FROZEN_DOCKER_ACCEPTANCE=1 \
@@ -150,5 +150,21 @@ EITRI_PROFILE_NAME_FIXTURE_DIRECTORY=/absolute/path/to/reviewed-fixture \
 node --test test/integration/profile-name-probe.test.ts \
   test/integration/controller-profile-name-handoff.test.ts
 ```
+
+### Installed scenario baseline
+
+The monitored sibling now contains the reviewed scenario overlay and has a local baseline checkpoint on its existing `master` branch. No monitored build has been activated. Its README and existing `.env` are preserved; `.env` and `.env.*` are ignored and excluded from the checkpoint. Reporting still requires explicit `demo` selection and a DSN. The synthetic metadata release label is not a deployed Git release.
+
+Use the installed-input mode for this tree; the default recipe in **Reviewed operator rerun** still requires the retained **pre-reconciliation** snapshot:
+
+```sh
+node scripts/profile-reconciliation/verify.mjs \
+  /absolute/path/to/installed-fixture \
+  /absolute/path/to/new-evidence --installed
+```
+
+This mode admits exactly the 28 controller-owned descriptors in `scripts/profile-reconciliation/installed-inputs.json`. It reads those paths only, checks sizes/hashes and rejects symlinks and multiple links before Docker effects. It does not apply either reconciliation patch or replace installed source with overlay assets. It runs the same five contained variants against detached copies, with identical literal red/green expectations and cleanup. A changed, repaired, or incomplete tree must not be relabeled as this baseline; capture/validation of arbitrary immutable application revisions remains separate work. Acquisition still assumes a quiescent operator-owned directory and does not inspect Git or authenticate a source revision. Extra files, including README, `.env`, existing `dist`, dependencies and Git metadata, are not acquired or executed.
+
+The [installation verification](evidence/fixture-baseline/verification.md) records the local checkpoint, review and checks.
 
 The [reconciliation record](evidence/profile-reconciliation/verification.md) retains historical development-server results and independent managed helper checks. The later [built-bundle verification](evidence/built-bundle/verification.md) records passing preview-backed variants, actual response hashes, isolated negative controls and cleanup. These scripted results do not establish genuine model repair, controller React integration, production activation or full M2 acceptance.

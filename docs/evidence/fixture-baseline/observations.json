@@ -1,0 +1,491 @@
+{
+  "version": 1,
+  "baseRevision": "f77ff76",
+  "sibling": {
+    "commit": "103db4755657e9a1595120164242a7b9323defcd",
+    "tree": "42a6a5bad3278f8677c092cee5b32011b424f77e",
+    "branch": "master",
+    "clean": true,
+    "trackedPaths": [
+      ".gitignore",
+      "README.md",
+      "e2e/errors.spec.js",
+      "e2e/scenarios.spec.js",
+      "index.html",
+      "package-lock.json",
+      "package.json",
+      "playwright.config.js",
+      "src/App.jsx",
+      "src/App.test.jsx",
+      "src/instrument.js",
+      "src/lib/cart.js",
+      "src/lib/cart.test.js",
+      "src/lib/errors.js",
+      "src/lib/errors.test.js",
+      "src/lib/transient-upstream.js",
+      "src/lib/transient-upstream.test.js",
+      "src/main.jsx",
+      "src/pages/AsyncErrorPage.jsx",
+      "src/pages/CartPage.jsx",
+      "src/pages/ClickErrorPage.jsx",
+      "src/pages/RenderErrorPage.jsx",
+      "src/pages/TransientPage.jsx",
+      "src/pages/ValidationPage.jsx",
+      "src/scenario-metadata.js",
+      "src/scenario-reporting.js",
+      "src/scenario-reporting.test.js",
+      "src/scenarios.test.jsx",
+      "src/setupTests.js",
+      "vite.config.js"
+    ],
+    "committedInputsMatchRuntime": true
+  },
+  "preservation": {
+    "readmeSha256": "912b8cfa001b112f551a9163c0f98725960c809e8a47d8289b808132bc1181c2",
+    "envStatUnchanged": true,
+    "unchangedExistingInputs": 14,
+    "stagedPaths": [
+      ".gitignore",
+      "README.md",
+      "e2e/errors.spec.js",
+      "e2e/scenarios.spec.js",
+      "index.html",
+      "package-lock.json",
+      "package.json",
+      "playwright.config.js",
+      "src/App.jsx",
+      "src/App.test.jsx",
+      "src/instrument.js",
+      "src/lib/cart.js",
+      "src/lib/cart.test.js",
+      "src/lib/errors.js",
+      "src/lib/errors.test.js",
+      "src/lib/transient-upstream.js",
+      "src/lib/transient-upstream.test.js",
+      "src/main.jsx",
+      "src/pages/AsyncErrorPage.jsx",
+      "src/pages/CartPage.jsx",
+      "src/pages/ClickErrorPage.jsx",
+      "src/pages/RenderErrorPage.jsx",
+      "src/pages/TransientPage.jsx",
+      "src/pages/ValidationPage.jsx",
+      "src/scenario-metadata.js",
+      "src/scenario-reporting.js",
+      "src/scenario-reporting.test.js",
+      "src/scenarios.test.jsx",
+      "src/setupTests.js",
+      "vite.config.js"
+    ]
+  },
+  "sourceFiles": [
+    {
+      "path": "scripts/profile-reconciliation/verify.mjs",
+      "size": 19486,
+      "sha256": "f92e1dc86d08d3e18a4f81dc19fdaa33a4742385fd3d1c01b327f603a961c027"
+    },
+    {
+      "path": "scripts/profile-reconciliation/installed-inputs.json",
+      "size": 4041,
+      "sha256": "6f5a5f4ec8e2be3d3cabd47eaca9ead3feb45d029db1ad9e0e917a4a146aa40b"
+    },
+    {
+      "path": "test/profile-reconciliation-materialization.test.mjs",
+      "size": 16380,
+      "sha256": "2aed849c6999f7231c0a7e296e98867a39b0da976cab4f13ab626aff384c1494"
+    }
+  ],
+  "runtime": {
+    "owner": "eitri-profile-f98a723e-bb7e-474e-9065-e147cea923a8",
+    "verdict": "passed",
+    "sourceKind": "operator-approved-uncommitted-copy",
+    "sourceLayout": "installed-scenarios-v1",
+    "originalUnchanged": true,
+    "reportSha256": "87466ca64bb4202837cea3b58febbdab68c8d8ed3d40279f7b582a7c4432da47",
+    "engine": {
+      "version": "29.8.2",
+      "commit": "8af9fe3a36bab3e039862a2ab1cef1880c9b4d03",
+      "baselineSha256": "536529b665dd0972c37bfb569f5d4ac8a53592e7b00752bc39ff063ca9864c74",
+      "policySha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce"
+    },
+    "policySha256": "1ccf001ef888765cf5e09948c6060646e88391517f8261bbb2781096a5e1bfce",
+    "baseImage": "sha256:57911b2d47725e1d19e25203b82d7c90a3160da1815f78a9c66b42a89dd1ddff",
+    "dependencyImage": "sha256:d03b3983619ff9a3a01360446ca586da0a80ecd4a0ac2d9ea1bf00fe2a3b4af9",
+    "runtimeImage": "sha256:cf8db1a3bfeb5824dac0d005157741a69ac08b355ff9772a64991a781cea56c4",
+    "variants": {
+      "baseline": {
+        "inputDigest": "9a468b53389757f522217e849bb516ae57f276a2ac7ab7f6d507373b8f3ea03c",
+        "verdict": "passed",
+        "previewStopped": true,
+        "unit": {
+          "passed": 30,
+          "failed": 0,
+          "pending": 0,
+          "total": 30
+        },
+        "expectedRedAssertions": [],
+        "builtBundle": {
+          "version": 1,
+          "server": "vite-preview",
+          "origin": "http://127.0.0.1:4173",
+          "manifest": {
+            "version": 1,
+            "files": [
+              {
+                "path": "assets/index-Drx64QFX.js",
+                "size": 357013,
+                "sha256": "66ef1fedfcbde6ebdb339ae951f38eceee40ef0d7d483069aec48e827e2911e4"
+              },
+              {
+                "path": "assets/index-Drx64QFX.js.map",
+                "size": 2518117,
+                "sha256": "ca5d8f5cac9d0fd1cd66dc54f3bedd252b77f531bfc7288805db9e54ec232398"
+              },
+              {
+                "path": "index.html",
+                "size": 329,
+                "sha256": "cc7a307d9d4112f9271217a4c2df7e889c3e4f8e32569289de200bf6c3c72f7a"
+              }
+            ],
+            "digest": "225918a7ec91ec5fcecd94a2e04e59d9b5576d5c2c7e7aa2924414a3ee12697e"
+          },
+          "observed": [
+            {
+              "path": "index.html",
+              "status": 200,
+              "size": 329,
+              "sha256": "cc7a307d9d4112f9271217a4c2df7e889c3e4f8e32569289de200bf6c3c72f7a",
+              "kind": "document"
+            },
+            {
+              "path": "assets/index-Drx64QFX.js",
+              "status": 200,
+              "size": 357013,
+              "sha256": "66ef1fedfcbde6ebdb339ae951f38eceee40ef0d7d483069aec48e827e2911e4",
+              "kind": "javascript"
+            }
+          ],
+          "proofPassed": true
+        },
+        "fileCount": 28
+      },
+      "baseline-with-regressions": {
+        "inputDigest": "c3a8a019deedbe6f5231e60c1bf4fdd09e0c7ed050349a58ce2fb1626856f464",
+        "verdict": "passed",
+        "previewStopped": true,
+        "unit": {
+          "passed": 30,
+          "failed": 5,
+          "pending": 0,
+          "total": 35
+        },
+        "expectedRedAssertions": [
+          "profile fallback regression missing-profile returns Anonymous",
+          "profile fallback regression null-profile returns Anonymous",
+          "profile fallback regression null-user returns Anonymous",
+          "profile fallback regression undefined-user returns Anonymous",
+          "profile caller regression renders Anonymous after clearing the user",
+          "profile caller renders Anonymous after clearing the user"
+        ],
+        "builtBundle": {
+          "version": 1,
+          "server": "vite-preview",
+          "origin": "http://127.0.0.1:4173",
+          "manifest": {
+            "version": 1,
+            "files": [
+              {
+                "path": "assets/index-Drx64QFX.js",
+                "size": 357013,
+                "sha256": "66ef1fedfcbde6ebdb339ae951f38eceee40ef0d7d483069aec48e827e2911e4"
+              },
+              {
+                "path": "assets/index-Drx64QFX.js.map",
+                "size": 2518117,
+                "sha256": "ca5d8f5cac9d0fd1cd66dc54f3bedd252b77f531bfc7288805db9e54ec232398"
+              },
+              {
+                "path": "index.html",
+                "size": 329,
+                "sha256": "cc7a307d9d4112f9271217a4c2df7e889c3e4f8e32569289de200bf6c3c72f7a"
+              }
+            ],
+            "digest": "225918a7ec91ec5fcecd94a2e04e59d9b5576d5c2c7e7aa2924414a3ee12697e"
+          },
+          "observed": [
+            {
+              "path": "index.html",
+              "status": 200,
+              "size": 329,
+              "sha256": "cc7a307d9d4112f9271217a4c2df7e889c3e4f8e32569289de200bf6c3c72f7a",
+              "kind": "document"
+            },
+            {
+              "path": "assets/index-Drx64QFX.js",
+              "status": 200,
+              "size": 357013,
+              "sha256": "66ef1fedfcbde6ebdb339ae951f38eceee40ef0d7d483069aec48e827e2911e4",
+              "kind": "javascript"
+            }
+          ],
+          "proofPassed": true
+        },
+        "fileCount": 31
+      },
+      "scripted-candidate": {
+        "inputDigest": "00fc0adede7e5653ebbe38c1b8e0bcafd1c08eb4a83f1c8ddefcc8ec09f1c26b",
+        "verdict": "passed",
+        "previewStopped": true,
+        "unit": {
+          "passed": 35,
+          "failed": 0,
+          "pending": 0,
+          "total": 35
+        },
+        "expectedRedAssertions": [],
+        "builtBundle": {
+          "version": 1,
+          "server": "vite-preview",
+          "origin": "http://127.0.0.1:4173",
+          "manifest": {
+            "version": 1,
+            "files": [
+              {
+                "path": "assets/index-ChvNd6yy.js",
+                "size": 357015,
+                "sha256": "467348b15e06b4df06d308a79c7a57109589ab035caf53d29594e0119293b265"
+              },
+              {
+                "path": "assets/index-ChvNd6yy.js.map",
+                "size": 2518119,
+                "sha256": "4065eed7677d9467f07974adade0379bcdac8dc89c3830558d12a550cc4c82e7"
+              },
+              {
+                "path": "index.html",
+                "size": 329,
+                "sha256": "5dddfb65cd6a471e02997a58d3bcbdc04d135f38c8426301b7dc13c6c7017586"
+              }
+            ],
+            "digest": "20d15012cd2693b0ed895f2b2e453ddb4190cee70cfb686defcbcb347a25da62"
+          },
+          "observed": [
+            {
+              "path": "index.html",
+              "status": 200,
+              "size": 329,
+              "sha256": "5dddfb65cd6a471e02997a58d3bcbdc04d135f38c8426301b7dc13c6c7017586",
+              "kind": "document"
+            },
+            {
+              "path": "assets/index-ChvNd6yy.js",
+              "status": 200,
+              "size": 357015,
+              "sha256": "467348b15e06b4df06d308a79c7a57109589ab035caf53d29594e0119293b265",
+              "kind": "javascript"
+            }
+          ],
+          "proofPassed": true
+        },
+        "fileCount": 31
+      },
+      "cart-baseline-with-regressions": {
+        "inputDigest": "20250530610ca3084eb090b5dbaa9eefc3d30432aa68ecdebc101cfc497df34c",
+        "verdict": "passed",
+        "previewStopped": true,
+        "unit": {
+          "passed": 30,
+          "failed": 2,
+          "pending": 0,
+          "total": 32
+        },
+        "expectedRedAssertions": [
+          "cart total regression returns 0 for an empty cart",
+          "cart caller regression renders Total: 0 cents after emptying",
+          "cart caller renders Total: 0 cents after emptying"
+        ],
+        "builtBundle": {
+          "version": 1,
+          "server": "vite-preview",
+          "origin": "http://127.0.0.1:4173",
+          "manifest": {
+            "version": 1,
+            "files": [
+              {
+                "path": "assets/index-Drx64QFX.js",
+                "size": 357013,
+                "sha256": "66ef1fedfcbde6ebdb339ae951f38eceee40ef0d7d483069aec48e827e2911e4"
+              },
+              {
+                "path": "assets/index-Drx64QFX.js.map",
+                "size": 2518117,
+                "sha256": "ca5d8f5cac9d0fd1cd66dc54f3bedd252b77f531bfc7288805db9e54ec232398"
+              },
+              {
+                "path": "index.html",
+                "size": 329,
+                "sha256": "cc7a307d9d4112f9271217a4c2df7e889c3e4f8e32569289de200bf6c3c72f7a"
+              }
+            ],
+            "digest": "225918a7ec91ec5fcecd94a2e04e59d9b5576d5c2c7e7aa2924414a3ee12697e"
+          },
+          "observed": [
+            {
+              "path": "index.html",
+              "status": 200,
+              "size": 329,
+              "sha256": "cc7a307d9d4112f9271217a4c2df7e889c3e4f8e32569289de200bf6c3c72f7a",
+              "kind": "document"
+            },
+            {
+              "path": "assets/index-Drx64QFX.js",
+              "status": 200,
+              "size": 357013,
+              "sha256": "66ef1fedfcbde6ebdb339ae951f38eceee40ef0d7d483069aec48e827e2911e4",
+              "kind": "javascript"
+            }
+          ],
+          "proofPassed": true
+        },
+        "fileCount": 31
+      },
+      "cart-scripted-candidate": {
+        "inputDigest": "c34ef1fa61132de2cb6492ba6781d3c8d0cacb193a47e52623a9e1645a019029",
+        "verdict": "passed",
+        "previewStopped": true,
+        "unit": {
+          "passed": 32,
+          "failed": 0,
+          "pending": 0,
+          "total": 32
+        },
+        "expectedRedAssertions": [],
+        "builtBundle": {
+          "version": 1,
+          "server": "vite-preview",
+          "origin": "http://127.0.0.1:4173",
+          "manifest": {
+            "version": 1,
+            "files": [
+              {
+                "path": "assets/index-j0XLRcWI.js",
+                "size": 357015,
+                "sha256": "f4e1c247449242f4adbb40ce40cfe863fb715b74d998d4f22f3d5f6f88a09e9b"
+              },
+              {
+                "path": "assets/index-j0XLRcWI.js.map",
+                "size": 2518125,
+                "sha256": "7e4a89de865f564edb58b69e63015d50463caf9a5b60e07b2a6cb9105cf62f96"
+              },
+              {
+                "path": "index.html",
+                "size": 329,
+                "sha256": "a9dd864fa3f7f7abb2452c0f5dc76612ecd76545bf30249cc95f72d881bceddd"
+              }
+            ],
+            "digest": "47fa1cdaef57cf064f73b2386685f11da7343c7ea6218be7276489c885d192b8"
+          },
+          "observed": [
+            {
+              "path": "index.html",
+              "status": 200,
+              "size": 329,
+              "sha256": "a9dd864fa3f7f7abb2452c0f5dc76612ecd76545bf30249cc95f72d881bceddd",
+              "kind": "document"
+            },
+            {
+              "path": "assets/index-j0XLRcWI.js",
+              "status": 200,
+              "size": 357015,
+              "sha256": "f4e1c247449242f4adbb40ce40cfe863fb715b74d998d4f22f3d5f6f88a09e9b",
+              "kind": "javascript"
+            }
+          ],
+          "proofPassed": true
+        },
+        "fileCount": 31
+      }
+    },
+    "cleanup": [
+      {
+        "name": "eitri-profile-f98a723e-bb7e-474e-9065-e147cea923a8-cart-scripted-candidate",
+        "removed": true
+      },
+      {
+        "name": "eitri-profile-f98a723e-bb7e-474e-9065-e147cea923a8-cart-baseline-with-regressions",
+        "removed": true
+      },
+      {
+        "name": "eitri-profile-f98a723e-bb7e-474e-9065-e147cea923a8-scripted-candidate",
+        "removed": true
+      },
+      {
+        "name": "eitri-profile-f98a723e-bb7e-474e-9065-e147cea923a8-baseline-with-regressions",
+        "removed": true
+      },
+      {
+        "name": "eitri-profile-f98a723e-bb7e-474e-9065-e147cea923a8-baseline",
+        "removed": true
+      },
+      {
+        "tag": "eitri-profile-f98a723e-bb7e-474e-9065-e147cea923a8-runtime:local",
+        "removed": true
+      },
+      {
+        "tag": "eitri-profile-f98a723e-bb7e-474e-9065-e147cea923a8-dependencies:local",
+        "removed": true
+      },
+      {
+        "tag": "eitri-profile-f98a723e-bb7e-474e-9065-e147cea923a8-base:local",
+        "removed": true
+      },
+      {
+        "scratchRemoved": true
+      }
+    ],
+    "currentOwnerFilteredAbsence": {
+      "container": true,
+      "image": true
+    }
+  },
+  "logs": [
+    {
+      "path": ".audit/fixture-baseline/red.txt",
+      "sha256": "bb3c083a8882662aed946b187d6e23410fcf72fe6bde9274dfeffdaf7c20229c"
+    },
+    {
+      "path": ".audit/fixture-baseline/pre-install-red.txt",
+      "sha256": "f7b94ef839a941ab175a9552b8ad9380a47ce4e99f21e514eb8a12f8d1d6f8dc"
+    },
+    {
+      "path": ".audit/fixture-baseline/green.txt",
+      "sha256": "564f36755ffc4a62fa7e766dbc48a4e95e28fce3b026ce7ce89475f627cebce6"
+    },
+    {
+      "path": ".audit/fixture-baseline/review-green.txt",
+      "sha256": "b7a419f44c6886d4a6caed028ed53e1a8f0abcd4de50c824999fe00d9d68b1aa"
+    }
+  ],
+  "verification": {
+    "fullRun": {
+      "command": "npm run verify:all",
+      "nodePassed": 1800,
+      "rustPassed": 30,
+      "failures": 0,
+      "skipped": 0,
+      "logSha256": "3851e938686f854a918d4274b0b57843f99880a041a1dbeccbb624bd9c402b5c",
+      "scope": "Started before the final review-only test additions and negative-control expansion; production verifier bytes unchanged afterwards."
+    },
+    "postReview": {
+      "command": "node --test test/profile-reconciliation*.test.mjs",
+      "passed": 20,
+      "failures": 0,
+      "skipped": 0,
+      "logSha256": "b7a419f44c6886d4a6caed028ed53e1a8f0abcd4de50c824999fe00d9d68b1aa",
+      "scope": "Final test bytes, including installed-manifest drift, invalid-mode, same-size-tampering and hardlink regressions."
+    },
+    "finalChecks": [
+      "npm run lint:ts",
+      "npm run format:check:ts",
+      "npm run check"
+    ]
+  }
+}

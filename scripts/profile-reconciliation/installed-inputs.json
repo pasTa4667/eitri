@@ -1,0 +1,142 @@
+[
+  {
+    "path": "e2e/errors.spec.js",
+    "size": 1020,
+    "sha256": "00017efea512224cd171635c7a7d8e2982c50fb45fe27b88d72252c97bd96b9f"
+  },
+  {
+    "path": "e2e/scenarios.spec.js",
+    "size": 2937,
+    "sha256": "e301a7de1587aef08989bfe83acf4b92ac603632fb3cc1122721204312bf53f8"
+  },
+  {
+    "path": "index.html",
+    "size": 305,
+    "sha256": "cb68589e6cd30ba368471bc86e4113749a5193aa40603383ec77db15bc8ef237"
+  },
+  {
+    "path": "package-lock.json",
+    "size": 74142,
+    "sha256": "54feec3ed89c934178637a54a07f97a3cac5b1bb997acd1b946ea1bcb861a610"
+  },
+  {
+    "path": "package.json",
+    "size": 696,
+    "sha256": "53e898131805bc71065e89b506155c6ad1a93b46da0928e2d357a6f33fc6c0c6"
+  },
+  {
+    "path": "playwright.config.js",
+    "size": 278,
+    "sha256": "bf7cc60468a5cd32c5bab17dad3544077ec26c139837841467e327eb97596fd0"
+  },
+  {
+    "path": "src/App.jsx",
+    "size": 2215,
+    "sha256": "9a113a1fa6d160beda1dc5e91b14834cb6a08faad0f3cc4ce89165deb8d67369"
+  },
+  {
+    "path": "src/App.test.jsx",
+    "size": 1485,
+    "sha256": "29568029bd04adc751a0555f6f2775c1174de27571823111bd2d1907d96081f2"
+  },
+  {
+    "path": "src/instrument.js",
+    "size": 150,
+    "sha256": "3ba6e798e15a168abd7922d7aaf8f0455bfc8646a9960dc67c760bcc19efab6f"
+  },
+  {
+    "path": "src/lib/cart.js",
+    "size": 102,
+    "sha256": "f2031ddb725d18638e75fefa33134905441452d216342a4c93c7a796c2af99e2"
+  },
+  {
+    "path": "src/lib/cart.test.js",
+    "size": 401,
+    "sha256": "30e25ef06db0f1417db1ede6824717f6880e0cfab4227f71cdc163682189ed52"
+  },
+  {
+    "path": "src/lib/errors.js",
+    "size": 534,
+    "sha256": "cd69431e5b7fda7ec116377d033d192a7b214a9c42a8101bd8c809c862af80f4"
+  },
+  {
+    "path": "src/lib/errors.test.js",
+    "size": 1383,
+    "sha256": "f6098346b1bb292bf3651ff1e777a6c26af09fc398885a65b289ac6954b4fd6f"
+  },
+  {
+    "path": "src/lib/transient-upstream.js",
+    "size": 216,
+    "sha256": "0179556479b4497f521ced64158e5c07245ed00918fdbbb52613e5df79a50c41"
+  },
+  {
+    "path": "src/lib/transient-upstream.test.js",
+    "size": 637,
+    "sha256": "4cebcfe058912ea08b68ccd17e5aa7f3a2a63b32a13b1a57602ba030e74f2c22"
+  },
+  {
+    "path": "src/main.jsx",
+    "size": 328,
+    "sha256": "02b5f4db998efe24ec308c8ee28546c5cf187f232b140938541ef56a54358545"
+  },
+  {
+    "path": "src/pages/AsyncErrorPage.jsx",
+    "size": 365,
+    "sha256": "bb34a94cd9309cda8496eff55c9add65e5600a7ae3d66dcfeacbb45bf9252cba"
+  },
+  {
+    "path": "src/pages/CartPage.jsx",
+    "size": 389,
+    "sha256": "d7dee85cd7bed8ac5e2e03e923b018c8830d8270a8ff18d9b40f96e402e0a09e"
+  },
+  {
+    "path": "src/pages/ClickErrorPage.jsx",
+    "size": 410,
+    "sha256": "af1a573bb2bb30697bbed9ab2e0cebd2f19b8e5d7231dcde2d767c7d4e988ae8"
+  },
+  {
+    "path": "src/pages/RenderErrorPage.jsx",
+    "size": 568,
+    "sha256": "ee11bf3fe2f9abccfd33d9989512a1fe9ff09eb856e3dfece6eb9e75a7b265a8"
+  },
+  {
+    "path": "src/pages/TransientPage.jsx",
+    "size": 681,
+    "sha256": "be1d9960b62a7afb16f419516130b436f09d41d607400b477eb67dd1179da162"
+  },
+  {
+    "path": "src/pages/ValidationPage.jsx",
+    "size": 929,
+    "sha256": "d1f47524dac93402a13fe436bf99b6cba94a871ed2a2ec0a638219c9178c16ee"
+  },
+  {
+    "path": "src/scenario-metadata.js",
+    "size": 670,
+    "sha256": "1c0490d2052ee33e99e644bd3a7ad36c659d6108002d93462b595500f1960158"
+  },
+  {
+    "path": "src/scenario-reporting.js",
+    "size": 1036,
+    "sha256": "418e80a53c2757cd8593aef844877310a61c1027cde12c48ea3959b3280fbf60"
+  },
+  {
+    "path": "src/scenario-reporting.test.js",
+    "size": 2534,
+    "sha256": "f6a2a7a34c8ba372194aaf0d3ec862dabec4a86be32da43449bf617687898008"
+  },
+  {
+    "path": "src/scenarios.test.jsx",
+    "size": 3783,
+    "sha256": "43ca098b0a8a5b5c40f48367c7635c7eca16a5535cb9d15d85b0a62684f35a58"
+  },
+  {
+    "path": "src/setupTests.js",
+    "size": 42,
+    "sha256": "977afde26bba6a51325908cd7713cbfdc87d18f06b78b237c8f364c44864b7de"
+  },
+  {
+    "path": "vite.config.js",
+    "size": 338,
+    "sha256": "8cf9489a44c8d77d9bf874fe80a2c1fa0b9b665f2ffde1bcd52b60c5e837efc9"
+  }
+]
