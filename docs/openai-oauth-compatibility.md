@@ -2,6 +2,8 @@
 
 ## Current decision
 
+**The direct Eitri route is now parked.** The operator's browser reports that the Enterprise workspace does not support this OSS sign-in flow. A separately approved [actual-Pi RPC prototype](pi-runtime-prototype.md) subsequently completes one tools-disabled synthetic inference using Pi-owned `openai-codex` OAuth. That distinct route does not fix the findings below or authorize an architecture replacement. Current work moves to runtime compatibility design, not another direct-login attempt.
+
 **Keep Pi AI/Pi Durable 1.3.0 pinned.** The [offline credential-storage and refresh slice](openai-credentials.md) is implemented and verified with synthetic credentials only; no SDK upgrade was needed. The [completed ID-token/identity review](openai-identity-review.md) confirms a credential-activation gap: OpenAI requires validation that the pinned built-in login cannot supply through its supported interface. M4 acceptance and persistent sign-in remain gated. The operator now approves a separate [discard-only login experiment](openai-login-test.md), without remediation or activation of returned credentials. This bounded diagnostic exception does not certify identity validation or authorize persistent use/inference.
 
 The operator accepts occasional explicit browser re-login. Automatic refresh and browser reauthorization are different operations: the probe observes correct issued-client reuse during refresh, while the repeat-registration mismatch affects a new browser sign-in. It does not show that Pi requires daily login. The dropped ID token affects returning-sign-in hints/identity handling, not the observed refresh operation. Do not infer a specific refresh lifetime or this account's behavior from the synthetic test.

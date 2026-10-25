@@ -1,0 +1,35 @@
+{
+  "performedAt": "2026-10-25T14:39:21.648011+00:00",
+  "execution": "actual-installed-Pi-with-existing-Pi-owned-OAuth",
+  "report": {
+    "scope": "pi-runtime-feasibility",
+    "transport": "rpc",
+    "provider": "openai-codex",
+    "model": "gpt-6.1-sol",
+    "verdict": "passed",
+    "configuredAuthType": "oauth",
+    "streamed": true,
+    "assistantTurns": 1,
+    "toolExecutions": 0,
+    "settled": true,
+    "childExitCode": 0,
+    "runtimeVersion": "1.4.0"
+  },
+  "probeExitCode": 0,
+  "globalSettingsBytesUnchanged": true,
+  "parentStderrBytes": 0,
+  "repositoryAndConversationProvided": false,
+  "installedSources": {
+    "package": "@earendil-works/pi-coding-agent@1.4.0",
+    "cliSha256": "e79626f2dd6f94aa45d30f3fa63cd84319a6eefcd150b353cfaf274366926774",
+    "packageJsonSha256": "df6883685382d6a914e5797232744c26579fe7db5576ea0e9c859d018ca2d54e"
+  },
+  "limits": [
+    "No token values, raw protocol transcript, provider diagnostics or model thoughts are retained.",
+    "Configured OAuth type and selected model are observed; Enterprise workspace identity is operator-reported, not inspected.",
+    "Repository/conversation omission describes supplied inputs and startup controls; no HTTP payload capture was performed.",
+    "Pi owns credential access and may refresh tokens; Eitri does not import or copy credentials.",
+    "One actual fixed-prompt turn is not proof of tool confinement, durable recovery, parallel refresh safety or full M4 acceptance.",
+    "No production architecture, project dependency or operator/controller wiring change."
+  ]
+}

@@ -8,6 +8,8 @@ The operator subsequently approves a narrow [login-only experiment](openai-login
 
 Persistent sign-in still requires an upstream correction or an explicitly approved SDK change with a supported validation boundary, or a separate operator decision about that scope. No candidate version, dependency change or independent OAuth flow is selected. Review/experiment completion is **not** M4 acceptance or authorization for refresh with real stored credentials, discovery, inference or production dispatch.
 
+The findings below concern the direct `openai` provider flow, not every authentication route offered by Pi. The later [actual-Pi RPC prototype](pi-runtime-prototype.md) passes one synthetic inference using Pi-owned `openai-codex` OAuth after the direct Eitri route is denied for Enterprise. That is a distinct feasibility observation, not remediation of this ID-token gap or approval of an architecture migration.
+
 ## Official contract
 
 The following public documentation was freshly fetched for this review; no authenticated endpoint or account data was accessed. These are documentation requirements, not verified provider behavior or account entitlement.

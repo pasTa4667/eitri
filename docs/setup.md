@@ -59,21 +59,18 @@ Production polling, diagnostic-text ingestion, review/assignment dispatch, and c
 
 ## Complete OpenAI sign-in at M4
 
-**Keep Pi AI/Pi Durable 1.3.0 pinned.** [Offline application-owned credential storage and refresh integration](openai-credentials.md) is implemented and tested with synthetic credentials only; no SDK upgrade was needed. Its default private path is `~/.eitri-oauth/credentials.sqlite`, separate from controller/case data, and production entry points do not open it. The operator accepts occasional browser re-login and approves a [discard-only login experiment](openai-login-test.md), despite the unresolved [ID-token validation gap](openai-identity-review.md). This does not approve persistent activation or inference.
+**Keep project Pi AI/Pi Durable dependencies at 1.3.0.** The operator's [direct Eitri login experiment](openai-login-test.md) was rejected by OpenAI for the Enterprise workspace (`3p_delegated_access_policy_denied`), independently of the unresolved [ID-token validation finding](openai-identity-review.md). Do not repeatedly retry that denied route, buy a personal subscription or substitute a paid API key. The private offline credential module remains available but is not connected to production.
 
-In a macOS terminal, deliberately run:
+The separately approved [Pi-runtime feasibility prototype](pi-runtime-prototype.md) uses the actual installed Pi CLI **1.4.0**, with Pi managing its existing OAuth credentials. One real tools-disabled streamed turn passed on `openai-codex/gpt-6.1-sol`. No new browser sign-in, token copying or Eitri registration was needed. The exact workspace identity was not independently inspected; this is operational evidence, not an entitlement/policy audit.
 
 ```sh
-npm run --silent test:openai-login -- --run
+npm run --silent probe:pi-runtime          # help only
+npm run --silent probe:pi-runtime -- --run # deliberately repeat the fixed real inference
 ```
 
-OpenAI issues the tokens during browser sign-in; you do not create or paste them. The command uses Eitri's saved installation identity (creating an empty private store if necessary), discards returned credentials and exits. No inference occurs. Trust the terminal result, not the SDK callback page. Ctrl+C cancels; the attempt times out after five minutes. Registration/consent can remain remotely even after local cancellation; disconnect the experiment's Eitri authorization in ChatGPT Settings afterward. It is not in the operator UI. Without `--run`, only help is shown; implementation/tests do not run a live login.
+The real probe uses a temporary empty project, an ephemeral session, disabled tools/resources and fixed synthetic input. It may consume subscription allowance and Pi may refresh its own credentials. It does not submit repository contents or your current conversation, change global settings, use a key fallback, or perform source edits. The default command and ordinary tests do not call a provider. On failure it stops rather than selecting another model/provider. Review the prototype's installed-version guard before using a changed Pi installation.
 
-`npm run --silent probe:openai-oauth` performs only synthetic local checks and still exits 1 with its original `blocked` diagnostic. It neither forbids the authorized offline slice nor certifies entitlement. Its malformed-token result came from a mocked response, not OpenAI accepting fake credentials. It does not sign in or read existing credentials.
-
-Persistent login remains unimplemented/gated on identity remediation or a separate operator decision. It must register Eitri under its actual app name and stable installation identity, with its own consent and credentials; Pi is a library, not a surrogate identity or credential source. Keep any approved refreshable OAuth state in the private application directory, outside the repository and case files. Do not copy another CLI's credentials.
-
-Select an available subscription model after sign-in. Approve the first small real tool-using inference before running it. A failed entitlement check stops this integration. No paid API key or other provider is a fallback.
+This is not in the operator UI and does not replace the current controller or Pi Durable architecture. Runtime/tool compatibility design and a separately approved controlled tool-using turn are still required. The earlier direct OAuth experiment and its synthetic characterization remain documented, but are no longer the next setup step.
 
 ## Keep operator actions explicit
 

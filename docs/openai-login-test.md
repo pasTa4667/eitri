@@ -8,6 +8,10 @@ This supersedes the earlier blanket prohibition on implementing any browser-logi
 
 This decision is recorded here rather than in a new ADR: it is a reversible diagnostic boundary, not a new production authentication architecture.
 
+## Observed outcome and revised direction
+
+The operator reports browser rejection `3p_delegated_access_policy_denied`: OpenAI says this OSS sign-in is unavailable for the selected Enterprise workspace. The terminal JSON verdict was not supplied, so successful exchange is not inferred. This denial is independent of ID-token validation. The direct route is **parked**, not retried automatically. The [actual-Pi prototype](pi-runtime-prototype.md) is the subsequent approved experiment; it uses a genuine Pi process and Pi-owned authentication rather than importing credentials into this test.
+
 ## Run manually on this Mac
 
 From the repository, in an ordinary interactive terminal:
