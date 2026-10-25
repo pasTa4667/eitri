@@ -59,7 +59,7 @@ Production polling, diagnostic-text ingestion, review/assignment dispatch, and c
 
 ## Complete OpenAI sign-in at M4
 
-**Keep Pi AI/Pi Durable 1.3.0 pinned.** Offline application-owned credential storage and refresh tests are the next permitted implementation slice; no SDK upgrade is required first. The operator accepts occasional browser re-login. The [compatibility handoff](openai-oauth-compatibility.md#next-session-implement-the-offline-credential-slice) distinguishes that from automatic refresh and records the unresolved ID-token-validation question, which must be reviewed before live sign-in. This is not a security waiver.
+**Keep Pi AI/Pi Durable 1.3.0 pinned.** [Offline application-owned credential storage and refresh integration](openai-credentials.md) is implemented and tested with synthetic credentials only; no SDK upgrade was needed. Its default private path is `~/.eitri-oauth/credentials.sqlite`, separate from controller/case data, and production entry points do not open it. The operator accepts occasional browser re-login. The [compatibility handoff](openai-oauth-compatibility.md#next-session-implement-the-offline-credential-slice) distinguishes that from automatic refresh and records the unresolved ID-token-validation question, which must be reviewed before live sign-in. This is not a security waiver.
 
 `npm run --silent probe:openai-oauth` performs only synthetic local checks and still exits 1 with its original `blocked` diagnostic. It neither forbids the authorized offline slice nor certifies entitlement. Its malformed-token result came from a mocked response, not OpenAI accepting fake credentials. It does not sign in or read existing credentials.
 

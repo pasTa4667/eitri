@@ -240,12 +240,12 @@ M3 setup is accepted within the [recorded evidence and limits](evidence/github-p
 
 - [x] Check the official local-app registration route and reproduce pinned SDK compatibility gaps offline. The [OAuth prerequisite](openai-oauth-compatibility.md) records repeat-registration, ID-token validation and retention gaps. This completes compatibility investigation, **not M4 acceptance**.
 - [x] Retain Pi AI/Pi Durable 1.3.0 for offline integration. The operator accepts occasional explicit browser re-login; repeat registration is not a daily-refresh failure. No upgrade prerequisite or security exception is accepted. See the [continuation handoff](openai-oauth-compatibility.md#next-session-implement-the-offline-credential-slice).
-- [ ] **Next implementation slice:** application-owned private, atomic credential persistence using the pinned supported SDK interfaces, with stable installation/issued-client identity and serialized mutations. Test reopen, mocked rotating-token refresh, cancellation, storage/auth failure and the OpenAI OAuth-only/no-API-key-fallback boundary. Use synthetic credentials only; keep live login and production dispatch disabled.
-- [ ] Resolve the narrow ID-token-validation/identity contract before live sign-in. The malformed-token probe used a mocked response, not OpenAI accepting fake credentials. Do not silently waive the documented requirement; consider an upstream fix or separately approved SDK change only if needed. No independent OAuth flow.
+- [x] Implement application-owned private, atomic credential persistence using the pinned supported SDK interfaces, with stable installation/issued-client identity and serialized mutations. The [offline credential slice](openai-credentials.md) verifies reopen, mocked rotating-token refresh, cancellation, storage/auth failure and the OpenAI OAuth-only/no-API-key-fallback boundary with synthetic credentials only. Live login and production dispatch remain disabled.
+- [ ] **Next task:** resolve the narrow ID-token-validation/identity contract before live sign-in. The malformed-token probe used a mocked response, not OpenAI accepting fake credentials. Do not silently waive the documented requirement; consider an upstream fix or separately approved SDK change only if needed. No independent OAuth flow.
 - [ ] Implement/enable the opt-in Eitri browser-login wrapper after that review, under Eitri's own app/host identity and consent.
 - [ ] Operator completes supported sign-in; verify account-specific model discovery and one separately approved genuine streamed tool-using turn. No copied CLI credentials or production dispatch.
 
-Offline credential integration may proceed without an SDK upgrade. M4 acceptance, live sign-in and first inference remain gated. The prior SDK approval does not certify full OAuth compatibility.
+Offline credential integration is implemented on the pinned SDK. M4 acceptance, live sign-in and first inference remain gated. The prior SDK approval does not certify full OAuth compatibility.
 
 Minimum durable/race checks, exercised through the same controller interface:
 

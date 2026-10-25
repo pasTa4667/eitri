@@ -2,7 +2,7 @@
 
 ## Current decision
 
-**Keep Pi AI/Pi Durable 1.3.0 pinned and continue offline credential-storage and refresh integration.** An SDK upgrade is not a prerequisite for that work. M4 acceptance and live sign-in remain gated on the unresolved ID-token-validation question and explicit operator approval. This supersedes the earlier blanket stop before all application authentication implementation; it does not waive a security requirement.
+**Keep Pi AI/Pi Durable 1.3.0 pinned.** The [offline credential-storage and refresh slice](openai-credentials.md) is implemented and verified with synthetic credentials only; no SDK upgrade was needed. M4 acceptance and live sign-in remain gated on the unresolved ID-token-validation question and explicit operator approval. This supersedes the earlier blanket stop before all application authentication implementation; it does not waive a security requirement.
 
 The operator accepts occasional explicit browser re-login. Automatic refresh and browser reauthorization are different operations: the probe observes correct issued-client reuse during refresh, while the repeat-registration mismatch affects a new browser sign-in. It does not show that Pi requires daily login. The dropped ID token affects returning-sign-in hints/identity handling, not the observed refresh operation. Do not infer a specific refresh lifetime or this account's behavior from the synthetic test.
 
@@ -54,7 +54,7 @@ These are documentation observations, not a guarantee of policy eligibility or d
 
 ## Next session: implement the offline credential slice
 
-Start with the next pending [M4 build-plan task](build-plan.md#current-m4-subscription-access-slices), using the existing supported `CredentialStore`/`Models` APIs, not a new OAuth protocol:
+This handoff's offline slice is now **complete**; the heading is retained for existing links. The [implementation, verification and author review](openai-credentials.md) use the supported `CredentialStore`/`Models` APIs, not a new OAuth protocol. The original slice requirements were:
 
 1. Implement application-owned private credential persistence: 0700 directory and 0600 file outside repositories, case stores and worker mounts; atomic writes; serialized mutations/refresh; preserve the issued client ID and stable installation identity across reopen.
 2. Use synthetic credentials and mocked token responses to test persistence/reopen, rotating-token refresh, cancellation and fail-closed storage/auth errors. Reuse Pi's refresh implementation. Never read another application's real credential store.
