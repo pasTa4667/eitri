@@ -30,7 +30,7 @@ The read paths are `/repos/pasTa4667/eitri-test-web-app`, `/branches/master`, `/
 
 Local read-only Git commands independently observe the same origin, a clean `master`, HEAD `103db4755657e9a1595120164242a7b9323defcd`, and the identical README blob. The baseline is already present remotely; this continuation neither pushes it nor claims who published it. There is no reason to push an identical baseline again.
 
-## Remaining gate and limits
+## Gate state at the read-only checkpoint
 
 - The PAT prefix and authenticated reads establish format/read access, not its complete selected-repository list or Contents/PR write grants. Obtain operator confirmation from GitHub's token settings: only this repository, Contents read/write, Pull requests read/write, Metadata read, no extra grants.
 - Agree that `master` is the PR base. Do not rename it. Future fixes use independent session-owned fix branches and tested commits.
@@ -42,3 +42,24 @@ Local read-only Git commands independently observe the same origin, a clean `mas
 Five-axis author review, not independent-agent or cross-family assurance: no Critical, Important, or Suggestion findings remain. Correctness distinguishes observed read access from unverified write scope and preserves the unfinished gate. Readability and architecture follow existing setup/work-log evidence conventions without adding a production integration. Security review checks that recorded metadata contains no credentials or arbitrary API content. Performance review notes four bounded requests without polling/retries.
 
 This is an operational setup/documentation slice, not a behavior change: no application tests or builds are rerun and no new test is claimed. Documentation whitespace, linked-path existence, and consistency of the projected evidence with local commit/README identity are checked before committing.
+
+## Operator confirmation and M3 setup acceptance
+
+After checkpoint commit `bcf867e`, the operator answers "yes" to the explicit confirmation that the token selects only this repository with Contents and Pull requests read/write, and that `master` is the base for future fix PRs. This closes the outstanding settings/base questions above; it is operator attestation, not API introspection or a successful write test.
+
+M3 is accepted for hosted integration and credential setup:
+
+| M3 requirement | Evidence |
+|---|---|
+| Reviewed account/vault and direct token storage | Operator setup confirmations; fixed GitHub and Sentry password references, no values in chat |
+| Populated project/issue/latest-event access | [Hosted observations](../hosted-monitored/verification.md) |
+| Known-revision synthetic reporting, grouping/native classification, validation exclusion | [Monitored-build checkpoint](../hosted-monitored/verification.md), including retained original failure and corrected verification |
+| Permitted review/explicit-owner assignment | [Sentry review checkpoint](../sentry-review/verification.md) |
+| GitHub privacy/read access, baseline/README identity | Four actual GETs and independent local Git identity checks above |
+| Repository-restricted token grants and agreed PR base | Operator confirmation; token scope remains attested, not independently proven |
+| Baseline publication disposition | Exact local commit is already on remote `master`; no push is needed, authorized or performed in this continuation |
+| Automation remains disabled | No production source/configuration change; no dispatch or live activation |
+
+Future fixes must use session-owned feature/fix branches, preserve the default branch/README, and satisfy the plan's revision, publication and live-enablement gates. This confirmation does not authorize future remote writes, M4 sign-in/first inference, automatic merge or deployment. No additional credential read or hosted request is made to record it.
+
+The acceptance update receives a five-axis author review with no findings: it preserves the observed-versus-attested distinction, records the existing-baseline no-op without fabricating a push, keeps later authority gates intact, follows existing documentation structure and adds no runtime/performance surface. Local whitespace, link and checklist-consistency checks pass. No application tests/builds are rerun for this documentation-only update.
