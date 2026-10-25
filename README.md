@@ -18,7 +18,7 @@ npm run probe:sdk
 
 `probe:sdk` runs a throwaway faux-model experiment against a temporary real Pi SQLite store. It is not a live inference or the M0 controller.
 
-`npm run --silent probe:openai-oauth` characterizes the pinned SDK using synthetic transports and no credentials. It retains its original exit-1 `blocked` diagnostic; this is not a hosted sign-in or entitlement test. [Offline private credential persistence and refresh integration](docs/openai-credentials.md) is implemented on Pi 1.3.0 without an upgrade and verified with synthetic credentials only. Live sign-in remains gated on the unresolved ID-token-validation review; production dispatch is unchanged.
+`npm run --silent probe:openai-oauth` characterizes the pinned SDK using synthetic transports and no credentials. It retains its original exit-1 `blocked` diagnostic; this is not a hosted sign-in or entitlement test. [Offline private credential persistence and refresh integration](docs/openai-credentials.md) is implemented on Pi 1.3.0 without an upgrade and verified with synthetic credentials only. The [completed ID-token/identity review](docs/openai-identity-review.md) confirms a live-login blocker requiring an upstream correction or separately approved SDK change; no upgrade or security waiver is authorized. Production dispatch is unchanged.
 
 ## Lint and format
 

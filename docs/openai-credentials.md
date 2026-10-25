@@ -31,7 +31,7 @@ Successful resolution contains a secret bearer token (the SDK names the transpor
 - File permissions protect against other OS users, not malicious same-UID processes, root or a compromised filesystem/host. Same-UID path-replacement races are not excluded by these Node path checks.
 - Credentials are local plaintext protected by permissions, not encrypted by this module. SQLite `secure_delete` is enabled, but deletion is not guaranteed forensic erasure from SSDs, snapshots or backups. Do not copy this store into telemetry or repository backups.
 - This is one selected OpenAI credential, not a multi-account/profile manager. No validated identity, live login, callback security, entitlement, model discovery, inference or remote revocation is certified.
-- The unresolved [ID-token-validation/identity gate](openai-oauth-compatibility.md) remains the next task. M4 acceptance and browser login remain blocked; occasional manual re-login is not a security waiver.
+- The [completed ID-token/identity review](openai-identity-review.md) confirms a failed live gate, not an exemption. The next task requires an upstream correction or separately approved SDK change before a login wrapper. This offline store does not retain verified identity or ID tokens; future integration must address that explicitly. M4 acceptance and browser login remain blocked; occasional manual re-login is not a security waiver.
 
 ## Verification
 
