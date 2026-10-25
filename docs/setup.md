@@ -59,7 +59,9 @@ Production polling, diagnostic-text ingestion, review/assignment dispatch, and c
 
 ## Complete OpenAI sign-in at M4
 
-**Blocked before login implementation:** the [offline OAuth compatibility prerequisite](openai-oauth-compatibility.md) reproduces gaps in the pinned Pi AI 1.3.0 returning-registration and ID-token behavior. `npm run --silent probe:openai-oauth` performs only synthetic local checks and intentionally exits 1 for the blocked SDK. It does not sign in, read credentials, or certify entitlement. A reviewed dependency/design decision is required before proceeding.
+**Keep Pi AI/Pi Durable 1.3.0 pinned.** Offline application-owned credential storage and refresh tests are the next permitted implementation slice; no SDK upgrade is required first. The operator accepts occasional browser re-login. The [compatibility handoff](openai-oauth-compatibility.md#next-session-implement-the-offline-credential-slice) distinguishes that from automatic refresh and records the unresolved ID-token-validation question, which must be reviewed before live sign-in. This is not a security waiver.
+
+`npm run --silent probe:openai-oauth` performs only synthetic local checks and still exits 1 with its original `blocked` diagnostic. It neither forbids the authorized offline slice nor certifies entitlement. Its malformed-token result came from a mocked response, not OpenAI accepting fake credentials. It does not sign in or read existing credentials.
 
 Use the application's supported Pi OAuth login flow when implemented. Register Eitri under its actual app name and stable installation identity, with its own consent and credentials; Pi is a library, not a surrogate identity or credential source. Keep refreshable OAuth state in the private application directory, outside the repository and case files. Do not copy another CLI's credentials.
 

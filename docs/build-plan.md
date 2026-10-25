@@ -239,11 +239,13 @@ M3 setup is accepted within the [recorded evidence and limits](evidence/github-p
 ### Current M4 subscription-access slices
 
 - [x] Check the official local-app registration route and reproduce pinned SDK compatibility gaps offline. The [OAuth prerequisite](openai-oauth-compatibility.md) records repeat-registration, ID-token validation and retention gaps. This completes compatibility investigation, **not M4 acceptance**.
-- [ ] Resolve the SDK mismatch through an explicitly reviewed dependency/design decision. M4 is blocked here; do not weaken the login contract or implement an independent OAuth flow.
-- [ ] Implement the opt-in Eitri login wrapper and private credential persistence against the reviewed supported SDK, including refresh/error/cancellation and no-API-key-fallback tests.
+- [x] Retain Pi AI/Pi Durable 1.3.0 for offline integration. The operator accepts occasional explicit browser re-login; repeat registration is not a daily-refresh failure. No upgrade prerequisite or security exception is accepted. See the [continuation handoff](openai-oauth-compatibility.md#next-session-implement-the-offline-credential-slice).
+- [ ] **Next implementation slice:** application-owned private, atomic credential persistence using the pinned supported SDK interfaces, with stable installation/issued-client identity and serialized mutations. Test reopen, mocked rotating-token refresh, cancellation, storage/auth failure and the OpenAI OAuth-only/no-API-key-fallback boundary. Use synthetic credentials only; keep live login and production dispatch disabled.
+- [ ] Resolve the narrow ID-token-validation/identity contract before live sign-in. The malformed-token probe used a mocked response, not OpenAI accepting fake credentials. Do not silently waive the documented requirement; consider an upstream fix or separately approved SDK change only if needed. No independent OAuth flow.
+- [ ] Implement/enable the opt-in Eitri browser-login wrapper after that review, under Eitri's own app/host identity and consent.
 - [ ] Operator completes supported sign-in; verify account-specific model discovery and one separately approved genuine streamed tool-using turn. No copied CLI credentials or production dispatch.
 
-M4 sign-in and first inference remain separately gated. The prior SDK approval does not cover these OAuth mismatches.
+Offline credential integration may proceed without an SDK upgrade. M4 acceptance, live sign-in and first inference remain gated. The prior SDK approval does not certify full OAuth compatibility.
 
 Minimum durable/race checks, exercised through the same controller interface:
 

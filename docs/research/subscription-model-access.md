@@ -4,7 +4,9 @@ Research checked **2026-10-17 (UTC)**. **Decision accepted:** use the existing O
 
 ## Implementation checkpoint
 
-The documented local/open-source route remains the selected approach, but **M4 is blocked before login implementation**. Fresh documentation comparison and an offline runtime probe of pinned Pi AI 1.3.0 reproduce returning-client registration, ID-token validation and retention gaps. The research observations below do not establish full SDK compatibility. See the [OAuth compatibility prerequisite](../openai-oauth-compatibility.md) for evidence, limits and the required dependency/design decision. Eitri must register under its own actual app identity; reusing Pi's library does not authorize borrowing Pi CLI credentials.
+The documented local/open-source route remains selected. **Retain Pi AI/Pi Durable 1.3.0 and proceed with offline private credential persistence and mocked refresh tests; no SDK upgrade is required first.** The operator accepts occasional explicit re-login. The probe observes issued-client reuse on automatic refresh; its repeat-registration gap concerns a new browser sign-in, not daily authentication. Its malformed-ID-token result uses a mocked token response, not OpenAI accepting fake credentials.
+
+ID-token validation remains unresolved before live sign-in; accepting re-login inconvenience is not a security exception. The research observations below do not establish full SDK compatibility or account entitlement. See the [OAuth continuation handoff](../openai-oauth-compatibility.md#next-session-implement-the-offline-credential-slice) for the next implementation task and remaining live gates. Eitri must register under its own actual app identity; reusing Pi's library does not authorize borrowing Pi CLI credentials.
 
 ## Short answer
 
