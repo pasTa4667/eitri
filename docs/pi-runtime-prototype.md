@@ -61,3 +61,5 @@ The 23 offline tests pass. They cover default help, early events before prompt a
 | Performance | `prototypes/pi-runtime.mjs:16,38–52,260–272`: bounded preflight, attempt, pipes and kill/reap cleanup; one prompted synthetic turn, no automatic experiment retry or provider/model switch. Background transport behavior is not packet-captured or generally certified. |
 
 This is an author review, not an independent-agent or cross-model security audit. No unresolved Critical/Important defect is identified within the narrow prototype contract; the production compatibility gaps above remain required next work. **Stop before changing the architecture.**
+
+The subsequent [compatibility design/review](pi-runtime-compatibility.md) compares the two runtime choices and recommends a stream-only offline experiment while retaining native durability. That experiment awaits operator approval; this earlier CLI success does not validate the SDK route or authorize shared-credential use.
