@@ -18,6 +18,8 @@ npm run probe:sdk
 
 `probe:sdk` runs a throwaway faux-model experiment against a temporary real Pi SQLite store. It is not a live inference or the M0 controller.
 
+`npm run --silent probe:openai-oauth` characterizes the pinned SDK using synthetic transports and no credentials. It intentionally exits 1 because M4 login is [blocked on SDK compatibility](docs/openai-oauth-compatibility.md); this is not a hosted sign-in or entitlement test.
+
 ## Lint and format
 
 ```sh

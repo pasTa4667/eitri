@@ -10,6 +10,7 @@
     "list:sentry": "node scripts/list-sentry.ts",
     "observe:sentry": "node scripts/observe-sentry.ts",
     "probe:sdk": "node prototypes/sdk-compatibility.mjs",
+    "probe:openai-oauth": "node prototypes/openai-oauth-compatibility.mjs",
     "check": "tsc --noEmit && node --check scripts/doctor.mjs && node --check scripts/check-sdk.mjs && node --check prototypes/sdk-compatibility.mjs && node --check prototypes/chromium/probe.mjs && node --check prototypes/chromium/run.mjs && node --check prototypes/chromium/policy.mjs",
     "test": "node --test test/*.test.ts test/*.test.mjs",
     "lint:ts": "oxlint --deny-warnings src test scripts prototypes",

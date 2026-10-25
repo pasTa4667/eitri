@@ -234,7 +234,16 @@ After the installed local fixture baseline, continue in these bounded increments
 - [x] Verify permitted review/assignment behavior with operator-authorized remote mutations. The synthetic profile-name issue is reviewed and assigned to the operator-selected user `5090062`, with fresh readback; priority/status and seen state are unchanged. See the [checkpoint](evidence/sentry-review/verification.md) for retained failures, identity correction and limits. Live controller assignment remains disabled.
 - [x] Complete GitHub credential/privacy/default-branch checks and settle baseline publication. [Read-only GitHub checks and operator confirmation](evidence/github-preflight/verification.md#operator-confirmation-and-m3-setup-acceptance) verify private visibility, default `master`, and the exact local baseline/README already present remotely, so no baseline push is needed. The operator confirms this repository as the token's only selected repository, Contents/PR read-write grants, and `master` as the PR base. Token settings are operator-attested, not independently introspected. No branch rename or publication is performed; future writes still require their own publication approval.
 
-M3 setup is accepted within the [recorded evidence and limits](evidence/github-preflight/verification.md#operator-confirmation-and-m3-setup-acceptance). No baseline push is required because that exact commit is already remote; this does not grant future publication approval. Polling, controller intake, model dispatch and live remediation remain disabled. M4 sign-in and first inference are the next separately gated milestone.
+M3 setup is accepted within the [recorded evidence and limits](evidence/github-preflight/verification.md#operator-confirmation-and-m3-setup-acceptance). No baseline push is required because that exact commit is already remote; this does not grant future publication approval. Polling, controller intake, model dispatch and live remediation remain disabled.
+
+### Current M4 subscription-access slices
+
+- [x] Check the official local-app registration route and reproduce pinned SDK compatibility gaps offline. The [OAuth prerequisite](openai-oauth-compatibility.md) records repeat-registration, ID-token validation and retention gaps. This completes compatibility investigation, **not M4 acceptance**.
+- [ ] Resolve the SDK mismatch through an explicitly reviewed dependency/design decision. M4 is blocked here; do not weaken the login contract or implement an independent OAuth flow.
+- [ ] Implement the opt-in Eitri login wrapper and private credential persistence against the reviewed supported SDK, including refresh/error/cancellation and no-API-key-fallback tests.
+- [ ] Operator completes supported sign-in; verify account-specific model discovery and one separately approved genuine streamed tool-using turn. No copied CLI credentials or production dispatch.
+
+M4 sign-in and first inference remain separately gated. The prior SDK approval does not cover these OAuth mismatches.
 
 Minimum durable/race checks, exercised through the same controller interface:
 

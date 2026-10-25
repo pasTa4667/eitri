@@ -2,6 +2,10 @@
 
 Research checked **2026-10-17 (UTC)**. **Decision accepted:** use the existing OpenAI/ChatGPT subscription through Pi's supported sign-in, including the hosted-inference data boundary. No login, account change, download, or paid API request is authorized during this research session.
 
+## Implementation checkpoint
+
+The documented local/open-source route remains the selected approach, but **M4 is blocked before login implementation**. Fresh documentation comparison and an offline runtime probe of pinned Pi AI 1.3.0 reproduce returning-client registration, ID-token validation and retention gaps. The research observations below do not establish full SDK compatibility. See the [OAuth compatibility prerequisite](../openai-oauth-compatibility.md) for evidence, limits and the required dependency/design decision. Eitri must register under its own actual app identity; reusing Pi's library does not authorize borrowing Pi CLI credentials.
+
 ## Short answer
 
 **Pi Durable is not local-model-only.** It uses Pi's model-provider layer, which supports hosted OpenAI/Anthropic models, local compatible servers, API keys, and provider-specific OAuth. Model hosting, authentication/billing, and durable execution are separate choices. The ordinary Pi CLI and a custom Durable application are not the same program; existing CLI credentials must not be assumed to appear automatically in our application. [P1]

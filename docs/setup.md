@@ -59,7 +59,9 @@ Production polling, diagnostic-text ingestion, review/assignment dispatch, and c
 
 ## Complete OpenAI sign-in at M4
 
-Use the application's supported Pi OAuth login flow when implemented. Keep refreshable OAuth state in the private application directory, outside the repository and case files. Do not copy another CLI's credentials.
+**Blocked before login implementation:** the [offline OAuth compatibility prerequisite](openai-oauth-compatibility.md) reproduces gaps in the pinned Pi AI 1.3.0 returning-registration and ID-token behavior. `npm run --silent probe:openai-oauth` performs only synthetic local checks and intentionally exits 1 for the blocked SDK. It does not sign in, read credentials, or certify entitlement. A reviewed dependency/design decision is required before proceeding.
+
+Use the application's supported Pi OAuth login flow when implemented. Register Eitri under its actual app name and stable installation identity, with its own consent and credentials; Pi is a library, not a surrogate identity or credential source. Keep refreshable OAuth state in the private application directory, outside the repository and case files. Do not copy another CLI's credentials.
 
 Select an available subscription model after sign-in. Approve the first small real tool-using inference before running it. A failed entitlement check stops this integration. No paid API key or other provider is a fallback.
 
