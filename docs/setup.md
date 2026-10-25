@@ -22,11 +22,11 @@ Enable the desktop application's CLI integration when ready. Desktop approval ca
 4. Grant repository Pull requests read and write permission.
 5. Keep the required Metadata read permission.
 6. Set an expiry appropriate for the pilot.
-7. Store the token directly in the reviewed vault as a field named `token` in an item named `GitHub`.
+7. Store the token directly in the reviewed vault as the password field in an item named `GitHub`.
 
-`op://Eitri/GitHub/token` is a proposed reference, not evidence that the item exists. Do not paste the token into chat, a terminal command, source, or a fixture environment file.
+The operator's existing item uses `op://Eitri/GitHub/password`, verified readable in the reviewed account `aurumcars.1password.eu`. The earlier proposed `/token` field does not exist; no rename is needed. Do not paste the token into chat, a terminal command, source, or a fixture environment file.
 
-The first push remains gated on verified repository privacy, default branch, and your confirmation of the target branch. Do not rename `master` or replace the existing README.
+The [read-only GitHub checkpoint](evidence/github-preflight/verification.md) verifies that `pasTa4667/eitri-test-web-app` is private, uses default branch `master`, and already contains the exact local baseline and README. No baseline push is necessary. Token repository selection and write permissions still require operator settings confirmation; read success and the user's reported push permission do not prove token write scope. Confirm `master` as the PR base before proceeding. Future publication remains explicitly gated and uses session-specific fix branches, never direct fixes on the default branch. Do not rename `master` or replace the existing README.
 
 ## Check the existing hosted Sentry connection
 
