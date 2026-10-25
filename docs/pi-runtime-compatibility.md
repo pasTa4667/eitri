@@ -2,9 +2,9 @@
 
 ## Scope and decision
 
-The next M4 task after the [successful RPC feasibility experiment](pi-runtime-prototype.md) is design/review, not runtime replacement. This checkpoint keeps the existing controller, Pi Durable 1.3.0 case files, and container-only execution authority. **Recommend option A below for an offline compatibility experiment; operator approval of that experiment is still pending.** No production architecture change, dependency upgrade, credential access or further inference is authorized by this document. [ADR 0005](adr/0005-retain-durable-inference-seam.md) records that distinction.
+After the [successful RPC feasibility experiment](pi-runtime-prototype.md), the operator approves option A's bounded offline investigation, not runtime replacement. Keep the existing controller, Pi Durable 1.3.0 case files and container-only execution authority. The [first SDK characterization below](#offline-sdk-seam-characterization) passes; the overall compatibility experiment remains incomplete. No production architecture change, dependency upgrade, real credential access or further inference is authorized. [ADR 0005](adr/0005-retain-durable-inference-seam.md) accepts this investigation scope only.
 
-The operator's request to continue and review authorizes this design checkpoint; it is not retroactive acceptance of an unseen design. The real prototype proves a CLI-managed text turn only. It does not prove that the SDK route below has equivalent authentication, policy eligibility or tool behavior.
+The earlier design/review checkpoint proposed this experiment; the subsequent explicit “yes continue implementing the next step” supplies approval to start offline implementation. The real prototype proves a CLI-managed text turn only. It does not prove that the SDK route below has equivalent authentication, policy eligibility or tool behavior.
 
 ## Alternatives grounded in this checkout
 
@@ -35,7 +35,7 @@ This is a design contract, not an implemented interface or a finding that existi
 - **History and expiry:** no helper JSONL file, raw pipe capture, content cache or permanent full-transcript catalogue receipt. Persist permitted messages/results only through native case storage, and artifact evidence through existing case-scoped stores. Reaping/closing must precede expiry; retain the existing case-only removal and compact duplicate-work guards. Global Pi credentials/configuration never become case payloads or expiry targets. Expiry is application deletion, not forensic erasure of OS backups or provider data.
 - **Trust:** the helper/Pi library runs with its host user's permissions and is trusted code, not sandboxed by cwd, disabled tools or a pipe. Only configured worker execution has the existing container restrictions. No claim of Enterprise policy certification, network-payload audit, concurrent auth safety or tool-use entitlement follows from source inspection.
 
-## Next slice, only after approval
+## Approved offline experiment acceptance criteria
 
 Implement a **standalone offline compatibility probe**, not production wiring, against the reviewed installed 1.4.0 SDK and pinned 1.3.0 native types. Keep project dependencies/lockfile unchanged; pin/check the installed import and relevant source identities rather than following arbitrary global upgrades. All child/provider/auth transports use synthetic inputs and stores; no real login, default auth-store access, remote catalogue/inference, Docker, repository upload or hosted integration. Stop if the supported interface cannot satisfy the contract; do not patch Pi internals or fall back to RPC prompting.
 
@@ -52,4 +52,16 @@ Passing that slice permits another review/decision, **not** automatic production
 
 ## Review and verification
 
-See the [five-axis author review](evidence/pi-runtime/compatibility-review.md). This checkpoint changes documentation only; no behavioral RED/GREEN result or SDK compatibility success is claimed. The work log records checks actually run. Experiment approval and final production-route selection remain open.
+The [earlier design review](evidence/pi-runtime/compatibility-review.md) covers the documentation-only checkpoint. The [implementation review](evidence/pi-runtime/stream-review.md) covers the first offline characterization, its RED/GREEN evidence and remaining gates. Final production-route selection remains open.
+
+## Offline SDK seam characterization
+
+`npm run --silent probe:pi-stream` shows help without constructing a runtime. Explicit `-- --offline` runs only fixed synthetic fixtures in a subprocess, with a generated empty home/cwd, an allowlisted environment and no inherited provider keys or Node injection options. The probe checks `prototypes/pi-stream-source.json` before importing installed SDK code; unreviewed selected-source changes fail closed. The manifest pins relevant installed 1.4.0 SDK/AI and project 1.3.0 AI artifacts, **not the entire transitive installation**. The installed SDK at the recorded Homebrew path is an intentional local prerequisite for these compatibility tests; tests fail rather than skip on a different/missing installation. No project dependency or lockfile changes.
+
+`ModelRuntime.create` receives synthetic in-memory credentials, `modelsPath: null`, `refreshOnCreate: false` and `allowModelNetwork: false` before construction; `PI_OFFLINE=1` disables automatic model-network activity. No default auth/model store is opened. A supported `registerNativeProvider` registration supplies an explicitly synthetic physical route (`eitri-offline/synthetic-text-tool`, `https://offline.invalid`), OAuth refresh and provider stream. This is **not** OpenAI's provider, OAuth implementation or transport. A forbidden-fetch sentinel checks for accidental fetch use; the trusted SDK/helper is not OS-network-sandboxed.
+
+Two manually requested `streamSimple` calls preserve JSON-round-tripped, 1.3.0-typechecked system/user messages, tool definitions, Unicode, text/thinking/tool signatures, call IDs/arguments, usage and terminal reasons. The second receives the first assistant response and a **fixture tool result**, not a native tool invocation or SQLite commit. The installed 1.4.0 provider sees the exact context also normalized by project 1.3.0. One expired synthetic credential is refreshed internally and reused; the probe never calls `getAuth` to extract a token. No `AgentSession`, helper transcript, tool executor, retry/compaction loop or automatic second dispatch exists.
+
+The child returns only fixed compact observations after assertions; the parent requires exact bounded output, empty stderr and normal process completion. EOF/partial/extra/oversized output, diagnostics, altered observations and nonzero exit reject with fixed errors. Timeout/cancellation send SIGKILL and wait for child closure before removing the generated home. This is an offline kill/reap check, not cooperative live-provider cancellation or admission-budget accounting.
+
+**Decision:** accept this first characterization as evidence that the exported stream-only SDK seam can be constructed without real Pi storage and can preserve these synthetic message fixtures. Do not equate it with a validated adapter. This deliberately smaller slice leaves all six acceptance criteria above open as a whole: general runtime shape/modality validation and correlated stream transport; hostile/late event handling; pause/deadline/restart allowances; actual Pi Durable SQLite commit/crash/recovery/no-uncertain-tool-replay checks; two-case isolation/expiry; and built-in provider auth failure/cancellation/refresh serialization. Those are the next offline increments, before any separately approved real controlled tool-using turn. M4 remains open.

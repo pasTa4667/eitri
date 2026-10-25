@@ -20,7 +20,9 @@ npm run probe:sdk
 
 `npm run --silent probe:openai-oauth` characterizes Pi AI 1.3.0 using synthetic transports; its exit-1 `blocked` diagnostic is not a live login test. [Offline private credentials](docs/openai-credentials.md) and the [identity review](docs/openai-identity-review.md) remain retained. The [direct login experiment](docs/openai-login-test.md) was subsequently denied for the operator's Enterprise workspace, independently of the ID-token gap; that route is parked.
 
-The approved [actual-Pi prototype](docs/pi-runtime-prototype.md) instead uses the already-installed Pi CLI 1.4.0 and Pi-owned OAuth through RPC. One genuine, tools-disabled streamed `openai-codex/gpt-6.1-sol` turn passed. `npm run --silent probe:pi-runtime` shows help; adding `-- --run` deliberately repeats that inference. No credentials are copied, no repository/conversation is supplied, and project dependencies remain 1.3.0. Production architecture, operator dispatch and remediation are unchanged; runtime/tool compatibility design is next.
+The approved [actual-Pi prototype](docs/pi-runtime-prototype.md) instead uses the already-installed Pi CLI 1.4.0 and Pi-owned OAuth through RPC. One genuine, tools-disabled streamed `openai-codex/gpt-6.1-sol` turn passed. `npm run --silent probe:pi-runtime` shows help; adding `-- --run` deliberately repeats that inference. No credentials are copied, no repository/conversation is supplied, and project dependencies remain 1.3.0. Production architecture, operator dispatch and remediation are unchanged.
+
+The approved [offline stream-only experiment](docs/pi-runtime-compatibility.md#offline-sdk-seam-characterization) starts with a synthetic SDK seam check: `npm run --silent probe:pi-stream -- --offline`. Default/help does not construct a runtime. It requires the reviewed installed SDK/source identities, uses a generated empty home and synthetic in-memory OAuth/provider data, and performs no real login or inference. The fixture round trip is not a general adapter or proof of native recovery/tool/expiry parity; those checks remain pending.
 
 ## Lint and format
 
