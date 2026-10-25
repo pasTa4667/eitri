@@ -1,0 +1,84 @@
+{
+  "scope": "Public read-only upstream investigation; not remediation or M4 acceptance",
+  "observedAt": "2026-10-25T13:45:24Z",
+  "installedVersion": "1.3.0",
+  "registryLatest": {
+    "url": "https://registry.npmjs.org/@earendil-works%2Fpi-ai/latest",
+    "version": "1.4.0",
+    "artifactDownloadedOrExecuted": false
+  },
+  "sourceSnapshots": [
+    {
+      "ref": "main",
+      "commit": "d5b3de22d0e24a3e9c38a9410d3329b099717283",
+      "path": "packages/ai/src/auth/oauth/openai-chatgpt.ts",
+      "sha256": "ad9dbdd7ffa52fcbaff1d1be2d0ba97b643476aaf8930e6dd67147bf35c837de",
+      "observed": "Presence-only ID-token check at lines 200-205; token/identity discarded; generated nonce not verified; refresh reconstructs credentials without identity metadata."
+    },
+    {
+      "ref": "v1.4.0",
+      "commit": "4a080252f06caf63a525d7873c5d94d3c23887e0",
+      "path": "packages/ai/src/auth/oauth/openai-chatgpt.ts",
+      "sha256": "ad9dbdd7ffa52fcbaff1d1be2d0ba97b643476aaf8930e6dd67147bf35c837de",
+      "observed": "Identical to the main-branch OAuth source snapshot; tagged source, not executed npm artifact."
+    },
+    {
+      "ref": "main",
+      "commit": "d5b3de22d0e24a3e9c38a9410d3329b099717283",
+      "path": "packages/ai/src/auth/types.ts",
+      "sha256": "9649ee48d0617ceff91b9adc6c40496e706a5730ad22272805dd88f4ffe1b1e6",
+      "observed": "LoginOptions at lines 206-218 still supplies only getDeviceId and agentName; no validation hook or expected-account/client inputs."
+    }
+  ],
+  "upstreamRequests": [
+    {
+      "url": "https://github.com/earendil-works/pi/issues/10300",
+      "title": "ChatGPT OAuth ID token is not persisted, preventing extensions from accessing account identity",
+      "state": "open",
+      "observedComments": 16,
+      "conclusion": "Related metadata request. Comments describe third-party local patches, not a merged supported correction. Patch code and reported test results were not independently verified."
+    },
+    {
+      "url": "https://github.com/earendil-works/pi/issues/11313",
+      "title": "Verify the ID token in Sign in with ChatGPT",
+      "state": "closed",
+      "stateReason": "not_planned",
+      "observedComments": 1,
+      "commentUrl": "https://github.com/earendil-works/pi/issues/11313#issuecomment-6359140701",
+      "conclusion": "Exact validation/identity request. Sole comment says new-contributor issues are auto-closed. This is not evidence of a maintainer's technical rejection, acceptance or merged fix."
+    }
+  ],
+  "targetedPullRequestSearches": [
+    {
+      "query": "repo:earendil-works/pi is:pr \"JWKS\" in:title,body",
+      "totalCount": 0,
+      "incompleteResults": false
+    },
+    {
+      "query": "repo:earendil-works/pi is:pr \"idToken\" in:title,body",
+      "totalCount": 1,
+      "incompleteResults": false,
+      "result": "https://github.com/earendil-works/pi/pull/459",
+      "conclusion": "Historical subscription-auth PR, not an identified validation correction."
+    }
+  ],
+  "providerGuidanceRechecked": [
+    "https://developers.openai.com/siwc/token-sharing-open-source/sign-in",
+    "https://developers.openai.com/siwc/token-sharing-open-source/profiles-and-sessions"
+  ],
+  "verification": {
+    "command": "node --test test/openai-oauth-compatibility.test.mjs test/openai-credentials.test.ts",
+    "passed": 24,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "localLog": ".audit/upstream-identity/focused.txt"
+  },
+  "limits": [
+    "Search results are bounded observations, not proof that no correction exists anywhere.",
+    "Only public unauthenticated reads; no issue/comment/PR submitted or upstream maintainer contacted.",
+    "No package installation, dependency change, SDK patch, real credential access, browser login or inference.",
+    "Main and release source inspected, not a complete SDK audit or execution of a replacement version.",
+    "Live identity gate and approval-dependent remediation task remain open."
+  ]
+}
