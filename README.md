@@ -18,7 +18,7 @@ npm run probe:sdk
 
 `probe:sdk` runs a throwaway faux-model experiment against a temporary real Pi SQLite store. It is not a live inference or the M0 controller.
 
-`npm run --silent probe:openai-oauth` characterizes the pinned SDK using synthetic transports and no credentials. It retains its original exit-1 `blocked` diagnostic; this is not a hosted sign-in or entitlement test. [Offline private credential persistence and refresh integration](docs/openai-credentials.md) is implemented on Pi 1.3.0 without an upgrade and verified with synthetic credentials only. The [completed ID-token/identity review](docs/openai-identity-review.md) confirms a live-login blocker requiring an upstream correction or separately approved SDK change; no upgrade or security waiver is authorized. Production dispatch is unchanged.
+`npm run --silent probe:openai-oauth` characterizes the pinned SDK using synthetic transports and no credentials. It retains its original exit-1 `blocked` diagnostic; this is not a hosted sign-in or entitlement test. [Offline private credential persistence and refresh integration](docs/openai-credentials.md) is implemented on Pi 1.3.0 without an upgrade and verified with synthetic credentials only. The [identity review](docs/openai-identity-review.md) records an unresolved credential-activation gap, not proof that login fails. The operator approves a [login-only experiment](docs/openai-login-test.md) on unchanged 1.3.0: `npm run --silent test:openai-login -- --run` opens OpenAI in the browser from a macOS terminal, then discards the result without persisting returned tokens, activating credentials or performing inference. It is not in the operator UI. No upgrade, persistent-use approval or production dispatch is introduced.
 
 ## Lint and format
 

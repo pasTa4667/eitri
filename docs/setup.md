@@ -59,11 +59,19 @@ Production polling, diagnostic-text ingestion, review/assignment dispatch, and c
 
 ## Complete OpenAI sign-in at M4
 
-**Keep Pi AI/Pi Durable 1.3.0 pinned.** [Offline application-owned credential storage and refresh integration](openai-credentials.md) is implemented and tested with synthetic credentials only; no SDK upgrade was needed. Its default private path is `~/.eitri-oauth/credentials.sqlite`, separate from controller/case data, and production entry points do not open it. The operator accepts occasional browser re-login. The [completed ID-token/identity review](openai-identity-review.md) confirms OpenAI requires validation that the pinned built-in login cannot supply through its supported interface. An upstream correction or separately approved SDK change is required before the login wrapper; no upgrade is selected or authorized. Browser re-login convenience is not a security waiver.
+**Keep Pi AI/Pi Durable 1.3.0 pinned.** [Offline application-owned credential storage and refresh integration](openai-credentials.md) is implemented and tested with synthetic credentials only; no SDK upgrade was needed. Its default private path is `~/.eitri-oauth/credentials.sqlite`, separate from controller/case data, and production entry points do not open it. The operator accepts occasional browser re-login and approves a [discard-only login experiment](openai-login-test.md), despite the unresolved [ID-token validation gap](openai-identity-review.md). This does not approve persistent activation or inference.
+
+In a macOS terminal, deliberately run:
+
+```sh
+npm run --silent test:openai-login -- --run
+```
+
+OpenAI issues the tokens during browser sign-in; you do not create or paste them. The command uses Eitri's saved installation identity (creating an empty private store if necessary), discards returned credentials and exits. No inference occurs. Trust the terminal result, not the SDK callback page. Ctrl+C cancels; the attempt times out after five minutes. Registration/consent can remain remotely even after local cancellation; disconnect the experiment's Eitri authorization in ChatGPT Settings afterward. It is not in the operator UI. Without `--run`, only help is shown; implementation/tests do not run a live login.
 
 `npm run --silent probe:openai-oauth` performs only synthetic local checks and still exits 1 with its original `blocked` diagnostic. It neither forbids the authorized offline slice nor certifies entitlement. Its malformed-token result came from a mocked response, not OpenAI accepting fake credentials. It does not sign in or read existing credentials.
 
-Use the application's supported Pi OAuth login flow when implemented. Register Eitri under its actual app name and stable installation identity, with its own consent and credentials; Pi is a library, not a surrogate identity or credential source. Keep refreshable OAuth state in the private application directory, outside the repository and case files. Do not copy another CLI's credentials.
+Persistent login remains unimplemented/gated on identity remediation or a separate operator decision. It must register Eitri under its actual app name and stable installation identity, with its own consent and credentials; Pi is a library, not a surrogate identity or credential source. Keep any approved refreshable OAuth state in the private application directory, outside the repository and case files. Do not copy another CLI's credentials.
 
 Select an available subscription model after sign-in. Approve the first small real tool-using inference before running it. A failed entitlement check stops this integration. No paid API key or other provider is a fallback.
 

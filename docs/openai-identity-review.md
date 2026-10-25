@@ -2,9 +2,11 @@
 
 ## Outcome
 
-The next M4 **contract review is complete; the live-sign-in gate fails** on Pi AI 1.3.0. OpenAI requires validated identity in this local/public-client flow, not just possession of an access token. Not displaying a profile, accepting occasional browser re-login, or using TLS is not a documented exemption. Keep Pi AI/Pi Durable 1.3.0 pinned and the offline credential integration available; do not implement/enable browser login on this basis.
+The M4 **contract review is complete; the credential-activation gate fails** on Pi AI 1.3.0. OpenAI requires validated identity in this local/public-client flow, not just possession of an access token. Not displaying a profile, accepting occasional browser re-login, or using TLS is not a documented exemption. Keep Pi AI/Pi Durable 1.3.0 pinned.
 
-The next step requires an upstream correction or an explicitly approved SDK change with a supported validation boundary. No candidate version, dependency change, independent OAuth flow or security waiver is selected here. Review completion is **not** M4 acceptance or authorization for sign-in, refresh with real credentials, discovery, inference or production dispatch.
+The operator subsequently approves a narrow [login-only experiment](openai-login-test.md#accepted-decision): receive and discard the SDK result without activating an account, saving returned tokens or performing inference. That exception supersedes the earlier blanket block on any login experiment, not the findings below or the persistent-use gate. Login can succeed despite the validation gap; no live Eitri login failure or exploit is established here.
+
+Persistent sign-in still requires an upstream correction or an explicitly approved SDK change with a supported validation boundary, or a separate operator decision about that scope. No candidate version, dependency change or independent OAuth flow is selected. Review/experiment completion is **not** M4 acceptance or authorization for refresh with real stored credentials, discovery, inference or production dispatch.
 
 ## Official contract
 
@@ -44,7 +46,7 @@ Selected source SHA-256 identities (not an attestation of all transitive depende
 88d316378c9fa239ac09be5df410c40b22e405c39a221c9db6fa855649d53366  dist/auth/types.d.ts
 ```
 
-## Required before the login-wrapper task
+## Required before the persistent login-wrapper task
 
 An upstream fix or separately approved SDK change must provide validated identity before credential activation, or a supported pre-activation seam carrying the ID token and the bound expected nonce/client/issuer for maintained-library verification. Also account for returning client/identity matching and retained identity/ID-token metadata; a login-only check followed by refresh that drops this metadata is insufficient. Exact API, dependency and storage changes require their own bounded design/approval; this review does not authorize them.
 

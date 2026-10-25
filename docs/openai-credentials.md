@@ -1,6 +1,6 @@
 # Offline OpenAI credential integration
 
-The offline credential slice in [M4](build-plan.md#current-m4-subscription-access-slices) is implemented in [`src/openai-credentials.ts`](../src/openai-credentials.ts), using Pi AI 1.3.0's public `CredentialStore` and `Models` interfaces. It is not wired into `npm start`, GPUI, case stores or worker dispatch. No login or inference command is exposed. All verification uses synthetic credentials in temporary directories and mocked token responses; no existing credential store is read.
+The offline credential slice in [M4](build-plan.md#current-m4-subscription-access-slices) is implemented in [`src/openai-credentials.ts`](../src/openai-credentials.ts), using Pi AI 1.3.0's public `CredentialStore` and `Models` interfaces. It is not wired into `npm start`, GPUI, case stores or worker dispatch. This module exposes no login or inference command. The separate [opt-in login-only experiment](openai-login-test.md) uses its saved installation identity but does not save returned tokens or activate credentials. All verification uses synthetic credentials in temporary directories and mocked token responses; no existing credential store is read.
 
 ## Storage and identity
 
@@ -31,7 +31,7 @@ Successful resolution contains a secret bearer token (the SDK names the transpor
 - File permissions protect against other OS users, not malicious same-UID processes, root or a compromised filesystem/host. Same-UID path-replacement races are not excluded by these Node path checks.
 - Credentials are local plaintext protected by permissions, not encrypted by this module. SQLite `secure_delete` is enabled, but deletion is not guaranteed forensic erasure from SSDs, snapshots or backups. Do not copy this store into telemetry or repository backups.
 - This is one selected OpenAI credential, not a multi-account/profile manager. No validated identity, live login, callback security, entitlement, model discovery, inference or remote revocation is certified.
-- The [completed ID-token/identity review](openai-identity-review.md) confirms a failed live gate, not an exemption. The next task requires an upstream correction or separately approved SDK change before a login wrapper. This offline store does not retain verified identity or ID tokens; future integration must address that explicitly. M4 acceptance and browser login remain blocked; occasional manual re-login is not a security waiver.
+- The [completed ID-token/identity review](openai-identity-review.md) confirms a failed live gate, not an exemption. Persistent login requires remediation or a separate operator decision; this offline store does not retain verified identity or ID tokens. The operator-approved discard-only experiment does not remediate that gap. M4 acceptance, persistent credential activation and inference remain gated; occasional manual re-login does not itself waive identity validation.
 
 ## Verification
 
