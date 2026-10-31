@@ -1,0 +1,30 @@
+{
+  "command": "npm run --silent test:pi-native-read -- --run",
+  "sourceCommit": "eabb58d",
+  "started": "2026-10-31T19:54:15Z",
+  "ended": "2026-10-31T19:54:17Z",
+  "exitCode": 1,
+  "stdout": {
+    "scope": "dedicated-pi-native-read",
+    "verdict": "sign-in-required"
+  },
+  "progressMarkers": [
+    "model"
+  ],
+  "failureStage": "stream-http-429",
+  "toolExecuted": false,
+  "fixtureUploaded": false,
+  "fixture": {
+    "path": "src/lib/errors.js",
+    "bytes": 534,
+    "sha256": "cd69431e5b7fda7ec116377d033d192a7b214a9c42a8101bd8c809c862af80f4"
+  },
+  "sourceHashesUnchanged": true,
+  "limits": [
+    "Stage stream-http-429 means the provider returned HTTP status 429 to the first model request; profile entry, runtime creation and model selection succeeded. The generic stdout verdict sign-in-required is the fixed failure verdict, not an OAuth rejection.",
+    "Only the status number is kept: whether this is a short-term rate limit or the subscription usage limit, and any reset time, is not recorded.",
+    "No tool marker: the fixture-read tool did not execute, so fixture content was not sent.",
+    "This does not establish the cause of the 18:54Z stream failure.",
+    "No retry, sign-in, credential/lease repair or private-case inspection follows."
+  ]
+}
