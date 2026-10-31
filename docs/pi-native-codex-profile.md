@@ -32,6 +32,8 @@ Full `npm run verify:all` exits **0**: **2,243 Node and 30 Rust tests pass**, wi
 
 ## Stop point
 
+The subsequent separately approved [offline crash/expiry follow-on](pi-native-codex-crash.md) adds combined evidence at these same observable checkpoints; the limitations below describe this original eleven-test cooperative slice.
+
 Only this synthetic cooperative slice is accepted. Killing an interrupted helper may lose usable rotation; the operator-approved [dedicated-profile/re-login contract](pi-auth-ownership.md#disposition) permits parking, not automatic token repair or a lossless-persistence claim. Native/ambiguous lease recovery remains blocked; no lease-reset mechanism is added.
 
 This does not inject faults inside local persistence, demonstrate shared-client safety, add parent-SIGKILL/orphan/expiry coverage for this built-in file-provider combination, or execute restricted-worker/source-edit tools. Earlier separate crash/expiry tests are not relabeled as new combined evidence. Real profiles, live native inference, broader restricted-tool integration, production-route selection, publication and M4 acceptance remain separately scoped gates. Stop after this step.

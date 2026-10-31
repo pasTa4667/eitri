@@ -1,6 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtemp, realpath, rm, readFile, writeFile, lstat, readdir } from 'node:fs/promises';
+import {
+  mkdtemp,
+  realpath,
+  rm,
+  readFile,
+  writeFile,
+  lstat,
+  readdir,
+  mkdir,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -105,6 +114,9 @@ async function fixture(t, hooks = {}, overrides = {}) {
     get receipts() {
       return receipts;
     },
+    advance(ms) {
+      now += ms;
+    },
     expire() {
       now += 1000;
       wake();
@@ -137,9 +149,9 @@ async function fixture(t, hooks = {}, overrides = {}) {
         (v) => ['paused', 'needs-attention'].includes(v.case.status),
       );
     },
-    async restart() {
+    async restart(elapsedMs = 100000) {
       await controller.close();
-      now += 100000;
+      now += elapsedMs;
       controller = await openNativeFixtureController(options);
     },
     async disposed() {
@@ -383,3 +395,105 @@ test(
     assert.deepEqual((await readdir(f.profile.profile)).sort(), ['auth.json', 'eitri-use']);
   },
 );
+
+for (const expiry of ['maintain', 'reopen', 'explicit'])
+  test(
+    `built-in Codex rotated profile survives ${expiry} expiry of only the terminal case`,
+    { timeout: 20000 },
+    async (t) => {
+      const f = await fixture(t);
+      const normal = join(f.profile.home, '.pi', 'agent');
+      await mkdir(normal, { recursive: true, mode: 0o700 });
+      const normalPath = join(normal, 'auth.json');
+      await writeFile(normalPath, 'normal-profile-do-not-use', { mode: 0o600 });
+      const normalInode = (await lstat(normalPath)).ino;
+      const ids = [];
+      const views = [];
+      for (const issue of ['expiry-terminal', 'expiry-unfinished']) {
+        const id = await f.add(issue);
+        ids.push(id);
+        views.push(await f.parked(id));
+      }
+      const [a, b] = ids;
+      const casePath = (id) => join(f.directory, 'cases', id);
+      const bInode = (await lstat(join(casePath(b), 'session.sqlite'))).ino;
+      const authBytes = await readFile(f.profile.authPath);
+      assert.equal(JSON.parse(authBytes)['openai-codex'].refresh, 'synthetic-rotated');
+      assert.deepEqual(f.checkpoints, [
+        'refresh-response',
+        'provider-request',
+        'provider-request',
+        'provider-request',
+        'provider-request',
+      ]);
+      assert.equal(f.effects, 2);
+      assert.equal(f.requests.length, 4);
+      await f.disposed();
+      await assert.rejects(
+        f.controller.command({
+          requestId: randomUUID(),
+          expectedControlVersion: views[1].case.version,
+          intent: { type: 'details-cleanup', caseId: b, confirmed: true },
+        }),
+        { code: 'unfinished-case-protected' },
+      );
+      await f.controller.command({
+        requestId: randomUUID(),
+        expectedControlVersion: views[0].case.version,
+        intent: { type: 'dismiss', caseId: a, note: 'End synthetic Codex case' },
+      });
+      if (expiry === 'explicit') {
+        const current = await f.view(a);
+        await f.controller.command({
+          requestId: randomUUID(),
+          expectedControlVersion: current.case.version,
+          intent: { type: 'details-cleanup', caseId: a, confirmed: true },
+        });
+      } else {
+        f.advance(30 * 86400000 - 1);
+        await f.controller.maintain();
+        assert.equal((await f.view(a)).case.native, 'ready');
+        assert.ok((await lstat(join(casePath(a), 'session.sqlite'))).isFile());
+        f.advance(1);
+        if (expiry === 'maintain') await f.controller.maintain();
+        else await f.restart(0);
+      }
+      const assertPreserved = async () => {
+        const expired = await f.view(a),
+          preserved = await f.view(b);
+        assert.equal(expired.case.native, 'expired');
+        assert.equal(expired.case.outcome, 'dismissed');
+        assert.deepEqual(expired.messages, []);
+        await assert.rejects(lstat(casePath(a)), { code: 'ENOENT' });
+        assert.equal(preserved.case.native, 'ready');
+        assert.deepEqual(preserved.messages, views[1].messages);
+        for (const key of ['status', 'reason', 'usedMs', 'remainingMs', 'attempt', 'repairs'])
+          assert.equal(preserved.case[key], views[1].case[key]);
+        assert.equal((await lstat(join(casePath(b), 'session.sqlite'))).ino, bInode);
+        assert.deepEqual(await readdir(join(f.directory, 'cases')), [b]);
+        assert.deepEqual(await readFile(f.profile.authPath), authBytes);
+        assert.equal((await lstat(f.profile.authPath)).mode & 0o777, 0o600);
+        assert.equal(await readFile(normalPath, 'utf8'), 'normal-profile-do-not-use');
+        assert.equal((await lstat(normalPath)).ino, normalInode);
+        assert.deepEqual(await readdir(f.profile.profile), ['auth.json']);
+        assert.deepEqual(await readdir(join(f.directory, 'pi-offline-resources')), []);
+        assert.equal(f.requests.length, 4);
+        assert.equal(f.helpers.length, 4);
+        assert.equal(f.effects, 2);
+        assert.ok(!JSON.stringify(preserved).includes('synthetic-private'));
+        assert.ok(!JSON.stringify(f.requests).includes(f.profile.authPath));
+        await f.disposed();
+      };
+      await assertPreserved();
+      assert.equal(await f.add('expiry-terminal'), a, 'duplicate intake retains expired owner');
+      await assert.rejects(
+        f.controller.command({
+          requestId: randomUUID(),
+          intent: { type: 'post-message', caseId: a, text: 'Must not recreate native details' },
+        }),
+        { code: 'details-unavailable' },
+      );
+      await f.restart();
+      await assertPreserved();
+    },
+  );
