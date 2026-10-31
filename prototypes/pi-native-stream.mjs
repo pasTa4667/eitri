@@ -6,13 +6,23 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { verifyInstalledSources } from './pi-stream.mjs';
 import { createNativeResource } from './pi-native-resources.mjs';
+import { withDedicatedProfile } from './pi-profile.mjs';
 import { JsonLines, StreamReceiver, validateRequest, encodeLine } from './pi-stream-protocol.mjs';
 
 // Offline test composition only. Exactly one admitted native model action, no tool loop.
 // Source/configuration controls are not a sandbox for the trusted installed SDK.
-export async function streamNativeFixture(
+export async function streamNativeFixture(value, options = {}) {
+  if (options.profileHome !== undefined)
+    return withDedicatedProfile(options.profileHome, (paths) =>
+      streamFixture(value, options, paths),
+    );
+  return streamFixture(value, options);
+}
+
+async function streamFixture(
   value,
-  { signal, onEvent, onSpawn, beforeCleanup, resourceDirectory, fixture = 'probe' } = {},
+  { signal, onEvent, onSpawn, beforeCleanup, resourceDirectory, fixture = 'probe' },
+  profilePaths,
 ) {
   const deadline = performance.now() + 10_000;
   let home;
@@ -23,7 +33,7 @@ export async function streamNativeFixture(
   };
   try {
     check();
-    assert.ok(['probe', 'repair-budget'].includes(fixture));
+    assert.ok(['probe', 'repair-budget', 'profile-refresh'].includes(fixture));
     const request = validateRequest(value);
     const receiver = new StreamReceiver(request);
     const decoder = new JsonLines();
@@ -40,7 +50,8 @@ export async function streamNativeFixture(
         cwd: home,
         env: {
           HOME: home,
-          PI_CODING_AGENT_DIR: join(home, 'agent'),
+          PI_CODING_AGENT_DIR: profilePaths?.profile ?? join(home, 'agent'),
+          ...(profilePaths ? { EITRI_PI_NATIVE_AUTH_PATH: profilePaths.authPath } : {}),
           PI_OFFLINE: '1',
           PI_SKIP_VERSION_CHECK: '1',
           PI_TELEMETRY: '0',

@@ -12,9 +12,9 @@
 
 ### Next-session handoff
 
-Implement only the [next pending offline plan slice](build-plan.md#current-m4-subscription-access-slices): explicit dedicated-profile selection/private-path checks, serialized use and fail-closed sign-in-required handling, with synthetic tests for auth failure, interruption, restart and no fallback. Demonstrate that the normal Pi profile is untouched and no case cleanup deletes profile credentials. Do not reopen the superseded shared-store/upstream-drain investigation as a prerequisite.
+The [offline profile/failure-handling slice](pi-dedicated-profile.md) is now implemented and reviewed: explicit private paths, exclusive use, Pi-owned synthetic persistence/rotation, sign-in-required blocking and native lifecycle/crash/expiry checks. **Next is separately approved operator-present supported Pi sign-in in the dedicated profile**, including safe explicit recovery of blocked ownership after re-login; no reset/login command is implemented by the offline slice. Do not reopen the superseded shared-store/upstream-drain investigation as a prerequisite.
 
-This request records the decision only; it does not implement authentication or authorize real credential access, sign-in, inference, production wiring or a dependency upgrade. A separate operator-present verification must establish that supported Pi sign-in actually works in this dedicated profile; the earlier successful session and earlier Enterprise denial do not settle that. The genuine controlled tool-using turn still needs its own approval. [ADR 0005](adr/0005-retain-durable-inference-seam.md) and the non-auth authority/containment requirements remain unchanged.
+The original decision-only request did not authorize real credential access, sign-in, inference, production wiring or a dependency upgrade; the subsequent offline implementation does not authorize those either. A separate operator-present verification must establish that supported Pi sign-in actually works in this dedicated profile; the earlier successful session and earlier Enterprise denial do not settle that. The genuine controlled tool-using turn still needs its own approval. [ADR 0005](adr/0005-retain-durable-inference-seam.md) and the non-auth authority/containment requirements remain unchanged.
 
 ## Historical investigation — superseded acceptance requirements
 
@@ -69,4 +69,4 @@ Use generated private temporary directories, synthetic rotating credentials and 
 
 ## Review and verification
 
-The [five-axis author review](evidence/pi-runtime/auth-ownership-review.md) records verification and findings at the investigation checkpoint, before the operator accepted the dedicated-profile/re-login trade-off above. It is historical evidence, not a current instruction to await that already-made decision. Implementation and dedicated-profile sign-in verification remain pending; M4 and live tool-use approval remain open.
+The [five-axis author review](evidence/pi-runtime/auth-ownership-review.md) records verification and findings at the investigation checkpoint, before the operator accepted the dedicated-profile/re-login trade-off above. It is historical evidence, not a current instruction to await that already-made decision. The later [offline implementation review](evidence/pi-runtime/profile-review.md) records synthetic profile/failure handling. Dedicated-profile sign-in verification, M4 and live tool-use approval remain open.

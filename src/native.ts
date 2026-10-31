@@ -78,7 +78,7 @@ export type RuntimeHost = {
   remaining(action: Action): number;
   mayRecordCompletion(action: Action): boolean;
   wakeup(delayMs: number, callback: () => void): () => void;
-  finish(action: Action, uncertain: boolean, failed?: boolean): void;
+  finish(action: Action, uncertain: boolean, failed?: boolean | 'sign-in-required'): void;
   receipt(action: Action): void;
   assess(action: Action, assessment: Assessment, checks: Check[]): Promise<void>;
   checkpoint(action: Action, check: Check): void;
@@ -209,11 +209,15 @@ export class NativeCase {
             host.changed();
           }
         } catch {
-          let cleanupFailed = false;
+          let cleanupFailed: boolean | 'sign-in-required' = false;
           try {
             await drain();
-          } catch {
-            cleanupFailed = true;
+          } catch (error) {
+            // Only a trusted adapter's fixed ControlError may classify auth failure.
+            cleanupFailed =
+              error instanceof ControlError && error.code === 'sign-in-required'
+                ? 'sign-in-required'
+                : true;
           }
           if (!retirementAttempted) {
             try {

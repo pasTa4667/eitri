@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { pathToFileURL } from 'node:url';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { readdir } from 'node:fs/promises';
 import { sdkRoot, verifyInstalledSources } from './pi-stream.mjs';
 import { JsonLines, StreamReceiver, validateRequest, encodeLine } from './pi-stream-protocol.mjs';
@@ -11,13 +11,18 @@ const timer = setTimeout(() => process.exit(1), 10_000);
 try {
   assert.equal(process.env.EITRI_PI_NATIVE_CHILD, 'synthetic-only');
   assert.equal(process.env.HOME, process.cwd());
-  assert.equal(process.env.PI_CODING_AGENT_DIR, join(process.cwd(), 'agent'));
+  const authPath = process.env.EITRI_PI_NATIVE_AUTH_PATH;
+  assert.equal(
+    process.env.PI_CODING_AGENT_DIR,
+    authPath ? dirname(authPath) : join(process.cwd(), 'agent'),
+  );
   assert.equal(process.env.PI_OFFLINE, '1');
   assert.deepEqual(
     Object.keys(process.env)
       .filter((key) => key !== '__CF_USER_TEXT_ENCODING')
       .sort(),
     [
+      ...(authPath ? ['EITRI_PI_NATIVE_AUTH_PATH'] : []),
       'EITRI_PI_NATIVE_CHILD',
       'EITRI_PI_NATIVE_FIXTURE',
       'HOME',
@@ -37,6 +42,9 @@ try {
   decoder.finish();
   assert.equal(requests.length, 1);
   const request = validateRequest(requests[0]);
+  const fixture = process.env.EITRI_PI_NATIVE_FIXTURE;
+  assert.ok(['probe', 'repair-budget', 'profile-refresh'].includes(fixture));
+  if (fixture === 'profile-refresh') assert.ok(authPath);
   const { ModelRuntime } = await import(pathToFileURL(join(sdkRoot, 'dist/index.js')).href);
   const { createAssistantMessageEventStream, normalizeContext } = await import(
     pathToFileURL(join(sdkRoot, 'node_modules/@earendil-works/pi-ai/dist/index.js')).href
@@ -47,21 +55,30 @@ try {
     nativeNormalize(request.context).messages,
   );
   const runtime = await ModelRuntime.create({
-    credentials: {
-      read: async () => ({
-        type: 'oauth',
-        access: 'synthetic-only',
-        refresh: 'synthetic-only',
-        expires: Date.now() + 3_600_000,
-      }),
-      list: async () => [{ providerId: route.provider, type: 'oauth' }],
-      modify: async () => assert.fail('refresh outside this lifecycle slice'),
-      delete: async () => assert.fail('deletion forbidden'),
-    },
+    ...(authPath
+      ? { authPath }
+      : {
+          credentials: {
+            read: async () => ({
+              type: 'oauth',
+              access: 'synthetic-only',
+              refresh: 'synthetic-only',
+              expires: Date.now() + 3_600_000,
+            }),
+            list: async () => [{ providerId: route.provider, type: 'oauth' }],
+            modify: async () => assert.fail('refresh outside this lifecycle slice'),
+            delete: async () => assert.fail('deletion forbidden'),
+          },
+        }),
     modelsPath: null,
     allowModelNetwork: false,
     refreshOnCreate: false,
   });
+  // Registration starts background availability checks. Reject all nonselected credentials
+  // before that boundary: API-key values may contain SDK-executable !commands.
+  assert.deepEqual(await runtime.listCredentials(), [
+    { providerId: route.provider, type: 'oauth' },
+  ]);
   const model = {
     id: route.model,
     name: 'Offline native fixture',
@@ -74,8 +91,7 @@ try {
     maxTokens: 64,
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
   };
-  const fixture = process.env.EITRI_PI_NATIVE_FIXTURE;
-  assert.ok(['probe', 'repair-budget'].includes(fixture));
+
   const results = request.context.messages.filter((m) => m.role === 'toolResult');
   if (fixture === 'probe') {
     assert.ok(results.length <= 1);
@@ -177,7 +193,11 @@ try {
         name: 'Synthetic',
         isSubscription: true,
         login: async () => assert.fail('login forbidden'),
-        refresh: async () => assert.fail('refresh forbidden'),
+        refresh: async (credential) => {
+          assert.equal(fixture, 'profile-refresh');
+          assert.equal(credential.refresh, 'synthetic-only');
+          return { ...credential, refresh: 'synthetic-rotated', expires: Date.now() + 3_600_000 };
+        },
         toAuth: async (credential) => ({ apiKey: credential.access }),
       },
     },

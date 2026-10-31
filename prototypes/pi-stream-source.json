@@ -3,6 +3,7 @@
   "/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent/dist/index.js": "4569157e6038be9840fa514db4b00a27fd0be9e3622cc7b49a281de6c027d7ff",
   "/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent/dist/core/model-runtime.js": "44d8017928eff6721d5a56b4e71f98bcafb124f5aa6e7d3f016491e11fcf6461",
   "/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent/dist/core/model-runtime.d.ts": "5a7aac47a83c20316f593c74798f60ec4e521a0fddff03a0608dbc5514012bf5",
+  "/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent/dist/core/auth-storage.js": "59791d54e50bfb86f0bb9e8dcee776547ae1744fc4aeb2fe14ff6610c1f5c567",
   "/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent/dist/core/runtime-credentials.js": "2bf389ca2b04bd4dcee56433ca845cd8d9d96d0ccf84d2d0e9ad2a5e3957bda1",
   "/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-ai/package.json": "36df91142c18a5912eafab0f2783bb4d88cdd101c5c5e7fd9173d4387cc5cced",
   "/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-ai/dist/types.d.ts": "9348589a0c88c61e78e8575539cec4bf4e4fba8bf9029d3535ddeae07cb1c696",

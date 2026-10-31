@@ -1856,7 +1856,11 @@ export class Controller {
         return execution;
     }
   }
-  private finishAction(action: Action, uncertain: boolean, failed = false) {
+  private finishAction(
+    action: Action,
+    uncertain: boolean,
+    failed: boolean | 'sign-in-required' = false,
+  ) {
     const expired = this.transaction(() => {
       const c = this.authenticatedAction(action.caseId, action);
       if (!c) return;
@@ -1870,7 +1874,7 @@ export class Controller {
       if ((uncertain || expired) && c.status === 'running' && current)
         this.attention(c, `${action.kind}-action-timed-out`);
       else if (failed && c.status === 'running' && c.epoch === action.epoch)
-        this.attention(c, `${action.kind}-action-failed`);
+        this.attention(c, failed === 'sign-in-required' ? failed : `${action.kind}-action-failed`);
       if (current) this.save(c);
       if (
         this.options.offlineWorkspace &&

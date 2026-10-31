@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { nativeFixtureProvider, openNativeFixtureController } from './pi-native.mjs';
 
-const [directory, mode] = process.argv.slice(2);
+const [directory, mode, profileHome] = process.argv.slice(2);
 let helper;
 let caseId;
 let admission;
@@ -32,6 +32,7 @@ const controller = await openNativeFixtureController({
   policy: { project: 'demo', environment: 'demo', repository: 'eitri-test-web-app' },
   providerForCase: (id) =>
     nativeFixtureProvider(directory, id, [], {
+      profileHome,
       before: async (request) => {
         admission = { actionId: request.actionId, epoch: request.epoch };
         firstActionId ??= request.actionId;

@@ -8,6 +8,7 @@ import { validateRequest } from '../../prototypes/pi-stream-protocol.mjs';
 import { route } from '../../prototypes/pi-stream-fixtures.ts';
 import { reconcileNativeResources } from '../../prototypes/pi-native-resources.mjs';
 import { Controller } from '../../src/controller.ts';
+import { ControlError } from '../../src/domain.ts';
 
 // Reconcile before Controller.open can recover or schedule any native work.
 export async function openNativeFixtureController(options, recovery) {
@@ -56,11 +57,13 @@ export function nativeFixtureProvider(directory, caseId, requests, hooks = {}) {
     const output = createAssistantMessageEventStream();
     const run = (async () => {
       let failed = false;
+      let signInRequired = false;
       try {
         await hooks.before?.(request);
         const message = await streamNativeFixture(request, {
           signal: options?.signal,
           fixture: hooks.fixture,
+          profileHome: hooks.profileHome,
           resourceDirectory: directory,
           onSpawn: hooks.onSpawn,
           beforeCleanup: () => hooks.beforeCleanup?.(request),
@@ -70,8 +73,9 @@ export function nativeFixtureProvider(directory, caseId, requests, hooks = {}) {
           },
         });
         output.push(native({ type: 'done', reason: message.stopReason, message }));
-      } catch {
+      } catch (error) {
         failed = true;
+        signInRequired = error instanceof Error && error.message === 'sign-in-required';
         const message = {
           role: 'assistant',
           api: route.api,
@@ -97,6 +101,7 @@ export function nativeFixtureProvider(directory, caseId, requests, hooks = {}) {
           output.end();
         }
       }
+      if (signInRequired) throw new ControlError('sign-in-required');
       if (failed) throw new Error('pi-native-model-failed');
     })();
     void run.catch(() => {});
