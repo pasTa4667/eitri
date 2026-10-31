@@ -1,0 +1,70 @@
+{
+  "scope": "bounded-live-native-follow-up-attempt",
+  "sourceCommit": "532eea2183d71bb050653399bb1d61b66c47cff8",
+  "startedAt": "2026-10-31T17:00:51Z",
+  "finishedAt": "2026-10-31T17:00:51Z",
+  "operatorAuthorization": "Explicit approve for one bounded live-native attempt, at most two model requests and one harmless probe. No retry, sign-in, credential repair or production enablement.",
+  "command": "npm run --silent test:pi-native -- --run",
+  "exitCode": 1,
+  "report": {
+    "scope": "dedicated-pi-native",
+    "verdict": "sign-in-required"
+  },
+  "failureStage": "profile",
+  "observedProgress": [
+    "model"
+  ],
+  "configuredRoute": {
+    "provider": "openai-codex",
+    "model": "gpt-6.1-sol"
+  },
+  "providerStreamReached": false,
+  "observation": "The profile stage precedes the credential callback and ModelRuntime.create. No provider stream or tool execution is reached. The progress marker denotes native invocation, not a provider HTTP request. No network capture is performed.",
+  "actualProviderRequests": null,
+  "toolResultVerified": false,
+  "liveNativeAcceptance": false,
+  "cause": "Local profile-entry checks failed; exact path, auth-file metadata or lease check is unknown. No private profile/case inspection was performed. This is not evidence of OAuth rejection and does not explain the earlier attempt.",
+  "disposition": "Stopped after this one attempt. No retry, login, credential/lease repair or subsequent inference. Failed native data retained privately, not inspected or copied into repository evidence. Any diagnosis/recovery or later inference requires separate approval.",
+  "focusedVerification": {
+    "command": "node --test test/pi-native-live.test.mjs",
+    "tests": 25,
+    "failures": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "exitCode": 0
+  },
+  "verification": {
+    "command": "npm run verify:all",
+    "exitCode": 0,
+    "nodeTests": 2275,
+    "rustTests": 30,
+    "nodeFailures": 0,
+    "nodeCancelled": 0,
+    "nodeSkipped": 0,
+    "rustIgnored": 0
+  },
+  "sourceSha256": {
+    "prototypes/pi-native-live.mjs": "72c9339ce970f51ab86b7f98feac82d25c7660e002d34daf600e7e4b4c9bf010",
+    "prototypes/pi-native-live-child.mjs": "7401ec8f88e42f43ef64c46ebaf00c8d20b384f62200512c96ee68bcfcf50e38",
+    "prototypes/pi-native-diagnostics.mjs": "624ef81fd768a5c041628f8ee4e493bc6b821a2322f8963d3da0ffe3612704d4",
+    "prototypes/pi-native-provider.mjs": "34c11afc6b35a678fbf3484801d92407d9bc7aeffbd8eab7808c6ce275899d0a",
+    "prototypes/pi-native-stream.mjs": "a0f3d837674f1f96b9c74513a5bbe96aae86bbeb0b7cb2b58e91f67676e8c6bf",
+    "scripts/test-pi-tool.mjs": "b522e4edf7bb5ac79aea6c76b18c2a2cb1b2ced8b265643a57741077042097c8",
+    "prototypes/pi-profile-login.mjs": "beb8f682f2a2294583cdce906fe90adbc65b873c946f3b48220b48ea044eff73",
+    "prototypes/pi-native-resources.mjs": "093801ca51d6ffbaaf0a1547e46b5032873956d6dd282c53af8886dfd0ded1d5",
+    "prototypes/pi-stream-protocol.mjs": "af627cd8c1e595377a5e340c3f42de1784c1b1987587bf8eb7cbe0d66a067702",
+    "prototypes/pi-stream-source.json": "9f6d615f8d13bf7ede15b2f2b8f1922f6cfa7d21c46a8f8f87c886e395f6a041",
+    "src/native.ts": "25d079c11804c073c3c18e9bf04f43ae85dc8811954d1cb45a45198d355bc5d8",
+    "src/controller.ts": "8f1a1e6a6c9e79358a9e8359cc203df5d2e49bfc93e356617e9701ff910efa23",
+    "package.json": "2c976e32b81baec4ca0c9f5767bca23bae0abd8071dba17859ac22d747c8ec21",
+    "package-lock.json": "ffed086c7a444d78eae6af02d287e9bf355094f9315fd588dbdea44acfc660be"
+  },
+  "excludedEvidence": [
+    "credentials",
+    "account identity",
+    "raw model text/thinking",
+    "tool result",
+    "HTTP payloads",
+    "private native case content"
+  ]
+}
