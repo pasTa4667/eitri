@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict';
 import { Controller } from '../../src/controller.ts';
 import { randomUUID } from 'node:crypto';
 import { nativeFixtureProvider } from './pi-native.mjs';
@@ -6,6 +7,21 @@ const [directory, mode] = process.argv.slice(2);
 let helper;
 let caseId;
 let admission;
+let firstActionId;
+let requests = 0;
+let terminalDelivered = false;
+const boundaryMode = ['admission', 'terminal', 'model-receipt', 'committed-tool'].includes(mode);
+const boundary = (request) => {
+  process.send({
+    id: caseId,
+    stage: 'boundary',
+    boundary: mode,
+    helper,
+    admission,
+    firstActionId,
+    toolCallId: request?.context.messages.find((m) => m.role === 'toolResult')?.toolCallId,
+  });
+};
 const checkpoint = (id) => {
   caseId = id;
   process.send({ id, stage: 'admitted', helper, admission });
@@ -13,11 +29,21 @@ const checkpoint = (id) => {
 };
 const controller = await Controller.open({
   directory,
+  ...(boundaryMode ? { clock: () => 1000 } : {}),
   policy: { project: 'demo', environment: 'demo', repository: 'eitri-test-web-app' },
   providerForCase: (id) =>
     nativeFixtureProvider(directory, id, [], {
       before: async (request) => {
         admission = { actionId: request.actionId, epoch: request.epoch };
+        firstActionId ??= request.actionId;
+        caseId = id;
+        requests++;
+        if (mode === 'admission' || (mode === 'committed-tool' && requests === 2)) {
+          boundary(request);
+          await new Promise(() => {});
+        }
+        if (mode === 'model-receipt')
+          await controller.command({ requestId: randomUUID(), intent: { type: 'pause', caseId } });
         if (mode === 'paused-model') {
           checkpoint(id);
           await new Promise(() => {});
@@ -29,13 +55,27 @@ const controller = await Controller.open({
       onEvent: (event) => {
         if (event.type === 'start' && mode === 'model') checkpoint(id);
       },
+      afterTerminal: async (_request, { failed }) => {
+        terminalDelivered = !failed;
+        if (boundaryMode) assert.equal(terminalDelivered, true);
+        if (mode === 'terminal') {
+          boundary();
+          await new Promise(() => {});
+        }
+      },
     }),
   probe: async (id) => {
+    if (mode === 'committed-tool') return 'Native committed result café ✓';
     if (mode === 'tool-receipt') return 'Effect saved before SDK receipt';
     checkpoint(id);
     return new Promise(() => {});
   },
   fault: (point, id) => {
+    if (mode === 'model-receipt' && point === 'after-model-action-receipt') {
+      assert.equal(terminalDelivered, true);
+      boundary();
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0);
+    }
     if (mode === 'tool-receipt' && point === 'after-tool-action-receipt') checkpoint(id);
   },
 });

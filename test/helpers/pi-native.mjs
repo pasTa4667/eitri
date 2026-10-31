@@ -82,7 +82,7 @@ export function nativeFixtureProvider(directory, caseId, requests, hooks = {}) {
         output.push({ type: 'error', reason: 'error', error: message });
       } finally {
         try {
-          await hooks.afterTerminal?.(request);
+          await hooks.afterTerminal?.(request, { failed });
         } finally {
           output.end();
         }
