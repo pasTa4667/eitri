@@ -1,0 +1,53 @@
+{
+  "scope": "bounded-live-native-probe",
+  "startedAt": "2026-10-31T16:16:57Z",
+  "operatorAuthorization": "One narrow live-native attempt; no automatic retry, credential repair, worker/source tools, publication or production dispatch.",
+  "command": "npm run --silent test:pi-native -- --run",
+  "exitCode": 1,
+  "report": {
+    "scope": "dedicated-pi-native",
+    "verdict": "sign-in-required"
+  },
+  "observedProgress": [
+    "model"
+  ],
+  "observation": "One native model invocation progress marker, followed by failure. This marker is emitted before helper/provider execution and is not proof of an HTTP request or accepted inference.",
+  "actualProviderRequests": null,
+  "toolResultVerified": false,
+  "liveNativeAcceptance": false,
+  "cause": "Undiagnosed. The finite error also covers protocol, helper, semantic and cleanup failures; it is not proof of an OAuth rejection.",
+  "disposition": "Stopped after this one attempt. No retry, login, credential/lease repair or subsequent inference. Failed native data retained privately; not inspected or copied into repository evidence.",
+  "verification": {
+    "command": "npm run verify:all",
+    "exitCode": 0,
+    "nodeTests": 2266,
+    "rustTests": 30,
+    "nodeFailures": 0,
+    "nodeCancelled": 0,
+    "nodeSkipped": 0,
+    "rustIgnored": 0
+  },
+  "sourceSha256": {
+    "prototypes/pi-native-live.mjs": "a7c7bd581f0ea265ccc550b0fe741c7734a532e66df6e57f113946d41da9e05c",
+    "prototypes/pi-native-live-child.mjs": "f8f797785d1f398cc577c5e8c4f858f30dff648ed3fd9890f633bd15d0502a5e",
+    "prototypes/pi-native-provider.mjs": "34c11afc6b35a678fbf3484801d92407d9bc7aeffbd8eab7808c6ce275899d0a",
+    "prototypes/pi-native-stream.mjs": "b08e376d8f8e04fa55d4312c5068d9f00eaaa1e9fcbb78e99686908eff44ff07",
+    "scripts/test-pi-tool.mjs": "48bda360d04d4c241068e2b904a0a1b026bf9e399de2e57ac26862d71556ac47",
+    "prototypes/pi-profile-login.mjs": "beb8f682f2a2294583cdce906fe90adbc65b873c946f3b48220b48ea044eff73",
+    "prototypes/pi-native-resources.mjs": "093801ca51d6ffbaaf0a1547e46b5032873956d6dd282c53af8886dfd0ded1d5",
+    "prototypes/pi-stream-protocol.mjs": "af627cd8c1e595377a5e340c3f42de1784c1b1987587bf8eb7cbe0d66a067702",
+    "prototypes/pi-stream-source.json": "9f6d615f8d13bf7ede15b2f2b8f1922f6cfa7d21c46a8f8f87c886e395f6a041",
+    "src/native.ts": "25d079c11804c073c3c18e9bf04f43ae85dc8811954d1cb45a45198d355bc5d8",
+    "src/controller.ts": "8f1a1e6a6c9e79358a9e8359cc203df5d2e49bfc93e356617e9701ff910efa23",
+    "package.json": "0b7dbad96b1cfe05a5e34a89fdf45dfc15cf2aec1b83db6115a823fdf25ae924",
+    "package-lock.json": "ffed086c7a444d78eae6af02d287e9bf355094f9315fd588dbdea44acfc660be"
+  },
+  "excludedEvidence": [
+    "credentials",
+    "account identity",
+    "raw model text/thinking",
+    "tool result",
+    "HTTP payloads",
+    "private native case content"
+  ]
+}

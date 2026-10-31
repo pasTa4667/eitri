@@ -7,7 +7,10 @@ import { syncBuiltinESMExports } from 'node:module';
 
 // Fixed synthetic transport only. No real fetch implementation is retained or called.
 const scenario = new URL(import.meta.url).searchParams.get('scenario');
-const record = (value) => writeSync(3, `${JSON.stringify(value)}\n`);
+const native = new URL(import.meta.url).searchParams.get('native') === '1';
+const record = (value) => {
+  if (!native) writeSync(3, `${JSON.stringify(value)}\n`);
+};
 let requests = 0,
   refreshes = 0;
 let expire;
@@ -22,7 +25,10 @@ globalThis.setTimeout = (fn, ms, ...args) => {
 if (scenario.startsWith('launcher')) {
   childProcess.spawn = (file, args, options) => {
     assert.equal(file, process.execPath);
-    assert.deepEqual(args.slice(1), ['--run']);
+    assert.deepEqual(args.slice(1), [
+      ...(process.argv.includes('--native') ? ['--native'] : []),
+      '--run',
+    ]);
     assert.deepEqual(options.stdio, ['ignore', 'pipe', 'ignore']);
     assert.deepEqual(Object.keys(options.env).sort(), [
       'EITRI_PI_TOOL_CHILD',
@@ -54,7 +60,9 @@ if (scenario.startsWith('launcher')) {
       child.stdout.emit(
         'data',
         Buffer.from(
-          '{"scope":"dedicated-pi-tool","verdict":"tool-turn-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":2,"toolExecutions":1,"streamed":true,"resultVerified":true}\n',
+          process.argv.includes('--native')
+            ? '{"scope":"dedicated-pi-native","verdict":"native-turn-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":2,"toolExecutions":1,"streamed":true,"resultVerified":true,"paused":true,"reopened":true,"budgetPreserved":true,"disposed":true}\n'
+            : '{"scope":"dedicated-pi-tool","verdict":"tool-turn-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":2,"toolExecutions":1,"streamed":true,"resultVerified":true}\n',
         ),
       );
       if (scenario === 'launcher-late')
@@ -111,37 +119,43 @@ async function syntheticFetch(url, options) {
     body.input
       .filter((item) => item.type === 'additional_tools')
       .flatMap((item) => item.tools.map((tool) => tool.name)),
-    ['eitri_probe'],
+    [native ? 'probe' : 'eitri_probe'],
   );
-  const item =
-    requests === 1
-      ? {
-          type: 'function_call',
-          id: 'fc_probe',
-          call_id: 'call_probe',
-          name: scenario === 'bad-tool' ? 'bash' : 'eitri_probe',
-          arguments: '{}',
-        }
-      : {
-          type: 'message',
-          id: 'msg_probe',
-          role: 'assistant',
-          content: [
-            {
-              type: 'output_text',
-              text: body.input.find((item) => item.type === 'function_call_output').output,
-            },
-          ],
-        };
+  const first = native
+    ? !body.input.some((item) => item.type === 'function_call_output')
+    : requests === 1;
+  if (native) assert.equal(requests, 1);
+  const item = first
+    ? {
+        type: 'function_call',
+        id: 'fc_probe',
+        call_id: 'call_probe',
+        name: scenario === 'bad-tool' ? 'bash' : native ? 'probe' : 'eitri_probe',
+        arguments: scenario === 'bad-arguments' ? '{"unexpected":true}' : '{}',
+      }
+    : {
+        type: 'message',
+        id: 'msg_probe',
+        role: 'assistant',
+        content: [
+          {
+            type: 'output_text',
+            text:
+              scenario === 'bad-result'
+                ? 'wrong'
+                : body.input.find((item) => item.type === 'function_call_output').output,
+          },
+        ],
+      };
   const events = [
     { type: 'response.created', response: { id: 'synthetic-response' } },
     {
       type: 'response.output_item.added',
       output_index: 0,
-      item: requests === 1 ? { ...item, arguments: '' } : { ...item, content: [] },
+      item: first ? { ...item, arguments: '' } : { ...item, content: [] },
     },
-    requests === 1
-      ? { type: 'response.function_call_arguments.delta', output_index: 0, delta: '{}' }
+    first
+      ? { type: 'response.function_call_arguments.delta', output_index: 0, delta: item.arguments }
       : { type: 'response.output_text.delta', output_index: 0, delta: item.content[0].text },
     { type: 'response.output_item.done', output_index: 0, item },
     {
@@ -149,9 +163,14 @@ async function syntheticFetch(url, options) {
       response: { id: 'synthetic-response', status: 'completed', output: [item] },
     },
   ];
-  return new Response(events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join(''), {
-    headers: { 'content-type': 'text/event-stream' },
-  });
+  return new Response(
+    (scenario === 'malformed' ? events.slice(0, 2) : events)
+      .map((event) => `data: ${JSON.stringify(event)}\n\n`)
+      .join(''),
+    {
+      headers: { 'content-type': 'text/event-stream' },
+    },
+  );
 }
 globalThis.fetch = async (...args) => {
   try {

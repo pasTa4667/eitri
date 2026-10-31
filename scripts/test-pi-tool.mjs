@@ -9,8 +9,15 @@ import { withProfileProbe } from '../prototypes/pi-profile-login.mjs';
 import { runControlledTurn, toolTurnResult } from '../prototypes/pi-controlled-turn.mjs';
 import { JsonLines } from '../prototypes/pi-stream-protocol.mjs';
 import { sdkRoot, verifyInstalledSources } from '../prototypes/pi-stream.mjs';
+import { runNativeLiveProbe, nativeLiveResult } from '../prototypes/pi-native-live.mjs';
 
-const failure = { scope: 'dedicated-pi-tool', verdict: 'sign-in-required' };
+const native = process.argv[2] === '--native';
+const expectedResult = native ? nativeLiveResult : toolTurnResult;
+const commandName = native ? 'test:pi-native' : 'test:pi-tool';
+const failure = {
+  scope: native ? 'dedicated-pi-native' : 'dedicated-pi-tool',
+  verdict: 'sign-in-required',
+};
 const emit = (value) => writeSync(1, `${JSON.stringify(value)}\n`);
 
 async function probe() {
@@ -18,26 +25,33 @@ async function probe() {
   const cancel = () => controller.abort();
   process.on('SIGINT', cancel);
   process.on('SIGTERM', cancel);
-  // Sole credential owner: hard exit also stops SDK auth work, potentially losing the login.
-  // No success on interruption, and no new dispatch until explicit fresh sign-in recovery.
+  // Standalone mode owns auth here; native mode's sole-auth helpers exit on IPC disconnect.
+  // Hard interruption may lose the login. No success or automatic retry follows.
   const timer = setTimeout(() => process.exit(1), 120_000);
   try {
     await verifyInstalledSources();
-    const result = await withProfileProbe(process.env.EITRI_PI_TOOL_HOME, async ({ authPath }) => {
-      controller.signal.throwIfAborted();
-      const { ModelRuntime } = await import(`${sdkRoot}/dist/index.js`);
-      const runtime = await ModelRuntime.create({
-        authPath,
-        modelsPath: null,
-        allowModelNetwork: false,
-        refreshOnCreate: false,
-        signal: controller.signal,
-      });
-      return runControlledTurn(runtime, {
-        signal: controller.signal,
-        onProgress: (progress) => emit({ progress }),
-      });
-    });
+    const result = native
+      ? await runNativeLiveProbe({
+          directory: process.cwd(),
+          profileHome: process.env.EITRI_PI_TOOL_HOME,
+          signal: controller.signal,
+          onProgress: (progress) => emit({ progress }),
+        })
+      : await withProfileProbe(process.env.EITRI_PI_TOOL_HOME, async ({ authPath }) => {
+          controller.signal.throwIfAborted();
+          const { ModelRuntime } = await import(`${sdkRoot}/dist/index.js`);
+          const runtime = await ModelRuntime.create({
+            authPath,
+            modelsPath: null,
+            allowModelNetwork: false,
+            refreshOnCreate: false,
+            signal: controller.signal,
+          });
+          return runControlledTurn(runtime, {
+            signal: controller.signal,
+            onProgress: (progress) => emit({ progress }),
+          });
+        });
     emit(result);
     return 0;
   } catch {
@@ -55,20 +69,24 @@ async function launch() {
   const home = await realpath(await mkdtemp(join(tmpdir(), 'eitri-pi-tool-')));
   try {
     const actualHome = resolve(userInfo().homedir);
-    const child = spawn(process.execPath, [fileURLToPath(import.meta.url), '--run'], {
-      cwd: home,
-      stdio: ['ignore', 'pipe', 'ignore'],
-      env: {
-        HOME: home,
-        PATH: '/usr/bin:/bin',
-        PI_CODING_AGENT_DIR: join(actualHome, 'Library', 'Application Support', 'eitri', 'pi'),
-        EITRI_PI_TOOL_HOME: actualHome,
-        EITRI_PI_TOOL_CHILD: '1',
-        PI_OFFLINE: '1',
-        PI_SKIP_VERSION_CHECK: '1',
-        PI_TELEMETRY: '0',
+    const child = spawn(
+      process.execPath,
+      [fileURLToPath(import.meta.url), ...(native ? ['--native'] : []), '--run'],
+      {
+        cwd: home,
+        stdio: ['ignore', 'pipe', 'ignore'],
+        env: {
+          HOME: home,
+          PATH: '/usr/bin:/bin',
+          PI_CODING_AGENT_DIR: join(actualHome, 'Library', 'Application Support', 'eitri', 'pi'),
+          EITRI_PI_TOOL_HOME: actualHome,
+          EITRI_PI_TOOL_CHILD: '1',
+          PI_OFFLINE: '1',
+          PI_SKIP_VERSION_CHECK: '1',
+          PI_TELEMETRY: '0',
+        },
       },
-    });
+    );
     let failed = false,
       terminal,
       bytes = 0,
@@ -104,7 +122,7 @@ async function launch() {
                 );
               } else {
                 assert.ok(
-                  [toolTurnResult, failure].some((allowed) => {
+                  [expectedResult, failure].some((allowed) => {
                     try {
                       assert.deepEqual(frame, allowed);
                       return true;
@@ -124,27 +142,27 @@ async function launch() {
       });
       decoder.finish();
       assert.ok(!failed && exit.signal === null && exit.code === 0 && progressCount === 3);
-      assert.deepEqual(terminal, toolTurnResult);
-      return { ...toolTurnResult };
+      assert.deepEqual(terminal, expectedResult);
+      return { ...expectedResult };
     } finally {
       clearTimeout(timer);
       process.removeListener('SIGINT', cancel);
       process.removeListener('SIGTERM', cancel);
     }
   } finally {
-    // Remove only our empty scratch home, and only after child close/reaping.
+    // Remove only our empty scratch home after child close. Failed native stores are retained.
     await rmdir(home);
   }
 }
 
-const args = process.argv.slice(2);
+const args = process.argv.slice(native ? 3 : 2);
 if (args.length === 0 || (args.length === 1 && args[0] === '--help')) {
   writeSync(
     1,
-    'Usage: npm run test:pi-tool -- --run\nTwo bounded genuine Pi streams and one fixed side-effect-free tool. No production dispatch.\n',
+    `Usage: npm run ${commandName} -- --run\nTwo bounded genuine Pi streams and one fixed side-effect-free tool${native ? ' through the real native controller/SQLite lifecycle' : ''}. No production dispatch.\n`,
   );
 } else if (args.length !== 1 || args[0] !== '--run' || process.platform !== 'darwin') {
-  writeSync(2, 'Usage: npm run test:pi-tool -- --run (macOS only)\n');
+  writeSync(2, `Usage: npm run ${commandName} -- --run (macOS only)\n`);
   process.exitCode = 1;
 } else if (process.env.EITRI_PI_TOOL_CHILD === '1') {
   process.exit(await probe());

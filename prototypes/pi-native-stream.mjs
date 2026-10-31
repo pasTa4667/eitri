@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { verifyInstalledSources } from './pi-stream.mjs';
 import { createNativeResource } from './pi-native-resources.mjs';
 import { withDedicatedProfile } from './pi-profile.mjs';
+import { ControlError } from '../src/domain.ts';
 import { JsonLines, StreamReceiver, validateRequest, encodeLine } from './pi-stream-protocol.mjs';
 
 const codexProfiles = ['codex-profile', 'codex-profile-denied'];
@@ -39,12 +40,28 @@ export async function streamNativeFixture(value, options = {}) {
   return streamFixture(value, options);
 }
 
+// Separate trusted opt-in harness entry; never selected by fixture/model/production configuration.
+// profileHome and preload are caller-owned test seams, not CLI or model inputs.
+export async function streamNativeLiveProbe(value, options = {}) {
+  try {
+    options.signal?.throwIfAborted();
+    assert.ok(typeof options.profileHome === 'string');
+    return await streamFixture(value, options, undefined, {
+      home: options.profileHome,
+      preload: options.preload,
+    });
+  } catch {
+    throw new ControlError('sign-in-required');
+  }
+}
+
 async function streamFixture(
   value,
   { signal, onEvent, onSpawn, onCheckpoint, beforeCleanup, resourceDirectory, fixture = 'probe' },
   profilePaths,
+  live,
 ) {
-  const deadline = performance.now() + 10_000;
+  const deadline = performance.now() + (live ? 60_000 : 10_000);
   let home;
   let resource;
   const check = () => {
@@ -54,7 +71,7 @@ async function streamFixture(
   try {
     check();
     const codex = codexFixtures.includes(fixture);
-    assert.ok(codex || ['probe', 'repair-budget', 'profile-refresh'].includes(fixture));
+    assert.ok(live || codex || ['probe', 'repair-budget', 'profile-refresh'].includes(fixture));
     assert.ok(!codex || Boolean(profilePaths) === codexProfiles.includes(fixture));
     const request = validateRequest(value);
     const receiver = new StreamReceiver(request);
@@ -68,23 +85,39 @@ async function streamFixture(
     const child = spawn(
       process.execPath,
       [
+        ...(live?.preload ? ['--import', live.preload.href] : []),
         fileURLToPath(
-          new URL(codex ? './pi-native-codex-child.mjs' : './pi-native-child.mjs', import.meta.url),
+          new URL(
+            live
+              ? './pi-native-live-child.mjs'
+              : codex
+                ? './pi-native-codex-child.mjs'
+                : './pi-native-child.mjs',
+            import.meta.url,
+          ),
         ),
       ],
       {
         cwd: home,
         env: {
           HOME: home,
-          PI_CODING_AGENT_DIR: profilePaths?.profile ?? join(home, 'agent'),
+          PI_CODING_AGENT_DIR: live
+            ? join(live.home, 'Library', 'Application Support', 'eitri', 'pi')
+            : (profilePaths?.profile ?? join(home, 'agent')),
           ...(profilePaths ? { EITRI_PI_NATIVE_AUTH_PATH: profilePaths.authPath } : {}),
+          ...(live ? { EITRI_PI_LIVE_HOME: live.home } : {}),
           PI_OFFLINE: '1',
           PI_SKIP_VERSION_CHECK: '1',
           PI_TELEMETRY: '0',
-          EITRI_PI_NATIVE_CHILD: 'synthetic-only',
+          EITRI_PI_NATIVE_CHILD: live ? 'live-probe' : 'synthetic-only',
           EITRI_PI_NATIVE_FIXTURE: fixture,
         },
-        stdio: ['pipe', 'pipe', 'pipe', ...(codexProfiles.includes(fixture) ? ['ipc'] : [])],
+        stdio: [
+          'pipe',
+          'pipe',
+          'pipe',
+          ...(live || codexProfiles.includes(fixture) ? ['ipc'] : []),
+        ],
       },
     );
     let failed = false;
