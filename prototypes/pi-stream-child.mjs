@@ -2,10 +2,18 @@ import assert from 'node:assert/strict';
 import { pathToFileURL } from 'node:url';
 import { join } from 'node:path';
 import { readdir } from 'node:fs/promises';
-import { sdkRoot, observations, verifyInstalledSources } from './pi-stream.mjs';
+import { sdkRoot, verifyInstalledSources } from './pi-stream.mjs';
+import {
+  JsonLines,
+  StreamReceiver,
+  validateRequest,
+  encodeLine,
+  makeRequest,
+} from './pi-stream-protocol.mjs';
 import { context, route, toolResponse, toolResult, finalResponse } from './pi-stream-fixtures.ts';
 
-// This fixed fixture runner has no stdin/request interface and never loads an AgentSession.
+// Fixed offline fixture runner: only the two exact synthetic requests below are accepted.
+// The validated pipe is experimental, never a production/credential/tool interface.
 try {
   assert.equal(process.env.EITRI_PI_STREAM_CHILD, 'synthetic-only');
   assert.equal(process.env.PI_OFFLINE, '1');
@@ -140,38 +148,39 @@ try {
   });
   assert.deepEqual(await runtime.checkAuth(route.provider), { type: 'oauth', source: 'OAuth' });
   assert.deepEqual(runtime.getPhysicalModel(route.provider, route.model), model);
-  // Each dispatch is explicit. The tool result is fixture data, not a tool invocation/commit.
-  for (let index = 0; index < 2; index++) {
-    const events = runtime.streamSimple(
-      model,
-      JSON.parse(JSON.stringify(expectedContexts[index])),
-      {
-        maxTokens: 64,
-      },
-    );
-    let starts = 0;
-    let terminals = 0;
-    let text = '';
-    for await (const event of events) {
-      if (event.type === 'start') starts++;
-      else if (event.type === 'text_delta') text += event.delta;
-      else if (event.type === 'done') {
-        terminals++;
-        assert.equal(starts, 1);
-        assert.deepEqual(event.message, responses[index]);
-        assert.deepEqual(JSON.parse(JSON.stringify(event.message)), responses[index]);
-      } else assert.notEqual(event.type, 'error');
+  // No agent loop: a second stream requires a second explicit parent request.
+  const decoder = new JsonLines();
+  let index = 0;
+  for await (const chunk of process.stdin) {
+    for (const value of decoder.push(chunk)) {
+      assert.ok(index < 2);
+      const request = validateRequest(value);
+      assert.deepEqual(request, makeRequest(index, expectedContexts[index]));
+      const receiver = new StreamReceiver(request);
+      const events = runtime.streamSimple(model, request.context, request.options);
+      const { context: _context, options: _options, ...identity } = request;
+      let seq = 0;
+      for await (const event of events) {
+        const frame = { ...identity, seq: seq++, event };
+        receiver.accept(frame);
+        // Bound every frame and honor backpressure; never retain a raw pipe transcript.
+        const line = encodeLine(frame);
+        await new Promise((resolve, reject) =>
+          process.stdout.write(line, (error) => (error ? reject(error) : resolve())),
+        );
+      }
+      assert.deepEqual(receiver.finish(), responses[index]);
+      assert.deepEqual(await events.result(), responses[index]);
+      await new Promise((resolve) => setImmediate(resolve));
+      assert.equal(requests, ++index);
     }
-    assert.equal(terminals, 1);
-    assert.equal(text, responses[index].content[0].text);
-    assert.deepEqual(await events.result(), responses[index]);
-    await new Promise((resolve) => setImmediate(resolve));
-    assert.equal(requests, index + 1);
   }
+  decoder.finish();
+  assert.equal(index, 2);
   assert.equal(refreshes, 1);
   assert.equal(networkAttempts, 0);
   assert.deepEqual(await readdir(process.cwd()), []);
-  console.log(JSON.stringify({ ...observations, requests, refreshes, networkAttempts }));
+  // Parent accepts only two complete correlated streams AND normal child closure.
 } catch {
   console.error('pi-stream-offline-failed');
   process.exitCode = 1;

@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFile, mkdtemp, realpath, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { promisify } from 'node:util';
+import { context, toolResponse, toolResult, finalResponse } from './pi-stream-fixtures.ts';
+import { JsonLines, StreamReceiver, encodeLine, makeRequest } from './pi-stream-protocol.mjs';
 
 export const sdkRoot = '/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent';
 export const observations = Object.freeze({
@@ -36,15 +37,26 @@ export async function verifyInstalledSources() {
 }
 
 // Trusted test seam only: childPath is never accepted from CLI/model/case data.
-// This runs a fixed synthetic program, NOT a provider transport or agent adapter.
+// This exercises a private correlated pipe using fixed synthetic requests only.
+// It is NOT a production provider adapter and never accepts case/model/CLI requests.
 export async function probePiStream({ childPath, timeoutMs = 10_000, signal } = {}) {
   let home;
   try {
     assert.ok(Number.isInteger(timeoutMs) && timeoutMs > 0 && timeoutMs <= 10_000);
     signal?.throwIfAborted();
     await verifyInstalledSources();
+    const requests = [
+      makeRequest(0, context),
+      makeRequest(1, {
+        messages: [...context.messages, toolResponse, toolResult],
+      }),
+    ];
+    const expected = [toolResponse, finalResponse];
+    const decoder = new JsonLines();
+    let index = 0;
+    let receiver = new StreamReceiver(requests[index]);
     home = await realpath(await mkdtemp(join(tmpdir(), 'eitri-pi-stream-')));
-    const pending = promisify(execFile)(
+    const child = spawn(
       process.execPath,
       childPath ? [childPath] : [fileURLToPath(new URL('./pi-stream-child.mjs', import.meta.url))],
       {
@@ -57,30 +69,62 @@ export async function probePiStream({ childPath, timeoutMs = 10_000, signal } = 
           PI_TELEMETRY: '0',
           EITRI_PI_STREAM_CHILD: 'synthetic-only',
         },
-        timeout: timeoutMs,
-        killSignal: 'SIGKILL',
-        maxBuffer: 4096,
-        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe'],
       },
     );
-    // Node's built-in AbortSignal path can reject before close and uses SIGTERM.
-    // Kill explicitly, then await execFile's close callback before releasing the home.
-    const cancel = () => pending.child.kill('SIGKILL');
+    let failed = false;
+    const cancel = () => {
+      failed = true;
+      child.kill('SIGKILL');
+    };
+    const timer = setTimeout(cancel, timeoutMs);
     signal?.addEventListener('abort', cancel, { once: true });
-    if (signal?.aborted) cancel();
+    // Always settle on close, not error/abort: release the home only after reaping.
+    const closed = new Promise((resolve) => {
+      child.on('error', cancel);
+      child.stdin.on('error', cancel);
+      child.stdout.on('error', cancel);
+      child.stderr.on('error', cancel);
+      child.stderr.on('data', cancel); // no raw diagnostics are retained
+      child.stdout.on('data', (chunk) => {
+        if (failed) return;
+        try {
+          for (const frame of decoder.push(chunk)) {
+            assert.ok(index < requests.length);
+            const event = receiver.accept(frame);
+            if (event.type === 'done' || event.type === 'error') {
+              assert.deepEqual(receiver.finish(), expected[index]);
+              index++;
+              if (index < requests.length) {
+                receiver = new StreamReceiver(requests[index]);
+                child.stdin.write(encodeLine(requests[index]));
+              } else child.stdin.end();
+            }
+          }
+        } catch {
+          cancel();
+        }
+      });
+      child.on('close', (code, exitSignal) => resolve({ code, exitSignal }));
+    });
     try {
-      const { stdout, stderr } = await pending;
-      signal?.throwIfAborted();
-      assert.equal(stderr, '');
-      assert.equal(stdout, `${JSON.stringify(observations)}\n`);
+      if (signal?.aborted) cancel();
+      if (!failed) child.stdin.write(encodeLine(requests[0]));
+      const { code, exitSignal } = await closed;
+      assert.ok(!failed && !signal?.aborted);
+      assert.equal(code, 0);
+      assert.equal(exitSignal, null);
+      decoder.finish();
+      assert.equal(index, requests.length);
       return { ...observations };
     } finally {
+      clearTimeout(timer);
       signal?.removeEventListener('abort', cancel);
     }
   } catch {
     throw new Error('pi-stream-offline-failed');
   } finally {
-    // Only our generated directory, after execFile has closed/reaped its child.
+    // Only our generated directory, after spawn has closed/reaped its child.
     if (home) {
       await rm(home, { recursive: true, force: true }).catch(() => {
         throw new Error('pi-stream-offline-cleanup-failed');
