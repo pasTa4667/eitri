@@ -2,9 +2,23 @@
 
 ## Disposition
 
-**Blocked, not an accepted auth strategy.** The next M4 task requires a supported shared-store ownership and native refresh-disposal design before live integration. Source review identifies a possible upstream seam, but the installed public API does not expose the built-in store or its outstanding refresh work. Do not mark the [plan's auth-design task](build-plan.md#current-m4-subscription-access-slices) complete or infer operational exclusion from this document.
+**Operator decision: use a dedicated Pi-managed Eitri profile and accept re-login instead of complex shared-auth recovery for this version.** After the investigation below, the operator explicitly accepts signing in daily, every few days or on every session, and approves the dedicated-profile recommendation. This supersedes the previous requirement to settle shared-user-store concurrency and lossless refresh drainage before proceeding. It does not claim those properties were proved.
 
-This checkpoint changes documentation only. No real Pi credential file is opened, no auth implementation is changed, and no SDK upgrade, login, inference or production wiring is authorized. [ADR 0005](adr/0005-retain-durable-inference-seam.md), the [stream-only contract](pi-runtime-compatibility.md#proposed-a-contract) and the [parity review's two Important gates](evidence/pi-runtime/parity-review.md#findings-before-any-live-integration) remain binding.
+- Store Pi-managed OAuth state at `~/Library/Application Support/eitri/pi/auth.json`, with directory mode **0700** and file mode **0600**. Use supported Pi profile/auth-path configuration and supported Pi sign-in. Keep this profile separate from the operator's normal Pi profile; never copy/import existing login tokens or change global Pi settings.
+- One Eitri helper/action may use this profile at a time. Independent Pi sessions may keep using their own profiles, but must not share the Eitri profile. Concurrent clients renewing one saved login are out of scope for this version.
+- Pi owns token persistence and renewal. Do not build a custom OAuth implementation, credential store or upstream drain API as a prerequisite. If cancellation/crash interrupts renewal, accept possible loss of that profile's usable login: park work as Needs attention / sign-in required, stop dispatch and ask the operator to sign in again. Do not retry uncertain tokens automatically, repair the credential file or switch billing routes.
+- Re-login acceptance does **not** waive actual helper termination/reaping, safe native receipts, pause/deadline enforcement, preserved budgets, stale-action rejection or orphan reconciliation. Never describe an interrupted action as successful or reset its allowance after re-login. Credentials stay outside Git, case history/expiry, logs, transport, GPUI and worker mounts/environments.
+- GitHub and Sentry tokens remain in **1Password**, loaded only into controller memory as already planned. Do not move rotating Pi OAuth state into 1Password.
+
+### Next-session handoff
+
+Implement only the [next pending offline plan slice](build-plan.md#current-m4-subscription-access-slices): explicit dedicated-profile selection/private-path checks, serialized use and fail-closed sign-in-required handling, with synthetic tests for auth failure, interruption, restart and no fallback. Demonstrate that the normal Pi profile is untouched and no case cleanup deletes profile credentials. Do not reopen the superseded shared-store/upstream-drain investigation as a prerequisite.
+
+This request records the decision only; it does not implement authentication or authorize real credential access, sign-in, inference, production wiring or a dependency upgrade. A separate operator-present verification must establish that supported Pi sign-in actually works in this dedicated profile; the earlier successful session and earlier Enterprise denial do not settle that. The genuine controlled tool-using turn still needs its own approval. [ADR 0005](adr/0005-retain-durable-inference-seam.md) and the non-auth authority/containment requirements remain unchanged.
+
+## Historical investigation — superseded acceptance requirements
+
+The remaining investigation/source observations are retained as history. Its demands for shared-store concurrency proof, guaranteed rotation persistence and an upstream/custom-store decision are **not current v1 prerequisites** where they conflict with the operator decision above. The SDK limitations remain real; the operator accepts re-login as the recovery trade-off rather than claiming those limitations solved.
 
 ## Supported surface and observed implementation
 
@@ -55,4 +69,4 @@ Use generated private temporary directories, synthetic rotating credentials and 
 
 ## Review and verification
 
-The [five-axis author review](evidence/pi-runtime/auth-ownership-review.md) records verification and the unresolved Important findings. There is no behavioral change, so TDD RED/GREEN is inapplicable. Completing this source/design checkpoint is not completing the blocked auth-design task, shared-store proof, native refresh-disposal proof, production selection or M4. **Stop here for an operator decision; do not start a live tool turn.**
+The [five-axis author review](evidence/pi-runtime/auth-ownership-review.md) records verification and findings at the investigation checkpoint, before the operator accepted the dedicated-profile/re-login trade-off above. It is historical evidence, not a current instruction to await that already-made decision. Implementation and dedicated-profile sign-in verification remain pending; M4 and live tool-use approval remain open.
