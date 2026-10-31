@@ -28,14 +28,18 @@ async function loginOwner(lease) {
   const owner = JSON.parse(await readFile(join(lease, 'owner.json'), 'utf8'));
   assert.deepEqual(Object.keys(owner).sort(), ['kind', 'pid', 'version']);
   assert.equal(owner.version, 2);
-  assert.equal(owner.kind, 'login');
+  assert.ok(['login', 'probe'].includes(owner.kind));
   assert.ok(Number.isSafeInteger(owner.pid) && owner.pid > 0);
   return owner;
 }
 
-// Login is the only credential-using process: no auth helper/agent is spawned by the callback.
-// Native v1 leases cannot prove helper exit and are deliberately NOT reclaimed here.
-export async function withProfileLogin(home, recover, login) {
+// Both callbacks are sole-process credential users, with no auth helper/agent.
+// Only explicit fresh login can recover a dead owner. Native v1 leases remain blocked.
+export const withProfileLogin = (home, recover, login) =>
+  withProfileOperation(home, recover, 'login', login);
+export const withProfileProbe = (home, probe) => withProfileOperation(home, false, 'probe', probe);
+
+async function withProfileOperation(home, recover, kind, run) {
   try {
     assert.ok(typeof home === 'string' && isAbsolute(home));
     assert.equal(await realpath(home), resolve(home));
@@ -43,16 +47,17 @@ export async function withProfileLogin(home, recover, login) {
     let profile = home;
     for (const [index, part] of ['Library', 'Application Support', 'eitri', 'pi'].entries()) {
       profile = join(profile, part);
-      await mkdir(profile, { mode: 0o700 }).catch((error) => {
-        if (error.code !== 'EEXIST') throw error;
-      });
+      if (kind === 'login')
+        await mkdir(profile, { mode: 0o700 }).catch((error) => {
+          if (error.code !== 'EEXIST') throw error;
+        });
       // Existing macOS Library/Application Support need not be 0700; never chmod them.
       await checked(profile, true, index >= 2);
     }
     const authPath = join(profile, 'auth.json');
     const checkAuthPath = () => checked(authPath, false);
     await checkAuthPath().catch((error) => {
-      if (error.code !== 'ENOENT') throw error;
+      if (kind !== 'login' || error.code !== 'ENOENT') throw error;
     });
     const lease = join(profile, 'eitri-use');
     let fresh = false;
@@ -62,7 +67,7 @@ export async function withProfileLogin(home, recover, login) {
     } catch (error) {
       if (error.code !== 'EEXIST') throw error;
     }
-    const owner = { version: 2, kind: 'login', pid: process.pid };
+    const owner = { version: 2, kind, pid: process.pid };
     if (fresh) {
       await writeFile(join(lease, 'owner.json'), JSON.stringify(owner), {
         flag: 'wx',
@@ -93,12 +98,13 @@ export async function withProfileLogin(home, recover, login) {
         await rmdir(join(lease, 'recovery'));
       }
     }
-    await login({ profile, authPath });
+    const result = await run({ profile, authPath });
     await checkAuthPath();
     assert.deepEqual(await loginOwner(lease), owner);
     assert.deepEqual(await readdir(lease), ['owner.json']);
     await unlink(join(lease, 'owner.json'));
     await rmdir(lease);
+    return result;
   } catch {
     // Failure leaves uncertainty blocked. Only explicit login recovery can reclaim a dead v2 owner.
     throw new Error('sign-in-required');

@@ -10,7 +10,7 @@ import { sdkRoot, verifyInstalledSources } from '../prototypes/pi-stream.mjs';
 
 const usage = `Usage: npm run test:pi-login -- --run [--recover]
 Operator-present dedicated Pi profile sign-in only; Pi saves OAuth credentials, never inference.
---recover explicitly reclaims only a dead login-command owner, never a native/unknown lease.
+--recover explicitly reclaims only a dead login/probe owner, never a native/unknown lease.
 `;
 const args = process.argv.slice(2);
 const valid =

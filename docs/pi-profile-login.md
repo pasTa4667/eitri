@@ -14,7 +14,7 @@ Complete the browser flow. Trust the **terminal** verdict, not the browser callb
 
 On denial, stop and report the non-secret observation. There is no automatic retry, credential import, device-code/pasted-code fallback, alternate provider or paid-key fallback. Ctrl+C cancels; the disposable login process has a five-minute hard lifetime, including uncooperative SDK work.
 
-After a failed/interrupted **login command**, once that command has exited, an explicitly chosen fresh sign-in can use:
+After a failed/interrupted **login command** or [sole-process tool probe](pi-controlled-turn.md), once that command has exited, an explicitly chosen fresh sign-in can use:
 
 ```sh
 npm run test:pi-login -- --run --recover
@@ -30,7 +30,7 @@ The launcher uses the operating-system user's home, not ambient `HOME`, to selec
 
 The login process owns the same atomic `eitri-use` directory as the [offline profile adapter](pi-dedicated-profile.md), using a distinct bounded version-2 record `{version, kind: "login", pid}`. Only this process uses credentials: no auth helper, agent session or model loop is spawned. Browser opening is a fixed `/usr/bin/open` call, with an allowlisted authorization origin/path/redirect; its URL is never printed by the wrapper. Credential values returned by Pi login are discarded, never forwarded or logged.
 
-A successful login reopens Pi metadata, verifies OAuth-only selection and private auth permissions, then releases its own lease. Failure leaves the lease blocked. Ordinary login never reclaims it. Explicit `--recover` only replaces a version-2 login owner after PID probing returns **ESRCH**; a reused/live PID blocks. A `recovery` subdirectory serializes takeover while pinning the old lease directory. Pending records, interrupted recovery, unknown files and version-1 native leases all block. No PID is signaled by recovery, no lease is recursively deleted, and no auth-store lock is deleted. Ambiguous ownership requires investigation, not manual blind removal.
+A successful login reopens Pi metadata, verifies OAuth-only selection and private auth permissions, then releases its own lease. Failure leaves the lease blocked. Ordinary login never reclaims it. Explicit `--recover` only replaces a version-2 login or sole-process probe owner after PID probing returns **ESRCH**; a reused/live PID blocks. A `recovery` subdirectory serializes takeover while pinning the old lease directory. Pending records, interrupted recovery, unknown files and version-1 native leases all block. No PID is signaled by recovery, no lease is recursively deleted, and no auth-store lock is deleted. Ambiguous ownership requires investigation, not manual blind removal.
 
 Version-1 native leases cannot establish helper exit from their controller PID alone; this command deliberately does not reset them. Real native credential dispatch is still disabled, so these remain a future production-integration gate, not authorization to point the synthetic adapter at real credentials. No catalogue/case state, pause flag, repair counter or allowance is opened or reset by login. Successful sign-in never automatically resumes a case.
 
@@ -56,4 +56,4 @@ This establishes one actual supported sign-in/persistence result in the dedicate
 
 The [five-axis author review](evidence/pi-runtime/profile-login-review.md) records 27 focused tests and full verification. Tests use generated homes, the real installed built-in Pi login/file store, mocked browser/callback/token transport and synthetic tokens. The SIGKILL check retains a live login owner, refuses competing recovery, waits for its actual exit, then requires explicit fresh sign-in; normal-profile and case-state sentinels survive. This is not real eligibility or general native recovery proof.
 
-The real sign-in checkbox is complete on the operator-reported observation above. **Next:** seek separate approval for a genuine controlled tool-using turn. Stop here: no inference is authorized by the sign-in result, and M4 and production-route selection remain open.
+The real sign-in checkbox is complete on the operator-reported observation above. The operator subsequently gives separate explicit approval for the [controlled tool-use probe](pi-controlled-turn.md); its single actual attempt passes with captured exit 0. The login command still never performs inference or resumes cases. M4, native live integration and production-route selection remain open; no later step follows automatically.
