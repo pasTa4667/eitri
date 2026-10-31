@@ -192,6 +192,36 @@ async function syntheticFetch(url, options) {
       response: { id: 'synthetic-response', status: 'completed', output: [item] },
     },
   ];
+  if (scenario === 'paced-toolcall' && first) {
+    // Advance only after the live helper validates and writes each intermediate frame.
+    // This prevents SDK finalization from deleting scratch before consumer snapshotting.
+    return new Response(
+      new ReadableStream({
+        start(controller) {
+          const enqueue = (batch) =>
+            controller.enqueue(
+              new TextEncoder().encode(
+                batch.map((event) => `data: ${JSON.stringify(event)}\n\n`).join(''),
+              ),
+            );
+          const write = process.stdout.write.bind(process.stdout);
+          process.stdout.write = (chunk, ...args) => {
+            const type = JSON.parse(chunk.toString()).event.type;
+            const result = write(chunk, ...args);
+            if (type === 'toolcall_start') enqueue([events[2]]);
+            if (type === 'toolcall_delta') {
+              enqueue(events.slice(3));
+              controller.close();
+              process.stdout.write = write;
+            }
+            return result;
+          };
+          enqueue(events.slice(0, 2));
+        },
+      }),
+      { headers: { 'content-type': 'text/event-stream' } },
+    );
+  }
   if (scenario === 'open-toolcall') {
     // Keep a valid intermediate SDK event live: no later done/error can mutate away
     // its partialJson scratch field before the consumer snapshots/validates it.

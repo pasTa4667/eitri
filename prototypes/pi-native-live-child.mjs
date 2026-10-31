@@ -6,6 +6,7 @@ import { withProfileProbe } from './pi-profile-login.mjs';
 import { JsonLines, StreamReceiver, validateRequest, encodeLine } from './pi-stream-protocol.mjs';
 import { route } from './pi-stream-fixtures.ts';
 import { nativeEventFailureStage, validateNativeDiagnostic } from './pi-native-diagnostics.mjs';
+import { snapshotNativeLiveEvent } from './pi-native-live-events.mjs';
 
 // One credential-using process/request. Parent death or timeout leaves its v2 lease blocked.
 const timer = setTimeout(() => process.exit(1), 60_000);
@@ -122,8 +123,8 @@ try {
     for await (const raw of events) {
       stage = 'stream';
       assert.notEqual(raw.type, 'error');
-      stage = 'event-validation';
-      const event = structuredClone(raw);
+      stage = nativeEventFailureStage(raw.type);
+      const event = snapshotNativeLiveEvent(raw);
       stage = 'event-alias';
       for (const key of ['partial', 'message']) if (event[key]) event[key] = alias(event[key]);
       stage = nativeEventFailureStage(event.type);

@@ -121,31 +121,87 @@ for (const scenario of [
   );
 
 test(
-  'live-native diagnoses an open SDK toolcall_start before any terminal can remove scratch fields',
-  { timeout: 15000 },
+  'live-native accepts paced SDK toolcall start/delta snapshots through native Pause/reopen',
+  { timeout: 30000 },
   async (t) => {
     const p = await profileFixture(t);
     const directory = await realpath(await mkdtemp(join(tmpdir(), 'eitri-live-test-')));
     t.after(() => rm(directory, { recursive: true, force: true }));
+    const progress = [],
+      diagnostics = [],
+      helpers = [],
+      events = [];
+    const stream = transport(p.home, 'paced-toolcall');
+    const result = await runNativeLiveProbe({
+      directory,
+      stream: (request, options) =>
+        stream(request, {
+          ...options,
+          onEvent: (event) => {
+            events.push(event);
+            options.onEvent?.(event);
+          },
+        }),
+      onProgress: (value) => progress.push(value),
+      onDiagnostic: (stage) => diagnostics.push(stage),
+      onSpawn: (value) => helpers.push(value),
+    });
+    assert.deepEqual(result, nativeLiveResult);
+    assert.deepEqual(progress, ['model', 'tool', 'model']);
+    assert.deepEqual(diagnostics, []);
+    assert.deepEqual(
+      events.filter((e) => e.type.startsWith('toolcall')).map((e) => e.type),
+      ['toolcall_start', 'toolcall_delta', 'toolcall_end'],
+    );
+    assert.doesNotMatch(JSON.stringify(events), /partialJson/);
+    assert.equal(helpers.length, 2);
+    for (const helper of helpers) {
+      assert.throws(() => process.kill(helper.pid, 0), { code: 'ESRCH' });
+      await assert.rejects(lstat(helper.home), { code: 'ENOENT' });
+    }
+    assert.deepEqual(await readdir(p.profile), ['auth.json']);
+    assert.deepEqual(await readdir(directory), []);
+  },
+);
+
+test(
+  'live-native cancellation after a normalized open SDK toolcall never delivers a terminal',
+  { timeout: 15000 },
+  async (t) => {
+    const p = await profileFixture(t);
     const helpers = [],
-      progress = [],
+      events = [],
       diagnostics = [];
+    const control = new AbortController();
+    const transcript = structuredClone(context);
+    transcript.messages[0].toolsAdded[0].name = 'probe';
+    const preload = new URL(
+      './fixtures/pi-tool-preload.mjs?native=1&scenario=open-toolcall',
+      import.meta.url,
+    );
     await assert.rejects(
-      runNativeLiveProbe({
-        directory,
-        stream: transport(p.home, 'open-toolcall'),
+      streamNativeLiveProbe(makeRequest(0, transcript), {
+        profileHome: p.home,
+        preload,
+        signal: control.signal,
         onDiagnostic: (stage) => diagnostics.push(stage),
-        onProgress: (value) => progress.push(value),
         onSpawn: (value) => helpers.push(value),
+        onEvent: (event) => {
+          events.push(event);
+          if (event.type === 'toolcall_start') control.abort();
+        },
       }),
     );
-    assert.deepEqual(diagnostics, ['event-validation-toolcall_start']);
-    assert.deepEqual(progress, ['model']);
+    assert.deepEqual(
+      events.map((e) => e.type),
+      ['start', 'toolcall_start'],
+    );
+    assert.doesNotMatch(JSON.stringify(events), /partialJson/);
+    assert.deepEqual(diagnostics, ['transport']);
     assert.equal(helpers.length, 1);
     assert.throws(() => process.kill(helpers[0].pid, 0), { code: 'ESRCH' });
     await assert.rejects(lstat(helpers[0].home), { code: 'ENOENT' });
     assert.ok((await readdir(p.profile)).includes('eitri-use'));
-    assert.ok((await readdir(join(directory, 'native'))).includes('catalogue.sqlite'));
   },
 );
 
