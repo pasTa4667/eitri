@@ -1,0 +1,69 @@
+{
+  "scope": "bounded-live-native-post-compatibility-attempt",
+  "sourceCommit": "03475e38890dd322a62ecf67cbe6f34b11a0698f",
+  "startedAt": "2026-10-31T18:29:28Z",
+  "finishedAt": "2026-10-31T18:29:30Z",
+  "operatorAuthorization": "Operator explicitly replies yes to one genuine live-native attempt, capped at two model requests and one harmless fixed tool, review and stop; no retries, credential repair or production enablement.",
+  "command": "npm run --silent test:pi-native -- --run",
+  "exitCode": 1,
+  "report": {
+    "scope": "dedicated-pi-native",
+    "verdict": "sign-in-required"
+  },
+  "failureStage": "profile",
+  "observedProgress": [
+    "model"
+  ],
+  "configuredRoute": {
+    "provider": "openai-codex",
+    "model": "gpt-6.1-sol"
+  },
+  "providerStreamReached": false,
+  "actualProviderRequests": null,
+  "toolResultVerified": false,
+  "liveNativeAcceptance": false,
+  "observation": "Local profile entry fails before the runtime callback, ModelRuntime.create or provider stream. The model marker records controller invocation, not an HTTP request. The exact path/auth-metadata/lease check is unmeasured; no OAuth rejection or need for re-login is established. This attempt cannot exercise the partial-event compatibility fix.",
+  "disposition": "Stopped after this one attempt, retaining failed native data privately. No retry, sign-in, credential/lease repair or private-data inspection. Profile diagnosis/recovery scope and any later inference require a separate explicit operator decision; M4 and production selection remain open.",
+  "focusedVerification": {
+    "command": "node --test test/pi-native-live.test.mjs test/pi-native-live-events.test.mjs",
+    "tests": 35,
+    "failures": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "exitCode": 0
+  },
+  "priorFullVerification": {
+    "sourceCommit": "03475e38890dd322a62ecf67cbe6f34b11a0698f",
+    "command": "npm run verify:all",
+    "exitCode": 0,
+    "nodeTests": 2285,
+    "rustTests": 30,
+    "rerun": false,
+    "note": "The preceding compatibility-fix unit passed full verification; its recorded source hashes still match. No executable/dependency changes occur here. This is prior evidence, not a fresh full-suite claim."
+  },
+  "sourceSha256": {
+    "package-lock.json": "ffed086c7a444d78eae6af02d287e9bf355094f9315fd588dbdea44acfc660be",
+    "package.json": "3c6a91a9f17e1c9d7b721bba762d2c67582447ea9f3caba49b98062889cb8419",
+    "prototypes/pi-native-diagnostics.mjs": "e0bb8bf6c688da2eb9075226d7686dc0f9a16e72def53a6ef20b4981dafbc9ea",
+    "prototypes/pi-native-live-child.mjs": "87af18c1d578f5a5f7878d9c600284756705a1b0bf531229913f4ca19c8c2008",
+    "prototypes/pi-native-live-events.mjs": "93949520bcce5cb97fe9dab2be4397639ce35d99753d07b676a41c741d405c92",
+    "prototypes/pi-native-live.mjs": "72c9339ce970f51ab86b7f98feac82d25c7660e002d34daf600e7e4b4c9bf010",
+    "prototypes/pi-native-provider.mjs": "34c11afc6b35a678fbf3484801d92407d9bc7aeffbd8eab7808c6ce275899d0a",
+    "prototypes/pi-native-stream.mjs": "a0f3d837674f1f96b9c74513a5bbe96aae86bbeb0b7cb2b58e91f67676e8c6bf",
+    "prototypes/pi-profile-login.mjs": "beb8f682f2a2294583cdce906fe90adbc65b873c946f3b48220b48ea044eff73",
+    "prototypes/pi-stream-protocol.mjs": "af627cd8c1e595377a5e340c3f42de1784c1b1987587bf8eb7cbe0d66a067702",
+    "prototypes/pi-stream-source.json": "9f6d615f8d13bf7ede15b2f2b8f1922f6cfa7d21c46a8f8f87c886e395f6a041",
+    "scripts/test-pi-tool.mjs": "b522e4edf7bb5ac79aea6c76b18c2a2cb1b2ced8b265643a57741077042097c8",
+    "src/controller.ts": "8f1a1e6a6c9e79358a9e8359cc203df5d2e49bfc93e356617e9701ff910efa23",
+    "src/native.ts": "25d079c11804c073c3c18e9bf04f43ae85dc8811954d1cb45a45198d355bc5d8"
+  },
+  "excludedEvidence": [
+    "credentials",
+    "account identity",
+    "raw model text/thinking/events",
+    "tool result",
+    "HTTP payloads",
+    "lease owner",
+    "private native case content"
+  ]
+}
