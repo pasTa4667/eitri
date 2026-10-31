@@ -14,7 +14,7 @@
     "probe:pi-runtime": "node prototypes/pi-runtime.mjs",
     "probe:pi-stream": "node prototypes/pi-stream.mjs",
     "test:openai-login": "node scripts/test-openai-login.mjs",
-    "check": "tsc --noEmit && node --check prototypes/pi-stream.mjs && node --check prototypes/pi-stream-protocol.mjs && node --check prototypes/pi-stream-child.mjs && node --check prototypes/pi-runtime.mjs && node --check scripts/test-openai-login.mjs && node --check scripts/doctor.mjs && node --check scripts/check-sdk.mjs && node --check prototypes/sdk-compatibility.mjs && node --check prototypes/chromium/probe.mjs && node --check prototypes/chromium/run.mjs && node --check prototypes/chromium/policy.mjs",
+    "check": "tsc --noEmit && node --check prototypes/pi-native-stream.mjs && node --check prototypes/pi-native-child.mjs && node --check prototypes/pi-stream.mjs && node --check prototypes/pi-stream-protocol.mjs && node --check prototypes/pi-stream-child.mjs && node --check prototypes/pi-runtime.mjs && node --check scripts/test-openai-login.mjs && node --check scripts/doctor.mjs && node --check scripts/check-sdk.mjs && node --check prototypes/sdk-compatibility.mjs && node --check prototypes/chromium/probe.mjs && node --check prototypes/chromium/run.mjs && node --check prototypes/chromium/policy.mjs",
     "test": "node --test test/*.test.ts test/*.test.mjs",
     "lint:ts": "oxlint --deny-warnings src test scripts prototypes",
     "lint:rust": "DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer cargo clippy --locked --manifest-path operator/Cargo.toml --all-targets -- -D warnings",
