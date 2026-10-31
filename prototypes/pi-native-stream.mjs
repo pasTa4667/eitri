@@ -12,7 +12,7 @@ import { JsonLines, StreamReceiver, validateRequest, encodeLine } from './pi-str
 // Source/configuration controls are not a sandbox for the trusted installed SDK.
 export async function streamNativeFixture(
   value,
-  { signal, onEvent, onSpawn, beforeCleanup, resourceDirectory } = {},
+  { signal, onEvent, onSpawn, beforeCleanup, resourceDirectory, fixture = 'probe' } = {},
 ) {
   const deadline = performance.now() + 10_000;
   let home;
@@ -23,6 +23,7 @@ export async function streamNativeFixture(
   };
   try {
     check();
+    assert.ok(['probe', 'repair-budget'].includes(fixture));
     const request = validateRequest(value);
     const receiver = new StreamReceiver(request);
     const decoder = new JsonLines();
@@ -44,6 +45,7 @@ export async function streamNativeFixture(
           PI_SKIP_VERSION_CHECK: '1',
           PI_TELEMETRY: '0',
           EITRI_PI_NATIVE_CHILD: 'synthetic-only',
+          EITRI_PI_NATIVE_FIXTURE: fixture,
         },
         stdio: ['pipe', 'pipe', 'pipe'],
       },

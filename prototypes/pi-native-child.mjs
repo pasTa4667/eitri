@@ -19,6 +19,7 @@ try {
       .sort(),
     [
       'EITRI_PI_NATIVE_CHILD',
+      'EITRI_PI_NATIVE_FIXTURE',
       'HOME',
       'PI_CODING_AGENT_DIR',
       'PI_OFFLINE',
@@ -73,10 +74,14 @@ try {
     maxTokens: 64,
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
   };
+  const fixture = process.env.EITRI_PI_NATIVE_FIXTURE;
+  assert.ok(['probe', 'repair-budget'].includes(fixture));
   const results = request.context.messages.filter((m) => m.role === 'toolResult');
-  assert.ok(results.length <= 1);
-  if (results.length) assert.equal(results[0].toolName, 'probe');
-  const response = results.length
+  if (fixture === 'probe') {
+    assert.ok(results.length <= 1);
+    if (results.length) assert.equal(results[0].toolName, 'probe');
+  }
+  let response = results.length
     ? finalResponse
     : {
         ...toolResponse,
@@ -84,6 +89,53 @@ try {
           { type: 'toolCall', id: `probe-${request.actionId}`, name: 'probe', arguments: {} },
         ],
       };
+  if (fixture === 'repair-budget') {
+    // Fixed synthetic policy only. Native/controller still execute tools and own all counters.
+    const inputMessage = request.context.messages.findLast((m) => m.role === 'user');
+    const input = JSON.parse(
+      typeof inputMessage.content === 'string'
+        ? inputMessage.content
+        : inputMessage.content.map((block) => block.text).join(''),
+    );
+    assert.ok(['triage', 'investigation', 'implementation'].includes(input.phase));
+    const checks = results
+      .filter((m) => m.toolName === 'run_check')
+      .map((m) => {
+        assert.equal(m.isError, false);
+        return JSON.parse(m.content.map((block) => block.text).join(''));
+      });
+    const last = checks.at(-1);
+    let name = 'run_check',
+      args;
+    if (
+      input.phase === 'triage' ||
+      (input.phase === 'investigation' && last?.kind === 'baseline')
+    ) {
+      name = 'complete_assessment';
+      args = {
+        phase: input.phase,
+        expectedControlVersion:
+          input.phase === 'triage' ? input.expectedControlVersion : last.controlVersion,
+        conclusion: 'progress',
+        reason: 'Synthetic repair-budget exercise, not a live fix',
+        evidenceIds: input.phase === 'triage' ? [] : [last.id],
+        proposal: 'Bounded synthetic proposal',
+        paths: ['src/example.ts'],
+      };
+    } else
+      args = {
+        kind:
+          input.phase === 'investigation'
+            ? 'baseline'
+            : last?.kind === 'checkpoint'
+              ? 'regression'
+              : 'checkpoint',
+      };
+    response = {
+      ...toolResponse,
+      content: [{ type: 'toolCall', id: `repair-${request.actionId}`, name, arguments: args }],
+    };
+  }
   let calls = 0;
   const stream = (selected, transcript, options) => {
     assert.equal(++calls, 1);

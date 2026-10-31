@@ -60,6 +60,7 @@ export function nativeFixtureProvider(directory, caseId, requests, hooks = {}) {
         await hooks.before?.(request);
         const message = await streamNativeFixture(request, {
           signal: options?.signal,
+          fixture: hooks.fixture,
           resourceDirectory: directory,
           onSpawn: hooks.onSpawn,
           beforeCleanup: () => hooks.beforeCleanup?.(request),
