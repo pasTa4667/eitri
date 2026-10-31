@@ -9,14 +9,29 @@ import { withProfileProbe } from '../prototypes/pi-profile-login.mjs';
 import { runControlledTurn, toolTurnResult } from '../prototypes/pi-controlled-turn.mjs';
 import { JsonLines } from '../prototypes/pi-stream-protocol.mjs';
 import { sdkRoot, verifyInstalledSources } from '../prototypes/pi-stream.mjs';
-import { runNativeLiveProbe, nativeLiveResult } from '../prototypes/pi-native-live.mjs';
+import {
+  runNativeLiveProbe,
+  nativeLiveResult,
+  runNativeLiveReadProbe,
+  nativeLiveReadResult,
+} from '../prototypes/pi-native-live.mjs';
 import { validateNativeDiagnostic } from '../prototypes/pi-native-diagnostics.mjs';
 
-const native = process.argv[2] === '--native';
-const expectedResult = native ? nativeLiveResult : toolTurnResult;
-const commandName = native ? 'test:pi-native' : 'test:pi-tool';
+const fixtureRead = process.argv[2] === '--native-read';
+const native = fixtureRead || process.argv[2] === '--native';
+const nativeFlag = fixtureRead ? '--native-read' : '--native';
+const expectedResult = fixtureRead
+  ? nativeLiveReadResult
+  : native
+    ? nativeLiveResult
+    : toolTurnResult;
+const commandName = fixtureRead
+  ? 'test:pi-native-read'
+  : native
+    ? 'test:pi-native'
+    : 'test:pi-tool';
 const failure = {
-  scope: native ? 'dedicated-pi-native' : 'dedicated-pi-tool',
+  scope: expectedResult.scope,
   verdict: 'sign-in-required',
 };
 const emit = (value) => writeSync(1, `${JSON.stringify(value)}\n`);
@@ -32,7 +47,7 @@ async function probe() {
   try {
     await verifyInstalledSources();
     const result = native
-      ? await runNativeLiveProbe({
+      ? await (fixtureRead ? runNativeLiveReadProbe : runNativeLiveProbe)({
           directory: process.cwd(),
           profileHome: process.env.EITRI_PI_TOOL_HOME,
           signal: controller.signal,
@@ -73,7 +88,7 @@ async function launch() {
     const actualHome = resolve(userInfo().homedir);
     const child = spawn(
       process.execPath,
-      [fileURLToPath(import.meta.url), ...(native ? ['--native'] : []), '--run'],
+      [fileURLToPath(import.meta.url), ...(native ? [nativeFlag] : []), '--run'],
       {
         cwd: home,
         stdio: ['ignore', 'pipe', 'ignore'],
@@ -126,7 +141,9 @@ async function launch() {
                   2,
                   expected === 'model'
                     ? 'Pi model request (streaming).\n'
-                    : 'Fixed probe tool executed.\n',
+                    : fixtureRead
+                      ? 'Fixed fixture read executed.\n'
+                      : 'Fixed probe tool executed.\n',
                 );
               } else {
                 assert.ok(
@@ -173,7 +190,7 @@ const args = process.argv.slice(native ? 3 : 2);
 if (args.length === 0 || (args.length === 1 && args[0] === '--help')) {
   writeSync(
     1,
-    `Usage: npm run ${commandName} -- --run\nTwo bounded genuine Pi streams and one fixed side-effect-free tool${native ? ' through the real native controller/SQLite lifecycle' : ''}. No production dispatch.\n`,
+    `Usage: npm run ${commandName} -- --run\nTwo bounded genuine Pi streams and one fixed ${fixtureRead ? 'read_fixture({}) tool (uploads only src/lib/errors.js)' : 'side-effect-free tool'}${native ? ' through the real native controller/SQLite lifecycle' : ''}. No production dispatch.\n`,
   );
 } else if (args.length !== 1 || args[0] !== '--run' || process.platform !== 'darwin') {
   writeSync(2, `Usage: npm run ${commandName} -- --run (macOS only)\n`);

@@ -83,6 +83,7 @@ export type RuntimeHost = {
   assess(action: Action, assessment: Assessment, checks: Check[]): Promise<void>;
   checkpoint(action: Action, check: Check): void;
   probe(signal: AbortSignal): Promise<string>;
+  readFixture?(signal: AbortSignal): Promise<string>;
   check(
     action: Action,
     kind: Check['kind'],
@@ -360,6 +361,21 @@ export class NativeCase {
               output: [{ type: 'text', text: await tool((signal) => host.probe(signal)) }],
             }),
           }),
+          ...(host.readFixture
+            ? [
+                defineTool({
+                  name: 'read_fixture',
+                  description:
+                    'Read the fixed src/lib/errors.js fixture capture as data, without executing or editing it.',
+                  parameters: Type.Object({}, { additionalProperties: false }),
+                  execute: async () => ({
+                    output: [
+                      { type: 'text', text: await tool((signal) => host.readFixture!(signal)) },
+                    ],
+                  }),
+                }),
+              ]
+            : []),
           defineTool({
             name: 'run_check',
             description:

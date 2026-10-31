@@ -200,6 +200,8 @@ type Options = {
   capacity?: number;
   allowanceMs?: number;
   probe?: (id: string, signal: AbortSignal) => Promise<string>;
+  // Trusted opt-in fixed-source reader; no model-supplied path or default filesystem access.
+  readFixture?: (id: string, signal: AbortSignal) => Promise<string>;
   offlineWorkspace?: OfflineWorkspaceOptions;
   offlineWorkerJournal?: OfflineWorkerJournalOptions;
   offlineWorkerAcceptance?: true;
@@ -1395,6 +1397,9 @@ export class Controller {
             probe: (signal) =>
               this.options.probe?.(id, signal) ??
               Promise.resolve('Scripted probe; no external effect.'),
+            ...(this.options.readFixture
+              ? { readFixture: (signal: AbortSignal) => this.options.readFixture!(id, signal) }
+              : {}),
             check: (action, kind, signal) => this.dispatchCheck(id, action, kind, signal),
             validateCheckAction: (action) => this.validateCheckAction(id, action),
             captureConsumedCheckAuthority: (action, signal) =>

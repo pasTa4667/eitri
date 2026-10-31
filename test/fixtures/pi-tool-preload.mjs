@@ -8,6 +8,9 @@ import { syncBuiltinESMExports } from 'node:module';
 // Fixed synthetic transport only. No real fetch implementation is retained or called.
 const scenario = new URL(import.meta.url).searchParams.get('scenario');
 const native = new URL(import.meta.url).searchParams.get('native') === '1';
+const fixtureRead =
+  process.argv.includes('--native-read') || process.env.EITRI_PI_NATIVE_FIXTURE === 'read-fixture';
+const toolName = fixtureRead ? 'read_fixture' : native ? 'probe' : 'eitri_probe';
 const record = (value) => {
   if (!native) writeSync(3, `${JSON.stringify(value)}\n`);
 };
@@ -26,7 +29,7 @@ if (scenario.startsWith('launcher')) {
   childProcess.spawn = (file, args, options) => {
     assert.equal(file, process.execPath);
     assert.deepEqual(args.slice(1), [
-      ...(process.argv.includes('--native') ? ['--native'] : []),
+      ...(fixtureRead ? ['--native-read'] : process.argv.includes('--native') ? ['--native'] : []),
       '--run',
     ]);
     assert.deepEqual(options.stdio, ['ignore', 'pipe', 'ignore']);
@@ -71,7 +74,9 @@ if (scenario.startsWith('launcher')) {
         if (scenario !== 'launcher-diagnostic-success') {
           child.stdout.emit(
             'data',
-            Buffer.from('{"scope":"dedicated-pi-native","verdict":"sign-in-required"}\n'),
+            Buffer.from(
+              `${JSON.stringify({ scope: fixtureRead ? 'dedicated-pi-native-read' : 'dedicated-pi-native', verdict: 'sign-in-required' })}\n`,
+            ),
           );
           child.emit('close', 1, null);
           return;
@@ -82,9 +87,11 @@ if (scenario.startsWith('launcher')) {
       child.stdout.emit(
         'data',
         Buffer.from(
-          process.argv.includes('--native')
-            ? '{"scope":"dedicated-pi-native","verdict":"native-turn-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":2,"toolExecutions":1,"streamed":true,"resultVerified":true,"paused":true,"reopened":true,"budgetPreserved":true,"disposed":true}\n'
-            : '{"scope":"dedicated-pi-tool","verdict":"tool-turn-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":2,"toolExecutions":1,"streamed":true,"resultVerified":true}\n',
+          fixtureRead
+            ? '{"scope":"dedicated-pi-native-read","verdict":"native-read-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":2,"toolExecutions":1,"streamed":true,"resultVerified":true,"paused":true,"reopened":true,"budgetPreserved":true,"disposed":true,"fixtureRead":true}\n'
+            : process.argv.includes('--native')
+              ? '{"scope":"dedicated-pi-native","verdict":"native-turn-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":2,"toolExecutions":1,"streamed":true,"resultVerified":true,"paused":true,"reopened":true,"budgetPreserved":true,"disposed":true}\n'
+              : '{"scope":"dedicated-pi-tool","verdict":"tool-turn-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":2,"toolExecutions":1,"streamed":true,"resultVerified":true}\n',
         ),
       );
       if (scenario === 'launcher-late')
@@ -148,7 +155,7 @@ async function syntheticFetch(url, options) {
     body.input
       .filter((item) => item.type === 'additional_tools')
       .flatMap((item) => item.tools.map((tool) => tool.name)),
-    [native ? 'probe' : 'eitri_probe'],
+    [toolName],
   );
   const first = native
     ? !body.input.some((item) => item.type === 'function_call_output')
@@ -159,7 +166,7 @@ async function syntheticFetch(url, options) {
         type: 'function_call',
         id: 'fc_probe',
         call_id: 'call_probe',
-        name: scenario === 'bad-tool' ? 'bash' : native ? 'probe' : 'eitri_probe',
+        name: scenario === 'bad-tool' ? 'bash' : toolName,
         arguments: scenario === 'bad-arguments' ? '{"unexpected":true}' : '{}',
       }
     : {
@@ -172,7 +179,11 @@ async function syntheticFetch(url, options) {
             text:
               scenario === 'bad-result'
                 ? 'wrong'
-                : body.input.find((item) => item.type === 'function_call_output').output,
+                : fixtureRead
+                  ? JSON.parse(
+                      body.input.find((item) => item.type === 'function_call_output').output,
+                    ).sha256
+                  : body.input.find((item) => item.type === 'function_call_output').output,
           },
         ],
       };

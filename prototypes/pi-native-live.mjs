@@ -7,6 +7,7 @@ import { Controller } from '../src/controller.ts';
 import { nativeProbeProvider } from './pi-native-provider.mjs';
 import { streamNativeLiveProbe } from './pi-native-stream.mjs';
 import { reconcileNativeResources } from './pi-native-resources.mjs';
+import { captureNativeReadFixture, validateNativeReadResult } from './pi-native-read.mjs';
 
 export const nativeLiveResult = Object.freeze({
   scope: 'dedicated-pi-native',
@@ -23,16 +24,35 @@ export const nativeLiveResult = Object.freeze({
   disposed: true,
 });
 
-// A fixed probe, not a production runner. No external issue or arbitrary prompt/tool input.
-export async function runNativeLiveProbe({
-  directory,
-  profileHome,
-  signal,
-  onProgress,
-  onDiagnostic,
-  onSpawn,
-  stream = streamNativeLiveProbe,
-}) {
+export const nativeLiveReadResult = Object.freeze({
+  ...nativeLiveResult,
+  scope: 'dedicated-pi-native-read',
+  verdict: 'native-read-pass',
+  fixtureRead: true,
+});
+
+export function runNativeLiveReadProbe(options) {
+  return runNativeProbe(options, true);
+}
+
+export function runNativeLiveProbe(options) {
+  return runNativeProbe(options, false);
+}
+
+// Fixed harnesses, not production runners. No arbitrary prompt/tool/path input.
+async function runNativeProbe(
+  {
+    directory,
+    profileHome,
+    signal,
+    onProgress,
+    onDiagnostic,
+    onSpawn,
+    stream = streamNativeLiveProbe,
+    fixtureDirectory,
+  },
+  fixtureRead,
+) {
   signal?.throwIfAborted();
   assert.deepEqual(await readdir(directory), []);
   const store = join(directory, 'native');
@@ -41,7 +61,8 @@ export async function runNativeLiveProbe({
   let controller,
     effects = 0,
     streamed = false,
-    resultText;
+    resultText,
+    expectedReply;
   const deadline = performance.now() + 115_000;
   const check = () => {
     signal?.throwIfAborted();
@@ -62,7 +83,13 @@ export async function runNativeLiveProbe({
         store,
         id,
         requests,
-        (request, opts) => stream(request, { ...opts, profileHome, onDiagnostic }),
+        (request, opts) =>
+          stream(request, {
+            ...opts,
+            profileHome,
+            onDiagnostic,
+            fixture: fixtureRead ? 'read-fixture' : 'probe',
+          }),
         {
           before: () => {
             check();
@@ -75,11 +102,17 @@ export async function runNativeLiveProbe({
           },
         },
       ),
-    probe: async (_id, actionSignal) => {
+    [fixtureRead ? 'readFixture' : 'probe']: async (_id, actionSignal) => {
       check();
       actionSignal.throwIfAborted();
       assert.equal(++effects, 1);
-      resultText = randomBytes(16).toString('hex');
+      assert.equal(_id, requests[0].caseId);
+      resultText = fixtureRead
+        ? await captureNativeReadFixture(fixtureDirectory)
+        : randomBytes(16).toString('hex');
+      actionSignal.throwIfAborted();
+      check();
+      expectedReply = fixtureRead ? validateNativeReadResult(resultText) : resultText;
       onProgress?.('tool');
       await controller.command({ requestId: randomUUID(), intent: { type: 'pause', caseId: _id } });
       return resultText;
@@ -124,7 +157,9 @@ export async function runNativeLiveProbe({
     assert.equal(paused.case.status, 'paused');
     assert.equal(requests.length, 1);
     assert.equal(effects, 1);
-    assert.equal(paused.messages.filter((m) => m.kind === 'eitri.action-result').length, 1);
+    const savedResults = paused.messages.filter((m) => m.kind === 'eitri.action-result');
+    assert.equal(savedResults.length, 1);
+    assert.equal(savedResults[0].data.result, resultText);
     assert.ok(paused.case.usedMs > 0 && paused.case.usedMs < 120_000);
     const counters = (selected) => [
       selected.case.usedMs,
@@ -154,9 +189,10 @@ export async function runNativeLiveProbe({
       .find((m) => m.role === 'assistant')
       .content.find((b) => b.type === 'toolCall');
     const result = second.context.messages.find((m) => m.role === 'toolResult');
-    assert.equal(call.name, 'probe');
+    assert.equal(call.name, fixtureRead ? 'read_fixture' : 'probe');
     assert.deepEqual(call.arguments, {});
     assert.equal(result.toolCallId, call.id);
+    assert.equal(result.toolName, call.name);
     assert.equal(result.isError, false);
     assert.deepEqual(result.content, [{ type: 'text', text: resultText }]);
     assert.notEqual(requests[0].actionId, second.actionId);
@@ -175,7 +211,7 @@ export async function runNativeLiveProbe({
         .map((b) => b.text)
         .join('')
         .trim(),
-      resultText,
+      expectedReply,
     );
     await controller.close();
     await open();
@@ -193,5 +229,5 @@ export async function runNativeLiveProbe({
   // Only this newly created store, after a successful durable reopen and controller close.
   // Failures retain private case state and never auto-requeue or reset it.
   await rm(store, { recursive: true });
-  return { ...nativeLiveResult };
+  return { ...(fixtureRead ? nativeLiveReadResult : nativeLiveResult) };
 }
