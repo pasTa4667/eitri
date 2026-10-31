@@ -1,24 +1,30 @@
 import assert from 'node:assert/strict';
 import { readdir } from 'node:fs/promises';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { zstdDecompressSync } from 'node:zlib';
 import { sdkRoot, verifyInstalledSources } from './pi-stream.mjs';
 import { JsonLines, StreamReceiver, validateRequest, encodeLine } from './pi-stream-protocol.mjs';
 import { route } from './pi-stream-fixtures.ts';
+import { codexProfileFixture } from './pi-native-codex-profile.mjs';
 
-// Fixed offline composition. No provider override, file credentials, native store or tool loop.
+// Fixed offline composition. No provider override, real credentials, native store or tool loop.
 const timer = setTimeout(() => process.exit(1), 10000);
 try {
   assert.equal(process.env.EITRI_PI_NATIVE_CHILD, 'synthetic-only');
   assert.equal(process.env.HOME, process.cwd());
-  assert.equal(process.env.PI_CODING_AGENT_DIR, join(process.cwd(), 'agent'));
+  const authPath = process.env.EITRI_PI_NATIVE_AUTH_PATH;
+  assert.equal(
+    process.env.PI_CODING_AGENT_DIR,
+    authPath ? dirname(authPath) : join(process.cwd(), 'agent'),
+  );
   assert.equal(process.env.PI_OFFLINE, '1');
   assert.deepEqual(
     Object.keys(process.env)
       .filter((k) => k !== '__CF_USER_TEXT_ENCODING')
       .sort(),
     [
+      ...(authPath ? ['EITRI_PI_NATIVE_AUTH_PATH'] : []),
       'EITRI_PI_NATIVE_CHILD',
       'EITRI_PI_NATIVE_FIXTURE',
       'HOME',
@@ -29,7 +35,16 @@ try {
     ],
   );
   const scenario = process.env.EITRI_PI_NATIVE_FIXTURE;
-  assert.ok(['codex-probe', 'codex-denied', 'codex-malformed', 'codex-unknown'].includes(scenario));
+  const fileProfile = ['codex-profile', 'codex-profile-denied'].includes(scenario);
+  assert.ok(
+    fileProfile ||
+      ['codex-probe', 'codex-denied', 'codex-malformed', 'codex-unknown'].includes(scenario),
+  );
+  assert.equal(Boolean(authPath), fileProfile);
+  if (fileProfile) {
+    assert.ok(process.connected);
+    process.on('disconnect', () => process.exit(1));
+  }
   await verifyInstalledSources();
   const decoder = new JsonLines(),
     requests = [];
@@ -49,11 +64,17 @@ try {
       'https://api.openai.com/auth': { chatgpt_account_id: accountId },
     }),
   ).toString('base64url')}.synthetic`;
+  // Validate exact synthetic contents BEFORE ModelRuntime can inspect executable API-key entries.
+  const profile = fileProfile
+    ? await codexProfileFixture(authPath, access, scenario === 'codex-profile-denied')
+    : undefined;
   let fetches = 0,
     contractFailures = 0;
   // Replace fetch before importing/constructing the runtime; retain no network fallback.
   globalThis.fetch = async (url, options) => {
     try {
+      if (profile && url === 'https://auth.openai.com/oauth/token')
+        return await profile.refresh(options);
       assert.equal(++fetches, 1);
       assert.equal(url, 'https://chatgpt.com/backend-api/codex/responses');
       const headers = new Headers(options.headers);
@@ -81,6 +102,7 @@ try {
       }
       if (scenario === 'codex-denied')
         return new Response('synthetic-private-denial', { status: 403 });
+      await profile?.provider();
       const item = results.length
         ? {
             type: 'message',
@@ -125,21 +147,25 @@ try {
   };
   const { ModelRuntime } = await import(pathToFileURL(join(sdkRoot, 'dist/index.js')).href);
   const runtime = await ModelRuntime.create({
-    credentials: {
-      list: async () => [{ providerId: provider, type: 'oauth' }],
-      read: async (id) => {
-        assert.equal(id, provider);
-        return {
-          type: 'oauth',
-          access,
-          refresh: 'synthetic-private-refresh',
-          expires: Date.now() + 3600000,
-          accountId,
-        };
-      },
-      modify: async () => assert.fail('refresh outside this slice'),
-      delete: async () => assert.fail('credential deletion forbidden'),
-    },
+    ...(profile
+      ? { authPath }
+      : {
+          credentials: {
+            list: async () => [{ providerId: provider, type: 'oauth' }],
+            read: async (id) => {
+              assert.equal(id, provider);
+              return {
+                type: 'oauth',
+                access,
+                refresh: 'synthetic-private-refresh',
+                expires: Date.now() + 3600000,
+                accountId,
+              };
+            },
+            modify: async () => assert.fail('refresh outside this slice'),
+            delete: async () => assert.fail('credential deletion forbidden'),
+          },
+        }),
     modelsPath: null,
     allowModelNetwork: false,
     refreshOnCreate: false,
@@ -193,6 +219,7 @@ try {
   }
   assert.equal(fetches, 1);
   assert.equal(contractFailures, 0);
+  profile?.verify();
   assert.deepEqual(await events.result(), terminal);
   const message = receiver.finish();
   assert.deepEqual(message, alias(terminal));
@@ -210,4 +237,6 @@ try {
   process.exitCode = 1;
 } finally {
   clearTimeout(timer);
+  process.removeAllListeners('disconnect');
+  if (process.connected) process.disconnect();
 }

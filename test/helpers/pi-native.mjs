@@ -66,6 +66,7 @@ export function nativeFixtureProvider(directory, caseId, requests, hooks = {}) {
           profileHome: hooks.profileHome,
           resourceDirectory: directory,
           onSpawn: hooks.onSpawn,
+          onCheckpoint: hooks.onCheckpoint,
           beforeCleanup: () => hooks.beforeCleanup?.(request),
           onEvent: (event) => {
             hooks.onEvent?.(event, request);
