@@ -65,7 +65,15 @@ test(
   },
 );
 
-for (const scenario of ['denied', 'bad-tool', 'bad-arguments', 'bad-result', 'malformed'])
+for (const scenario of [
+  'denied',
+  'bad-tool',
+  'bad-arguments',
+  'bad-result',
+  'malformed',
+  'diagnostic-private',
+  'diagnostic-extra',
+])
   test(
     `live-native ${scenario} never passes or retries and preserves failed native data`,
     { timeout: 30000 },
@@ -74,11 +82,13 @@ for (const scenario of ['denied', 'bad-tool', 'bad-arguments', 'bad-result', 'ma
       const directory = await realpath(await mkdtemp(join(tmpdir(), 'eitri-live-test-')));
       t.after(() => rm(directory, { recursive: true, force: true }));
       const helpers = [],
-        progress = [];
+        progress = [],
+        diagnostics = [];
       await assert.rejects(
         runNativeLiveProbe({
           directory,
           stream: transport(p.home, scenario),
+          onDiagnostic: (stage) => diagnostics.push(stage),
           onProgress: (value) => progress.push(value),
           onSpawn: (value) => helpers.push(value),
         }),
@@ -87,6 +97,15 @@ for (const scenario of ['denied', 'bad-tool', 'bad-arguments', 'bad-result', 'ma
         progress,
         scenario === 'bad-result' ? ['model', 'tool', 'model'] : ['model'],
       );
+      assert.deepEqual(diagnostics, [
+        ['bad-tool', 'bad-arguments', 'bad-result'].includes(scenario)
+          ? 'result-validation'
+          : scenario === 'malformed'
+            ? 'event-validation'
+            : scenario.startsWith('diagnostic-')
+              ? 'transport'
+              : 'stream',
+      ]);
       assert.equal(helpers.length, scenario === 'bad-result' ? 2 : 1);
       for (const helper of helpers) {
         assert.throws(() => process.kill(helper.pid, 0), { code: 'ESRCH' });
@@ -143,7 +162,17 @@ test(
   },
 );
 
-for (const scenario of ['launcher', 'launcher-private', 'launcher-late', 'launcher-nonzero'])
+for (const scenario of [
+  'launcher',
+  'launcher-private',
+  'launcher-late',
+  'launcher-nonzero',
+  'launcher-diagnostic',
+  'launcher-diagnostic-private',
+  'launcher-diagnostic-extra',
+  'launcher-diagnostic-duplicate',
+  'launcher-diagnostic-success',
+])
   test(`live-native launcher ${scenario} strips ambient credentials and refuses invalid completion`, () => {
     const preload = new URL(`./fixtures/pi-tool-preload.mjs?scenario=${scenario}`, import.meta.url);
     const result = spawnSync(
@@ -167,6 +196,10 @@ for (const scenario of ['launcher', 'launcher-private', 'launcher-late', 'launch
       result.stdout + result.stderr,
       /private-|synthetic-account|access_token|refresh_token/,
     );
+    if (scenario === 'launcher-diagnostic')
+      assert.match(result.stderr, /Pi native failure stage: stream\./);
+    if (['launcher-diagnostic-private', 'launcher-diagnostic-extra'].includes(scenario))
+      assert.doesNotMatch(result.stderr, /Pi native failure stage:/);
     assert.deepEqual(
       JSON.parse(result.stdout),
       scenario === 'launcher'
@@ -176,13 +209,41 @@ for (const scenario of ['launcher', 'launcher-private', 'launcher-late', 'launch
   });
 
 test('live-native transport refuses an already canceled dispatch before profile access', async () => {
+  const diagnostics = [];
   await assert.rejects(
     streamNativeLiveProbe(makeRequest(0, context), {
       signal: AbortSignal.abort(),
       profileHome: '/nonexistent-must-not-be-opened',
+      onDiagnostic: (stage) => diagnostics.push(stage),
     }),
   );
+  assert.deepEqual(diagnostics, ['transport']);
 });
+
+for (const stage of ['profile', 'cleanup'])
+  test(`live-native ${stage} failure reports only a finite stage after disposal`, async (t) => {
+    const p = await profileFixture(t);
+    if (stage === 'profile') await rm(p.authPath);
+    const transcript = structuredClone(context);
+    transcript.messages[0].toolsAdded[0].name = 'probe';
+    const diagnostics = [];
+    let helper;
+    await assert.rejects(
+      transport(p.home)(makeRequest(0, transcript), {
+        beforeCleanup: () => {
+          if (stage === 'cleanup') throw new Error('private-cleanup-error');
+        },
+        onSpawn: (value) => {
+          helper = value;
+        },
+        onDiagnostic: (value) => diagnostics.push(value),
+      }),
+      /^Error: sign-in-required$/,
+    );
+    assert.deepEqual(diagnostics, [stage]);
+    assert.throws(() => process.kill(helper.pid, 0), { code: 'ESRCH' });
+    await assert.rejects(lstat(helper.home), { code: 'ENOENT' });
+  });
 
 for (const args of [[], ['--help'], ['--native'], ['--native', '--help']])
   test(`live-native command ${JSON.stringify(args)} has no effects without exact opt-in`, () => {

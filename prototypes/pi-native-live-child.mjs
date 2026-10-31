@@ -5,10 +5,12 @@ import { sdkRoot, verifyInstalledSources } from './pi-stream.mjs';
 import { withProfileProbe } from './pi-profile-login.mjs';
 import { JsonLines, StreamReceiver, validateRequest, encodeLine } from './pi-stream-protocol.mjs';
 import { route } from './pi-stream-fixtures.ts';
+import { validateNativeDiagnostic } from './pi-native-diagnostics.mjs';
 
 // One credential-using process/request. Parent death or timeout leaves its v2 lease blocked.
 const timer = setTimeout(() => process.exit(1), 60_000);
 process.on('disconnect', () => process.exit(1));
+let stage = 'bootstrap';
 try {
   assert.equal(process.env.EITRI_PI_NATIVE_CHILD, 'live-probe');
   assert.ok(process.connected);
@@ -33,6 +35,7 @@ try {
     ],
   );
   await verifyInstalledSources();
+  stage = 'request-validation';
   const decoder = new JsonLines(),
     requests = [];
   for await (const chunk of process.stdin) requests.push(...decoder.push(chunk));
@@ -46,7 +49,9 @@ try {
     assert.equal(results[0].isError, false);
     assert.match(results[0].content.map((b) => b.text).join(''), /^[0-9a-f]{32}$/);
   }
+  stage = 'profile';
   await withProfileProbe(process.env.EITRI_PI_LIVE_HOME, async ({ authPath }) => {
+    stage = 'runtime';
     const { ModelRuntime } = await import(`${sdkRoot}/dist/index.js`);
     const runtime = await ModelRuntime.create({
       authPath,
@@ -59,6 +64,7 @@ try {
       api = 'openai-codex-responses';
     // Metadata-only check precedes model/provider registration (including executable key resolution).
     assert.deepEqual(await runtime.listCredentials(), [{ providerId: provider, type: 'oauth' }]);
+    stage = 'model-selection';
     const model = runtime.getPhysicalModel(provider, modelId);
     assert.ok(model);
     assert.equal(model.api, api);
@@ -98,6 +104,7 @@ try {
     const { context: _context, options: _options, ...identity } = request;
     let seq = 0,
       terminal;
+    stage = 'stream';
     const events = runtime.streamSimple(model, context, {
       transport: 'sse',
       maxRetries: 0,
@@ -111,13 +118,17 @@ try {
       );
     };
     for await (const raw of events) {
+      stage = 'stream';
       assert.notEqual(raw.type, 'error');
+      stage = 'event-validation';
       const event = structuredClone(raw);
       for (const key of ['partial', 'message']) if (event[key]) event[key] = alias(event[key]);
       assert.equal(terminal, undefined);
       if (event.type === 'done') terminal = { raw, frame: { ...identity, seq: seq++, event } };
       else await send({ ...identity, seq: seq++, event });
+      stage = 'stream';
     }
+    stage = 'result-validation';
     assert.ok(terminal);
     assert.deepEqual(await events.result(), terminal.raw.message);
     const message = terminal.raw.message;
@@ -138,13 +149,18 @@ try {
         results[0].content.map((b) => b.text).join(''),
       );
     }
+    stage = 'terminal-validation';
     await send(terminal.frame);
     assert.deepEqual(receiver.finish(), alias(message));
     assert.deepEqual(await readdir(process.cwd()), []);
+    stage = 'profile-release';
   });
 } catch {
-  // Diagnostics never cross the trusted process boundary.
+  // Only a finite local stage crosses IPC. No error text, model data or credential values.
   process.exitCode = 1;
+  const frame = { failureStage: stage };
+  validateNativeDiagnostic(frame);
+  if (process.connected) await new Promise((resolve) => process.send(frame, () => resolve()));
 } finally {
   clearTimeout(timer);
   process.removeAllListeners('disconnect');

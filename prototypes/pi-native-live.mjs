@@ -29,6 +29,7 @@ export async function runNativeLiveProbe({
   profileHome,
   signal,
   onProgress,
+  onDiagnostic,
   onSpawn,
   stream = streamNativeLiveProbe,
 }) {
@@ -61,7 +62,7 @@ export async function runNativeLiveProbe({
         store,
         id,
         requests,
-        (request, opts) => stream(request, { ...opts, profileHome }),
+        (request, opts) => stream(request, { ...opts, profileHome, onDiagnostic }),
         {
           before: () => {
             check();

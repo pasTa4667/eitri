@@ -55,6 +55,24 @@ if (scenario.startsWith('launcher')) {
         child.stdout.emit('data', Buffer.from('private-provider-text\n'));
         return;
       }
+      if (scenario.startsWith('launcher-diagnostic')) {
+        const frame = {
+          failureStage:
+            scenario === 'launcher-diagnostic-private' ? 'private-provider-text' : 'stream',
+          ...(scenario === 'launcher-diagnostic-extra' ? { detail: 'private-provider-text' } : {}),
+        };
+        child.stdout.emit('data', Buffer.from(`${JSON.stringify(frame)}\n`));
+        if (scenario === 'launcher-diagnostic-duplicate')
+          child.stdout.emit('data', Buffer.from(`${JSON.stringify(frame)}\n`));
+        if (scenario !== 'launcher-diagnostic-success') {
+          child.stdout.emit(
+            'data',
+            Buffer.from('{"scope":"dedicated-pi-native","verdict":"sign-in-required"}\n'),
+          );
+          child.emit('close', 1, null);
+          return;
+        }
+      }
       for (const progress of ['model', 'tool', 'model'])
         child.stdout.emit('data', Buffer.from(`${JSON.stringify({ progress })}\n`));
       child.stdout.emit(
@@ -103,6 +121,13 @@ async function syntheticFetch(url, options) {
   if (scenario === 'deadline') {
     expire();
     return new Promise(() => {});
+  }
+  if (native && scenario.startsWith('diagnostic-')) {
+    process.send(
+      scenario === 'diagnostic-extra'
+        ? { failureStage: 'stream', detail: 'private-provider-text' }
+        : { failureStage: 'private-provider-text' },
+    );
   }
   if (scenario === 'denied') return new Response('private-provider-error', { status: 403 });
   const headers = new Headers(options.headers);

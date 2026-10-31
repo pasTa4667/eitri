@@ -10,6 +10,7 @@ import { runControlledTurn, toolTurnResult } from '../prototypes/pi-controlled-t
 import { JsonLines } from '../prototypes/pi-stream-protocol.mjs';
 import { sdkRoot, verifyInstalledSources } from '../prototypes/pi-stream.mjs';
 import { runNativeLiveProbe, nativeLiveResult } from '../prototypes/pi-native-live.mjs';
+import { validateNativeDiagnostic } from '../prototypes/pi-native-diagnostics.mjs';
 
 const native = process.argv[2] === '--native';
 const expectedResult = native ? nativeLiveResult : toolTurnResult;
@@ -36,6 +37,7 @@ async function probe() {
           profileHome: process.env.EITRI_PI_TOOL_HOME,
           signal: controller.signal,
           onProgress: (progress) => emit({ progress }),
+          onDiagnostic: (failureStage) => emit({ failureStage }),
         })
       : await withProfileProbe(process.env.EITRI_PI_TOOL_HOME, async ({ authPath }) => {
           controller.signal.throwIfAborted();
@@ -90,7 +92,8 @@ async function launch() {
     let failed = false,
       terminal,
       bytes = 0,
-      progressCount = 0;
+      progressCount = 0,
+      diagnosticCount = 0;
     const decoder = new JsonLines();
     const cancel = () => {
       failed = true;
@@ -110,7 +113,12 @@ async function launch() {
             assert.ok(bytes <= 4096);
             for (const frame of decoder.push(chunk)) {
               assert.equal(terminal, undefined);
-              if (Object.hasOwn(frame, 'progress')) {
+              if (native && Object.hasOwn(frame, 'failureStage')) {
+                assert.equal(diagnosticCount++, 0);
+                const stage = validateNativeDiagnostic(frame);
+                writeSync(2, `Pi native failure stage: ${stage}.\n`);
+              } else if (Object.hasOwn(frame, 'progress')) {
+                assert.equal(diagnosticCount, 0);
                 const expected = ['model', 'tool', 'model'][progressCount++];
                 assert.ok(expected);
                 assert.deepEqual(frame, { progress: expected });
@@ -141,7 +149,13 @@ async function launch() {
         child.on('close', (code, signal) => settle({ code, signal }));
       });
       decoder.finish();
-      assert.ok(!failed && exit.signal === null && exit.code === 0 && progressCount === 3);
+      assert.ok(
+        !failed &&
+          exit.signal === null &&
+          exit.code === 0 &&
+          progressCount === 3 &&
+          diagnosticCount === 0,
+      );
       assert.deepEqual(terminal, expectedResult);
       return { ...expectedResult };
     } finally {

@@ -9,6 +9,7 @@ import { createNativeResource } from './pi-native-resources.mjs';
 import { withDedicatedProfile } from './pi-profile.mjs';
 import { ControlError } from '../src/domain.ts';
 import { JsonLines, StreamReceiver, validateRequest, encodeLine } from './pi-stream-protocol.mjs';
+import { validateNativeDiagnostic } from './pi-native-diagnostics.mjs';
 
 const codexProfiles = ['codex-profile', 'codex-profile-denied'];
 const codexFixtures = [
@@ -43,14 +44,13 @@ export async function streamNativeFixture(value, options = {}) {
 // Separate trusted opt-in harness entry; never selected by fixture/model/production configuration.
 // profileHome and preload are caller-owned test seams, not CLI or model inputs.
 export async function streamNativeLiveProbe(value, options = {}) {
+  const live = { home: options.profileHome, preload: options.preload, failureStage: 'transport' };
   try {
     options.signal?.throwIfAborted();
     assert.ok(typeof options.profileHome === 'string');
-    return await streamFixture(value, options, undefined, {
-      home: options.profileHome,
-      preload: options.preload,
-    });
+    return await streamFixture(value, options, undefined, live);
   } catch {
+    options.onDiagnostic?.(live.failureStage);
     throw new ControlError('sign-in-required');
   }
 }
@@ -146,10 +146,20 @@ async function streamFixture(
       });
       child.on('close', (code, exitSignal) => resolve({ code, exitSignal }));
     });
-    // Trusted fixture-only handshake, separate from model frames; no credential values.
+    // Bounded control IPC, separate from model frames: live failure or synthetic refresh handshake.
     let checkpoints = 0;
     child.on('message', (point) => {
       if (failed) return;
+      if (live) {
+        try {
+          assert.equal(checkpoints++, 0);
+          live.failureStage = validateNativeDiagnostic(point);
+        } catch {
+          live.failureStage = 'transport';
+          cancel();
+        }
+        return;
+      }
       if (
         !codexProfiles.includes(fixture) ||
         ++checkpoints > 2 ||
@@ -181,7 +191,7 @@ async function streamFixture(
       }
       const { code, exitSignal } = await closed;
       check();
-      assert.ok(!failed && code === 0 && exitSignal === null);
+      assert.ok(!failed && code === 0 && exitSignal === null && (!live || checkpoints === 0));
       decoder.finish();
       const message = receiver.finish();
       assert.ok(['stop', 'toolUse'].includes(message.stopReason));
@@ -198,6 +208,7 @@ async function streamFixture(
         .then(() => beforeCleanup?.())
         .finally(() => (resource ? resource.dispose() : rm(home, { recursive: true, force: true })))
         .catch(() => {
+          if (live) live.failureStage = 'cleanup';
           throw new Error('pi-native-stream-offline-cleanup-failed');
         });
   }
