@@ -51,3 +51,13 @@ All current path/auth-file metadata checks pass. **The exclusive-use lease exist
 The [finite observation](evidence/pi-runtime/native-live-profile-entry.json) and [five-axis author review](evidence/pi-runtime/native-live-profile-entry-review.md) record only metadata verdicts. Credential contents, lease owner, process liveness and private case data are not read. This observation does not prove which check failed in either historical attempt, whether the owner is dead, whether fresh-login recovery is eligible, or whether credentials are valid. The diagnosis performs no profile writes, lease acquisition/removal, PID signaling, runtime creation, login or inference.
 
 Stop after this diagnosis. Lease-owner/liveness diagnosis or explicit fresh supported sign-in/recovery needs a separate operator decision; no later inference follows automatically. The existing guard is intentional, not an auth bug to bypass. Successful live-native acceptance and M4 remain open.
+
+## Operator-reported sign-in and approved next attempt
+
+The operator reports completing sign-in and explicitly asks to try the next step again. No terminal login verdict or numeric login exit is supplied, so this is operator-reported sign-in, not an independent credential/lease inspection. Run the unchanged live-native command on `da86228` **once**, after all 25 focused tests pass.
+
+The command exits **1** with generic verdict `sign-in-required` and local stage **`event-validation`**. Unlike the earlier profile-entry failure, this attempt passes profile entry, runtime creation and model selection, then reaches the helper's validation of a non-error provider event. No fixed-tool execution marker is emitted and no tool result is verified. The exact event/check and HTTP request count are unmeasured; the finite stage is not an OAuth rejection or a reason to request another login.
+
+The [finite evidence](evidence/pi-runtime/native-live-post-login-actual.json) and [five-axis author review](evidence/pi-runtime/native-live-post-login-review.md) record the attempt. Executable/dependency source hashes remain unchanged. Retain the preceding unit's full 2,275 Node/30 Rust verification as prior evidence, not a new full-suite run; no behavior change or new test is introduced here.
+
+Stop without retry, sign-in, credential/lease repair, raw event/private-case inspection or weakened validation. Failed native data remains private. A separately scoped local stream-validation diagnosis is next; another live attempt requires explicit approval. Successful live-native acceptance, production selection and M4 remain open.
