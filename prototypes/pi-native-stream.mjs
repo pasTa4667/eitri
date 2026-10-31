@@ -5,13 +5,18 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { verifyInstalledSources } from './pi-stream.mjs';
+import { createNativeResource } from './pi-native-resources.mjs';
 import { JsonLines, StreamReceiver, validateRequest, encodeLine } from './pi-stream-protocol.mjs';
 
 // Offline test composition only. Exactly one admitted native model action, no tool loop.
 // Source/configuration controls are not a sandbox for the trusted installed SDK.
-export async function streamNativeFixture(value, { signal, onEvent, onSpawn, beforeCleanup } = {}) {
+export async function streamNativeFixture(
+  value,
+  { signal, onEvent, onSpawn, beforeCleanup, resourceDirectory } = {},
+) {
   const deadline = performance.now() + 10_000;
   let home;
+  let resource;
   const check = () => {
     signal?.throwIfAborted();
     assert.ok(performance.now() < deadline);
@@ -23,7 +28,9 @@ export async function streamNativeFixture(value, { signal, onEvent, onSpawn, bef
     const decoder = new JsonLines();
     await verifyInstalledSources();
     check();
-    home = await realpath(await mkdtemp(join(tmpdir(), 'eitri-pi-native-stream-')));
+    if (resourceDirectory) resource = await createNativeResource(resourceDirectory, request);
+    home =
+      resource?.home ?? (await realpath(await mkdtemp(join(tmpdir(), 'eitri-pi-native-stream-'))));
     check();
     const child = spawn(
       process.execPath,
@@ -72,6 +79,8 @@ export async function streamNativeFixture(value, { signal, onEvent, onSpawn, bef
     try {
       try {
         check();
+        if (resource) await resource.spawned(child.pid);
+        check();
         onSpawn?.({ pid: child.pid, home });
         check();
         child.stdin.end(encodeLine(request));
@@ -95,7 +104,7 @@ export async function streamNativeFixture(value, { signal, onEvent, onSpawn, bef
     if (home)
       await Promise.resolve()
         .then(() => beforeCleanup?.())
-        .finally(() => rm(home, { recursive: true, force: true }))
+        .finally(() => (resource ? resource.dispose() : rm(home, { recursive: true, force: true })))
         .catch(() => {
           throw new Error('pi-native-stream-offline-cleanup-failed');
         });

@@ -7,8 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
-import { Controller } from '../src/controller.ts';
-import { nativeFixtureProvider } from './helpers/pi-native.mjs';
+import { nativeFixtureProvider, openNativeFixtureController } from './helpers/pi-native.mjs';
 
 const policy = { project: 'demo', environment: 'demo', repository: 'eitri-test-web-app' };
 function catalogue(directory) {
@@ -104,7 +103,7 @@ for (const boundary of ['admission', 'terminal', 'model-receipt', 'committed-too
           return 'Unexpected replay';
         },
       };
-      controller = await Controller.open(options);
+      controller = await openNativeFixtureController(options);
       const selected = (await controller.snapshot({ selected: message.id })).selected;
       const charged = boundary === 'model-receipt' ? 0 : 120_000;
       assert.equal(selected.case.status, 'paused');
@@ -141,7 +140,7 @@ for (const boundary of ['admission', 'terminal', 'model-receipt', 'committed-too
       }
 
       await controller.close();
-      controller = await Controller.open(options);
+      controller = await openNativeFixtureController(options);
       const reopened = (await controller.snapshot({ selected: message.id })).selected;
       assert.deepEqual(reopened.messages, selected.messages);
       for (const field of ['status', 'usedMs', 'remainingMs', 'attempt', 'repairs'])

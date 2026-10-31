@@ -6,9 +6,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
-import { Controller } from '../src/controller.ts';
 import { NativeCase } from '../src/native.ts';
-import { nativeFixtureProvider } from './helpers/pi-native.mjs';
+import { nativeFixtureProvider, openNativeFixtureController } from './helpers/pi-native.mjs';
+import { Controller } from '../src/controller.ts';
 
 const policy = { project: 'demo', environment: 'demo', repository: 'eitri-test-web-app' };
 const issue = {
@@ -110,7 +110,7 @@ for (const mode of [
           receipted.resolve();
         },
       };
-      controller = await Controller.open(options);
+      controller = await openNativeFixtureController(options);
       t.after(async () => {
         release.resolve();
         await controller.close();
@@ -167,7 +167,9 @@ for (const mode of [
             'queued',
           );
         if (closing)
-          await assert.rejects(Controller.open(options), { code: 'controller-already-open' });
+          await assert.rejects(Controller.open(options), {
+            code: 'controller-already-open',
+          });
       } finally {
         db.close();
       }
@@ -185,7 +187,7 @@ for (const mode of [
       }
       await assert.rejects(lstat(helper.home), { code: 'ENOENT' });
       // Reopen the real catalogue/native stores only after the old adapter has drained.
-      controller = await Controller.open(options);
+      controller = await openNativeFixtureController(options);
       const selected = (await controller.snapshot({ selected: firstId })).selected;
       if (mode.startsWith('deadline')) {
         assert.equal(selected.case.remainingMs, 0);

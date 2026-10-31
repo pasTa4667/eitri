@@ -6,8 +6,7 @@ import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { fork } from 'node:child_process';
 import { once } from 'node:events';
-import { Controller } from '../src/controller.ts';
-import { nativeFixtureProvider } from './helpers/pi-native.mjs';
+import { nativeFixtureProvider, openNativeFixtureController } from './helpers/pi-native.mjs';
 import { streamNativeFixture } from '../prototypes/pi-native-stream.mjs';
 import { context } from '../prototypes/pi-stream-fixtures.ts';
 import { makeRequest } from '../prototypes/pi-stream-protocol.mjs';
@@ -42,7 +41,7 @@ async function fixture(t, extra = {}) {
     probe: async () => 'Native result café ✓',
     ...extra.controller,
   };
-  controller = await Controller.open(options);
+  controller = await openNativeFixtureController(options);
   t.after(async () => {
     await controller.close();
     await rm(directory, { recursive: true, force: true });
@@ -55,7 +54,7 @@ async function fixture(t, extra = {}) {
     },
     async restart() {
       await controller.close();
-      controller = await Controller.open(options);
+      controller = await openNativeFixtureController(options);
     },
     async add(issueId = issue.id) {
       return (
@@ -367,7 +366,7 @@ for (const mode of ['model', 'paused-model', 'tool', 'tool-receipt'])
           return 'Native result café ✓';
         },
       };
-      controller = await Controller.open(options);
+      controller = await openNativeFixtureController(options);
       const selected = await until(
         async () => (await controller.snapshot({ selected: message.id })).selected,
         (v) => ['paused', 'needs-attention'].includes(v.case.status),
@@ -397,7 +396,7 @@ for (const mode of ['model', 'paused-model', 'tool', 'tool-receipt'])
       }
       const before = selected.messages;
       await controller.close();
-      controller = await Controller.open(options);
+      controller = await openNativeFixtureController(options);
       assert.deepEqual(
         (await controller.snapshot({ selected: message.id })).selected.messages,
         before,

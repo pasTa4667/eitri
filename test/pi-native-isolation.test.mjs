@@ -15,8 +15,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
-import { Controller } from '../src/controller.ts';
-import { nativeFixtureProvider } from './helpers/pi-native.mjs';
+import { nativeFixtureProvider, openNativeFixtureController } from './helpers/pi-native.mjs';
 
 const policy = { project: 'demo', environment: 'demo', repository: 'eitri-test-web-app' };
 const retentionMs = 30 * 86400_000;
@@ -85,7 +84,7 @@ for (const expiry of ['maintain', 'reopen', 'explicit'])
           return `Private native result ${id} café ✓`;
         },
       };
-      controller = await Controller.open(options);
+      controller = await openNativeFixtureController(options);
       const investigate = async (id) =>
         controller.command({
           requestId: randomUUID(),
@@ -186,7 +185,7 @@ for (const expiry of ['maintain', 'reopen', 'explicit'])
         if (expiry === 'maintain') await controller.maintain();
         else {
           await controller.close();
-          controller = await Controller.open(options);
+          controller = await openNativeFixtureController(options);
           reopens++;
         }
       }
@@ -223,7 +222,7 @@ for (const expiry of ['maintain', 'reopen', 'explicit'])
         { code: 'details-unavailable' },
       );
       await controller.close();
-      controller = await Controller.open(options);
+      controller = await openNativeFixtureController(options);
       reopens++;
       await assertExpired();
       const db = new DatabaseSync(join(directory, 'catalogue.sqlite'), { readOnly: true });

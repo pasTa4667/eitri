@@ -6,6 +6,14 @@ import { fauxProvider } from '@earendil-works/pi-ai/providers/faux';
 import { streamNativeFixture } from '../../prototypes/pi-native-stream.mjs';
 import { validateRequest } from '../../prototypes/pi-stream-protocol.mjs';
 import { route } from '../../prototypes/pi-stream-fixtures.ts';
+import { reconcileNativeResources } from '../../prototypes/pi-native-resources.mjs';
+import { Controller } from '../../src/controller.ts';
+
+// Reconcile before Controller.open can recover or schedule any native work.
+export async function openNativeFixtureController(options, recovery) {
+  await reconcileNativeResources(options.directory, recovery);
+  return Controller.open(options);
+}
 
 // Test-only alias: retain NativeCase's faux-only guard. No live route is registered.
 export function nativeFixtureProvider(directory, caseId, requests, hooks = {}) {
@@ -52,6 +60,7 @@ export function nativeFixtureProvider(directory, caseId, requests, hooks = {}) {
         await hooks.before?.(request);
         const message = await streamNativeFixture(request, {
           signal: options?.signal,
+          resourceDirectory: directory,
           onSpawn: hooks.onSpawn,
           beforeCleanup: () => hooks.beforeCleanup?.(request),
           onEvent: (event) => {

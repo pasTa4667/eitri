@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
-import { Controller } from '../../src/controller.ts';
 import { randomUUID } from 'node:crypto';
-import { nativeFixtureProvider } from './pi-native.mjs';
+import { nativeFixtureProvider, openNativeFixtureController } from './pi-native.mjs';
 
 const [directory, mode] = process.argv.slice(2);
 let helper;
@@ -27,9 +26,9 @@ const checkpoint = (id) => {
   process.send({ id, stage: 'admitted', helper, admission });
   if (mode !== 'paused-model') Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0);
 };
-const controller = await Controller.open({
+const controller = await openNativeFixtureController({
   directory,
-  ...(boundaryMode ? { clock: () => 1000 } : {}),
+  ...(boundaryMode || mode.startsWith('orphan') ? { clock: () => 1000 } : {}),
   policy: { project: 'demo', environment: 'demo', repository: 'eitri-test-web-app' },
   providerForCase: (id) =>
     nativeFixtureProvider(directory, id, [], {
@@ -42,7 +41,7 @@ const controller = await Controller.open({
           boundary(request);
           await new Promise(() => {});
         }
-        if (mode === 'model-receipt')
+        if (mode === 'model-receipt' || mode === 'orphan-paused')
           await controller.command({ requestId: randomUUID(), intent: { type: 'pause', caseId } });
         if (mode === 'paused-model') {
           checkpoint(id);
@@ -51,6 +50,10 @@ const controller = await Controller.open({
       },
       onSpawn: (value) => {
         helper = value;
+        if (mode.startsWith('orphan')) {
+          process.kill(helper.pid, 'SIGSTOP');
+          checkpoint(id);
+        }
       },
       onEvent: (event) => {
         if (event.type === 'start' && mode === 'model') checkpoint(id);
