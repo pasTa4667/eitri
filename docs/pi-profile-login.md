@@ -14,7 +14,7 @@ Complete the browser flow. Trust the **terminal** verdict, not the browser callb
 
 On denial, stop and report the non-secret observation. There is no automatic retry, credential import, device-code/pasted-code fallback, alternate provider or paid-key fallback. Ctrl+C cancels; the disposable login process has a five-minute hard lifetime, including uncooperative SDK work.
 
-After a failed/interrupted **login command** or [sole-process tool probe](pi-controlled-turn.md), once that command has exited, an explicitly chosen fresh sign-in can use:
+After a failed/interrupted **login command**, once that command has exited, an explicitly chosen fresh sign-in can use the command below. A failed [sole-process probe](pi-controlled-turn.md) no longer needs it: once the probe has exited, the next separately started probe reclaims its lease (see [dead probe-owner reclaim](pi-controlled-turn.md#dead-probe-owner-reclaim)). The command still accepts a dead probe owner too:
 
 ```sh
 npm run test:pi-login -- --run --recover
@@ -30,7 +30,7 @@ The launcher uses the operating-system user's home, not ambient `HOME`, to selec
 
 The login process owns the same atomic `eitri-use` directory as the [offline profile adapter](pi-dedicated-profile.md), using a distinct bounded version-2 record `{version, kind: "login", pid}`. Only this process uses credentials: no auth helper, agent session or model loop is spawned. Browser opening is a fixed `/usr/bin/open` call, with an allowlisted authorization origin/path/redirect; its URL is never printed by the wrapper. Credential values returned by Pi login are discarded, never forwarded or logged.
 
-A successful login reopens Pi metadata, verifies OAuth-only selection and private auth permissions, then releases its own lease. Failure leaves the lease blocked. Ordinary login never reclaims it. Explicit `--recover` only replaces a version-2 login or sole-process probe owner after PID probing returns **ESRCH**; a reused/live PID blocks. A `recovery` subdirectory serializes takeover while pinning the old lease directory. Pending records, interrupted recovery, unknown files and version-1 native leases all block. No PID is signaled by recovery, no lease is recursively deleted, and no auth-store lock is deleted. Ambiguous ownership requires investigation, not manual blind removal.
+A successful login reopens Pi metadata, verifies OAuth-only selection and private auth permissions, then releases its own lease. Failure leaves the lease blocked. Ordinary login never reclaims it. Explicit `--recover` only replaces a version-2 login or sole-process probe owner after PID probing returns **ESRCH**; a reused/live PID blocks. An ordinary probe may replace only a dead **probe** owner, never a login owner. A `recovery` subdirectory serializes takeover while pinning the old lease directory. Pending records, interrupted recovery, unknown files and version-1 native leases all block. No PID is signaled by recovery, no lease is recursively deleted, and no auth-store lock is deleted. Ambiguous ownership requires investigation, not manual blind removal.
 
 Version-1 native leases cannot establish helper exit from their controller PID alone; this command deliberately does not reset them. Real native credential dispatch is still disabled, so these remain a future production-integration gate, not authorization to point the synthetic adapter at real credentials. No catalogue/case state, pause flag, repair counter or allowance is opened or reset by login. Successful sign-in never automatically resumes a case.
 

@@ -102,7 +102,7 @@ test('installed Pi built-in OAuth and SSE streams round-trip a real tool result 
 });
 
 for (const scenario of ['denied', 'refresh-denied', 'bad-tool', 'deadline', 'hung', 'cancel']) {
-  test(`installed tool probe blocks ${scenario} without retry or raw diagnostics`, async (t) => {
+  test(`installed tool probe blocks ${scenario} without retry or raw diagnostics; a later probe reclaims its dead owner`, async (t) => {
     const p = await fixture(t, scenario === 'refresh-denied' ? 0 : undefined);
     const result = command(p, scenario);
     assert.equal(result.code, 1);
@@ -110,8 +110,14 @@ for (const scenario of ['denied', 'refresh-denied', 'bad-tool', 'deadline', 'hun
     assert.deepEqual(result.calls, [
       scenario === 'refresh-denied' ? { kind: 'refresh' } : { kind: 'request', number: 1 },
     ]);
-    assert.ok((await readdir(p.profile)).includes('eitri-use'));
-    assert.equal(command(p).code, 1);
+    const lease = JSON.parse(await readFile(join(p.profile, 'eitri-use', 'owner.json'), 'utf8'));
+    assert.equal(lease.kind, 'probe');
+    // The failed process has exited, so a separately started probe needs no browser sign-in.
+    assert.throws(() => process.kill(lease.pid, 0), { code: 'ESRCH' });
+    const later = command(p);
+    assert.equal(later.code, 0);
+    assert.equal(later.frames.at(-1)?.verdict, 'tool-turn-pass');
+    assert.deepEqual(await readdir(p.profile), ['auth.json']);
   });
 }
 
@@ -148,46 +154,56 @@ for (const value of [
   });
 }
 
-test('SIGKILL leaves a sole-process probe lease blocked; only explicit fresh login recovers it after exit', async (t) => {
-  const p = await fixture(t);
-  const { args, ...opts } = options(p, 'hold');
-  const child = spawn(process.execPath, args, opts);
-  const closed = new Promise((resolve) =>
-    child.once('close', (code, signal) => resolve({ code, signal })),
-  );
-  t.after(async () => {
-    child.kill('SIGKILL');
-    await closed;
-  });
-  await new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('probe never entered transport')), 10_000);
-    child.stdio[3].once('data', () => {
-      clearTimeout(timer);
-      resolve();
+for (const reclaimer of ['probe', 'login'])
+  test(`SIGKILL leaves a sole-process probe lease blocked while it lives; afterwards ${reclaimer} reclaims it`, async (t) => {
+    const p = await fixture(t);
+    const { args, ...opts } = options(p, 'hold');
+    const child = spawn(process.execPath, args, opts);
+    const closed = new Promise((resolve) =>
+      child.once('close', (code, signal) => resolve({ code, signal })),
+    );
+    t.after(async () => {
+      child.kill('SIGKILL');
+      await closed;
     });
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('probe never entered transport')), 10_000);
+      child.stdio[3].once('data', () => {
+        clearTimeout(timer);
+        resolve();
+      });
+    });
+    const preload = new URL('./fixtures/pi-login-preload.mjs?scenario=success', import.meta.url);
+    const login = () =>
+      spawnSync(
+        process.execPath,
+        ['--import', preload.href, 'scripts/test-pi-login.mjs', '--run', '--recover'],
+        {
+          env: {
+            HOME: p.home,
+            EITRI_PI_LOGIN_HOME: p.home,
+            EITRI_PI_LOGIN_CHILD: '1',
+            PI_OFFLINE: '1',
+          },
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'pipe', 'pipe'],
+          timeout: 15_000,
+        },
+      );
+    // A live owner blocks both an ordinary probe and explicit fresh-login recovery.
+    assert.equal(command(p).code, 1);
+    assert.equal(login().status, 1);
+    child.kill('SIGKILL');
+    assert.equal((await closed).signal, 'SIGKILL');
+    if (reclaimer === 'probe') {
+      const later = command(p);
+      assert.equal(later.code, 0);
+      assert.equal(later.frames.at(-1)?.verdict, 'tool-turn-pass');
+    } else {
+      const recovered = login();
+      assert.equal(recovered.error, undefined);
+      assert.equal(recovered.status, 0);
+      assert.equal(JSON.parse(recovered.stdout).verdict, 'oauth-saved');
+    }
+    assert.deepEqual(await readdir(p.profile), ['auth.json']);
   });
-  assert.equal(command(p).code, 1);
-  child.kill('SIGKILL');
-  assert.equal((await closed).signal, 'SIGKILL');
-  assert.equal(command(p).code, 1);
-  const preload = new URL('./fixtures/pi-login-preload.mjs?scenario=success', import.meta.url);
-  const login = spawnSync(
-    process.execPath,
-    ['--import', preload.href, 'scripts/test-pi-login.mjs', '--run', '--recover'],
-    {
-      env: {
-        HOME: p.home,
-        EITRI_PI_LOGIN_HOME: p.home,
-        EITRI_PI_LOGIN_CHILD: '1',
-        PI_OFFLINE: '1',
-      },
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe', 'pipe'],
-      timeout: 15_000,
-    },
-  );
-  assert.equal(login.error, undefined);
-  assert.equal(login.status, 0);
-  assert.equal(JSON.parse(login.stdout).verdict, 'oauth-saved');
-  assert.deepEqual(await readdir(p.profile), ['auth.json']);
-});

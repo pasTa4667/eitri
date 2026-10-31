@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { runNativeLiveProbe, nativeLiveResult } from '../prototypes/pi-native-live.mjs';
 import { streamNativeLiveProbe } from '../prototypes/pi-native-stream.mjs';
+import { withProfileProbe } from '../prototypes/pi-profile-login.mjs';
 import { makeRequest, StreamReceiver } from '../prototypes/pi-stream-protocol.mjs';
 import {
   nativeEventFailureStage,
@@ -334,7 +335,7 @@ test('strict receiver rejects the SDK scratch field, not the otherwise valid too
 });
 
 test(
-  'live-native cancellation reaps the credential helper before rejection and leaves its sole-process lease blocked',
+  'live-native cancellation reaps the credential helper before rejection; only then can a later probe reclaim its lease',
   { timeout: 15000 },
   async (t) => {
     const p = await profileFixture(t);
@@ -373,9 +374,9 @@ test(
     await assert.rejects(lstat(helper.home), { code: 'ENOENT' });
     const owner = JSON.parse(await readFile(join(p.profile, 'eitri-use', 'owner.json'), 'utf8'));
     assert.deepEqual(owner, { version: 2, kind: 'probe', pid: helper.pid });
-    await assert.rejects(
-      streamNativeLiveProbe(makeRequest(0, transcript), { profileHome: p.home, preload }),
-    );
+    // Only the reaped helper's exit makes the owner reclaimable by a later, separate probe.
+    assert.equal(await withProfileProbe(p.home, async () => 'reclaimed'), 'reclaimed');
+    assert.deepEqual(await readdir(p.profile), ['auth.json']);
   },
 );
 

@@ -14,7 +14,7 @@ import {
 } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { withProfileLogin } from '../prototypes/pi-profile-login.mjs';
+import { withProfileLogin, withProfileProbe } from '../prototypes/pi-profile-login.mjs';
 
 async function fixture(t) {
   const home = await realpath(await mkdtemp(join(tmpdir(), 'eitri-profile-login-')));
@@ -63,7 +63,14 @@ async function deadPid() {
   return pid;
 }
 
-for (const kind of ['login', 'native', 'pending', 'unknown-file', 'recovery-interrupted']) {
+for (const kind of [
+  'login',
+  'probe',
+  'native',
+  'pending',
+  'unknown-file',
+  'recovery-interrupted',
+]) {
   test(`explicit recovery handles a dead ${kind} owner conservatively`, async (t) => {
     const p = await fixture(t);
     const lease = join(p.profile, 'eitri-use');
@@ -71,13 +78,13 @@ for (const kind of ['login', 'native', 'pending', 'unknown-file', 'recovery-inte
     const owner =
       kind === 'native'
         ? { version: 1, pid: await deadPid() }
-        : { version: 2, kind: 'login', pid: await deadPid() };
+        : { version: 2, kind: kind === 'probe' ? 'probe' : 'login', pid: await deadPid() };
     if (kind !== 'pending')
       await writeFile(join(lease, 'owner.json'), JSON.stringify(owner), { mode: 0o600 });
     if (kind === 'unknown-file') await writeFile(join(lease, 'unexpected'), 'sentinel');
     if (kind === 'recovery-interrupted') await mkdir(join(lease, 'recovery'), { mode: 0o700 });
     await assert.rejects(withProfileLogin(p.home, false, () => assert.fail()));
-    if (kind === 'login') {
+    if (kind === 'login' || kind === 'probe') {
       await withProfileLogin(p.home, true, save);
       assert.deepEqual(await readdir(p.profile), ['auth.json']);
     } else {
@@ -86,6 +93,101 @@ for (const kind of ['login', 'native', 'pending', 'unknown-file', 'recovery-inte
     }
   });
 }
+
+async function deadProbeLease(t, owner) {
+  const p = await fixture(t);
+  const lease = join(p.profile, 'eitri-use');
+  await mkdir(lease, { recursive: true, mode: 0o700 });
+  await writeFile(p.authPath, '{"sentinel":true}', { mode: 0o600 });
+  if (owner) await writeFile(join(lease, 'owner.json'), JSON.stringify(owner), { mode: 0o600 });
+  return { ...p, lease };
+}
+
+test('an ordinary probe reclaims only a dead probe owner, without sign-in, then releases', async (t) => {
+  const p = await deadProbeLease(t, { version: 2, kind: 'probe', pid: await deadPid() });
+  const seen = await withProfileProbe(p.home, async ({ authPath }) => {
+    assert.equal(authPath, p.authPath);
+    return JSON.parse(await readFile(join(p.lease, 'owner.json'), 'utf8'));
+  });
+  assert.deepEqual(seen, { version: 2, kind: 'probe', pid: process.pid });
+  assert.deepEqual(await readdir(p.profile), ['auth.json']);
+  assert.equal(await readFile(p.authPath, 'utf8'), '{"sentinel":true}');
+});
+
+for (const kind of [
+  'dead-login',
+  'dead-native',
+  'pending',
+  'unknown-file',
+  'recovery-interrupted',
+  'owner-next',
+  'live-probe',
+  'foreign-probe',
+  'own-probe',
+  'missing-auth',
+]) {
+  test(`an ordinary probe refuses a ${kind} lease without changing it`, async (t) => {
+    let pid = await deadPid();
+    if (kind === 'live-probe') {
+      const child = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 60000)'], {
+        stdio: 'ignore',
+      });
+      const closed = new Promise((resolve) => child.once('close', resolve));
+      t.after(async () => {
+        child.kill('SIGKILL');
+        await closed;
+      });
+      pid = child.pid;
+    } else if (kind === 'foreign-probe') pid = 1; // Alive but not signalable: EPERM.
+    else if (kind === 'own-probe') pid = process.pid; // A failed in-process probe never retries.
+    const owner =
+      kind === 'pending'
+        ? undefined
+        : kind === 'dead-native'
+          ? { version: 1, pid }
+          : { version: 2, kind: kind === 'dead-login' ? 'login' : 'probe', pid };
+    const p = await deadProbeLease(t, owner);
+    if (kind === 'unknown-file') await writeFile(join(p.lease, 'unexpected'), 'sentinel');
+    if (kind === 'recovery-interrupted') await mkdir(join(p.lease, 'recovery'), { mode: 0o700 });
+    if (kind === 'owner-next') await writeFile(join(p.lease, 'owner.next'), '{}', { mode: 0o600 });
+    if (kind === 'missing-auth') await rm(p.authPath);
+    const before = async () =>
+      Promise.all(
+        (await readdir(p.lease))
+          .sort()
+          .map(async (name) => [
+            name,
+            name === 'recovery' ? 'directory' : await readFile(join(p.lease, name), 'utf8'),
+          ]),
+      );
+    const snapshot = await before();
+    await assert.rejects(
+      withProfileProbe(p.home, () => assert.fail('probe ran')),
+      /^Error: sign-in-required$/,
+    );
+    assert.deepEqual(await before(), snapshot);
+    assert.deepEqual(
+      (await readdir(p.profile)).sort(),
+      kind === 'missing-auth' ? ['eitri-use'] : ['auth.json', 'eitri-use'],
+    );
+  });
+}
+
+test('concurrent probes reclaim one dead probe owner at most once', async (t) => {
+  const p = await deadProbeLease(t, { version: 2, kind: 'probe', pid: await deadPid() });
+  let runs = 0;
+  const results = await Promise.allSettled(
+    [0, 1].map(() =>
+      withProfileProbe(p.home, async () => {
+        runs += 1;
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }),
+    ),
+  );
+  assert.equal(runs, 1);
+  assert.deepEqual(results.map((r) => r.status).sort(), ['fulfilled', 'rejected']);
+  assert.deepEqual(await readdir(p.profile), ['auth.json']);
+});
 
 for (const kind of [
   'linked-parent',

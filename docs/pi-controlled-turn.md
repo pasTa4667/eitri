@@ -30,6 +30,10 @@ npm run test:pi-login -- --run --recover
 
 Recovery now accepts dead version-2 login **or probe** owners only after ESRCH. Live/reused PIDs, native version-1 owners, pending/unknown records and interrupted recovery still block. No process is signaled by recovery, no store lock is deleted, no uncertain saved token is retried and no case automatically resumes. Do not remove leases blindly. This broadens only the existing explicit fresh-login recovery, not native/helper recovery.
 
+### Dead probe-owner reclaim
+
+The operator later approves removing the forced re-login after a failed probe. A separately started ordinary probe now takes over a lease whose owner is a **dead version-2 probe**, using the same `recovery`-serialized ESRCH takeover. It never reclaims a login owner, a native version-1 owner, a live/EPERM/reused PID, its own process's lease, or a pending, unknown, interrupted or `owner.next` state, and it still requires an existing private `auth.json`. The failed run itself never retries; the next probe is a new operator-started command that may reuse the saved token. If that token was lost during an interrupted refresh, the next probe fails visibly (for example `stream-refresh`) and a fresh sign-in is still the recovery. See the [five-axis review](evidence/pi-runtime/probe-lease-reclaim-review.md).
+
 ## Verification and stop point
 
 - **32 new tests** cover fixed tool/result semantics, cancellation at both model-admission boundaries, malformed/missing/oversized/late output, credential refusal, bounded launcher frames, synthetic built-in refresh/SSE, denial, hung work, deadlines, SIGINT, cross-process exclusion and actual probe SIGKILL before explicit fresh login.

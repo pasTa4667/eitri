@@ -33,11 +33,13 @@ async function loginOwner(lease) {
   return owner;
 }
 
-// Both callbacks are sole-process credential users, with no auth helper/agent.
-// Only explicit fresh login can recover a dead owner. Native v1 leases remain blocked.
+// Both callbacks are sole-process credential users, with no auth helper/agent, so ESRCH for the
+// recorded PID proves its credential use ended. Explicit fresh login may reclaim a dead login or
+// probe owner; an ordinary probe reclaims only a dead probe owner, never an interrupted login.
+// Native v1 leases and live/unsignalable/ambiguous owners remain blocked.
 export const withProfileLogin = (home, recover, login) =>
   withProfileOperation(home, recover, 'login', login);
-export const withProfileProbe = (home, probe) => withProfileOperation(home, false, 'probe', probe);
+export const withProfileProbe = (home, probe) => withProfileOperation(home, true, 'probe', probe);
 
 async function withProfileOperation(home, recover, kind, run) {
   try {
@@ -81,6 +83,7 @@ async function withProfileOperation(home, recover, kind, run) {
       await mkdir(join(lease, 'recovery'), { mode: 0o700 });
       try {
         const previous = await loginOwner(lease);
+        assert.ok(kind === 'login' || previous.kind === 'probe');
         let gone = false;
         try {
           process.kill(previous.pid, 0);
@@ -106,7 +109,7 @@ async function withProfileOperation(home, recover, kind, run) {
     await rmdir(lease);
     return result;
   } catch {
-    // Failure leaves uncertainty blocked. Only explicit login recovery can reclaim a dead v2 owner.
+    // Failure leaves the lease behind; only a later process can reclaim it after this one exits.
     throw new Error('sign-in-required');
   }
 }

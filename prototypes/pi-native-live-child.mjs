@@ -13,7 +13,8 @@ import {
 import { snapshotNativeLiveEvent } from './pi-native-live-events.mjs';
 import { validateNativeReadResult } from './pi-native-read.mjs';
 
-// One credential-using process/request. Parent death or timeout leaves its v2 lease blocked.
+// One credential-using process/request. Parent death or timeout leaves its v2 lease until this
+// process has exited; only then can a later probe or explicit login reclaim it.
 const timer = setTimeout(() => process.exit(1), 60_000);
 process.on('disconnect', () => process.exit(1));
 let stage = 'bootstrap';
