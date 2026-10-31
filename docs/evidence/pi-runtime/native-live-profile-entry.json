@@ -1,0 +1,52 @@
+{
+  "scope": "dedicated-pi-profile-entry",
+  "source": "7d90ea45ba7c39a4dba3592fa29bc7b96dcf5098",
+  "recordedAt": "2026-10-31T17:14:59Z",
+  "authorization": "operator-approved-read-only-metadata-diagnosis",
+  "checks": [
+    {
+      "check": "home-canonical",
+      "verdict": "pass"
+    },
+    {
+      "check": "home",
+      "verdict": "pass"
+    },
+    {
+      "check": "library",
+      "verdict": "pass"
+    },
+    {
+      "check": "application-support",
+      "verdict": "pass"
+    },
+    {
+      "check": "eitri-directory",
+      "verdict": "pass"
+    },
+    {
+      "check": "pi-directory",
+      "verdict": "pass"
+    },
+    {
+      "check": "auth-metadata",
+      "verdict": "pass"
+    },
+    {
+      "check": "exclusive-use-lease",
+      "verdict": "present-blocks-probe"
+    }
+  ],
+  "diagnosticExit": 0,
+  "method": "One clean-environment Node process; OS-user home; realpath/lstat checks matching the probe entry guards; lease presence only. No runtime construction or invocation of withProfileProbe.",
+  "credentialContents": "not-read",
+  "leaseOwner": "not-read",
+  "processLiveness": "not-checked",
+  "mutations": "none",
+  "inference": "not-performed",
+  "limits": [
+    "Current metadata observation, not a replay or proof of the historical attempts' exact failing checks.",
+    "No credential validity, OAuth rejection, dead owner or recovery eligibility established.",
+    "No lease acquisition, removal, repair, sign-in or private-case inspection."
+  ]
+}
