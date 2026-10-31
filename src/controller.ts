@@ -3,7 +3,6 @@ import { mkdir, chmod, lstat, open, realpath, rm } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
-import type { Provider } from '@earendil-works/pi-ai/models';
 import {
   WorkspaceStore,
   workspaceLimits,
@@ -43,7 +42,7 @@ import type {
   HistoricalWorkerSelection,
 } from './frozen-browser.ts';
 import { NativeCase } from './native.ts';
-import type { DispatchedCheckExecution } from './native.ts';
+import type { DispatchedCheckExecution, ModelRoute } from './native.ts';
 import type { NativeExecutionAnchor } from './native-browser-check.ts';
 import { WorkerExecutionScope } from './worker-execution-scope.ts';
 import { ArtifactStore, artifactLimits, validateOutput } from './artifacts.ts';
@@ -195,7 +194,7 @@ type WorkerExecutionCapture = Readonly<{
 type Options = {
   directory: string;
   policy: { project: string; environment: string; repository: string };
-  providerForCase(id: string): { provider: Provider; modelId: string };
+  providerForCase(id: string): ModelRoute;
   clock?: () => number;
   actionWakeup?: (delayMs: number, callback: () => void) => () => void;
   capacity?: number;

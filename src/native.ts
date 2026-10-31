@@ -60,6 +60,16 @@ export type DispatchedCheckExecution =
   | CheckExecution
   | Readonly<{ type: 'consumed-browser'; history: FrozenBrowserConsumedReport }>;
 
+export type ModelRoute = {
+  provider: Provider;
+  modelId: string;
+  // Resource-owning adapters must await reaping and cleanup attempts, even on abort.
+  // Called once per action; no work may start after this drain settles.
+  // Never settle with live execution resources. Reject on cleanup/provider failure;
+  // rejection suppresses terminal success, rather than claiming cleanup succeeded.
+  drainModel?(action: Readonly<Action>): Promise<void>;
+};
+
 export type RuntimeHost = {
   captureConsumedCheckAuthority?(action: Action, signal: AbortSignal): ConsumedCheckAuthority;
   current(): Case;
@@ -125,6 +135,7 @@ export class NativeCase {
   private publication: Promise<void> = Promise.resolve();
   private closing = false;
   private closure?: Promise<void>;
+  private modelRuns = new Set<Promise<void>>();
   constructor(harness: Harness, root: Conversation, host: RuntimeHost, store: ArtifactStore) {
     this.harness = harness;
     this.root = root;
@@ -135,7 +146,7 @@ export class NativeCase {
   static async open(
     path: string,
     identity: Case,
-    route: { provider: Provider; modelId: string },
+    route: ModelRoute,
     host: RuntimeHost,
     store: ArtifactStore,
   ): Promise<NativeCase> {
@@ -170,8 +181,10 @@ export class NativeCase {
         errorMessage: 'Controlled inference failed or timed out.',
         timestamp: Date.now(),
       });
-      void (async () => {
+      const running = (async () => {
         let retirementAttempted = false;
+        let drainage: Promise<void> | undefined;
+        const drain = () => (drainage ??= Promise.resolve().then(() => route.drainModel?.(action)));
         try {
           lifetime.check();
           const stream = scope.run(action, () => invoke(lifetime.signal));
@@ -180,6 +193,7 @@ export class NativeCase {
             const next = await abortable(iterator.next(), lifetime.signal);
             if (next.done) throw new Error('Stream ended without a terminal event');
             if (next.value.type === 'done' || next.value.type === 'error') {
+              await drain();
               lifetime.check();
               retirementAttempted = true;
               host.finish(action, false);
@@ -195,9 +209,15 @@ export class NativeCase {
             host.changed();
           }
         } catch {
+          let cleanupFailed = false;
+          try {
+            await drain();
+          } catch {
+            cleanupFailed = true;
+          }
           if (!retirementAttempted) {
             try {
-              host.finish(action, lifetime.signal.aborted);
+              host.finish(action, lifetime.signal.aborted, cleanupFailed);
             } catch {}
           }
           output.push({ type: 'error', reason: 'error', error: errorMessage() });
@@ -209,6 +229,10 @@ export class NativeCase {
           } catch {}
         }
       })();
+      if (route.drainModel) {
+        native.modelRuns.add(running);
+        void running.finally(() => native.modelRuns.delete(running)).catch(() => {});
+      }
       return output;
     };
     models.setProvider({
@@ -839,11 +863,18 @@ export class NativeCase {
   }
   async reconcile() {
     await this.root.abort(context, { background: true });
+    await Promise.all(this.modelRuns);
   }
   close(): Promise<void> {
     if (this.closure) return this.closure;
     this.closing = true;
-    return (this.closure = this.publication.then(() => this.harness.close(context)));
+    return (this.closure = this.publication.then(async () => {
+      try {
+        await this.harness.close(context);
+      } finally {
+        await Promise.all(this.modelRuns);
+      }
+    }));
   }
 }
 function actionLifetime(host: RuntimeHost, action: Action) {

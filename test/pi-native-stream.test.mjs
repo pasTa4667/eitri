@@ -57,11 +57,11 @@ async function fixture(t, extra = {}) {
       await controller.close();
       controller = await Controller.open(options);
     },
-    async add() {
+    async add(issueId = issue.id) {
       return (
         await controller.command({
           requestId: randomUUID(),
-          intent: { type: 'investigate', issue },
+          intent: { type: 'investigate', issue: { ...issue, id: issueId } },
         })
       ).caseId;
     },
@@ -212,7 +212,7 @@ test(
   },
 );
 
-for (const failure of ['pre-abort', 'spawn-abort', 'spawn-throw', 'event-throw'])
+for (const failure of ['pre-abort', 'spawn-abort', 'spawn-throw', 'event-throw', 'cleanup-throw'])
   test(
     `single native stream ${failure} returns a fixed error after helper reaping/cleanup`,
     { timeout: 15_000 },
@@ -237,8 +237,16 @@ for (const failure of ['pre-abort', 'spawn-abort', 'spawn-throw', 'event-throw']
           onEvent: () => {
             if (failure === 'event-throw') throw new Error('private event detail');
           },
+          beforeCleanup: () => {
+            if (failure === 'cleanup-throw') throw new Error('private cleanup detail');
+          },
         }),
-        { message: 'pi-native-stream-offline-failed' },
+        {
+          message:
+            failure === 'cleanup-throw'
+              ? 'pi-native-stream-offline-cleanup-failed'
+              : 'pi-native-stream-offline-failed',
+        },
       );
       if (failure === 'pre-abort') assert.equal(helper, undefined);
       else {
@@ -285,19 +293,7 @@ test(
     assert.equal(f.requests.length, 1);
     assert.equal(effects, 0);
     assert.ok(helper.pid);
-    // Native's abortable iterator may settle before this cleanup: parity is not claimed.
-    await until(
-      async () => {
-        try {
-          await lstat(helper.home);
-          return false;
-        } catch (error) {
-          assert.equal(error.code, 'ENOENT');
-          return true;
-        }
-      },
-      (removed) => removed,
-    );
+    await assert.rejects(lstat(helper.home), { code: 'ENOENT' });
     assert.throws(() => process.kill(helper.pid, 0), { code: 'ESRCH' });
     await f.restart();
     assert.equal(f.requests.length, 1);

@@ -9,7 +9,7 @@ import { JsonLines, StreamReceiver, validateRequest, encodeLine } from './pi-str
 
 // Offline test composition only. Exactly one admitted native model action, no tool loop.
 // Source/configuration controls are not a sandbox for the trusted installed SDK.
-export async function streamNativeFixture(value, { signal, onEvent, onSpawn } = {}) {
+export async function streamNativeFixture(value, { signal, onEvent, onSpawn, beforeCleanup } = {}) {
   const deadline = performance.now() + 10_000;
   let home;
   const check = () => {
@@ -93,8 +93,11 @@ export async function streamNativeFixture(value, { signal, onEvent, onSpawn } = 
     throw new Error('pi-native-stream-offline-failed');
   } finally {
     if (home)
-      await rm(home, { recursive: true, force: true }).catch(() => {
-        throw new Error('pi-native-stream-offline-cleanup-failed');
-      });
+      await Promise.resolve()
+        .then(() => beforeCleanup?.())
+        .finally(() => rm(home, { recursive: true, force: true }))
+        .catch(() => {
+          throw new Error('pi-native-stream-offline-cleanup-failed');
+        });
   }
 }

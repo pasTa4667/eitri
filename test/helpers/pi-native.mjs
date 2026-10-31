@@ -10,6 +10,7 @@ import { route } from '../../prototypes/pi-stream-fixtures.ts';
 // Test-only alias: retain NativeCase's faux-only guard. No live route is registered.
 export function nativeFixtureProvider(directory, caseId, requests, hooks = {}) {
   const faux = fauxProvider({ api: route.api, models: [{ id: route.model }] });
+  const pending = new Map();
   const native = (value) => {
     const copy = structuredClone(value);
     for (const key of ['partial', 'message', 'error']) if (copy[key]) copy[key].provider = 'faux';
@@ -45,12 +46,14 @@ export function nativeFixtureProvider(directory, caseId, requests, hooks = {}) {
     });
     requests.push(request);
     const output = createAssistantMessageEventStream();
-    void (async () => {
+    const run = (async () => {
+      let failed = false;
       try {
         await hooks.before?.(request);
         const message = await streamNativeFixture(request, {
           signal: options?.signal,
           onSpawn: hooks.onSpawn,
+          beforeCleanup: () => hooks.beforeCleanup?.(request),
           onEvent: (event) => {
             hooks.onEvent?.(event, request);
             output.push(native(event));
@@ -58,6 +61,7 @@ export function nativeFixtureProvider(directory, caseId, requests, hooks = {}) {
         });
         output.push(native({ type: 'done', reason: message.stopReason, message }));
       } catch {
+        failed = true;
         const message = {
           role: 'assistant',
           api: route.api,
@@ -77,10 +81,27 @@ export function nativeFixtureProvider(directory, caseId, requests, hooks = {}) {
         };
         output.push({ type: 'error', reason: 'error', error: message });
       } finally {
-        output.end();
+        try {
+          await hooks.afterTerminal?.(request);
+        } finally {
+          output.end();
+        }
       }
+      if (failed) throw new Error('pi-native-model-failed');
     })();
+    void run.catch(() => {});
+    pending.set(action.id, run);
     return output;
   };
-  return { provider: { ...faux.provider, stream, streamSimple: stream }, modelId: route.model };
+  return {
+    provider: { ...faux.provider, stream, streamSimple: stream },
+    modelId: route.model,
+    async drainModel(action) {
+      try {
+        await pending.get(action.id);
+      } finally {
+        pending.delete(action.id);
+      }
+    },
+  };
 }

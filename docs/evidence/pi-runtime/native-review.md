@@ -6,6 +6,8 @@ Starting from clean `8bfd4aa`, implement the next bounded [offline compatibility
 
 **Verdict:** retain the bounded offline composition/evidence save point. **Important integration blocker remains:** native cancellation can acknowledge an action before helper cleanup completes. Do not approve full lifecycle parity, production adapter selection, real credentials/inference or M4 acceptance. No production source is changed to hide this limitation.
 
+> Follow-up: the [resource-release increment](release-review.md) resolves this in-process/cooperative ordering blocker with an explicit action-keyed disposal contract. The findings below describe the original composition checkpoint; abrupt-parent orphan reconciliation and full lifecycle parity remain open.
+
 ## Findings
 
 | Severity / status | Finding and recommendation |
