@@ -5,7 +5,11 @@ import { sdkRoot, verifyInstalledSources } from './pi-stream.mjs';
 import { withProfileProbe } from './pi-profile-login.mjs';
 import { JsonLines, StreamReceiver, validateRequest, encodeLine } from './pi-stream-protocol.mjs';
 import { route } from './pi-stream-fixtures.ts';
-import { nativeEventFailureStage, validateNativeDiagnostic } from './pi-native-diagnostics.mjs';
+import {
+  nativeEventFailureStage,
+  nativeStreamFailureStage,
+  validateNativeDiagnostic,
+} from './pi-native-diagnostics.mjs';
 import { snapshotNativeLiveEvent } from './pi-native-live-events.mjs';
 import { validateNativeReadResult } from './pi-native-read.mjs';
 
@@ -115,13 +119,18 @@ try {
     const receiver = new StreamReceiver(request);
     const { context: _context, options: _options, ...identity } = request;
     let seq = 0,
-      terminal;
+      terminal,
+      responseStatus;
     stage = 'stream';
     const events = runtime.streamSimple(model, context, {
       transport: 'sse',
       maxRetries: 0,
       maxTokens: 256,
       reasoning: 'minimal',
+      // Supported SDK hook: only the status number is kept, never headers or a body.
+      onResponse: (response) => {
+        responseStatus = response.status;
+      },
     });
     const send = async (frame) => {
       stage = nativeEventFailureStage(frame.event.type);
@@ -133,6 +142,8 @@ try {
     };
     for await (const raw of events) {
       stage = 'stream';
+      if (raw.type === 'error')
+        stage = nativeStreamFailureStage(raw.error?.errorMessage, responseStatus);
       assert.notEqual(raw.type, 'error');
       stage = nativeEventFailureStage(raw.type);
       const event = snapshotNativeLiveEvent(raw);

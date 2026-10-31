@@ -65,7 +65,9 @@ if (scenario.startsWith('launcher')) {
               ? 'private-provider-text'
               : scenario === 'launcher-diagnostic-event'
                 ? 'event-validation-toolcall_start'
-                : 'stream',
+                : scenario === 'launcher-diagnostic-refresh'
+                  ? 'stream-refresh'
+                  : 'stream',
           ...(scenario === 'launcher-diagnostic-extra' ? { detail: 'private-provider-text' } : {}),
         };
         child.stdout.emit('data', Buffer.from(`${JSON.stringify(frame)}\n`));
@@ -141,6 +143,9 @@ async function syntheticFetch(url, options) {
     );
   }
   if (scenario === 'denied') return new Response('private-provider-error', { status: 403 });
+  if (scenario === 'unauthorized') return new Response('private-provider-error', { status: 401 });
+  if (scenario === 'rate-limited') return new Response('private-provider-error', { status: 429 });
+  if (scenario === 'network') throw new Error('private-network-error');
   const headers = new Headers(options.headers);
   const body = JSON.parse(
     headers.get('content-encoding') === 'zstd'
