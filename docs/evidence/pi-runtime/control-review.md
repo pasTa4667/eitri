@@ -1,0 +1,33 @@
+# Offline stream caller-control lifecycle review
+
+## Context and verdict
+
+From clean `752670a`, implement only the next bounded prerequisite of the remaining [offline experiment](../../pi-runtime-compatibility.md#caller-controlled-offline-stream-lifecycle): caller-controlled admission/allowance handling in the existing fixed synthetic transport. Apply `/skill:review` across all five axes. This is an **author review**, not an independent-agent/cross-model audit.
+
+**Verdict:** accept this transport prerequisite only, with no unresolved Critical/Important finding in its stated scope. Actual controller/native SQLite pause, restart, accounting and tool-receipt parity remain pending. No live inference, credential access, architecture replacement or M4 acceptance follows.
+
+## Findings
+
+| Severity / status | Finding and resolution |
+|---|---|
+| **Important — Correctness / fixed** | `prototypes/pi-stream.mjs:61–68` initially capped the initial allowance but could forget a smaller later reading if a subsequent reading increased before timer registration. The regression in `test/pi-stream-control.test.mjs` first takes about five seconds instead of the observed one-second ceiling (`.audit/pi-stream-control-tightening-red.txt`). Tighten the stored monotonic deadline on every reading and rearm the pipe timer against that deadline, never a fresh relative allowance. The regression now passes. |
+| **Important — Verification / fixed** | The new fixture initially counted stdin `data` chunks as requests. Chunk boundaries are not LF record boundaries. `test/pi-stream-control.test.mjs:19–26` now counts complete LF records and records only a compact count; fragmented pipe input cannot distort the no-second-request assertion. Its stdin is paused during SDK import so the observation listener cannot consume the request before the real child starts reading it. |
+| **Suggestion — Scope / retained gate** | Synchronous synthetic caller callbacks and a reopened JSON deadline cannot establish real catalogue/native recovery or tool-effect safety. Keep those acceptance checks explicitly pending rather than equating this transport save point with native budget/crash parity. The caller remains responsible for persistent admission/accounting; no second durable budget owner is introduced. |
+
+## Five axes
+
+- **Correctness:** `prototypes/pi-stream.mjs:45–88` validates supplied control, includes preparation/admission in the entry-time ceiling and checks signal/allowance before dispatch. `:123–158` validates every complete frame, rechecks both fixture-tool and subsequent model admission, and requires permitted final closure. Expiry, pause denial and cancellation cannot send the next request or turn partial/expired output into success. A pause after the last model admission permits that admitted stream to settle. PID/home assertions verify kill/reap before cleanup. The JSON reopen test consumes a caller-owned deadline only, not native accounting.
+- **Readability:** three small local functions separate allowance validation, monotonic tightening and synchronous admission. The existing parent still owns child lifetime. No new provider framework, persistence module, configurable tool executor or dependency.
+- **Architecture:** only the offline probe and its tests change executable behavior. The exact fixtures, child SDK implementation, source pins, physical route, protocol and compact observation result are unchanged. Callback authority is trusted in-process test input, never pipe/model/CLI data. The fixture `tool` boundary executes nothing and creates no native receipt. No production import/wiring, automatic retry or second agent loop is added.
+- **Security:** controls fail closed when incomplete, denied or returning invalid allowance. Callback/provider/pipe errors are still fixed errors, without raw diagnostic retention. Existing sanitized empty-home child, synthetic auth and forbidden-fetch/source checks remain. Cancellation kills and awaits closure before removal of only the generated home. Synchronous trusted callbacks/filesystem preparation are not forcibly interruptible; no hard real-time or OS sandbox claim is made. No real store, hosted service, API key, OAuth change or permission escalation.
+- **Performance:** one helper, two bounded fixture requests and the existing frame/byte limits remain. Timer rearming uses the same monotonically shrinking deadline; it cannot extend work. No new unbounded history, data fetch, database loop or cache. Test fixtures retain compact PID/home/request-count markers only and remove their generated directories.
+
+## Verification
+
+- TDD RED: `.audit/pi-stream-control-admission-red.txt` shows the existing probe never calls caller admission. The earlier broad RED run (`.audit/pi-stream-control-red.txt`) times out after 120 seconds because the unimplemented control is ignored; it is not counted as a completed verification. The stdin-import fixture issue is corrected before the completed focused run.
+- Review RED: `.audit/pi-stream-control-tightening-red.txt` reproduces renewal of a smaller observed allowance; no failing check is skipped or suppressed.
+- Final focused command: `node --test test/pi-stream-control.test.mjs test/pi-stream-protocol.test.mjs test/pi-stream.test.mjs test/pi-stream-types.test.ts` — **119 pass**, including **23 new tests**, zero failures/cancellations/skips. Log: `.audit/pi-stream-control-focused-final.txt`. Uses actual installed SDK/synthetic auth/provider data and real uncooperative child processes, not real inference or native tool execution.
+- Final `npm run verify:all` — exit **0**, **2,078 Node and 30 Rust tests pass**, zero failures/cancellations/skipped Node tests or ignored Rust tests. Lint, formatting, TypeScript/syntax checks and native compilation pass. Existing Rust dependency future-incompatibility warnings remain. Log/status: `.audit/pi-stream-control/verify-all.txt` and `verify-all.exit`; final source identities match `source-sha256.txt`.
+- Default npm help and explicit offline activation exit 0 with fixed output and empty stderr (`.audit/pi-stream-control/help.txt`, `offline.txt` and their `.stderr` files). All 200 local documentation links/anchors pass. Production `src/`, worker/operator, credential source, schemas, package/lockfile and child SDK/source-pin/protocol files are unchanged.
+
+**Stop after this prerequisite.** Next is actual controller/native pause/deadline/restart and SQLite admission/terminal/commit/receipt crash reconciliation with no uncertain tool replay, then two-case isolation/expiry and built-in synthetic auth parity. Genuine controlled tool use and production selection still require separate approval.
