@@ -1,0 +1,33 @@
+{
+  "command": "npm run --silent test:pi-native-read -- --run",
+  "sourceCommit": "cbedd52",
+  "started": "2026-10-31T20:10:12Z",
+  "ended": "2026-10-31T20:10:13Z",
+  "exitCode": 1,
+  "stdout": {
+    "scope": "dedicated-pi-native-read",
+    "verdict": "sign-in-required"
+  },
+  "progressMarkers": [
+    "model"
+  ],
+  "failureStage": "stream-http-429",
+  "toolExecuted": false,
+  "fixtureUploaded": false,
+  "fixture": {
+    "path": "src/lib/errors.js",
+    "bytes": 534,
+    "sha256": "cd69431e5b7fda7ec116377d033d192a7b214a9c42a8101bd8c809c862af80f4"
+  },
+  "sourceHashesUnchanged": true,
+  "sourceHashesMatchPriorAttempt": true,
+  "operatorDisposition": "Operator anticipated the 429 and asked that it complete this plan step; it is not successful live fixture-read acceptance.",
+  "limits": [
+    "Stage stream-http-429 means the provider returned HTTP status 429 to the first model request a third time, about 3 minutes after the 20:07Z attempt and about 16 minutes after the 19:54Z attempt; profile entry, runtime creation and model selection succeeded. The generic stdout verdict sign-in-required is the fixed failure verdict, not an OAuth rejection.",
+    "The attempt did not wait for the usage window to reset as the preceding review suggested; the operator requested it with a 429 anticipated, so it adds no evidence about the reset time.",
+    "Profile entry again succeeded without a browser sign-in after a failed helper, consistent with the dead probe-owner reclaim; lease state was not inspected, so this is not direct reclaim proof.",
+    "Only the status number is kept: whether this is a short-term rate limit or the subscription usage limit, and any reset time, is not recorded.",
+    "No tool marker: the fixture-read tool did not execute, so fixture content was not sent.",
+    "No retry, sign-in, credential/lease repair or private-case inspection follows."
+  ]
+}
