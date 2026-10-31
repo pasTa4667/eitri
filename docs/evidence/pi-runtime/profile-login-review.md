@@ -34,4 +34,8 @@ Review the login-only implementation authorized after the operator's explicit ap
 
 `oauth-saved` is only supported-login/persistence evidence, not model/tool entitlement, workspace certification or full identity validation. No automatic inference follows it. Synthetic native lifecycle/crash evidence from the preceding slice is not replaced by the login sentinel check. Arbitrary independent clients using this dedicated profile, malicious same-user filesystem races, power-loss durability, lossless rotation persistence and ambiguous native lease recovery are not claimed. Pause/allowance and production-resource authority remain unchanged.
 
-Implementation is complete and committed as a bounded preparatory slice; the real sign-in verification remains open for the operator. Stop before genuine tool use, production wiring, publication or any later plan task.
+At this implementation-review checkpoint, the real sign-in verification remains open for the operator. Stop before genuine tool use, production wiring, publication or any later plan task.
+
+## Subsequent operator observation
+
+After commit `16f7814`, the operator supplies terminal verdict `oauth-saved` with `inference: not-performed`, reports browser success and returns to a shell prompt. The [recorded observation](../../pi-profile-login.md#operator-verification) closes the narrow sign-in acceptance gate above. No independent credential read, numeric exit-status capture, real refresh/recovery test, inference or new full-suite run is claimed. Review this documentation-only follow-up for accurate provenance and preserved scope: no Critical/Important issue found. Genuine controlled tool-use approval and M4 remain open.

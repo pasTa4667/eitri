@@ -1003,3 +1003,17 @@ TDD preserves the missing-module RED, installed-SDK metadata-field failure and a
 Final `npm run verify:all` exits **0**, with **2,192 Node and 30 Rust tests passing**, zero failures/cancellations/skipped Node tests or ignored Rust tests. Lint, formatting, TypeScript/syntax checks and native compilation pass; existing Rust dependency future-incompatibility notices remain. Logs/status and source hashes are retained under `.audit/pi-profile-login/`. The review is an author review, not an independent-agent/cross-model audit.
 
 Mark only the login-command implementation subtask complete. **Actual operator-present dedicated-profile sign-in is not yet run or verified**: this API tool session is not a real terminal, and its presence guard is not bypassed. The approved terminal/browser action and finite verdict/exit status are the next human step; keep that acceptance checkbox open. No real Pi state, hosted request, browser, inference, Docker, publication or deployment occurs during implementation/testing. Stop before the separately approved genuine controlled tool-using turn, M4 acceptance or production-route selection.
+
+## M4 dedicated-profile sign-in — operator verification
+
+After implementation commit `16f7814`, the operator supplies the actual terminal verdict:
+
+```json
+{"scope":"dedicated-pi-login","verdict":"oauth-saved","inference":"not-performed"}
+```
+
+They also report browser success and permission to close the page, with return to the shell prompt. Accept only [this dedicated-profile sign-in/persistence gate](pi-profile-login.md#operator-verification), based on the terminal verdict rather than the browser callback alone. A numeric shell exit status is not separately supplied or independently captured. No credentials, callback URLs or identity are supplied, read or copied by the assistant.
+
+Mark the real sign-in plan checkbox complete and update current handoffs; retain the earlier pending state as historical review evidence. This is a documentation-only follow-up: no real credential access, new login, network request, inference, production enablement, publication or deployment is performed by the assistant. Static documentation-link/whitespace and Markdown-only scope checks verify the update; executable tests are not rerun on unchanged code. The preceding 2,192 Node/30 Rust passing run remains the executable verification record. Five-axis author review finds no Critical/Important issue in this observation update; no independent-agent/cross-model audit is claimed.
+
+The genuine controlled tool-using turn still needs separate explicit approval. Real refresh, interrupted-login recovery, model/tool entitlement, M4 acceptance and final production-route selection are not established. Stop after recording this result.

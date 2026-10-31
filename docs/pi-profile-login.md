@@ -1,6 +1,6 @@
 # Dedicated Pi profile sign-in
 
-The operator explicitly approves implementing and verifying this login-only step. `npm run test:pi-login` provides the supported Pi sign-in flow for the dedicated Eitri profile. **The command is implemented and tested offline; actual dedicated-profile sign-in is not yet verified.** It does not enable inference, production dispatch, publication or a new billing route.
+The operator explicitly approves implementing and verifying this login-only step. `npm run test:pi-login` provides the supported Pi sign-in flow for the dedicated Eitri profile. **The command is implemented, tested offline and verified by the operator's real dedicated-profile sign-in, with terminal verdict `oauth-saved`.** It does not enable inference, production dispatch, publication or a new billing route.
 
 ## Operator action
 
@@ -40,8 +40,20 @@ The already-reviewed installed **1.4.0** package/source identities are checked b
 
 Installed references: `docs/sdk.md`, `docs/providers.md`, `docs/environment-variables.md`, `examples/sdk/09-api-keys-and-oauth.ts` and `dist/core/model-runtime.d.ts` under `/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent/`. These establish supported configuration/login surfaces, not guaranteed crash-safe rotation. The [accepted re-login trade-off](pi-auth-ownership.md#disposition) still applies.
 
+## Operator verification
+
+After implementation commit `16f7814`, the operator supplies the terminal output:
+
+```json
+{"scope":"dedicated-pi-login","verdict":"oauth-saved","inference":"not-performed"}
+```
+
+The operator also reports successful browser sign-in and the page saying it can be closed; the shell prompt returns. Accept the dedicated-profile sign-in gate on this reported terminal verdict, not the browser page alone. The command emits `oauth-saved` only after Pi login, metadata reopen, private-auth checks and successful lease release. A separate numeric shell exit status was not supplied; do not describe it as independently captured exit-0 evidence. No credential values, callback URLs or account identity are supplied or inspected.
+
+This establishes one actual supported sign-in/persistence result in the dedicated profile. It does not demonstrate real refresh, interrupted-login recovery, inference entitlement or tools. No new command, real credential read or network request is needed to record the observation.
+
 ## Evidence and remaining gate
 
 The [five-axis author review](evidence/pi-runtime/profile-login-review.md) records 27 focused tests and full verification. Tests use generated homes, the real installed built-in Pi login/file store, mocked browser/callback/token transport and synthetic tokens. The SIGKILL check retains a live login owner, refuses competing recovery, waits for its actual exit, then requires explicit fresh sign-in; normal-profile and case-state sentinels survive. This is not real eligibility or general native recovery proof.
 
-**Next:** run the approved operator-present command and record its terminal verdict/exit status. Keep the plan's real sign-in checkbox open until that observation exists. On success, stop before the separately approved genuine controlled tool-using turn; M4 and production-route selection remain open.
+The real sign-in checkbox is complete on the operator-reported observation above. **Next:** seek separate approval for a genuine controlled tool-using turn. Stop here: no inference is authorized by the sign-in result, and M4 and production-route selection remain open.
