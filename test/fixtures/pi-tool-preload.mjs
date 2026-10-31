@@ -58,7 +58,11 @@ if (scenario.startsWith('launcher')) {
       if (scenario.startsWith('launcher-diagnostic')) {
         const frame = {
           failureStage:
-            scenario === 'launcher-diagnostic-private' ? 'private-provider-text' : 'stream',
+            scenario === 'launcher-diagnostic-private'
+              ? 'private-provider-text'
+              : scenario === 'launcher-diagnostic-event'
+                ? 'event-validation-toolcall_start'
+                : 'stream',
           ...(scenario === 'launcher-diagnostic-extra' ? { detail: 'private-provider-text' } : {}),
         };
         child.stdout.emit('data', Buffer.from(`${JSON.stringify(frame)}\n`));
@@ -188,6 +192,25 @@ async function syntheticFetch(url, options) {
       response: { id: 'synthetic-response', status: 'completed', output: [item] },
     },
   ];
+  if (scenario === 'open-toolcall') {
+    // Keep a valid intermediate SDK event live: no later done/error can mutate away
+    // its partialJson scratch field before the consumer snapshots/validates it.
+    return new Response(
+      new ReadableStream({
+        start(controller) {
+          controller.enqueue(
+            new TextEncoder().encode(
+              events
+                .slice(0, 2)
+                .map((event) => `data: ${JSON.stringify(event)}\n\n`)
+                .join(''),
+            ),
+          );
+        },
+      }),
+      { headers: { 'content-type': 'text/event-stream' } },
+    );
+  }
   return new Response(
     (scenario === 'malformed' ? events.slice(0, 2) : events)
       .map((event) => `data: ${JSON.stringify(event)}\n\n`)

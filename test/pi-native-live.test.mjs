@@ -6,7 +6,11 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { runNativeLiveProbe, nativeLiveResult } from '../prototypes/pi-native-live.mjs';
 import { streamNativeLiveProbe } from '../prototypes/pi-native-stream.mjs';
-import { makeRequest } from '../prototypes/pi-stream-protocol.mjs';
+import { makeRequest, StreamReceiver } from '../prototypes/pi-stream-protocol.mjs';
+import {
+  nativeEventFailureStage,
+  validateNativeDiagnostic,
+} from '../prototypes/pi-native-diagnostics.mjs';
 import { context } from '../prototypes/pi-stream-fixtures.ts';
 import { syntheticProfile } from './helpers/pi-profile.mjs';
 
@@ -101,7 +105,7 @@ for (const scenario of [
         ['bad-tool', 'bad-arguments', 'bad-result'].includes(scenario)
           ? 'result-validation'
           : scenario === 'malformed'
-            ? 'event-validation'
+            ? 'event-validation-toolcall_start'
             : scenario.startsWith('diagnostic-')
               ? 'transport'
               : 'stream',
@@ -115,6 +119,122 @@ for (const scenario of [
       assert.ok((await readdir(p.profile)).includes('eitri-use'));
     },
   );
+
+test(
+  'live-native diagnoses an open SDK toolcall_start before any terminal can remove scratch fields',
+  { timeout: 15000 },
+  async (t) => {
+    const p = await profileFixture(t);
+    const directory = await realpath(await mkdtemp(join(tmpdir(), 'eitri-live-test-')));
+    t.after(() => rm(directory, { recursive: true, force: true }));
+    const helpers = [],
+      progress = [],
+      diagnostics = [];
+    await assert.rejects(
+      runNativeLiveProbe({
+        directory,
+        stream: transport(p.home, 'open-toolcall'),
+        onDiagnostic: (stage) => diagnostics.push(stage),
+        onProgress: (value) => progress.push(value),
+        onSpawn: (value) => helpers.push(value),
+      }),
+    );
+    assert.deepEqual(diagnostics, ['event-validation-toolcall_start']);
+    assert.deepEqual(progress, ['model']);
+    assert.equal(helpers.length, 1);
+    assert.throws(() => process.kill(helpers[0].pid, 0), { code: 'ESRCH' });
+    await assert.rejects(lstat(helpers[0].home), { code: 'ENOENT' });
+    assert.ok((await readdir(p.profile)).includes('eitri-use'));
+    assert.ok((await readdir(join(directory, 'native'))).includes('catalogue.sqlite'));
+  },
+);
+
+test('live-native event diagnostics are finite and never accept provider text as a stage', () => {
+  for (const type of [
+    'start',
+    'text_start',
+    'text_delta',
+    'text_end',
+    'thinking_start',
+    'thinking_delta',
+    'thinking_end',
+    'toolcall_start',
+    'toolcall_delta',
+    'toolcall_end',
+    'done',
+  ]) {
+    const failureStage = `event-validation-${type}`;
+    assert.equal(nativeEventFailureStage(type), failureStage);
+    assert.equal(validateNativeDiagnostic({ failureStage }), failureStage);
+  }
+  for (const type of ['private-provider-text', 'error', null, {}, ['toolcall_start']])
+    assert.equal(nativeEventFailureStage(type), 'event-validation');
+  assert.equal(validateNativeDiagnostic({ failureStage: 'event-alias' }), 'event-alias');
+  for (const failureStage of [
+    'event-validation-private-provider-text',
+    'event-validation-error',
+    'event-validation-toolcall_start\nprivate',
+  ])
+    assert.throws(() => validateNativeDiagnostic({ failureStage }));
+  assert.throws(() =>
+    validateNativeDiagnostic({
+      failureStage: 'event-validation-toolcall_start',
+      detail: 'private-provider-text',
+    }),
+  );
+});
+
+test('strict receiver rejects the SDK scratch field, not the otherwise valid toolcall start', () => {
+  const transcript = structuredClone(context);
+  transcript.messages[0].toolsAdded[0].name = 'probe';
+  const request = makeRequest(0, transcript);
+  const { context: _context, options: _options, ...identity } = request;
+  const partial = {
+    role: 'assistant',
+    provider: request.route.provider,
+    model: request.route.model,
+    api: request.route.api,
+    content: [],
+    usage: {
+      input: 0,
+      output: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+      totalTokens: 0,
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+    },
+    stopReason: 'pending',
+    timestamp: 1,
+  };
+  for (const scratch of [false, true]) {
+    const receiver = new StreamReceiver(request);
+    receiver.accept({ ...identity, seq: 0, event: { type: 'start', partial } });
+    const frame = {
+      ...identity,
+      seq: 1,
+      event: {
+        type: 'toolcall_start',
+        contentIndex: 0,
+        partial: {
+          ...partial,
+          content: [
+            {
+              type: 'toolCall',
+              id: 'call_probe|fc_probe',
+              name: 'probe',
+              arguments: {},
+              ...(scratch ? { partialJson: '' } : {}),
+            },
+          ],
+        },
+      },
+    };
+    if (scratch) {
+      assert.throws(() => receiver.accept(frame), /^Error: pi-stream-protocol-invalid$/);
+      assert.throws(() => receiver.finish(), /^Error: pi-stream-protocol-invalid$/);
+    } else assert.deepEqual(receiver.accept(frame), frame.event);
+  }
+});
 
 test(
   'live-native cancellation reaps the credential helper before rejection and leaves its sole-process lease blocked',
@@ -168,6 +288,7 @@ for (const scenario of [
   'launcher-late',
   'launcher-nonzero',
   'launcher-diagnostic',
+  'launcher-diagnostic-event',
   'launcher-diagnostic-private',
   'launcher-diagnostic-extra',
   'launcher-diagnostic-duplicate',
@@ -198,6 +319,8 @@ for (const scenario of [
     );
     if (scenario === 'launcher-diagnostic')
       assert.match(result.stderr, /Pi native failure stage: stream\./);
+    if (scenario === 'launcher-diagnostic-event')
+      assert.match(result.stderr, /Pi native failure stage: event-validation-toolcall_start\./);
     if (['launcher-diagnostic-private', 'launcher-diagnostic-extra'].includes(scenario))
       assert.doesNotMatch(result.stderr, /Pi native failure stage:/);
     assert.deepEqual(

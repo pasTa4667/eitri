@@ -5,7 +5,7 @@ import { sdkRoot, verifyInstalledSources } from './pi-stream.mjs';
 import { withProfileProbe } from './pi-profile-login.mjs';
 import { JsonLines, StreamReceiver, validateRequest, encodeLine } from './pi-stream-protocol.mjs';
 import { route } from './pi-stream-fixtures.ts';
-import { validateNativeDiagnostic } from './pi-native-diagnostics.mjs';
+import { nativeEventFailureStage, validateNativeDiagnostic } from './pi-native-diagnostics.mjs';
 
 // One credential-using process/request. Parent death or timeout leaves its v2 lease blocked.
 const timer = setTimeout(() => process.exit(1), 60_000);
@@ -112,7 +112,9 @@ try {
       reasoning: 'minimal',
     });
     const send = async (frame) => {
+      stage = nativeEventFailureStage(frame.event.type);
       receiver.accept(frame);
+      stage = 'transport';
       await new Promise((resolve, reject) =>
         process.stdout.write(encodeLine(frame), (error) => (error ? reject(error) : resolve())),
       );
@@ -122,7 +124,9 @@ try {
       assert.notEqual(raw.type, 'error');
       stage = 'event-validation';
       const event = structuredClone(raw);
+      stage = 'event-alias';
       for (const key of ['partial', 'message']) if (event[key]) event[key] = alias(event[key]);
+      stage = nativeEventFailureStage(event.type);
       assert.equal(terminal, undefined);
       if (event.type === 'done') terminal = { raw, frame: { ...identity, seq: seq++, event } };
       else await send({ ...identity, seq: seq++, event });
@@ -149,8 +153,8 @@ try {
         results[0].content.map((b) => b.text).join(''),
       );
     }
-    stage = 'terminal-validation';
     await send(terminal.frame);
+    stage = 'terminal-validation';
     assert.deepEqual(receiver.finish(), alias(message));
     assert.deepEqual(await readdir(process.cwd()), []);
     stage = 'profile-release';
