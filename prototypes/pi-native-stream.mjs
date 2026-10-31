@@ -9,9 +9,14 @@ import { createNativeResource } from './pi-native-resources.mjs';
 import { withDedicatedProfile } from './pi-profile.mjs';
 import { JsonLines, StreamReceiver, validateRequest, encodeLine } from './pi-stream-protocol.mjs';
 
+const codexFixtures = ['codex-probe', 'codex-denied', 'codex-malformed', 'codex-unknown'];
+
 // Offline test composition only. Exactly one admitted native model action, no tool loop.
 // Source/configuration controls are not a sandbox for the trusted installed SDK.
 export async function streamNativeFixture(value, options = {}) {
+  // Reject before opening/claiming any file profile: this composition is synthetic-only.
+  if (codexFixtures.includes(options.fixture) && options.profileHome !== undefined)
+    throw new Error('pi-native-stream-offline-failed');
   if (options.profileHome !== undefined)
     return withDedicatedProfile(options.profileHome, (paths) =>
       streamFixture(value, options, paths),
@@ -33,7 +38,10 @@ async function streamFixture(
   };
   try {
     check();
-    assert.ok(['probe', 'repair-budget', 'profile-refresh'].includes(fixture));
+    const codex = codexFixtures.includes(fixture);
+    assert.ok(codex || ['probe', 'repair-budget', 'profile-refresh'].includes(fixture));
+    // Built-in provider composition is in-memory synthetic auth only, never a file profile.
+    assert.ok(!codex || !profilePaths);
     const request = validateRequest(value);
     const receiver = new StreamReceiver(request);
     const decoder = new JsonLines();
@@ -45,7 +53,11 @@ async function streamFixture(
     check();
     const child = spawn(
       process.execPath,
-      [fileURLToPath(new URL('./pi-native-child.mjs', import.meta.url))],
+      [
+        fileURLToPath(
+          new URL(codex ? './pi-native-codex-child.mjs' : './pi-native-child.mjs', import.meta.url),
+        ),
+      ],
       {
         cwd: home,
         env: {
