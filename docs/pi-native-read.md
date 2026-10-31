@@ -12,6 +12,14 @@ The operator approves one read-only, controller-scoped fixture-source tool on th
 - Retain existing private dedicated-profile/sole-process lease, finite diagnostics, event validation, helper disposal before receipt, 60-second helper and 120/125-second command/backstop bounds. No credentials/raw source/model output in command output or checked-in evidence.
 - No source edits, code execution, worker, Sentry/GitHub mutation, publication, auth changes, dependency changes or production enablement. The original demonstration checkout is read-only. Real refresh/crash recovery and general source-tool integration remain separate gates.
 
+## Implementation and single attempt
+
+Commit `cc7a316` implements this contract. Full `npm run verify:all` passes 2,304 Node and 30 Rust tests. The [five-axis author review](evidence/pi-runtime/native-read-review.md) finds no unresolved Critical or Important issue.
+
+The operator-approved genuine command ran **once** from **2026-10-31T18:54:39Z** to **18:54:41Z**. It exited **1** with `sign-in-required` and the finite local stage **`stream`**, after one model marker and no tool marker. That stage comes after profile entry, runtime creation and model selection, when the provider stream reports an error. The `read_fixture` tool never executed, so no fixture content was sent. The exact provider error and HTTP request count are unmeasured. This does not establish OAuth rejection, a need to sign in again, or a defect in the read tool. Executable hashes match before and after. [Finite evidence](evidence/pi-runtime/native-read-actual.json) records the attempt; local logs are under `.audit/native-read/`.
+
+The work stops here, without retry, sign-in, credential or lease repair, or inspection of private native data. Diagnosing the stream failure or making another genuine attempt requires separate approval. Successful live fixture-read acceptance and M4 remain open.
+
 ## Verification
 
 New behavior must fail before implementation, then pass with synthetic profiles/intercepted HTTP over the actual live helper/native path. Cover exact tool/result correlation, unsupported tools/arguments/results, capture refusal, cancellation, default-disabled tools and opt-in launcher behavior. Run full `npm run verify:all` and `/skill:review` before the single genuine run. Record its finite verdict/exit without retry; a failed attempt does not imply OAuth rejection or successful live fixture-read acceptance.

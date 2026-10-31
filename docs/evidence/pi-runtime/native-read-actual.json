@@ -1,0 +1,29 @@
+{
+  "command": "npm run --silent test:pi-native-read -- --run",
+  "sourceCommit": "cc7a316",
+  "started": "2026-10-31T18:54:39Z",
+  "ended": "2026-10-31T18:54:41Z",
+  "exitCode": 1,
+  "stdout": {
+    "scope": "dedicated-pi-native-read",
+    "verdict": "sign-in-required"
+  },
+  "progressMarkers": [
+    "model"
+  ],
+  "failureStage": "stream",
+  "toolExecuted": false,
+  "fixtureUploaded": false,
+  "fixture": {
+    "path": "src/lib/errors.js",
+    "bytes": 534,
+    "sha256": "cd69431e5b7fda7ec116377d033d192a7b214a9c42a8101bd8c809c862af80f4"
+  },
+  "sourceHashesUnchanged": true,
+  "limits": [
+    "Stage stream follows profile entry, runtime creation and model selection; it is a provider stream error or rejected request, not proof of OAuth rejection.",
+    "HTTP request count is unmeasured; the model marker is not a request count.",
+    "No tool marker: the fixture-read tool did not execute, so fixture content was not sent.",
+    "No retry, sign-in, credential/lease repair or private-case inspection follows."
+  ]
+}
