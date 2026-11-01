@@ -16,27 +16,41 @@ import {
   nativeLiveReadResult,
   runNativeLiveCheckProbe,
   nativeLiveCheckResult,
+  runNativeLiveWorkflowProbe,
+  nativeLiveWorkflowResult,
 } from '../prototypes/pi-native-live.mjs';
 import { validateNativeDiagnostic } from '../prototypes/pi-native-diagnostics.mjs';
 
+const workflow = process.argv[2] === '--native-workflow';
 const fixtureRead = process.argv[2] === '--native-read';
 const fixtureCheck = process.argv[2] === '--native-check';
-const native = fixtureCheck || fixtureRead || process.argv[2] === '--native';
-const nativeFlag = fixtureCheck ? '--native-check' : fixtureRead ? '--native-read' : '--native';
-const expectedResult = fixtureCheck
-  ? nativeLiveCheckResult
-  : fixtureRead
-    ? nativeLiveReadResult
-    : native
-      ? nativeLiveResult
-      : toolTurnResult;
-const commandName = fixtureCheck
-  ? 'test:pi-native-check'
-  : fixtureRead
-    ? 'test:pi-native-read'
-    : native
-      ? 'test:pi-native'
-      : 'test:pi-tool';
+const needsWorker = fixtureCheck || workflow;
+const native = workflow || fixtureCheck || fixtureRead || process.argv[2] === '--native';
+const nativeFlag = workflow
+  ? '--native-workflow'
+  : fixtureCheck
+    ? '--native-check'
+    : fixtureRead
+      ? '--native-read'
+      : '--native';
+const expectedResult = workflow
+  ? nativeLiveWorkflowResult
+  : fixtureCheck
+    ? nativeLiveCheckResult
+    : fixtureRead
+      ? nativeLiveReadResult
+      : native
+        ? nativeLiveResult
+        : toolTurnResult;
+const commandName = workflow
+  ? 'test:pi-native-workflow'
+  : fixtureCheck
+    ? 'test:pi-native-check'
+    : fixtureRead
+      ? 'test:pi-native-read'
+      : native
+        ? 'test:pi-native'
+        : 'test:pi-tool';
 const failure = {
   scope: expectedResult.scope,
   verdict: 'sign-in-required',
@@ -55,11 +69,13 @@ async function probe() {
     await verifyInstalledSources();
     const result = native
       ? await (
-          fixtureCheck
-            ? runNativeLiveCheckProbe
-            : fixtureRead
-              ? runNativeLiveReadProbe
-              : runNativeLiveProbe
+          workflow
+            ? runNativeLiveWorkflowProbe
+            : fixtureCheck
+              ? runNativeLiveCheckProbe
+              : fixtureRead
+                ? runNativeLiveReadProbe
+                : runNativeLiveProbe
         )({
           directory: process.cwd(),
           profileHome: process.env.EITRI_PI_TOOL_HOME,
@@ -108,8 +124,8 @@ async function launch() {
         env: {
           // Only the check controller's Docker client needs the existing OrbStack context.
           // Inference helpers still receive separate empty homes and the unchanged allowlist.
-          HOME: fixtureCheck ? actualHome : home,
-          PATH: fixtureCheck ? '/usr/local/bin:/usr/bin:/bin' : '/usr/bin:/bin',
+          HOME: needsWorker ? actualHome : home,
+          PATH: needsWorker ? '/usr/local/bin:/usr/bin:/bin' : '/usr/bin:/bin',
           PI_CODING_AGENT_DIR: join(actualHome, 'Library', 'Application Support', 'eitri', 'pi'),
           EITRI_PI_TOOL_HOME: actualHome,
           EITRI_PI_TOOL_CHILD: '1',
@@ -149,16 +165,20 @@ async function launch() {
                 writeSync(2, `Pi native failure stage: ${stage}.\n`);
               } else if (Object.hasOwn(frame, 'progress')) {
                 assert.equal(diagnosticCount, 0);
-                const expected = ['model', 'tool', 'model'][progressCount++];
+                const expected = (
+                  workflow
+                    ? ['model', 'tool', 'model', 'tool', 'model']
+                    : ['model', 'tool', 'model']
+                )[progressCount++];
                 assert.ok(expected);
                 assert.deepEqual(frame, { progress: expected });
                 writeSync(
                   2,
                   expected === 'model'
                     ? 'Pi model request (streaming).\n'
-                    : fixtureCheck
+                    : fixtureCheck || (workflow && progressCount === 4)
                       ? 'Fixed protected fixture check executed.\n'
-                      : fixtureRead
+                      : fixtureRead || workflow
                         ? 'Fixed fixture read executed.\n'
                         : 'Fixed probe tool executed.\n',
                 );
@@ -187,7 +207,7 @@ async function launch() {
         !failed &&
           exit.signal === null &&
           exit.code === 0 &&
-          progressCount === 3 &&
+          progressCount === (workflow ? 5 : 3) &&
           diagnosticCount === 0,
       );
       assert.deepEqual(terminal, expectedResult);
@@ -207,7 +227,7 @@ const args = process.argv.slice(native ? 3 : 2);
 if (args.length === 0 || (args.length === 1 && args[0] === '--help')) {
   writeSync(
     1,
-    `Usage: npm run ${commandName} -- --run\nTwo bounded genuine Pi streams and one fixed ${fixtureCheck ? 'run_check({kind:"baseline"}) protected unit/build/browser recipe (no source upload or edits)' : fixtureRead ? 'read_fixture({}) tool (uploads only src/lib/errors.js)' : 'side-effect-free tool'}${native ? ' through the real native controller/SQLite lifecycle' : ''}. No production dispatch.\n`,
+    `Usage: npm run ${commandName} -- --run\n${workflow ? 'Three bounded genuine Pi streams, one fixed read_fixture({}) (uploads only src/lib/errors.js) then one protected run_check({kind:"baseline"}) recipe (no edits)' : `Two bounded genuine Pi streams and one fixed ${fixtureCheck ? 'run_check({kind:"baseline"}) protected unit/build/browser recipe (no source upload or edits)' : fixtureRead ? 'read_fixture({}) tool (uploads only src/lib/errors.js)' : 'side-effect-free tool'}`}${native ? ' through the real native controller/SQLite lifecycle' : ''}. No production dispatch.\n`,
   );
 } else if (args.length !== 1 || args[0] !== '--run' || process.platform !== 'darwin') {
   writeSync(2, `Usage: npm run ${commandName} -- --run (macOS only)\n`);

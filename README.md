@@ -32,6 +32,8 @@ The separately approved [live native fixture read](docs/pi-native-read.md) adds 
 
 The separately approved [protected native fixture check](docs/pi-native-check.md) adds `npm run test:pi-native-check -- --run`: one fixed protected baseline unit/build/browser recipe through native `run_check`, followed by receipt acknowledgement and Pause/reopen/Continue. Only public receipt metadata is sent to the model; no source upload, edits, publication or production dispatch. Default/help is effect-free. The single approved attempt passes with two requests, one real protected check, verified receipt/PNG and preserved lifecycle/accounting; full verification passes 2,345 Node/30 Rust tests. Work stops here; M4 and production selection remain open.
 
+The approved [combined source-read → protected-check workflow](docs/pi-native-workflow.md) adds `npm run test:pi-native-workflow -- --run`: at most three model requests and two fixed tools in one native case, reading the same captured source revision that the worker checks. It verifies Pause/reopen/Continue after both results. Default/help is effect-free; each genuine attempt requires approval. This remains a bounded integration harness, not diagnosis, source repair, PR publication or production dispatch.
+
 ## Lint and format
 
 ```sh

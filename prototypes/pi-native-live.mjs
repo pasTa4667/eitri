@@ -7,7 +7,11 @@ import { Controller } from '../src/controller.ts';
 import { nativeProbeProvider } from './pi-native-provider.mjs';
 import { streamNativeLiveProbe } from './pi-native-stream.mjs';
 import { reconcileNativeResources } from './pi-native-resources.mjs';
-import { captureNativeReadFixture, validateNativeReadResult } from './pi-native-read.mjs';
+import {
+  captureNativeReadFixture,
+  nativeReadResult,
+  validateNativeReadResult,
+} from './pi-native-read.mjs';
 import {
   prepareNativeCheck,
   consumeNativeCheck,
@@ -44,6 +48,19 @@ export const nativeLiveCheckResult = Object.freeze({
   protectedCheck: true,
 });
 
+export const nativeLiveWorkflowResult = Object.freeze({
+  ...nativeLiveCheckResult,
+  scope: 'dedicated-pi-native-workflow',
+  verdict: 'native-workflow-pass',
+  requests: 3,
+  toolExecutions: 2,
+  fixtureRead: true,
+});
+
+export function runNativeLiveWorkflowProbe(options) {
+  return runNativeProbe(options, 'read-check-fixture');
+}
+
 export function runNativeLiveCheckProbe(options) {
   return runNativeProbe(options, 'check-fixture');
 }
@@ -70,8 +87,11 @@ async function runNativeProbe(
   },
   fixture,
 ) {
-  const fixtureRead = fixture === 'read-fixture';
-  const fixtureCheck = fixture === 'check-fixture';
+  const workflow = fixture === 'read-check-fixture';
+  const fixtureRead = fixture === 'read-fixture' || workflow;
+  const fixtureCheck = fixture === 'check-fixture' || workflow;
+  const expectedRequests = workflow ? 3 : 2;
+  const expectedEffects = workflow ? 2 : 1;
   const toolName = fixtureCheck ? 'run_check' : fixtureRead ? 'read_fixture' : 'probe';
   const toolArguments = fixtureCheck ? { kind: 'baseline' } : {};
   signal?.throwIfAborted();
@@ -95,8 +115,14 @@ async function runNativeProbe(
     environment: 'validation',
     repository: 'no-repository',
   };
+  const prepared = fixtureCheck ? await prepareNativeCheck(store, fixtureDirectory) : {};
+  const capturedRead = workflow
+    ? nativeReadResult(
+        prepared.offlineWorkspace.baseline.find((f) => f.virtualPath === 'src/lib/errors.js').bytes,
+      )
+    : undefined;
   const options = {
-    ...(fixtureCheck ? await prepareNativeCheck(store, fixtureDirectory) : {}),
+    ...prepared,
     directory: store,
     policy,
     allowanceMs: 120_000,
@@ -116,7 +142,7 @@ async function runNativeProbe(
         {
           before: () => {
             check();
-            assert.ok(requests.length <= 2);
+            assert.ok(requests.length <= expectedRequests);
             onProgress?.('model');
           },
           onSpawn,
@@ -142,7 +168,8 @@ async function runNativeProbe(
           },
           check: async (request, source) => {
             check();
-            assert.equal(++effects, 1);
+            assert.equal(++effects, expectedEffects);
+            assert.equal(requests.length, expectedRequests - 1);
             assert.equal(request.caseId, requests[0].caseId);
             const result = await consumeNativeCheck(request, source);
             check();
@@ -151,13 +178,14 @@ async function runNativeProbe(
         }
       : {}),
     [fixtureRead ? 'readFixture' : 'probe']: async (_id, actionSignal) => {
-      assert.ok(!fixtureCheck);
+      assert.ok(!fixtureCheck || workflow);
       check();
       actionSignal.throwIfAborted();
       assert.equal(++effects, 1);
+      assert.equal(requests.length, 1);
       assert.equal(_id, requests[0].caseId);
       resultText = fixtureRead
-        ? await captureNativeReadFixture(fixtureDirectory)
+        ? (capturedRead ?? (await captureNativeReadFixture(fixtureDirectory)))
         : randomBytes(16).toString('hex');
       actionSignal.throwIfAborted();
       check();
@@ -202,51 +230,91 @@ async function runNativeProbe(
         },
       },
     });
-    const paused = await parked(caseId);
-    assert.equal(paused.case.status, 'paused');
-    assert.equal(requests.length, 1);
-    assert.equal(effects, 1);
-    const savedResults = paused.messages.filter((m) => m.kind === 'eitri.action-result');
-    assert.equal(savedResults.length, 1);
-    let checkEvidence;
-    if (fixtureCheck) {
-      assert.ok(checkPause);
-      await checkPause;
-      checkEvidence = await verifyNativeCheck(controller, paused);
-      assert.deepEqual(savedResults[0].data.result, checkEvidence.check);
-      expectedReply = checkEvidence.check.id;
-    } else assert.equal(savedResults[0].data.result, resultText);
-    assert.ok(paused.case.usedMs > 0 && paused.case.usedMs < 120_000);
     const counters = (selected) => [
       selected.case.usedMs,
       selected.case.remainingMs,
       selected.case.attempt,
       selected.case.repairs,
     ];
-    await controller.close();
-    await open();
-    const reopened = await view(caseId);
-    assert.equal(reopened.case.status, 'paused');
-    assert.deepEqual(counters(reopened), counters(paused));
-    assert.deepEqual(reopened.messages, paused.messages);
-    if (fixtureCheck)
-      assert.deepEqual(await verifyNativeCheck(controller, reopened), checkEvidence);
-    assert.equal(requests.length, 1);
-    await controller.command({
-      requestId: randomUUID(),
-      expectedControlVersion: reopened.case.version,
-      intent: { type: 'continue', caseId },
-    });
+    const continuePaused = async (paused, evidence) => {
+      const count = requests.length;
+      await controller.close();
+      await open();
+      const reopened = await view(caseId);
+      assert.equal(reopened.case.status, 'paused');
+      assert.deepEqual(counters(reopened), counters(paused));
+      assert.deepEqual(reopened.messages, paused.messages);
+      assert.equal(requests.length, count);
+      assert.deepEqual(reopened.checks, paused.checks);
+      assert.deepEqual(reopened.artifacts, paused.artifacts);
+      if (evidence) assert.deepEqual(await verifyNativeCheck(controller, reopened), evidence);
+      await controller.command({
+        requestId: randomUUID(),
+        expectedControlVersion: reopened.case.version,
+        intent: { type: 'continue', caseId },
+      });
+    };
+    let readPaused;
+    if (workflow) {
+      readPaused = await parked(caseId);
+      assert.equal(readPaused.case.status, 'paused');
+      assert.equal(requests.length, 1);
+      assert.equal(effects, 1);
+      assert.deepEqual(
+        readPaused.messages
+          .filter((m) => m.kind === 'eitri.action-result')
+          .map((m) => m.data.result),
+        [capturedRead],
+      );
+      assert.equal(readPaused.checks.length, 0);
+      assert.ok(readPaused.case.usedMs > 0);
+      await continuePaused(readPaused);
+    }
+    const paused = await parked(caseId);
+    assert.equal(paused.case.status, 'paused');
+    assert.equal(requests.length, expectedRequests - 1);
+    assert.equal(effects, expectedEffects);
+    const savedResults = paused.messages.filter((m) => m.kind === 'eitri.action-result');
+    assert.equal(savedResults.length, expectedEffects);
+    let checkEvidence;
+    if (fixtureCheck) {
+      assert.ok(checkPause);
+      await checkPause;
+      checkEvidence = await verifyNativeCheck(controller, paused);
+      assert.deepEqual(savedResults.at(-1).data.result, checkEvidence.check);
+      if (workflow) {
+        assert.equal(savedResults[0].data.result, capturedRead);
+        assert.ok(paused.case.usedMs >= readPaused.case.usedMs);
+        assert.deepEqual(
+          [paused.case.attempt, paused.case.repairs],
+          [readPaused.case.attempt, readPaused.case.repairs],
+        );
+        const transfer = checkEvidence.history.history.value.report.evidence.provenance.transfer;
+        assert.equal(
+          transfer.find((f) => f.path === 'src/lib/errors.js').sha256,
+          validateNativeReadResult(capturedRead),
+        );
+      }
+      expectedReply = checkEvidence.check.id;
+    } else assert.equal(savedResults[0].data.result, resultText);
+    assert.ok(paused.case.usedMs > 0 && paused.case.usedMs < 120_000);
+    await continuePaused(paused, checkEvidence);
     const done = await parked(caseId);
     assert.equal(done.case.reason, 'assessment-required');
-    assert.equal(requests.length, 2);
-    assert.equal(effects, 1);
+    assert.equal(requests.length, expectedRequests);
+    assert.equal(effects, expectedEffects);
     assert.ok(streamed);
-    const second = requests[1];
-    const call = second.context.messages
-      .find((m) => m.role === 'assistant')
+    const last = requests.at(-1);
+    const call = last.context.messages
+      .filter((m) => m.role === 'assistant')
+      .at(-1)
       .content.find((b) => b.type === 'toolCall');
-    const result = second.context.messages.find((m) => m.role === 'toolResult');
+    const result = last.context.messages.filter((m) => m.role === 'toolResult').at(-1);
+    if (workflow) {
+      const readResult = last.context.messages.find((m) => m.role === 'toolResult');
+      assert.equal(readResult.toolName, 'read_fixture');
+      assert.deepEqual(readResult.content, [{ type: 'text', text: capturedRead }]);
+    }
     assert.equal(call.name, toolName);
     assert.deepEqual(call.arguments, toolArguments);
     assert.equal(result.toolCallId, call.id);
@@ -259,19 +327,23 @@ async function runNativeProbe(
       const { controlVersion: _version, ...receipt } = JSON.parse(result.content[0].text);
       assert.deepEqual(receipt, checkEvidence.check);
     } else assert.deepEqual(result.content, [{ type: 'text', text: resultText }]);
-    assert.notEqual(requests[0].actionId, second.actionId);
+    assert.equal(new Set(requests.map((r) => r.actionId)).size, expectedRequests);
     assert.ok(done.case.usedMs >= paused.case.usedMs);
     assert.equal(done.case.usedMs + done.case.remainingMs, 120_000);
     assert.equal(done.case.attempt, 1);
     assert.equal(done.case.repairs, 0);
-    assert.equal(done.messages.filter((m) => m.kind === 'eitri.action-result').length, 1);
+    assert.equal(
+      done.messages.filter((m) => m.kind === 'eitri.action-result').length,
+      expectedEffects,
+    );
     const models = done.messages
       .flatMap((m) => m.data?.messages ?? [])
       .filter((m) => m.role === 'assistant');
-    assert.equal(models.length, 2);
+    assert.equal(models.length, expectedRequests);
     assert.equal(
-      models[1].content
-        .filter((b) => b.type === 'text')
+      models
+        .at(-1)
+        .content.filter((b) => b.type === 'text')
         .map((b) => b.text)
         .join('')
         .trim(),
@@ -284,8 +356,8 @@ async function runNativeProbe(
     assert.deepEqual(final.messages, done.messages);
     assert.deepEqual(counters(final), counters(done));
     if (fixtureCheck) assert.deepEqual(await verifyNativeCheck(controller, final), checkEvidence);
-    assert.equal(requests.length, 2);
-    assert.equal(effects, 1);
+    assert.equal(requests.length, expectedRequests);
+    assert.equal(effects, expectedEffects);
     check();
   } finally {
     signal?.removeEventListener('abort', cancel);
@@ -295,10 +367,12 @@ async function runNativeProbe(
   // Failures retain private case state and never auto-requeue or reset it.
   await rm(store, { recursive: true });
   return {
-    ...(fixtureCheck
-      ? nativeLiveCheckResult
-      : fixtureRead
-        ? nativeLiveReadResult
-        : nativeLiveResult),
+    ...(workflow
+      ? nativeLiveWorkflowResult
+      : fixtureCheck
+        ? nativeLiveCheckResult
+        : fixtureRead
+          ? nativeLiveReadResult
+          : nativeLiveResult),
   };
 }

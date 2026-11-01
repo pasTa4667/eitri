@@ -8,12 +8,15 @@ import { syncBuiltinESMExports } from 'node:module';
 // Fixed synthetic transport only. No real fetch implementation is retained or called.
 const scenario = new URL(import.meta.url).searchParams.get('scenario');
 const native = new URL(import.meta.url).searchParams.get('native') === '1';
+const workflow =
+  process.argv.includes('--native-workflow') ||
+  process.env.EITRI_PI_NATIVE_FIXTURE === 'read-check-fixture';
 const fixtureRead =
   process.argv.includes('--native-read') || process.env.EITRI_PI_NATIVE_FIXTURE === 'read-fixture';
 const fixtureCheck =
   process.argv.includes('--native-check') ||
   process.env.EITRI_PI_NATIVE_FIXTURE === 'check-fixture';
-const toolName = fixtureCheck
+let toolName = fixtureCheck
   ? 'run_check'
   : fixtureRead
     ? 'read_fixture'
@@ -38,13 +41,15 @@ if (scenario.startsWith('launcher')) {
   childProcess.spawn = (file, args, options) => {
     assert.equal(file, process.execPath);
     assert.deepEqual(args.slice(1), [
-      ...(fixtureCheck
-        ? ['--native-check']
-        : fixtureRead
-          ? ['--native-read']
-          : process.argv.includes('--native')
-            ? ['--native']
-            : []),
+      ...(workflow
+        ? ['--native-workflow']
+        : fixtureCheck
+          ? ['--native-check']
+          : fixtureRead
+            ? ['--native-read']
+            : process.argv.includes('--native')
+              ? ['--native']
+              : []),
       '--run',
     ]);
     assert.deepEqual(options.stdio, ['ignore', 'pipe', 'ignore']);
@@ -58,7 +63,7 @@ if (scenario.startsWith('launcher')) {
       'PI_SKIP_VERSION_CHECK',
       'PI_TELEMETRY',
     ]);
-    if (fixtureCheck) {
+    if (fixtureCheck || workflow) {
       assert.notEqual(options.cwd, options.env.HOME);
       assert.equal(options.env.HOME, options.env.EITRI_PI_TOOL_HOME);
       assert.equal(options.env.PATH, '/usr/local/bin:/usr/bin:/bin');
@@ -98,25 +103,29 @@ if (scenario.startsWith('launcher')) {
           child.stdout.emit(
             'data',
             Buffer.from(
-              `${JSON.stringify({ scope: fixtureCheck ? 'dedicated-pi-native-check' : fixtureRead ? 'dedicated-pi-native-read' : 'dedicated-pi-native', verdict: 'sign-in-required' })}\n`,
+              `${JSON.stringify({ scope: workflow ? 'dedicated-pi-native-workflow' : fixtureCheck ? 'dedicated-pi-native-check' : fixtureRead ? 'dedicated-pi-native-read' : 'dedicated-pi-native', verdict: 'sign-in-required' })}\n`,
             ),
           );
           child.emit('close', 1, null);
           return;
         }
       }
-      for (const progress of ['model', 'tool', 'model'])
+      for (const progress of workflow
+        ? ['model', 'tool', 'model', 'tool', 'model']
+        : ['model', 'tool', 'model'])
         child.stdout.emit('data', Buffer.from(`${JSON.stringify({ progress })}\n`));
       child.stdout.emit(
         'data',
         Buffer.from(
-          fixtureCheck
-            ? '{"scope":"dedicated-pi-native-check","verdict":"native-check-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":2,"toolExecutions":1,"streamed":true,"resultVerified":true,"paused":true,"reopened":true,"budgetPreserved":true,"disposed":true,"protectedCheck":true}\n'
-            : fixtureRead
-              ? '{"scope":"dedicated-pi-native-read","verdict":"native-read-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":2,"toolExecutions":1,"streamed":true,"resultVerified":true,"paused":true,"reopened":true,"budgetPreserved":true,"disposed":true,"fixtureRead":true}\n'
-              : process.argv.includes('--native')
-                ? '{"scope":"dedicated-pi-native","verdict":"native-turn-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":2,"toolExecutions":1,"streamed":true,"resultVerified":true,"paused":true,"reopened":true,"budgetPreserved":true,"disposed":true}\n'
-                : '{"scope":"dedicated-pi-tool","verdict":"tool-turn-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":2,"toolExecutions":1,"streamed":true,"resultVerified":true}\n',
+          workflow
+            ? '{"scope":"dedicated-pi-native-workflow","verdict":"native-workflow-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":3,"toolExecutions":2,"streamed":true,"resultVerified":true,"paused":true,"reopened":true,"budgetPreserved":true,"disposed":true,"protectedCheck":true,"fixtureRead":true}\n'
+            : fixtureCheck
+              ? '{"scope":"dedicated-pi-native-check","verdict":"native-check-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":2,"toolExecutions":1,"streamed":true,"resultVerified":true,"paused":true,"reopened":true,"budgetPreserved":true,"disposed":true,"protectedCheck":true}\n'
+              : fixtureRead
+                ? '{"scope":"dedicated-pi-native-read","verdict":"native-read-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":2,"toolExecutions":1,"streamed":true,"resultVerified":true,"paused":true,"reopened":true,"budgetPreserved":true,"disposed":true,"fixtureRead":true}\n'
+                : process.argv.includes('--native')
+                  ? '{"scope":"dedicated-pi-native","verdict":"native-turn-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":2,"toolExecutions":1,"streamed":true,"resultVerified":true,"paused":true,"reopened":true,"budgetPreserved":true,"disposed":true}\n'
+                  : '{"scope":"dedicated-pi-tool","verdict":"tool-turn-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":2,"toolExecutions":1,"streamed":true,"resultVerified":true}\n',
         ),
       );
       if (scenario === 'launcher-late')
@@ -179,33 +188,39 @@ async function syntheticFetch(url, options) {
   assert.equal(body.store, false);
   assert.equal(body.stream, true);
   assert.equal(body.tools, undefined);
+  const outputs = body.input.filter((item) => item.type === 'function_call_output');
+  if (workflow)
+    toolName =
+      outputs.length === 0 ? 'read_fixture' : outputs.length === 1 ? 'run_check' : undefined;
   assert.deepEqual(
     body.input
       .filter((item) => item.type === 'additional_tools')
       .flatMap((item) => item.tools.map((tool) => tool.name)),
-    [toolName],
+    toolName ? [toolName] : [],
   );
-  if (fixtureCheck) {
+  if (toolName === 'run_check') {
     const tool = body.input.find((item) => item.type === 'additional_tools').tools[0];
     assert.deepEqual(tool.parameters.properties.kind.enum, ['baseline']);
     assert.equal(tool.parameters.additionalProperties, false);
   }
-  const first = native
-    ? !body.input.some((item) => item.type === 'function_call_output')
-    : requests === 1;
+  const first = workflow
+    ? outputs.length < 2
+    : native
+      ? !body.input.some((item) => item.type === 'function_call_output')
+      : requests === 1;
   if (native) assert.equal(requests, 1);
   const item = first
     ? {
         type: 'function_call',
-        id: 'fc_probe',
-        call_id: 'call_probe',
+        id: workflow ? `fc_${toolName}` : 'fc_probe',
+        call_id: workflow ? `call_${toolName}` : 'call_probe',
         name: scenario === 'bad-tool' ? 'bash' : toolName,
         arguments:
           scenario === 'bad-arguments'
             ? '{"unexpected":true}'
-            : scenario === 'wrong-check-kind'
+            : scenario === 'wrong-check-kind' && toolName === 'run_check'
               ? '{"kind":"browser"}'
-              : fixtureCheck
+              : toolName === 'run_check'
                 ? '{"kind":"baseline"}'
                 : '{}',
       }
@@ -219,10 +234,8 @@ async function syntheticFetch(url, options) {
             text:
               scenario === 'bad-result'
                 ? 'wrong'
-                : fixtureCheck
-                  ? JSON.parse(
-                      body.input.find((item) => item.type === 'function_call_output').output,
-                    ).id
+                : fixtureCheck || workflow
+                  ? JSON.parse(outputs.at(-1).output).id
                   : fixtureRead
                     ? JSON.parse(
                         body.input.find((item) => item.type === 'function_call_output').output,

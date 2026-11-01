@@ -12,9 +12,14 @@ export async function captureNativeReadFixture(
   directory = fileURLToPath(new URL('../../eitri-test-web-app', import.meta.url)),
 ) {
   const { source } = await captureProfileNameFixture(directory);
-  assert.ok(source.bytes.length > 0 && source.bytes.length <= 4096);
-  const content = new TextDecoder('utf-8', { fatal: true }).decode(source.bytes);
-  const result = JSON.stringify({ path, sha256: source.sha256, content });
+  return nativeReadResult(source.bytes);
+}
+
+// Also used for the already reviewed immutable application capture, without a second checkout read.
+export function nativeReadResult(bytes) {
+  assert.ok(bytes.length > 0 && bytes.length <= 4096);
+  const content = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  const result = JSON.stringify({ path, sha256: digest(bytes), content });
   validateNativeReadResult(result);
   return result;
 }
