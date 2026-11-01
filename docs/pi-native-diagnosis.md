@@ -1,0 +1,18 @@
+# Bounded live native diagnosis and proposed fix
+
+## Approved scope
+
+The operator explicitly approves extending the successful source-read → protected-check workflow to **save a structured diagnosis and proposed fix**, with tests, five-axis `/skill:review`, one bounded genuine attempt, and a stop. This does not authorize implementation of the proposed fix.
+
+- Exact opt-in `npm run test:pi-native-diagnosis -- --run`; help/default does no capture, profile access, worker execution or inference. No supplied paths, prompts, commands, patches or scenarios.
+- Reuse the same reviewed unpatched 28-input baseline, immutable managed revision, fixed source read and protected baseline unit/build/browser recipe from the [workflow contract](pi-native-workflow.md). At most three requests/two tools: read, baseline check, then a tool-free JSON diagnosis/proposal. Only the fixed source and public receipt metadata reach inference; no raw worker output or screenshot upload.
+- Before profile access, validate ordered correlated tool history. Validate the final JSON before releasing a successful model terminal and again against persisted native messages: exact version/status, case ID, source digest, receipt UUID, baseline revision, fixed affected path, bounded nonempty diagnosis/proposal, validation plan and limitations. Unknown/missing fields, stale evidence, extra tools, malformed/oversized output fail closed. Text is untrusted assessment, never executable instructions or proof of a correct fix.
+- Retain native controller admissions, Pi Durable's sole transcript, both Pause/close/reopen/Continue boundaries, receipt/history/PNG/source-transfer verification, exact counters, final no-redispatch reopen and disposal. No assessment tool or phase advancement: the case stays Needs attention with `assessment-required`.
+- Save the valid JSON in the existing authoritative native transcript, not a second report/transcript. Unlike delivery-only probes, retain the successful private probe store so the assessment survives process exit. The launcher prints only its own generated store path on stderr after verified success, never model prose. This is a temporary opt-in probe store, not production retention: the operator must inspect/copy approved evidence and remove it when no longer needed; OS temporary-directory cleanup can remove it. No automatic resume or expiry is added.
+- Keep existing helper/model/tool and allowance/launcher deadlines, dedicated Pi-owned profile, resource cleanup and containment. Failure retains private state and stops without retry, sign-in or credential/lease repair. No fixture/source edits, arbitrary execution, hosted mutation, publication, deployment, production selection or M4 acceptance.
+
+## Verification and live outcome
+
+Implementation verification passes **38 new fast tests**, **145 focused native tests**, and **6 actual-Docker/synthetic-inference cases**, including persisted diagnosis and stale-receipt refusal. Full `npm run verify:all` exits **0** with **2,409 Node and 30 Rust tests passing**, no failures/cancellations/skipped Node tests or ignored Rust tests. Lint, formatting, TypeScript/syntax checks and native compilation pass; existing Rust future-incompatibility notices remain. The [five-axis author review](evidence/pi-runtime/native-diagnosis-review.md) has no unresolved Critical/Important finding. Full logs/status and 249 executable/dependency/test identities remain under `.audit/native-diagnosis/`. An initial lint stop and an incomplete foreground command-timeout run are retained separately, not represented as passes.
+
+Commit this verified implementation before the approved single genuine attempt. Live outcome is pending and must be recorded separately. No second attempt follows a failure.

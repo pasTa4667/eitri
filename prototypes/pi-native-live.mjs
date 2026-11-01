@@ -18,6 +18,7 @@ import {
   validateNativeCheckResult,
   verifyNativeCheck,
 } from './pi-native-check.mjs';
+import { nativeDiagnosisEvidence, validateNativeDiagnosis } from './pi-native-diagnosis.mjs';
 
 export const nativeLiveResult = Object.freeze({
   scope: 'dedicated-pi-native',
@@ -57,6 +58,18 @@ export const nativeLiveWorkflowResult = Object.freeze({
   fixtureRead: true,
 });
 
+export const nativeLiveDiagnosisResult = Object.freeze({
+  ...nativeLiveWorkflowResult,
+  scope: 'dedicated-pi-native-diagnosis',
+  verdict: 'native-diagnosis-pass',
+  diagnosisSaved: true,
+  proposalOnly: true,
+});
+
+export function runNativeLiveDiagnosisProbe(options) {
+  return runNativeProbe(options, 'diagnose-fixture');
+}
+
 export function runNativeLiveWorkflowProbe(options) {
   return runNativeProbe(options, 'read-check-fixture');
 }
@@ -87,7 +100,8 @@ async function runNativeProbe(
   },
   fixture,
 ) {
-  const workflow = fixture === 'read-check-fixture';
+  const diagnosis = fixture === 'diagnose-fixture';
+  const workflow = diagnosis || fixture === 'read-check-fixture';
   const fixtureRead = fixture === 'read-fixture' || workflow;
   const fixtureCheck = fixture === 'check-fixture' || workflow;
   const expectedRequests = workflow ? 3 : 2;
@@ -340,19 +354,21 @@ async function runNativeProbe(
       .flatMap((m) => m.data?.messages ?? [])
       .filter((m) => m.role === 'assistant');
     assert.equal(models.length, expectedRequests);
-    assert.equal(
-      models
-        .at(-1)
-        .content.filter((b) => b.type === 'text')
-        .map((b) => b.text)
-        .join('')
-        .trim(),
-      expectedReply,
-    );
+    const finalText = models
+      .at(-1)
+      .content.filter((b) => b.type === 'text')
+      .map((b) => b.text)
+      .join('')
+      .trim();
+    if (diagnosis)
+      validateNativeDiagnosis(finalText, nativeDiagnosisEvidence(last.context, caseId));
+    else assert.equal(finalText, expectedReply);
     await controller.close();
     await open();
     const final = await view(caseId);
     assert.equal(final.case.status, 'needs-attention');
+    assert.equal(final.case.phase, done.case.phase);
+    assert.equal(final.case.candidate, null);
     assert.deepEqual(final.messages, done.messages);
     assert.deepEqual(counters(final), counters(done));
     if (fixtureCheck) assert.deepEqual(await verifyNativeCheck(controller, final), checkEvidence);
@@ -363,16 +379,18 @@ async function runNativeProbe(
     signal?.removeEventListener('abort', cancel);
     await controller?.close();
   }
-  // Only this newly created store, after a successful durable reopen and controller close.
-  // Failures retain private case state and never auto-requeue or reset it.
-  await rm(store, { recursive: true });
+  // Diagnosis lives in the authoritative native transcript. Keep its private store after
+  // success; delivery-only probes remove theirs. Failures never auto-resume or reset.
+  if (!diagnosis) await rm(store, { recursive: true });
   return {
-    ...(workflow
-      ? nativeLiveWorkflowResult
-      : fixtureCheck
-        ? nativeLiveCheckResult
-        : fixtureRead
-          ? nativeLiveReadResult
-          : nativeLiveResult),
+    ...(diagnosis
+      ? nativeLiveDiagnosisResult
+      : workflow
+        ? nativeLiveWorkflowResult
+        : fixtureCheck
+          ? nativeLiveCheckResult
+          : fixtureRead
+            ? nativeLiveReadResult
+            : nativeLiveResult),
   };
 }

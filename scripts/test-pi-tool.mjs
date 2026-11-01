@@ -18,39 +18,48 @@ import {
   nativeLiveCheckResult,
   runNativeLiveWorkflowProbe,
   nativeLiveWorkflowResult,
+  runNativeLiveDiagnosisProbe,
+  nativeLiveDiagnosisResult,
 } from '../prototypes/pi-native-live.mjs';
 import { validateNativeDiagnostic } from '../prototypes/pi-native-diagnostics.mjs';
 
-const workflow = process.argv[2] === '--native-workflow';
+const diagnosis = process.argv[2] === '--native-diagnosis';
+const workflow = diagnosis || process.argv[2] === '--native-workflow';
 const fixtureRead = process.argv[2] === '--native-read';
 const fixtureCheck = process.argv[2] === '--native-check';
 const needsWorker = fixtureCheck || workflow;
 const native = workflow || fixtureCheck || fixtureRead || process.argv[2] === '--native';
-const nativeFlag = workflow
-  ? '--native-workflow'
-  : fixtureCheck
-    ? '--native-check'
-    : fixtureRead
-      ? '--native-read'
-      : '--native';
-const expectedResult = workflow
-  ? nativeLiveWorkflowResult
-  : fixtureCheck
-    ? nativeLiveCheckResult
-    : fixtureRead
-      ? nativeLiveReadResult
-      : native
-        ? nativeLiveResult
-        : toolTurnResult;
-const commandName = workflow
-  ? 'test:pi-native-workflow'
-  : fixtureCheck
-    ? 'test:pi-native-check'
-    : fixtureRead
-      ? 'test:pi-native-read'
-      : native
-        ? 'test:pi-native'
-        : 'test:pi-tool';
+const nativeFlag = diagnosis
+  ? '--native-diagnosis'
+  : workflow
+    ? '--native-workflow'
+    : fixtureCheck
+      ? '--native-check'
+      : fixtureRead
+        ? '--native-read'
+        : '--native';
+const expectedResult = diagnosis
+  ? nativeLiveDiagnosisResult
+  : workflow
+    ? nativeLiveWorkflowResult
+    : fixtureCheck
+      ? nativeLiveCheckResult
+      : fixtureRead
+        ? nativeLiveReadResult
+        : native
+          ? nativeLiveResult
+          : toolTurnResult;
+const commandName = diagnosis
+  ? 'test:pi-native-diagnosis'
+  : workflow
+    ? 'test:pi-native-workflow'
+    : fixtureCheck
+      ? 'test:pi-native-check'
+      : fixtureRead
+        ? 'test:pi-native-read'
+        : native
+          ? 'test:pi-native'
+          : 'test:pi-tool';
 const failure = {
   scope: expectedResult.scope,
   verdict: 'sign-in-required',
@@ -69,13 +78,15 @@ async function probe() {
     await verifyInstalledSources();
     const result = native
       ? await (
-          workflow
-            ? runNativeLiveWorkflowProbe
-            : fixtureCheck
-              ? runNativeLiveCheckProbe
-              : fixtureRead
-                ? runNativeLiveReadProbe
-                : runNativeLiveProbe
+          diagnosis
+            ? runNativeLiveDiagnosisProbe
+            : workflow
+              ? runNativeLiveWorkflowProbe
+              : fixtureCheck
+                ? runNativeLiveCheckProbe
+                : fixtureRead
+                  ? runNativeLiveReadProbe
+                  : runNativeLiveProbe
         )({
           directory: process.cwd(),
           profileHome: process.env.EITRI_PI_TOOL_HOME,
@@ -211,6 +222,8 @@ async function launch() {
           diagnosticCount === 0,
       );
       assert.deepEqual(terminal, expectedResult);
+      if (diagnosis)
+        writeSync(2, `Diagnosis saved in private native store: ${join(home, 'native')}.\n`);
       return { ...expectedResult };
     } finally {
       clearTimeout(timer);
@@ -218,8 +231,11 @@ async function launch() {
       process.removeListener('SIGTERM', cancel);
     }
   } finally {
-    // Remove only our empty scratch home after child close. Failed native stores are retained.
-    await rmdir(home);
+    // Delivery probes remove only an empty home. Diagnosis retains its authoritative store;
+    // failures in either mode retain private data without retry or automatic recovery.
+    await rmdir(home).catch((error) => {
+      if (!diagnosis || error.code !== 'ENOTEMPTY') throw error;
+    });
   }
 }
 
@@ -227,7 +243,7 @@ const args = process.argv.slice(native ? 3 : 2);
 if (args.length === 0 || (args.length === 1 && args[0] === '--help')) {
   writeSync(
     1,
-    `Usage: npm run ${commandName} -- --run\n${workflow ? 'Three bounded genuine Pi streams, one fixed read_fixture({}) (uploads only src/lib/errors.js) then one protected run_check({kind:"baseline"}) recipe (no edits)' : `Two bounded genuine Pi streams and one fixed ${fixtureCheck ? 'run_check({kind:"baseline"}) protected unit/build/browser recipe (no source upload or edits)' : fixtureRead ? 'read_fixture({}) tool (uploads only src/lib/errors.js)' : 'side-effect-free tool'}`}${native ? ' through the real native controller/SQLite lifecycle' : ''}. No production dispatch.\n`,
+    `Usage: npm run ${commandName} -- --run\n${diagnosis ? 'Three bounded genuine Pi streams: fixed source read, protected baseline recipe, then a saved JSON diagnosis/proposed fix (no edits; private probe store retained)' : workflow ? 'Three bounded genuine Pi streams, one fixed read_fixture({}) (uploads only src/lib/errors.js) then one protected run_check({kind:"baseline"}) recipe (no edits)' : `Two bounded genuine Pi streams and one fixed ${fixtureCheck ? 'run_check({kind:"baseline"}) protected unit/build/browser recipe (no source upload or edits)' : fixtureRead ? 'read_fixture({}) tool (uploads only src/lib/errors.js)' : 'side-effect-free tool'}`}${native ? ' through the real native controller/SQLite lifecycle' : ''}. No production dispatch.\n`,
   );
 } else if (args.length !== 1 || args[0] !== '--run' || process.platform !== 'darwin') {
   writeSync(2, `Usage: npm run ${commandName} -- --run (macOS only)\n`);

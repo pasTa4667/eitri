@@ -4,11 +4,18 @@ import { mkdtemp, realpath, rm, writeFile, readdir, lstat } from 'node:fs/promis
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { DatabaseSync } from 'node:sqlite';
+import {
+  nativeDiagnosisEvidence,
+  validateNativeDiagnosis,
+} from '../../prototypes/pi-native-diagnosis.mjs';
 import {
   runNativeLiveCheckProbe,
   nativeLiveCheckResult,
   runNativeLiveWorkflowProbe,
   nativeLiveWorkflowResult,
+  runNativeLiveDiagnosisProbe,
+  nativeLiveDiagnosisResult,
 } from '../../prototypes/pi-native-live.mjs';
 import { streamNativeLiveProbe } from '../../prototypes/pi-native-stream.mjs';
 import { captureFixtureApplicationInput } from '../../src/fixture-profile-name.ts';
@@ -17,12 +24,20 @@ import { syntheticProfile } from '../helpers/pi-profile.mjs';
 if (process.env.EITRI_FROZEN_DOCKER_ACCEPTANCE !== '1')
   throw new Error('Requires explicit EITRI_FROZEN_DOCKER_ACCEPTANCE=1. No skips or substitutes.');
 
-for (const mode of ['check', 'workflow', 'before-check-failure', 'ack-failure'])
+for (const mode of [
+  'check',
+  'workflow',
+  'before-check-failure',
+  'ack-failure',
+  'diagnosis',
+  'diagnosis-failure',
+])
   test(
     `synthetic inference / real protected Docker recipe: ${mode}`,
     { timeout: 125000 },
     async (t) => {
       const workflow = mode !== 'check';
+      const diagnosis = mode.startsWith('diagnosis');
       const failed = mode.endsWith('failure');
       const directory = await realpath(await mkdtemp(join(tmpdir(), 'eitri-native-check-test-')));
       t.diagnostic(`Private test store: ${directory}`);
@@ -52,7 +67,13 @@ for (const mode of ['check', 'workflow', 'before-check-failure', 'ack-failure'])
         progress = [],
         helpers = [],
         diagnostics = [];
-      const pending = (workflow ? runNativeLiveWorkflowProbe : runNativeLiveCheckProbe)({
+      const pending = (
+        diagnosis
+          ? runNativeLiveDiagnosisProbe
+          : workflow
+            ? runNativeLiveWorkflowProbe
+            : runNativeLiveCheckProbe
+      )({
         directory,
         fixtureDirectory,
         onProgress: (v) => progress.push(v),
@@ -64,7 +85,7 @@ for (const mode of ['check', 'workflow', 'before-check-failure', 'ack-failure'])
             ...options,
             profileHome: p.home,
             preload: new URL(
-              `../fixtures/pi-tool-preload.mjs?native=1&scenario=${mode === 'before-check-failure' && requests.length === 2 ? 'bad-tool' : mode === 'ack-failure' && requests.length === 3 ? 'bad-result' : 'success'}`,
+              `../fixtures/pi-tool-preload.mjs?native=1&scenario=${mode === 'before-check-failure' && requests.length === 2 ? 'bad-tool' : mode === 'diagnosis-failure' && requests.length === 3 ? 'diagnosis-stale' : mode === 'ack-failure' && requests.length === 3 ? 'bad-result' : 'success'}`,
               import.meta.url,
             ),
           });
@@ -78,10 +99,14 @@ for (const mode of ['check', 'workflow', 'before-check-failure', 'ack-failure'])
       } else {
         assert.deepEqual(
           await pending,
-          workflow ? nativeLiveWorkflowResult : nativeLiveCheckResult,
+          diagnosis
+            ? nativeLiveDiagnosisResult
+            : workflow
+              ? nativeLiveWorkflowResult
+              : nativeLiveCheckResult,
         );
         assert.deepEqual(diagnostics, []);
-        assert.deepEqual(await readdir(directory), []);
+        assert.deepEqual(await readdir(directory), diagnosis ? ['native'] : []);
         assert.deepEqual(await readdir(p.profile), ['auth.json']);
       }
       assert.equal(helpers.length, requests.length);
@@ -105,6 +130,35 @@ for (const mode of ['check', 'workflow', 'before-check-failure', 'ack-failure'])
       else {
         assert.equal(tool.toolName, 'run_check');
         assert.equal(JSON.parse(tool.content[0].text).provenance.outcome, 'baseline-reproduced');
+      }
+      if (diagnosis) {
+        const id = requests[0].caseId;
+        const db = new DatabaseSync(join(directory, 'native', 'cases', id, 'session.sqlite'), {
+          readOnly: true,
+        });
+        let assistant;
+        try {
+          assistant = db
+            .prepare('SELECT record FROM entries ORDER BY commit_seq, id')
+            .all()
+            .flatMap((row) => JSON.parse(row.record).model ?? [])
+            .filter((m) => m.role === 'assistant' && m.stopReason === 'stop');
+        } finally {
+          db.close();
+        }
+        assert.equal(assistant.length, failed ? 0 : 1);
+        if (!failed) {
+          const text = assistant[0].content
+            .filter((b) => b.type === 'text')
+            .map((b) => b.text)
+            .join('');
+          const value = validateNativeDiagnosis(
+            text,
+            nativeDiagnosisEvidence(requests[2].context, id),
+          );
+          assert.match(value.diagnosis, /missing profile Ω/);
+          assert.ok((await lstat(join(directory, 'native'))).mode % 512 === 448);
+        }
       }
       const source = before.files.find((f) => f.virtualPath === 'src/lib/errors.js');
       if (workflow) {

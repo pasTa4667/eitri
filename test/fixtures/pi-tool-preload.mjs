@@ -8,7 +8,11 @@ import { syncBuiltinESMExports } from 'node:module';
 // Fixed synthetic transport only. No real fetch implementation is retained or called.
 const scenario = new URL(import.meta.url).searchParams.get('scenario');
 const native = new URL(import.meta.url).searchParams.get('native') === '1';
+const diagnosis =
+  process.argv.includes('--native-diagnosis') ||
+  process.env.EITRI_PI_NATIVE_FIXTURE === 'diagnose-fixture';
 const workflow =
+  diagnosis ||
   process.argv.includes('--native-workflow') ||
   process.env.EITRI_PI_NATIVE_FIXTURE === 'read-check-fixture';
 const fixtureRead =
@@ -41,15 +45,17 @@ if (scenario.startsWith('launcher')) {
   childProcess.spawn = (file, args, options) => {
     assert.equal(file, process.execPath);
     assert.deepEqual(args.slice(1), [
-      ...(workflow
-        ? ['--native-workflow']
-        : fixtureCheck
-          ? ['--native-check']
-          : fixtureRead
-            ? ['--native-read']
-            : process.argv.includes('--native')
-              ? ['--native']
-              : []),
+      ...(diagnosis
+        ? ['--native-diagnosis']
+        : workflow
+          ? ['--native-workflow']
+          : fixtureCheck
+            ? ['--native-check']
+            : fixtureRead
+              ? ['--native-read']
+              : process.argv.includes('--native')
+                ? ['--native']
+                : []),
       '--run',
     ]);
     assert.deepEqual(options.stdio, ['ignore', 'pipe', 'ignore']);
@@ -103,7 +109,7 @@ if (scenario.startsWith('launcher')) {
           child.stdout.emit(
             'data',
             Buffer.from(
-              `${JSON.stringify({ scope: workflow ? 'dedicated-pi-native-workflow' : fixtureCheck ? 'dedicated-pi-native-check' : fixtureRead ? 'dedicated-pi-native-read' : 'dedicated-pi-native', verdict: 'sign-in-required' })}\n`,
+              `${JSON.stringify({ scope: diagnosis ? 'dedicated-pi-native-diagnosis' : workflow ? 'dedicated-pi-native-workflow' : fixtureCheck ? 'dedicated-pi-native-check' : fixtureRead ? 'dedicated-pi-native-read' : 'dedicated-pi-native', verdict: 'sign-in-required' })}\n`,
             ),
           );
           child.emit('close', 1, null);
@@ -117,15 +123,17 @@ if (scenario.startsWith('launcher')) {
       child.stdout.emit(
         'data',
         Buffer.from(
-          workflow
-            ? '{"scope":"dedicated-pi-native-workflow","verdict":"native-workflow-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":3,"toolExecutions":2,"streamed":true,"resultVerified":true,"paused":true,"reopened":true,"budgetPreserved":true,"disposed":true,"protectedCheck":true,"fixtureRead":true}\n'
-            : fixtureCheck
-              ? '{"scope":"dedicated-pi-native-check","verdict":"native-check-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":2,"toolExecutions":1,"streamed":true,"resultVerified":true,"paused":true,"reopened":true,"budgetPreserved":true,"disposed":true,"protectedCheck":true}\n'
-              : fixtureRead
-                ? '{"scope":"dedicated-pi-native-read","verdict":"native-read-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":2,"toolExecutions":1,"streamed":true,"resultVerified":true,"paused":true,"reopened":true,"budgetPreserved":true,"disposed":true,"fixtureRead":true}\n'
-                : process.argv.includes('--native')
-                  ? '{"scope":"dedicated-pi-native","verdict":"native-turn-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":2,"toolExecutions":1,"streamed":true,"resultVerified":true,"paused":true,"reopened":true,"budgetPreserved":true,"disposed":true}\n'
-                  : '{"scope":"dedicated-pi-tool","verdict":"tool-turn-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":2,"toolExecutions":1,"streamed":true,"resultVerified":true}\n',
+          diagnosis
+            ? '{"scope":"dedicated-pi-native-diagnosis","verdict":"native-diagnosis-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":3,"toolExecutions":2,"streamed":true,"resultVerified":true,"paused":true,"reopened":true,"budgetPreserved":true,"disposed":true,"protectedCheck":true,"fixtureRead":true,"diagnosisSaved":true,"proposalOnly":true}\n'
+            : workflow
+              ? '{"scope":"dedicated-pi-native-workflow","verdict":"native-workflow-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":3,"toolExecutions":2,"streamed":true,"resultVerified":true,"paused":true,"reopened":true,"budgetPreserved":true,"disposed":true,"protectedCheck":true,"fixtureRead":true}\n'
+              : fixtureCheck
+                ? '{"scope":"dedicated-pi-native-check","verdict":"native-check-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":2,"toolExecutions":1,"streamed":true,"resultVerified":true,"paused":true,"reopened":true,"budgetPreserved":true,"disposed":true,"protectedCheck":true}\n'
+                : fixtureRead
+                  ? '{"scope":"dedicated-pi-native-read","verdict":"native-read-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":2,"toolExecutions":1,"streamed":true,"resultVerified":true,"paused":true,"reopened":true,"budgetPreserved":true,"disposed":true,"fixtureRead":true}\n'
+                  : process.argv.includes('--native')
+                    ? '{"scope":"dedicated-pi-native","verdict":"native-turn-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":2,"toolExecutions":1,"streamed":true,"resultVerified":true,"paused":true,"reopened":true,"budgetPreserved":true,"disposed":true}\n'
+                    : '{"scope":"dedicated-pi-tool","verdict":"tool-turn-pass","provider":"openai-codex","model":"gpt-6.1-sol","requests":2,"toolExecutions":1,"streamed":true,"resultVerified":true}\n',
         ),
       );
       if (scenario === 'launcher-late')
@@ -209,12 +217,37 @@ async function syntheticFetch(url, options) {
       ? !body.input.some((item) => item.type === 'function_call_output')
       : requests === 1;
   if (native) assert.equal(requests, 1);
-  const item = first
+  let diagnosisText;
+  if (diagnosis && !first) {
+    const read = JSON.parse(outputs[0].output);
+    const check = JSON.parse(outputs[1].output);
+    const value = {
+      version: 1,
+      status: 'proposal-only',
+      caseId: check.caseId,
+      sourceSha256: read.sha256,
+      receiptId: check.id,
+      baselineRevision: check.candidate,
+      diagnosis: 'The shared helper dereferences a missing profile Ω.',
+      proposal: 'Guard missing input then trim names, returning Anonymous for blank input.',
+      affectedPaths: ['src/lib/errors.js'],
+      validationPlan: [
+        'Add missing, blank and normal input regressions; run protected checks on a candidate.',
+      ],
+      limitations: ['Only the fixed source was inspected; no candidate or callers were tested.'],
+    };
+    if (scenario === 'diagnosis-stale') value.receiptId = '00000000-0000-4000-8000-000000000000';
+    if (scenario === 'diagnosis-extra') value.command = 'private-shell';
+    if (scenario === 'diagnosis-oversize') value.diagnosis = 'x'.repeat(2001);
+    diagnosisText = JSON.stringify(value);
+  }
+  const toolOutput = first || scenario === 'diagnosis-tool';
+  const item = toolOutput
     ? {
         type: 'function_call',
         id: workflow ? `fc_${toolName}` : 'fc_probe',
         call_id: workflow ? `call_${toolName}` : 'call_probe',
-        name: scenario === 'bad-tool' ? 'bash' : toolName,
+        name: scenario === 'bad-tool' || scenario === 'diagnosis-tool' ? 'bash' : toolName,
         arguments:
           scenario === 'bad-arguments'
             ? '{"unexpected":true}'
@@ -234,13 +267,15 @@ async function syntheticFetch(url, options) {
             text:
               scenario === 'bad-result'
                 ? 'wrong'
-                : fixtureCheck || workflow
-                  ? JSON.parse(outputs.at(-1).output).id
-                  : fixtureRead
-                    ? JSON.parse(
-                        body.input.find((item) => item.type === 'function_call_output').output,
-                      ).sha256
-                    : body.input.find((item) => item.type === 'function_call_output').output,
+                : diagnosis
+                  ? diagnosisText
+                  : fixtureCheck || workflow
+                    ? JSON.parse(outputs.at(-1).output).id
+                    : fixtureRead
+                      ? JSON.parse(
+                          body.input.find((item) => item.type === 'function_call_output').output,
+                        ).sha256
+                      : body.input.find((item) => item.type === 'function_call_output').output,
           },
         ],
       };
@@ -249,9 +284,9 @@ async function syntheticFetch(url, options) {
     {
       type: 'response.output_item.added',
       output_index: 0,
-      item: first ? { ...item, arguments: '' } : { ...item, content: [] },
+      item: toolOutput ? { ...item, arguments: '' } : { ...item, content: [] },
     },
-    first
+    toolOutput
       ? { type: 'response.function_call_arguments.delta', output_index: 0, delta: item.arguments }
       : { type: 'response.output_text.delta', output_index: 0, delta: item.content[0].text },
     { type: 'response.output_item.done', output_index: 0, item },
