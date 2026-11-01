@@ -1,0 +1,61 @@
+{
+  "command": "npm run --silent test:pi-native-check -- --run",
+  "sourceCommit": "5163b99851ca9d50a25ed63fd0d9db28b59b6297",
+  "started": "2026-11-01T12:43:04.858Z",
+  "ended": "2026-11-01T12:43:42.372Z",
+  "exitCode": 0,
+  "signal": null,
+  "stdout": {
+    "scope": "dedicated-pi-native-check",
+    "verdict": "native-check-pass",
+    "provider": "openai-codex",
+    "model": "gpt-6.1-sol",
+    "requests": 2,
+    "toolExecutions": 1,
+    "streamed": true,
+    "resultVerified": true,
+    "paused": true,
+    "reopened": true,
+    "budgetPreserved": true,
+    "disposed": true,
+    "protectedCheck": true
+  },
+  "progressMarkers": [
+    "model",
+    "tool",
+    "model"
+  ],
+  "failureStage": null,
+  "sourceHashesUnchanged": true,
+  "sourceHashCount": 19,
+  "operatorAuthorization": "Explicit approval of one existing protected fixture check, tests, five-axis review, one bounded genuine attempt and a stop. No edits, publication or production dispatch.",
+  "verification": {
+    "focused": {
+      "passed": 76,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    "full": {
+      "command": "npm run verify:all",
+      "nodePassed": 2345,
+      "rustPassed": 30,
+      "failed": 0,
+      "skippedOrIgnored": 0,
+      "exitCode": 0
+    },
+    "actualDockerSyntheticInference": {
+      "correctedPassed": 1,
+      "cleanEnvironmentPassed": 1,
+      "initialOrderingFailureRetained": true
+    }
+  },
+  "limits": [
+    "The inherited generic failure verdict alone does not diagnose OAuth.",
+    "Only receipt metadata is sent to inference; no application source, PNG, raw logs, credential or private native data is exported.",
+    "Successful baseline reproduction is not a fixed application, diagnosis or remediation.",
+    "No retry, sign-in, credential/lease repair, source edit, hosted mutation, publication or production enablement. M4 remains open."
+  ],
+  "fixtureStillReviewedBaseline": true,
+  "fixtureCaptureDigestAfter": "d4248bff339806048ec9958ad0a43a4a55719f0a4e357d9ec4d496f14cf02718"
+}

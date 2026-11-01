@@ -13,6 +13,14 @@ The operator explicitly approves connecting native inference to **one existing p
 - Keep the existing 60-second model/helper and tool bounds, 120-second active allowance/command bound and 125-second launcher backstop. Resource cleanup must complete before receipt delivery. The controller's Docker client alone uses the operator's HOME and fixed `/usr/local/bin:/usr/bin:/bin` PATH to locate the existing OrbStack context. Its environment excludes ambient keys, Docker endpoint/config overrides and proxies. Inference helpers still receive separate empty homes, the explicit dedicated Pi profile, exclusive lease, OAuth-only route and the unchanged clean environment. No worker mounts or shares that HOME.
 - No automatic sign-in, auth/lease repair, alternate provider/key, second live attempt, hosted mutation or publication. The inherited generic failure verdict `sign-in-required` alone does not diagnose OAuth; finite model stages and local verification determine what is known.
 
+## Single genuine attempt
+
+On clean implementation `5163b99851ca9d50a25ed63fd0d9db28b59b6297`, run the approved command **once**, **2026-11-01T12:43:04.858Z–12:43:42.372Z**. It exits **0** with **`native-check-pass`**: two requests, one protected baseline recipe, streamed receipt-UUID acknowledgement, actual native receipt/history/PNG verification, Pause/reopen/Continue, preserved counters and disposal. All **19 executable hashes** match before/after. A post-run capture again matches the exact reviewed unpatched 28-input baseline; the original checkout is unchanged. [Finite evidence](evidence/pi-runtime/native-check-actual.json) and [five-axis author review](evidence/pi-runtime/native-check-review.md) retain the result.
+
+Full `npm run verify:all` passes **2,345 Node/30 Rust tests**, including **21 new fast tests**; focused live/read/check tests pass **76/76**. The actual-Docker/synthetic-inference composition passes after correcting the harness's Pause ordering, including a separate clean-environment run. The initial failing composition and full-suite timeout remain distinguished from successful verification.
+
+Accept only this bounded live check delivery/lifecycle result, not diagnosis, repair, a green application baseline, general generated execution or M4/production selection. Stop without another inference/check attempt, sign-in, credential repair, source edit, hosted mutation or publication.
+
 ## Verification
 
 Fast tests cover receipt shape, exact check kind, unsupported arguments/tools, wrong acknowledgement, worker refusal/cleanup and cancellation boundaries, missing input refusal, exact launcher opt-in and environment/output controls. They exercise the installed SDK live helper using synthetic credentials/intercepted SSE, not genuine inference.
