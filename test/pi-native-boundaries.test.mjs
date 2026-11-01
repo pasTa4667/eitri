@@ -135,7 +135,22 @@ for (const boundary of ['admission', 'terminal', 'model-receipt', 'committed-too
         ]);
         assert.ok(JSON.stringify(results[0]).includes('Native committed result café ✓'));
       } else {
-        assert.deepEqual(assistants, [], 'uncommitted assistant became a transcript');
+        if (boundary === 'terminal' || boundary === 'model-receipt') {
+          // The SDK retains committed progress, not an unreceived successful terminal.
+          assert.ok(message.committedPartial);
+          assert.deepEqual(message.committedPartial.content, [
+            {
+              type: 'toolCall',
+              id: `probe-${message.admission.actionId}`,
+              name: 'probe',
+              arguments: {},
+            },
+          ]);
+          assert.deepEqual(assistants, [{ ...message.committedPartial, stopReason: 'aborted' }]);
+        } else {
+          assert.equal(message.committedPartial, undefined);
+          assert.deepEqual(assistants, [], 'uncommitted assistant became a transcript');
+        }
         assert.deepEqual(toolResults, []);
       }
 

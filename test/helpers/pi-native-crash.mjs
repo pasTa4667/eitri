@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
+import { setTimeout as delay } from 'node:timers/promises';
+import { BACKGROUND_CONTEXT as context } from '@earendil-works/chord/context';
+import { LiveDoc } from '@earendil-works/pi-durable';
 import { nativeFixtureProvider, openNativeFixtureController } from './pi-native.mjs';
 
 const [directory, mode, profileHome] = process.argv.slice(2);
@@ -10,6 +13,7 @@ let admission;
 let firstActionId;
 let requests = 0;
 let terminalDelivered = false;
+let committedPartial;
 const boundaryMode = ['admission', 'terminal', 'model-receipt', 'committed-tool'].includes(mode);
 const boundary = (request) => {
   process.send({
@@ -19,6 +23,7 @@ const boundary = (request) => {
     helper,
     admission,
     firstActionId,
+    committedPartial,
     toolCallId: request?.context.messages.find((m) => m.role === 'toolResult')?.toolCallId,
   });
 };
@@ -76,6 +81,27 @@ const controller = await openNativeFixtureController({
       afterTerminal: async (_request, { failed }) => {
         terminalDelivered = !failed;
         if (boundaryMode) assert.equal(terminalDelivered, true);
+        if (mode === 'terminal' || mode === 'model-receipt') {
+          // Hold drainage, not the event loop: require the real SDK partial commit.
+          const native = await controller.runtimes.get(caseId);
+          const deadline = performance.now() + 5000;
+          while (!committedPartial) {
+            await native.root.commit(async (tx) => {
+              const live = await tx.doc(LiveDoc, native.root.id);
+              if (live.generation?.message)
+                committedPartial = JSON.parse(JSON.stringify(live.generation.message));
+            }, context);
+            assert.ok(performance.now() < deadline, 'Native partial was not committed');
+            if (!committedPartial) await delay(10);
+          }
+          const { messages } = await native.messages();
+          assert.deepEqual(
+            messages
+              .flatMap((m) => m.data?.messages ?? [])
+              .filter((m) => m.role === 'assistant' || m.role === 'toolResult'),
+            [],
+          );
+        }
         if (mode === 'terminal') {
           boundary();
           await new Promise(() => {});
