@@ -1,0 +1,66 @@
+{
+  "command": "npm run --silent test:pi-native-workflow -- --run",
+  "sourceCommit": "c9216a3b466c965c1202fade62b73299aa2fce2b",
+  "started": "2026-11-01T13:10:07.087Z",
+  "ended": "2026-11-01T13:10:50.328Z",
+  "exitCode": 0,
+  "signal": null,
+  "stdout": {
+    "scope": "dedicated-pi-native-workflow",
+    "verdict": "native-workflow-pass",
+    "provider": "openai-codex",
+    "model": "gpt-6.1-sol",
+    "requests": 3,
+    "toolExecutions": 2,
+    "streamed": true,
+    "resultVerified": true,
+    "paused": true,
+    "reopened": true,
+    "budgetPreserved": true,
+    "disposed": true,
+    "protectedCheck": true,
+    "fixtureRead": true
+  },
+  "progressMarkers": [
+    "model",
+    "read",
+    "model",
+    "check",
+    "model"
+  ],
+  "failureStage": null,
+  "sourceHashesUnchanged": true,
+  "sourceHashCount": 247,
+  "fixtureCaptureDigestBefore": "d4248bff339806048ec9958ad0a43a4a55719f0a4e357d9ec4d496f14cf02718",
+  "fixtureCaptureDigestAfter": "d4248bff339806048ec9958ad0a43a4a55719f0a4e357d9ec4d496f14cf02718",
+  "fixtureUnchanged": true,
+  "operatorAuthorization": "Approval of proposed source-read then protected-baseline-check workflow, tests, five-axis review, one bounded genuine attempt and a stop. No edits, publication or production dispatch.",
+  "verification": {
+    "focused": {
+      "passed": 102,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    "full": {
+      "command": "npm run verify:all",
+      "nodePassed": 2371,
+      "rustPassed": 30,
+      "failed": 0,
+      "skippedOrIgnored": 0,
+      "exitCode": 0
+    },
+    "actualDockerSyntheticInference": {
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0
+    }
+  },
+  "limits": [
+    "The generic failure verdict alone does not diagnose OAuth; progress markers are not provider HTTP request counts on failure.",
+    "Only the fixed source capture and public receipt metadata may reach inference; no PNG, raw worker output or credentials.",
+    "Baseline reproduction and receipt acknowledgement are not diagnosis, repair or complete validation.",
+    "No retry, sign-in, credential/lease repair, source edit, hosted mutation, publication or production selection. M4 remains open."
+  ]
+}

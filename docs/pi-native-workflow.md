@@ -11,6 +11,12 @@ The operator approves the proposed next integration slice: join the existing fix
 - Keep existing 60-second model/helper and tool limits, 120-second active allowance/child bound, 125-second launcher backstop, resource ownership/cleanup, pinned SDK/worker recipe and containment. The check controller alone uses the existing OrbStack context with a clean fixed environment; inference helpers use separate empty homes and the dedicated Pi-owned OAuth profile.
 - Failure stops without retry, automatic sign-in, credential/lease repair or resumed failed work, retaining private native data. Remove only a newly generated successful store after final close/disposal. No source edits, arbitrary generated execution, hosted mutation, publication, deployment, production selection or M4 acceptance.
 
+## Single genuine attempt
+
+On clean reviewed implementation `c9216a3b466c965c1202fade62b73299aa2fce2b`, run the approved command **once**, **2026-11-01T13:10:07.087Z–13:10:50.328Z**. Exit **0**, **`native-workflow-pass`**: three genuine model requests, one fixed source read, one actual protected baseline recipe and receipt acknowledgement, both native Pause/reopen/Continue boundaries, real receipt/history/PNG, matching source digest, preserved allowance/attempt/repair counters and disposal. All **247 executable/dependency/test hashes** match the full-verified identities before/after. The fixture capture remains `d4248bff339806048ec9958ad0a43a4a55719f0a4e357d9ec4d496f14cf02718`. [Finite evidence](evidence/pi-runtime/native-workflow-actual.json) and the [five-axis author review](evidence/pi-runtime/native-workflow-review.md) record bounded acceptance only.
+
+This completes the approved slice and stops. It does not fix the intentional defect or enable diagnosis, arbitrary generated execution, source edits, publication or production dispatch; M4 remains open. No second attempt, sign-in or credential/lease repair follows. Only documentation/evidence changes after the verified implementation; no redundant test rerun is claimed.
+
 ## Verification
 
 TDD must cover ordered policy/correlation rejection and the actual installed live helper with synthetic credentials/intercepted SSE, exact CLI opt-in and output/environment bounds. The opt-in Docker composition must join all three synthetic model streams to the real protected baseline recipe and both native reopen boundaries. Full `npm run verify:all` and five-axis review precede the single genuine attempt; implementation verification and live outcome are recorded separately.
