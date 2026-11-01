@@ -1,0 +1,69 @@
+{
+  "command": "npm run --silent test:pi-native-diagnosis -- --run",
+  "sourceCommit": "0773973959d1d4b56ef45078381326b7242ca070",
+  "started": "2026-11-01T13:36:54.559Z",
+  "ended": "2026-11-01T13:37:45.677Z",
+  "exitCode": 0,
+  "signal": null,
+  "stdout": {
+    "scope": "dedicated-pi-native-diagnosis",
+    "verdict": "native-diagnosis-pass",
+    "provider": "openai-codex",
+    "model": "gpt-6.1-sol",
+    "requests": 3,
+    "toolExecutions": 2,
+    "streamed": true,
+    "resultVerified": true,
+    "paused": true,
+    "reopened": true,
+    "budgetPreserved": true,
+    "disposed": true,
+    "protectedCheck": true,
+    "fixtureRead": true,
+    "diagnosisSaved": true,
+    "proposalOnly": true
+  },
+  "progressMarkers": [
+    "model",
+    "read",
+    "model",
+    "check",
+    "model"
+  ],
+  "failureStage": null,
+  "nativeStoreRetained": true,
+  "sourceHashesUnchanged": true,
+  "sourceHashCount": 249,
+  "fixtureCaptureDigestBefore": "d4248bff339806048ec9958ad0a43a4a55719f0a4e357d9ec4d496f14cf02718",
+  "fixtureCaptureDigestAfter": "d4248bff339806048ec9958ad0a43a4a55719f0a4e357d9ec4d496f14cf02718",
+  "fixtureUnchanged": true,
+  "operatorAuthorization": "Explicit approve of bounded structured diagnosis/proposed-fix extension, tests, five-axis review, one genuine attempt and a stop. No edits, publication or production dispatch.",
+  "verification": {
+    "focused": {
+      "passed": 145,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    "full": {
+      "command": "npm run verify:all",
+      "nodePassed": 2409,
+      "rustPassed": 30,
+      "failed": 0,
+      "skippedOrIgnored": 0,
+      "exitCode": 0
+    },
+    "actualDockerSyntheticInference": {
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0
+    }
+  },
+  "limits": [
+    "Shape/evidence validation and persistence do not establish semantic diagnosis accuracy or a correct proposed fix.",
+    "Only fixed source and public baseline receipt metadata reach inference; no PNG, raw worker output or credentials.",
+    "Successful assessment is retained only in its private native transcript; OS temporary cleanup may remove it. No production retention claim.",
+    "No retry, sign-in, credential/lease repair, source edit, phase advancement, hosted mutation, publication or production selection. M4 remains open."
+  ]
+}

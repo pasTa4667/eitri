@@ -6,7 +6,7 @@ Author review under `/skill:review`, against the operator-approved [contract](..
 
 ## Findings
 
-No unresolved Critical or Important finding in the bounded implementation after the corrections below. Implementation verification passes; live acceptance remains pending the single approved genuine attempt. This is not M4 or production approval.
+No unresolved Critical or Important finding in the bounded implementation after the corrections below. Implementation verification and the single approved genuine attempt pass. Accept only the bounded diagnosis/proposal persistence slice, not semantic correctness, a validated repair, M4 or production approval.
 
 | Axis | Inspection and outcome |
 | --- | --- |
@@ -33,4 +33,4 @@ No unresolved Critical or Important finding in the bounded implementation after 
 
 The schema validates structure, boundedness and evidence identity, **not the semantic accuracy of a diagnosis or proposed fix**. The prompt intentionally identifies the controlled profile-name task; this is not autonomous issue discovery. No caller inspection, candidate repair/check, broader coverage, hosted mutation, PR publication, production selection or M4 acceptance is implied. Retention is a private temporary probe store, with explicit operator inspection/removal and possible OS cleanup, not a new production retention subsystem.
 
-One genuine attempt is authorized after verified implementation is committed. Outcome pending; do not retry after failure, repair credentials, enable source writes or continue into another slice.
+The approved single genuine attempt on `0773973`, **2026-11-01T13:36:54.559Z–13:37:45.677Z**, exits **0** with **`native-diagnosis-pass`**: three requests/two tools, saved JSON assessment, both reopen boundaries, real receipt/history/PNG, source binding, accounting and disposal. The launcher's generated private store is still present with mode 0700 after closure; only its location is retained locally in `.audit/native-diagnosis/private-store.txt`, not the assessment contents in Git. All 249 executable/dependency/test identities and the fixture capture match before/after. [Finite evidence](native-diagnosis-actual.json) retains the outcome without raw prose, worker output, PNG or credentials. No unresolved Critical/Important finding within this bounded contract; no further inference, sign-in/credential repair, source writes or next slice follows. Only documentation/evidence changes after the verified implementation.
