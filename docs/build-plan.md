@@ -236,6 +236,11 @@ After the installed local fixture baseline, continue in these bounded increments
 
 M3 setup is accepted within the [recorded evidence and limits](evidence/github-preflight/verification.md#operator-confirmation-and-m3-setup-acceptance). No baseline push is required because that exact commit is already remote; this does not grant future publication approval. Polling, controller intake, model dispatch and live remediation remain disabled.
 
+### Hosted-service availability recheck after subscription expiry
+
+- [x] Complete the operator-requested [read-only Sentry preflight](evidence/sentry-plan-preflight/verification.md) after reported subscription expiry: connection and the existing synthetic issue/latest-event reads pass on 2026-11-01; 319 focused tests pass and five-axis author review finds no Critical/Important issue. Official pricing lists a $0 single-user Developer plan. Actual account tier, remaining ingestion quota and fresh-event delivery are **not verified**. No paid usage, hosted writes or model inference; stop after this checkpoint.
+- [ ] Before sending another hosted event, confirm the actual Sentry subscription tier, usable error-event quota and no paid overage in organization settings; obtain bounded fresh-event authorization if needed. Read availability is not proof of billing state or new ingestion. The pending live fixture read remains separately gated by the model-provider usage reset and approval, not Sentry.
+
 ### Current M4 subscription-access slices
 
 - [x] Check the official local-app registration route and reproduce pinned SDK compatibility gaps offline. The [OAuth prerequisite](openai-oauth-compatibility.md) records repeat-registration, ID-token validation and retention gaps. This completes compatibility investigation, **not M4 acceptance**.
