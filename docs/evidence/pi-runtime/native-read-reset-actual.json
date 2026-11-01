@@ -1,0 +1,71 @@
+{
+  "command": "npm run --silent test:pi-native-read -- --run",
+  "sourceCommit": "5bb29d4a4062c2a9c26f6b9e878eb4a3d7abedec",
+  "started": "2026-11-01T11:45:04Z",
+  "ended": "2026-11-01T11:45:11Z",
+  "exitCode": 0,
+  "stdout": {
+    "scope": "dedicated-pi-native-read",
+    "verdict": "native-read-pass",
+    "provider": "openai-codex",
+    "model": "gpt-6.1-sol",
+    "requests": 2,
+    "toolExecutions": 1,
+    "streamed": true,
+    "resultVerified": true,
+    "paused": true,
+    "reopened": true,
+    "budgetPreserved": true,
+    "disposed": true,
+    "fixtureRead": true
+  },
+  "progressMarkers": [
+    "model",
+    "tool",
+    "model"
+  ],
+  "failureStage": null,
+  "toolExecuted": true,
+  "fixtureUploaded": true,
+  "sourceHashesUnchanged": true,
+  "sourceHashesMatchPriorAttempt": true,
+  "operatorAuthorization": "Operator requested the next live integration step, then confirmed the model usage window had reset. One existing bounded fixture-read attempt only.",
+  "verification": {
+    "focused": {
+      "passed": 55,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    "full": {
+      "command": "npm run verify:all",
+      "passed": 2323,
+      "failed": 1,
+      "skipped": 0,
+      "exitCode": 1,
+      "failure": "test/pi-native-boundaries.test.mjs:138: SIGKILL at native terminal: uncommitted assistant became a transcript"
+    },
+    "isolatedBoundaries": {
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    "operator": {
+      "passed": 30,
+      "failed": 0,
+      "ignored": 0,
+      "exitCode": 0
+    },
+    "typescriptLintFormatCheck": "passed",
+    "rustLintFormatCheck": "passed"
+  },
+  "limits": [
+    "Usage reset is operator-confirmed, not independently inspected.",
+    "Accept only the bounded live fixture-read runtime result: two requests, one read_fixture({}), SHA-256 acknowledgement, native result persistence, Pause/reopen/Continue, preserved counters and disposal.",
+    "Full verification is not green. The native terminal crash-boundary test failed in the full run but passed in isolation; root cause is unresolved. No assertion was changed or skipped.",
+    "The first full-verification invocation was terminated by the 240-second tool timeout; the second completed the Node suite with one failure and did not reach Rust. Rust checks/tests were run separately.",
+    "No raw fixture source, model output, credential, HTTP payload or private native data is exported.",
+    "No second genuine attempt, sign-in, credential repair, worker/source edits, hosted mutations, publication or production enablement. M4 remains open."
+  ]
+}

@@ -20,6 +20,14 @@ The operator-approved genuine command ran **once** from **2026-10-31T18:54:39Z**
 
 The work stops here, without retry, sign-in, credential or lease repair, or inspection of private native data. Diagnosing the stream failure or making another genuine attempt requires separate approval. Successful live fixture-read acceptance and M4 remain open.
 
+## Successful post-reset attempt
+
+The operator requests the next live integration step and confirms the model usage window has reset. On clean `5bb29d4`, the existing command runs **once**, **2026-11-01T11:45:04Z–11:45:11Z**, exits **0**, and returns **`native-read-pass`**: exactly two model requests, one fixed `read_fixture({})`, streamed SHA-256 acknowledgement, persisted native result, Pause/reopen/Continue, preserved counters and disposal. [Finite evidence](evidence/pi-runtime/native-read-reset-actual.json) and [five-axis author review](evidence/pi-runtime/native-read-reset-review.md) record the bounded success. The reset is operator-confirmed, not independently inspected.
+
+Fresh focused checks pass **55/55**. Full verification is **not green**: **2,323/2,324 Node tests** pass; the native terminal SIGKILL test fails at `test/pi-native-boundaries.test.mjs:138` with an uncommitted aborted assistant transcript. All four boundary tests pass in isolation, leaving the cause unresolved. TypeScript lint/format/type/syntax checks and separate Rust lint/format/compilation plus **30 tests** pass. No executable changes or weakened assertions.
+
+Accept only this bounded live fixture-read runtime result, not full-suite or M4 acceptance. Stop without another genuine attempt, credential repair, worker/source edits, hosted mutations, publication or production enablement. The crash-boundary verification blocker is the next follow-up before broader integration.
+
 ## Verification
 
 New behavior must fail before implementation, then pass with synthetic profiles/intercepted HTTP over the actual live helper/native path. Cover exact tool/result correlation, unsupported tools/arguments/results, capture refusal, cancellation, default-disabled tools and opt-in launcher behavior. Run full `npm run verify:all` and `/skill:review` before the single genuine run. Record its finite verdict/exit without retry; a failed attempt does not imply OAuth rejection or successful live fixture-read acceptance.
