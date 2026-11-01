@@ -30,6 +30,8 @@ The separately approved [bounded live/native probe](docs/pi-native-live.md) conn
 
 The separately approved [live native fixture read](docs/pi-native-read.md) adds `npm run test:pi-native-read -- --run`: one fixed `read_fixture({})` uploads only a bounded capture of the demonstration's `src/lib/errors.js`, followed by a SHA-256 acknowledgement through the existing native Pause/reopen lifecycle. Default/help does nothing. No arbitrary paths, source execution/edits, workers, hosted mutations or production dispatch are enabled; stop after the single authorized attempt without retry or credential repair. The [post-reset attempt](docs/pi-native-read.md#successful-post-reset-attempt) passes with two requests and one verified read. A separate full-suite crash-boundary failure remains unresolved; bounded live success is not full-suite or M4 acceptance.
 
+The separately approved [protected native fixture check](docs/pi-native-check.md) adds `npm run test:pi-native-check -- --run`: one fixed protected baseline unit/build/browser recipe through native `run_check`, followed by receipt acknowledgement and Pause/reopen/Continue. Only public receipt metadata is sent to the model; no source upload, edits, publication or production dispatch. Default/help is effect-free; stop after the one authorized live attempt.
+
 ## Lint and format
 
 ```sh

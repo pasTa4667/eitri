@@ -8,6 +8,12 @@ import { nativeProbeProvider } from './pi-native-provider.mjs';
 import { streamNativeLiveProbe } from './pi-native-stream.mjs';
 import { reconcileNativeResources } from './pi-native-resources.mjs';
 import { captureNativeReadFixture, validateNativeReadResult } from './pi-native-read.mjs';
+import {
+  prepareNativeCheck,
+  consumeNativeCheck,
+  validateNativeCheckResult,
+  verifyNativeCheck,
+} from './pi-native-check.mjs';
 
 export const nativeLiveResult = Object.freeze({
   scope: 'dedicated-pi-native',
@@ -31,12 +37,23 @@ export const nativeLiveReadResult = Object.freeze({
   fixtureRead: true,
 });
 
+export const nativeLiveCheckResult = Object.freeze({
+  ...nativeLiveResult,
+  scope: 'dedicated-pi-native-check',
+  verdict: 'native-check-pass',
+  protectedCheck: true,
+});
+
+export function runNativeLiveCheckProbe(options) {
+  return runNativeProbe(options, 'check-fixture');
+}
+
 export function runNativeLiveReadProbe(options) {
-  return runNativeProbe(options, true);
+  return runNativeProbe(options, 'read-fixture');
 }
 
 export function runNativeLiveProbe(options) {
-  return runNativeProbe(options, false);
+  return runNativeProbe(options, 'probe');
 }
 
 // Fixed harnesses, not production runners. No arbitrary prompt/tool/path input.
@@ -51,8 +68,12 @@ async function runNativeProbe(
     stream = streamNativeLiveProbe,
     fixtureDirectory,
   },
-  fixtureRead,
+  fixture,
 ) {
+  const fixtureRead = fixture === 'read-fixture';
+  const fixtureCheck = fixture === 'check-fixture';
+  const toolName = fixtureCheck ? 'run_check' : fixtureRead ? 'read_fixture' : 'probe';
+  const toolArguments = fixtureCheck ? { kind: 'baseline' } : {};
   signal?.throwIfAborted();
   assert.deepEqual(await readdir(directory), []);
   const store = join(directory, 'native');
@@ -62,7 +83,8 @@ async function runNativeProbe(
     effects = 0,
     streamed = false,
     resultText,
-    expectedReply;
+    expectedReply,
+    checkPause;
   const deadline = performance.now() + 115_000;
   const check = () => {
     signal?.throwIfAborted();
@@ -74,6 +96,7 @@ async function runNativeProbe(
     repository: 'no-repository',
   };
   const options = {
+    ...(fixtureCheck ? await prepareNativeCheck(store, fixtureDirectory) : {}),
     directory: store,
     policy,
     allowanceMs: 120_000,
@@ -88,7 +111,7 @@ async function runNativeProbe(
             ...opts,
             profileHome,
             onDiagnostic,
-            fixture: fixtureRead ? 'read-fixture' : 'probe',
+            fixture,
           }),
         {
           before: () => {
@@ -102,7 +125,33 @@ async function runNativeProbe(
           },
         },
       ),
+    ...(fixtureCheck
+      ? {
+          fault: (point, id) => {
+            if (point !== 'after-check-receipt') return;
+            check();
+            assert.equal(checkPause, undefined);
+            onProgress?.('tool');
+            // Pause only after handoff/drain and durable receipt, not while the worker scope
+            // is live. The queued command runs before the next native model admission.
+            checkPause = controller.command({
+              requestId: randomUUID(),
+              intent: { type: 'pause', caseId: id },
+            });
+            void checkPause.catch(() => {});
+          },
+          check: async (request, source) => {
+            check();
+            assert.equal(++effects, 1);
+            assert.equal(request.caseId, requests[0].caseId);
+            const result = await consumeNativeCheck(request, source);
+            check();
+            return result;
+          },
+        }
+      : {}),
     [fixtureRead ? 'readFixture' : 'probe']: async (_id, actionSignal) => {
+      assert.ok(!fixtureCheck);
       check();
       actionSignal.throwIfAborted();
       assert.equal(++effects, 1);
@@ -159,7 +208,14 @@ async function runNativeProbe(
     assert.equal(effects, 1);
     const savedResults = paused.messages.filter((m) => m.kind === 'eitri.action-result');
     assert.equal(savedResults.length, 1);
-    assert.equal(savedResults[0].data.result, resultText);
+    let checkEvidence;
+    if (fixtureCheck) {
+      assert.ok(checkPause);
+      await checkPause;
+      checkEvidence = await verifyNativeCheck(controller, paused);
+      assert.deepEqual(savedResults[0].data.result, checkEvidence.check);
+      expectedReply = checkEvidence.check.id;
+    } else assert.equal(savedResults[0].data.result, resultText);
     assert.ok(paused.case.usedMs > 0 && paused.case.usedMs < 120_000);
     const counters = (selected) => [
       selected.case.usedMs,
@@ -173,6 +229,8 @@ async function runNativeProbe(
     assert.equal(reopened.case.status, 'paused');
     assert.deepEqual(counters(reopened), counters(paused));
     assert.deepEqual(reopened.messages, paused.messages);
+    if (fixtureCheck)
+      assert.deepEqual(await verifyNativeCheck(controller, reopened), checkEvidence);
     assert.equal(requests.length, 1);
     await controller.command({
       requestId: randomUUID(),
@@ -189,12 +247,18 @@ async function runNativeProbe(
       .find((m) => m.role === 'assistant')
       .content.find((b) => b.type === 'toolCall');
     const result = second.context.messages.find((m) => m.role === 'toolResult');
-    assert.equal(call.name, fixtureRead ? 'read_fixture' : 'probe');
-    assert.deepEqual(call.arguments, {});
+    assert.equal(call.name, toolName);
+    assert.deepEqual(call.arguments, toolArguments);
     assert.equal(result.toolCallId, call.id);
     assert.equal(result.toolName, call.name);
     assert.equal(result.isError, false);
-    assert.deepEqual(result.content, [{ type: 'text', text: resultText }]);
+    if (fixtureCheck) {
+      assert.equal(result.content.length, 1);
+      assert.equal(result.content[0].type, 'text');
+      assert.equal(validateNativeCheckResult(result.content[0].text), expectedReply);
+      const { controlVersion: _version, ...receipt } = JSON.parse(result.content[0].text);
+      assert.deepEqual(receipt, checkEvidence.check);
+    } else assert.deepEqual(result.content, [{ type: 'text', text: resultText }]);
     assert.notEqual(requests[0].actionId, second.actionId);
     assert.ok(done.case.usedMs >= paused.case.usedMs);
     assert.equal(done.case.usedMs + done.case.remainingMs, 120_000);
@@ -219,6 +283,7 @@ async function runNativeProbe(
     assert.equal(final.case.status, 'needs-attention');
     assert.deepEqual(final.messages, done.messages);
     assert.deepEqual(counters(final), counters(done));
+    if (fixtureCheck) assert.deepEqual(await verifyNativeCheck(controller, final), checkEvidence);
     assert.equal(requests.length, 2);
     assert.equal(effects, 1);
     check();
@@ -229,5 +294,11 @@ async function runNativeProbe(
   // Only this newly created store, after a successful durable reopen and controller close.
   // Failures retain private case state and never auto-requeue or reset it.
   await rm(store, { recursive: true });
-  return { ...(fixtureRead ? nativeLiveReadResult : nativeLiveResult) };
+  return {
+    ...(fixtureCheck
+      ? nativeLiveCheckResult
+      : fixtureRead
+        ? nativeLiveReadResult
+        : nativeLiveResult),
+  };
 }

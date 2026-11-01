@@ -14,22 +14,29 @@ import {
   nativeLiveResult,
   runNativeLiveReadProbe,
   nativeLiveReadResult,
+  runNativeLiveCheckProbe,
+  nativeLiveCheckResult,
 } from '../prototypes/pi-native-live.mjs';
 import { validateNativeDiagnostic } from '../prototypes/pi-native-diagnostics.mjs';
 
 const fixtureRead = process.argv[2] === '--native-read';
-const native = fixtureRead || process.argv[2] === '--native';
-const nativeFlag = fixtureRead ? '--native-read' : '--native';
-const expectedResult = fixtureRead
-  ? nativeLiveReadResult
-  : native
-    ? nativeLiveResult
-    : toolTurnResult;
-const commandName = fixtureRead
-  ? 'test:pi-native-read'
-  : native
-    ? 'test:pi-native'
-    : 'test:pi-tool';
+const fixtureCheck = process.argv[2] === '--native-check';
+const native = fixtureCheck || fixtureRead || process.argv[2] === '--native';
+const nativeFlag = fixtureCheck ? '--native-check' : fixtureRead ? '--native-read' : '--native';
+const expectedResult = fixtureCheck
+  ? nativeLiveCheckResult
+  : fixtureRead
+    ? nativeLiveReadResult
+    : native
+      ? nativeLiveResult
+      : toolTurnResult;
+const commandName = fixtureCheck
+  ? 'test:pi-native-check'
+  : fixtureRead
+    ? 'test:pi-native-read'
+    : native
+      ? 'test:pi-native'
+      : 'test:pi-tool';
 const failure = {
   scope: expectedResult.scope,
   verdict: 'sign-in-required',
@@ -47,7 +54,13 @@ async function probe() {
   try {
     await verifyInstalledSources();
     const result = native
-      ? await (fixtureRead ? runNativeLiveReadProbe : runNativeLiveProbe)({
+      ? await (
+          fixtureCheck
+            ? runNativeLiveCheckProbe
+            : fixtureRead
+              ? runNativeLiveReadProbe
+              : runNativeLiveProbe
+        )({
           directory: process.cwd(),
           profileHome: process.env.EITRI_PI_TOOL_HOME,
           signal: controller.signal,
@@ -93,8 +106,10 @@ async function launch() {
         cwd: home,
         stdio: ['ignore', 'pipe', 'ignore'],
         env: {
-          HOME: home,
-          PATH: '/usr/bin:/bin',
+          // Only the check controller's Docker client needs the existing OrbStack context.
+          // Inference helpers still receive separate empty homes and the unchanged allowlist.
+          HOME: fixtureCheck ? actualHome : home,
+          PATH: fixtureCheck ? '/usr/local/bin:/usr/bin:/bin' : '/usr/bin:/bin',
           PI_CODING_AGENT_DIR: join(actualHome, 'Library', 'Application Support', 'eitri', 'pi'),
           EITRI_PI_TOOL_HOME: actualHome,
           EITRI_PI_TOOL_CHILD: '1',
@@ -141,9 +156,11 @@ async function launch() {
                   2,
                   expected === 'model'
                     ? 'Pi model request (streaming).\n'
-                    : fixtureRead
-                      ? 'Fixed fixture read executed.\n'
-                      : 'Fixed probe tool executed.\n',
+                    : fixtureCheck
+                      ? 'Fixed protected fixture check executed.\n'
+                      : fixtureRead
+                        ? 'Fixed fixture read executed.\n'
+                        : 'Fixed probe tool executed.\n',
                 );
               } else {
                 assert.ok(
@@ -190,7 +207,7 @@ const args = process.argv.slice(native ? 3 : 2);
 if (args.length === 0 || (args.length === 1 && args[0] === '--help')) {
   writeSync(
     1,
-    `Usage: npm run ${commandName} -- --run\nTwo bounded genuine Pi streams and one fixed ${fixtureRead ? 'read_fixture({}) tool (uploads only src/lib/errors.js)' : 'side-effect-free tool'}${native ? ' through the real native controller/SQLite lifecycle' : ''}. No production dispatch.\n`,
+    `Usage: npm run ${commandName} -- --run\nTwo bounded genuine Pi streams and one fixed ${fixtureCheck ? 'run_check({kind:"baseline"}) protected unit/build/browser recipe (no source upload or edits)' : fixtureRead ? 'read_fixture({}) tool (uploads only src/lib/errors.js)' : 'side-effect-free tool'}${native ? ' through the real native controller/SQLite lifecycle' : ''}. No production dispatch.\n`,
   );
 } else if (args.length !== 1 || args[0] !== '--run' || process.platform !== 'darwin') {
   writeSync(2, `Usage: npm run ${commandName} -- --run (macOS only)\n`);
